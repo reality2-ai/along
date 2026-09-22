@@ -1,0 +1,19 @@
+[Unit]
+Description=Along Auckland commuter webapp
+StartLimitIntervalSec=60
+StartLimitBurst=10
+
+[Service]
+Type=simple
+WorkingDirectory=%h/Development/AT
+ExecStart=/usr/bin/python3 %h/Development/AT/server.py
+Environment=PYTHONUNBUFFERED=1
+Environment=PORT=3080
+Restart=on-failure
+RestartSec=3
+TimeoutStopSec=15
+NoNewPrivileges=true
+UMask=0077
+
+[Install]
+WantedBy=default.target

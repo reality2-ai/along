@@ -1,0 +1,2 @@
+# Preprocessing only; the app and local server do not import this package.
+osmium==4.3.1

@@ -1,0 +1,174 @@
+# Teaching AI-assisted coding with Along
+
+## Aim and audience
+
+Use a working commuter app to practise turning evolving human intentions into
+software whose behaviour can be inspected, tested and explained. Suitable for
+learners who can read basic HTML/JavaScript and run terminal commands. No paid AI
+API or AT key is needed for the core exercises. An assistant is optional: students
+can critique recorded decisions without sending private data to a model.
+
+This is a case study of one user–assistant collaboration, not evidence that AI
+coding improves outcomes in general. The thematic analysis makes interpretations
+explicit and preserves corrections rather than presenting a perfect-prompt story.
+
+## Learning outcomes
+
+By the end, students should be able to:
+
+1. Distinguish desired outcomes, suggested mechanisms and unresolved assumptions.
+2. Translate a human scenario into observable behaviour and meaningful tests.
+3. Design a clear next action while preserving agency and accessibility.
+4. Diagnose a failure using runtime evidence, including caches and deployment state.
+5. Explain data provenance, privacy boundaries and what a test does not prove.
+6. Hand over a reproducible build with truthful limitations.
+
+## Preparation
+
+Read the README and [conversation analysis](CONVERSATION_ANALYSIS.md). Install
+Node/Python and run `npm ci` and `npm test`. Instructors should prepare a dated
+public-data snapshot or hosted static bundle in advance; importing everything in
+a short class can consume the session. Preserve `build-info.json` alongside it.
+
+For each lab, record: the initial request, your interpretation, a proposed change,
+the evidence you checked, the actual result, and the remaining uncertainty. Do not
+record API keys, student home addresses or private conversation history. Use the
+public example addresses already in the tests.
+
+## Six sessions, approximately 75–90 minutes each
+
+### 1. Find the requirement behind the words
+
+Use the short user excerpts in the analysis codebook. Independently code them,
+then compare interpretations with a partner. Group codes into candidate themes;
+a message may support more than one theme. Do not count repeated messages as
+independent participants or force agreement into an inter-rater score.
+
+Contrast “street address to street address” with “perhaps using WASM.” The first
+states an outcome; the second proposes a possible mechanism. Write a requirements
+map linking quotes → interpretation → acceptance evidence. Include one plausible
+alternative reading and one assumption that needs a user answer.
+
+Deliverable: a one-page thematic map with evidence and a reflexive note about your
+own role. Compare with the provided analysis only after making your own account.
+
+### 2. Build around the next decision
+
+Scenario: a commuter has selected an origin and destination, receives three
+routes, and needs to decide what to do next. Review the hierarchy of route steps,
+saving, sorting and service alerts. Sketch a small improvement and implement it.
+
+Preserve keyboard order, avoid surprise focus movement, keep access needs
+findable, and retain alternatives to a suggested routine. Ask a partner to try
+the task without explaining the intended next action. Record what they actually
+do, rather than whether they say the page looks nice.
+
+Deliverable: before/after view, task observation and a short explanation of the
+tradeoff. A visual preference is not sufficient evidence of improved usability.
+
+### 3. Test the journey, not only the function
+
+Read the synthetic bus–ferry–train fixture. Change a departure so a transfer is
+missed and predict the result before running it. Exercise a forbidden transfer,
+an overnight service and unknown wheelchair access. Add one test whose failure
+would matter to a commuter, rather than a test that mirrors code line by line.
+
+Then compare a real address journey to the original schedule records. Inspect
+boarding/drop-off stops, service date, transfer time and final walk. Discuss why
+internal agreement with GTFS does not prove that a lift works or a bus is on time.
+
+Deliverable: one justified regression test and one documented real-data check.
+
+### 4. Debug offline and installed-app behaviour
+
+Reproduce the “it still looks the same” problem using `npm run test:updates`.
+Explain the distinction between files on disk, the running server, the active
+service worker, a waiting update and a currently open page.
+
+Check that a new release can activate while an old tab remains open, stored data
+survives, and an offline refresh stays quiet. Introduce a failed map download and
+verify that existing planning remains possible. Discuss when an automatic reload
+would interrupt the user's task.
+
+Deliverable: a causal explanation supported by observable states, not a generic
+recommendation to clear all browser storage.
+
+### 5. Inclusion, data and claims
+
+Use keyboard-only interaction, 320 CSS-pixel reflow, increased zoom and a screen
+reader where available. Inspect the accessibility tree and run axe. Keep separate
+records for automated findings, your observations and tests with disabled users.
+
+Compare “avoid mapped barriers,” “confirmed accessible stop,” and “the whole trip
+is accessible.” Identify exactly what the source data can establish. Examine the
+OSM, LINZ and AT notices and identify which data transformations each covers.
+
+Deliverable: an accessibility finding with reproduction steps, a corrected claim,
+and a source/licence table. A clean automated report is not a conformance certificate.
+
+### 6. Release and explain the work
+
+Build the static ZIP and serve it under a subpath. Disconnect and plan a new
+address journey. Inspect its contents for secrets and private hostnames. Record
+browser, data snapshot, test commands, measurements and unresolved gates.
+
+Write a README section and a concise change description for someone who has not
+seen the conversation. Explain why WASM was or was not needed using measurements.
+End with what the evidence supports and what remains untested.
+
+Deliverable: a reproducible release folder and a reviewable handover.
+
+## Example assistant prompts
+
+- “Interpret this commuter scenario. Separate requirements from assumptions and
+  propose the smallest observable acceptance check for each requirement.”
+- “Inspect the implementation before changing it. Explain why this transfer is
+  missed using the actual schedule and walking path.”
+- “Make journey steps the clearest next action. Preserve alternatives, keyboard
+  access and the user's saved state. Verify the changed behaviour.”
+- “The installed app looks old. Inspect server and service-worker state before
+  suggesting a remedy. Do not erase user data to hide the problem.”
+- “Audit this handover against the evidence. Identify any claim broader than the
+  tests, especially around accessibility, offline use and live data.”
+
+Evaluate an assistant's work by its changes and evidence, not confident wording.
+Short follow-ups can steer well, but the assistant must retain earlier constraints.
+The portable launcher is optional and is not a prerequisite for this course.
+
+## Assessment rubric
+
+| Criterion | Weight | Strong evidence |
+| --- | --- | --- |
+| Interpretation and traceability | 20% | Quotes connected to outcomes; mechanisms and assumptions distinguished |
+| Task and interaction design | 20% | Next action clear; alternatives and access needs remain usable |
+| Correctness and verification | 25% | Meaningful failures reproduced; fixes checked at the right scope |
+| Inclusion, privacy and provenance | 20% | Unknowns preserved; no private data leaked; licences attributed |
+| Reproducibility and communication | 15% | Another person can run the work; limits and pending checks are explicit |
+
+For each criterion: excellent work provides direct evidence and explains its
+limits; adequate work demonstrates the basic outcome with some missing context;
+weak work relies on assertions, screenshots alone or tests unrelated to the claim.
+Do not award extra credit merely for more code, more prompts, more agents or WASM.
+
+## Reflection questions
+
+Where did the assistant's initial interpretation narrow the user's goal? Which
+follow-up changed the meaning of success? What did the user have to repeat? Which
+test exposed a mistaken assumption? What remained unknowable from code? What
+would you ask or observe earlier in a second iteration?
+
+## Additional exercise: respond to a negative case
+
+Compare the early dashboard design with version 15's guided screens. Code the
+user's “still visually very busy” feedback in the thematic analysis. Explain why
+existing progressive disclosure was insufficient, then trace each screen's primary
+action and escape route. Test Back, an unfamiliar destination, access preferences
+and a saved journey. Distinguish automated accessibility evidence from observed
+usability; propose an observation that could disprove the redesign hypothesis.
+
+For a second iteration, use the route-number/Symonds Street request. Distinguish
+searching stop names from proving which streets a vehicle traverses. Inspect a
+route branch, map, scheduled stop times and the nested Back behaviour. Test that
+exploration does not mutate the user's active journey or imply live tracking.
+Compare offline AT geometry with optional online street tiles, including privacy,
+licensing, deployment and accessibility implications.

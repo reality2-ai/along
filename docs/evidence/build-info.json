@@ -1,0 +1,21 @@
+{
+  "built_at": "2026-09-22T23:49:08.986237+00:00",
+  "datasets": {
+    "addresses.json.gz": {
+      "bytes": 10277401,
+      "sha256": "cb69efea8b16f06b3bdb75ed766111d2f79657fedb443289afb7616599276c2b"
+    },
+    "network.json.gz": {
+      "bytes": 12331056,
+      "sha256": "1138ecbcf08667f4123be5c630c913472024bf019a11d41ebe756aebcbaa3888"
+    },
+    "routes.json.gz": {
+      "bytes": 2650630,
+      "sha256": "dccb96540fbb0f7631e1c961e14590c9f7e004c7f8d0b8d8434bf4147252d6d1"
+    },
+    "streets.json.gz": {
+      "bytes": 14844184,
+      "sha256": "57ccbe556bd00967fa14f2092b59d8f5cb7daca279530ad62a234d1dbf0d86a4"
+    }
+  }
+}

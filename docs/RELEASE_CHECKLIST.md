@@ -1,0 +1,81 @@
+# Release evidence and remaining gates
+
+Current candidate: **version 17**, reviewed 23 September 2026. The private site and
+static ZIP are prepared; no public AWS or GitHub Pages deployment has been made.
+This register separates automated evidence, user observations and remaining checks.
+
+## Goal audit
+
+| Requirement | Current evidence | Remaining limits or gates |
+| --- | --- | --- |
+| 1. Contextual interaction | Guided destination/origin/review/options/follow flow; route → direction/branch → stops/map → stop departures; Back/Escape and focus/filter restoration tested | Physical assessment of new contextual maps |
+| 2. Real journeys | Address-based train/ferry, bus and walking examples; independent raw GTFS validation; nearby and transfer fixtures; route 70/Symonds browser check | Snapshot correctness does not establish on-street conditions |
+| 3. Inclusion | Keyboard, axe, contrast, zoom, narrow screens, touch emulation, reduced motion and forced colours; text alternatives to maps | Spoken TalkBack/desktop-reader check; no disabled-commuter participant study |
+| 4. Installation and updates | Icons/manifest/installability; offline reopening; old-tab migration; quiet offline pull; failed/successful dataset refresh with saved journeys retained | Exact Android installation browser not recorded; latest contextual interface needs physical checks |
+| 5. Browser independence | Static `/along/` host with no Python API; offline new address routes; stored route geometry; measured download/storage/time | Low-memory phone performance not characterised; no evidence requiring WASM |
+| 6. Distribution | About 38 MiB ZIP/checksum, four data bundles, import scripts, MIT/data/Leaflet notices, AWS/Pages hosting instructions | Public deployment is a separate action; authenticated live verification needs an AT key |
+| 7. GitHub documentation | README, architecture, data, hosting, privacy, limits and contribution guidance match version 17 | Private source repository: [reality2-ai/along](https://github.com/reality2-ai/along); public visibility not yet selected |
+| 8. Course material | Thematic analysis, six lessons, exercises, assessment rubric and negative-case/contextual-map refinements | Course effectiveness has not been studied |
+| 9. Release checks and handover | 21 JavaScript and 4 Python tests; four real-data browser scenarios; static/update suites; source/archive/live asset comparison | Remaining physical and spoken screen-reader checks prevent claiming full goal completion |
+
+## Evidence and reproduction
+
+- [Version 17 checks and measurements](evidence/contextual-maps-v17.json).
+- [Build provenance](evidence/build-info.json), [real journeys](evidence/real-journeys.json),
+  [raw-GTFS route exploration checks](evidence/route-exploration.json).
+- [Performance interpretation](PERFORMANCE.md), [device checklist](ACCESSIBILITY.md).
+- `python3 test/check_route_exploration.py`: independent bus/train/ferry stop-time
+  and shape comparison against the preserved GTFS ZIP.
+- `npm test`: routing, exploration, privacy, live adapter and launcher fixtures.
+- `npm run test:browser`: real data, guided flow, maps, nested Back, axe and offline use.
+- `npm run test:updates`: old-tab migration, saved storage, silent offline checks.
+- `npm run build` then `npm run test:static`: subpath installability, keyboard,
+  zoom/reflow/media preferences, dataset refresh and offline address planning.
+
+Browser fixtures use 23 September 2026 and require a snapshot covering that date.
+Set `CHROMIUM_PATH` for an existing browser. Street-tile requests in automated
+checks use a fixture image; no public tile server is bulk-fetched by the tests.
+
+At 09:00, 277 Broadway → 10 Victoria Road produced a 59-minute
+walk/train/walk/ferry/walk journey. Queen Street → 805 Great North Road produced a
+24-minute walk/bus/walk journey; 1 → 2 Queen Street produced a two-minute walk.
+Three transit legs were independently checked against raw GTFS for service day,
+stop order, exact times and pickup/drop-off rules. This is schedule verification,
+not a comparison with AT Mobile or an observed physical journey.
+
+The route 70 browser scenario finds a Symonds stop, opens its departures, returns
+with focus/filter retained and repeats map exploration offline. Unit fixtures
+check branches, service calendars, requested trips, terminal arrival times and
+no-pickup services. Stop-name filtering does not prove street traversal.
+
+## User device observations
+
+| Observation | Evidence scope |
+| --- | --- |
+| Desktop installation, icon and standalone window worked | Version 11, explicitly reported |
+| Android address journey, steps/save, flight-mode reopen, new offline search, quiet pull and touch all passed | User report, exact app version not supplied |
+| Desktop keyboard-only navigation and 200% zoom worked | User report before the guided redesign |
+| Android update page appeared to update, though app was already latest | User report; exact browser/version not recorded |
+| “Yes, looking good” in response to the version 15 device/flow question | Positive acceptance of the guided flow; not an explicit TalkBack result |
+| Version 17 contextual maps and details | Automated checks only so far |
+
+The user requested TalkBack instructions but has not supplied a spoken-interaction
+result. No attached ADB device or desktop screen reader was available at the last
+local audit. Do not infer those checks from screenshots or accessibility trees.
+
+## Update history relevant to the course
+
+Android initially did not show version 11. Version 13 added recovery-script cache
+busting and active-worker version checks. Version 14 retained a visible update
+result before reopening, so a no-op could be distinguished from an update.
+Version 15 introduced the guided flow; version 17 adds contextual route/stop maps.
+Earlier measurements remain labelled as historical evidence, not latest acceptance.
+
+## Handover limits
+
+The timetable, route shapes and map can be old; transport access fields are often
+unknown. Access connectors are estimated; routing and street coverage are bounded.
+No fares, live vehicle display, delay-aware itinerary replanning or cross-device
+sync is implemented. The optional live adapter is fixture-tested without an AT
+key. iOS and disabled-commuter participant testing are not recorded. See the
+README for behaviour and the device checklist for the remaining observations.

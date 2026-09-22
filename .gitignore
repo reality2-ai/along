@@ -1,0 +1,14 @@
+.env
+data/*
+!data/.gitkeep
+__pycache__/
+*.pyc
+node_modules/
+.venv/
+dist/
+releases/
+test-results/
+.start-*-state/
+.agent-handoff/
+
+.along-static-profile-*/

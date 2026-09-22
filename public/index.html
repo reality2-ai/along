@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en-NZ">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#173e37">
+  <meta name="description" content="Find your next ride in Auckland. Compare nearby stops, plan a journey, and keep your usual commutes close.">
+  <title>Along · Your Auckland commute</title>
+  <link rel="icon" href="/icon.svg" type="image/svg+xml"><link rel="icon" href="/icons/favicon-32.png" type="image/png" sizes="32x32"><link rel="apple-touch-icon" href="/icons/apple-touch-icon.png"><meta name="apple-mobile-web-app-title" content="Along"><link rel="manifest" href="/manifest.webmanifest"><link rel="stylesheet" href="/style.css"><script type="module" src="/app.js"></script>
+<link rel="stylesheet" href="./vendor/leaflet/leaflet.css"><script src="./vendor/leaflet/leaflet.js" defer></script>
+</head>
+<body class="guided-app">
+  <a class="skip-link" href="#flow-title">Skip to current task</a>
+  <p id="announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+  <header class="site-header"><a class="brand" href="/" aria-label="Along home"><span class="brand-mark">a<span>↗</span></span>along</a><div class="header-right"><button class="text-button" id="new-journey" hidden>New journey</button><button class="icon-button" id="settings-open" aria-label="Settings">☷</button></div></header>
+  <main id="guided-main">
+    <aside id="app-update" class="update-notice" hidden aria-label="App update"><p>A new version of Along is ready.</p><button id="apply-update" class="secondary-button" type="button">Update and reopen</button><p id="update-status" role="status"></p></aside>
+    <nav class="flow-nav" aria-label="Journey navigation"><button id="flow-back" class="text-button" hidden>← Back</button><span id="flow-progress">Plan a journey</span></nav>
+    <h1 id="flow-title" tabindex="-1">Where would you like to go?</h1>
+    <p id="flow-context" class="flow-context"></p>
+    <p id="form-error" class="form-error" role="alert" tabindex="-1"></p>
+    <form id="journey-form" novalidate>
+      <section data-screen="destination" aria-label="Choose a destination">
+        <section class="usual-section" aria-labelledby="usual-title" hidden><h2 id="usual-title">Your usual journeys</h2><div id="usual-journeys" class="usual-list"></div></section>
+          <div class="place-field"><label for="destination">TO</label><div class="input-line"><span class="destination-dot" aria-hidden="true"></span><input id="destination" placeholder="Where would you like to go?" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="destination-options" aria-describedby="place-help form-error" required></div><ul class="suggestions" id="destination-options" role="listbox" aria-label="Destinations" hidden></ul></div>
+
+        <p id="place-help" class="field-help">Enter a street address, station or stop, then choose a suggestion.</p>
+        <p id="preparation-hint" class="field-help" role="status">Preparing your timetable. The first offline download is about 40 MB.</p>
+        <button class="primary-button" id="destination-next" type="submit">Continue →</button>
+        <button class="text-button alternate-action" type="button" id="nearby-start">Just find a nearby departure</button>
+        <button class="text-button alternate-action" type="button" id="browse-routes">Explore a bus, train or ferry route</button>
+      </section>
+      <section data-screen="origin" aria-label="Choose a starting place" hidden>
+        <button type="button" class="secondary-button location-button" id="location">Use my current location</button>
+        <p class="field-help">Or choose an address or stop.</p>
+          <div class="place-field"><label for="origin">FROM</label><div class="input-line"><span class="origin-dot" aria-hidden="true"></span><input id="origin" placeholder="Street address or stop" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="origin-options" aria-describedby="place-help form-error" required></div><ul class="suggestions" id="origin-options" role="listbox" aria-label="Starting places" hidden></ul></div>
+
+        <button class="primary-button" id="origin-next" type="submit">Continue →</button>
+        <button class="text-button alternate-action" type="button" id="try-britomart" hidden>Explore around Waitematā Station</button>
+      </section>
+      <section data-screen="review" aria-label="Review journey preferences" hidden>
+        <div class="place-review"><div><small>From</small><strong id="review-origin"></strong><button class="text-button" type="button" id="edit-origin">Change starting place</button></div><button id="swap" class="swap" type="button" aria-label="Swap origin and destination">⇅</button><div id="review-destination-row"><small>To</small><strong id="review-destination"></strong><button class="text-button" type="button" id="edit-destination">Change destination</button></div></div>
+          <details class="journey-preferences" id="journey-preferences"><summary>Journey preferences <span id="preference-summary">Time, transport and access needs</span></summary>
+          <div class="time-fields"><label>Departure date<input type="date" id="date" required></label><label>Auckland time<input type="time" id="time" required></label></div>
+          <button type="button" class="text-button" id="leave-now">Set departure to now</button>
+          <fieldset class="modes"><legend>Travel by</legend><label><input type="checkbox" value="bus" checked><span>▣ Bus</span></label><label><input type="checkbox" value="train" checked><span>▥ Train</span></label><label><input type="checkbox" value="ferry" checked><span>≈ Ferry</span></label></fieldset>
+          <label class="preference-field" for="max-walk">Maximum walk at each end<select id="max-walk"><option value="300">5 minutes</option><option value="600">10 minutes</option><option value="900" selected>15 minutes</option><option value="1200">20 minutes</option></select></label>
+          <label class="preference-field" for="walking-pace">Walking or rolling pace<select id="walking-pace"><option value="1.25">Usual · 4.5 km/h</option><option value="1">Unhurried · 3.6 km/h</option><option value="0.8">More time · 2.9 km/h</option></select></label>
+          <label class="setting"><input type="checkbox" id="avoid-steps" aria-describedby="access-help"> Avoid mapped steps and barriers</label>
+          <label class="setting"><input type="checkbox" id="confirmed-access" aria-describedby="access-help"> Only confirmed accessible stops and vehicles</label>
+          <p class="field-help" id="access-help">AT’s current feed does not confirm wheelchair access. The second option may return no journeys. Avoiding mapped barriers does not verify kerbs, lifts, surfaces or the whole route. <a href="https://at.govt.nz/bus-train-ferry/accessible-travel" target="_blank" rel="noreferrer">AT accessible travel information</a>.</p>
+          </details>
+
+        <button class="primary-button" type="submit" id="find">Find my way →</button>
+        <p class="field-help">Transit times are scheduled. Walking and access links are estimates.</p>
+      </section>
+    </form>
+    <section data-screen="options" id="journey-panel" aria-label="Journey options" hidden>
+      <div class="results-heading"><h2 id="journey-title" tabindex="-1">Finding your way…</h2><select id="sort" aria-label="Sort journeys"><option value="arrival">Earliest arrival</option><option value="transfers">Fewest changes</option><option value="walking">Least walking</option></select></div>
+      <p class="field-help" id="active-preferences"></p>
+      <div id="journeys"></div>
+      <button class="text-button" id="change-search">Change time or travel preferences</button>
+      <button class="text-button alternate-action" id="nearby-from-options">Compare nearby departures instead</button>
+    </section>
+    <section data-screen="follow" id="follow-panel" aria-label="Follow your journey" hidden>
+      <p id="step-count" class="field-help"></p><div id="current-step"></div>
+      <button class="primary-button" id="next-leg">Next step →</button><button class="text-button" id="previous-leg" hidden>← Previous step</button>
+      <p class="field-help">Advance when you are ready. Along is not tracking your progress. Times are scheduled.</p>
+      <details id="full-itinerary" class="journey-steps"><summary>Whole journey</summary><div id="itinerary-legs"></div></details>
+      <button class="save-button" id="save-journey" aria-pressed="false">☆ Save this journey</button>
+    </section>
+    <section data-screen="arrived" id="arrived-panel" hidden>
+      <button class="primary-button" id="return-journey">Plan the return journey →</button>
+      <button class="secondary-button" id="another-journey">Go somewhere else</button>
+    </section>
+    <section data-screen="nearby" id="nearby-panel" aria-label="Nearby departures" hidden>
+      <div class="results-heading"><h2>Which stop should I head to?</h2><button class="icon-button" id="refresh" aria-label="Refresh nearby departures">↻</button></div>
+      <p class="muted" id="nearby-context"></p>
+      <details class="journey-preferences"><summary>Filter departures</summary><div class="nearby-controls"><label>Show<select id="nearby-mode"><option value="all">All transport</option><option value="bus">Buses</option><option value="train">Trains</option><option value="ferry">Ferries</option></select></label><label class="direct-filter"><input type="checkbox" id="direct-only"> Direct to my destination</label></div></details>
+      <div id="departures"></div><button class="secondary-button" id="more-stops" hidden>Show more nearby stops</button>
+      <button class="text-button" id="nearby-edit">Change starting place or access preferences</button>
+      <button class="text-button alternate-action" id="nearby-plan">Plan a journey to a destination</button>
+      <details class="journey-notes"><summary>About these departures</summary><p class="footnote" id="nearby-note"></p></details>
+    </section>
+    <details id="journey-notes" class="journey-notes" hidden><summary>About these journeys</summary><p class="footnote">Urban Auckland street coverage. Up to 3 changes and a 4-hour search window. Walking follows mapped paths with estimated links to buildings and platforms. Kerbs, lifts and overall accessibility are not verified.</p></details>
+    <footer><span>Independent tool using <a href="https://at.govt.nz/bus-train-ferry/journey-planner" target="_blank" rel="noreferrer">AT data</a>, <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap contributors</a> and <a href="https://data.linz.govt.nz/layer/123113-nz-addresses/" target="_blank" rel="noreferrer">LINZ addresses (CC BY 4.0)</a>.</span></footer>
+  </main>
+  <dialog id="settings"><div class="dialog-title"><h2>Your commute, your control.</h2><button class="icon-button close-dialog" aria-label="Close settings">×</button></div><p>Along learns from successful journey searches, not background tracking. Your routes stay in this browser.</p><label class="setting"><input type="checkbox" id="learning-enabled"> Suggest my usual journeys</label><p class="muted">Suggestions reflect how often you search, the time of day and weekday versus weekend. You can always plan somewhere different.</p><button class="secondary-button" id="clear-history">Forget my journey history</button><p id="storage-message" role="status"></p><p id="learning-note" class="field-help"></p><hr><h3>On this device</h3><p id="data-status" role="status">Preparing timetable…</p><p id="address-status" class="field-help"></p><p id="today" class="field-help"></p><button class="secondary-button" id="alerts-open">Service updates</button><hr><p>App version 17 · <a href="./update.html">Check for an app update</a></p><h3>Ready when the internet isn't.</h3><p id="offline-info">Downloading the AT timetable for use on this device…</p><button class="secondary-button" id="update-timetable">Update downloaded timetable</button><button class="secondary-button" id="install" hidden>Install Along</button><p class="muted">On iPhone or iPad, open the Share menu and choose Add to Home Screen. Offline storage remains subject to your browser’s storage settings.</p></dialog>
+  <dialog id="alerts"><div class="dialog-title"><h2>Network service updates</h2><button class="icon-button close-dialog" aria-label="Close updates">×</button></div><div id="alerts-content" aria-live="polite"></div><a class="secondary-button" href="https://at.govt.nz/bus-train-ferry/service-announcements" target="_blank" rel="noreferrer">View AT service announcements ↗</a></dialog>
+  <dialog id="information" aria-labelledby="detail-title"><button type="button" class="text-button" id="detail-back">← Back</button><h2 id="detail-title" tabindex="-1"></h2><div id="detail-body"></div></dialog>
+</body>
+</html>

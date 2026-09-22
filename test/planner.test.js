@@ -1,0 +1,72 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {Planner,aucklandNow} from '../public/planner.js';
+import {readPreferences,recordJourney,suggestions,writePreferences} from '../public/preferences.js';
+
+function network(overrides={}) {
+  return {version:1,metadata:{feed_start_date:'20260101',feed_end_date:'20261231'},
+    stops:[['a','1','Alpha',-36.85,174.76,'',0],['b','2','Beta',-36.851,174.76,'',0],['c','3','Waitematā',-36.852,174.76,'',0]],
+    routes:[['r1','10','Ten',3,''],['r2','20','Twenty',3,''],['r3','30','Thirty',3,'']],
+    trips:[['t1',0,'weekday','Beta'],['t2',1,'weekday','Waitematā'],['t3',2,'weekday','Waitematā']],
+    calendar:[['weekday','20260101','20261231','1111100']],exceptions:[],transfers:[],
+    connections:[0,0,1,28800,29400,0,0,2,0,2,28900,31200,0,0,1,1,2,29520,30120,0,0],...overrides};
+}
+const query={from:'a',to:'c',date:'2026-09-22',time:'07:59',modes:['bus']};
+test('compares faster transfer with slower direct service',()=>{
+  const options=new Planner(network()).plan(query);
+  assert.equal(options.length,2);assert.equal(options[0].arrival,30120);assert.equal(options[0].transfers,1);
+  assert.equal(options[1].arrival,31200);assert.equal(options[1].transfers,0);
+});
+test('cannot board a missed connection or a disallowed pickup',()=>{
+  const n=network();n.connections[17]=29460;
+  assert.equal(new Planner(n).plan(query).length,1);
+  n.connections[12]=1;
+  assert.deepEqual(new Planner(n).plan(query),[]);
+});
+test('calendar exceptions remove services and weekends are not weekdays',()=>{
+  assert.deepEqual(new Planner(network()).plan({...query,date:'2026-09-26'}),[]);
+  assert.deepEqual(new Planner(network({exceptions:[['weekday','20260922',2]]})).plan(query),[]);
+  assert.equal(new Planner(network({exceptions:[['weekday','20260926',1]]})).plan({...query,date:'2026-09-26'}).length,2);
+});
+test('previous service day 24-hour times remain available after midnight',()=>{
+  const n=network({connections:[0,0,2,87000,87600,0,0]});
+  const result=new Planner(n).plan({...query,date:'2026-09-26',time:'00:05'});
+  assert.equal(result[0].departure,600);assert.equal(result[0].arrival,1200);
+});
+test('mode filters, identical stops and out-of-feed dates are handled',()=>{
+  const p=new Planner(network());assert.deepEqual(p.plan({...query,modes:['train']}),[]);
+  assert.throws(()=>p.plan({...query,to:'a'}),/different/);
+  assert.throws(()=>p.plan({...query,date:'2027-01-01'}),/outside/);
+  assert.throws(()=>p.plan({...query,modes:[]}),/mode/);
+});
+test('staying on a bus does not require a new transfer buffer',()=>{
+  const n=network({connections:[0,0,1,28800,29400,0,0,0,1,2,29400,30000,0,0]});
+  const result=new Planner(n).plan(query);assert.equal(result[0].transfers,0);assert.equal(result[0].legs[0].stops,2);
+});
+test('a forbidden transfer does not permit changing buses',()=>{
+  const n=network({transfers:[['b','b',3,0]]});assert.equal(new Planner(n).plan(query).length,1);
+});
+test('nearby results compare lines and filter direct services',()=>{
+  const p=new Planner(network());const args={lat:-36.85,lon:174.76,now:{date:'2026-09-22',seconds:28740}};
+  let result=p.nearby(args);assert.equal(result.stops.find(s=>s.stop.id==='a').departures.length,2);
+  result=p.nearby({...args,to:'c'});assert.equal(result.stops.find(s=>s.stop.id==='a').departures.length,1);assert.equal(result.directOnly,true);
+});
+test('fresh cancellations remove departures; stale feeds do not masquerade as live',()=>{
+  const p=new Planner(network()),args={lat:-36.85,lon:174.76,now:{date:'2026-09-22',seconds:28740}};
+  const feed={available:true,updated:Date.now()/1000,entities:[{trip_update:{trip:{trip_id:'t1',start_date:'20260922',schedule_relationship:3}}}]};
+  const live=p.nearby({...args,feed});assert.equal(live.stops.find(s=>s.stop.id==='a').departures.length,1);
+  const stale=p.nearby({...args,feed:{...feed,updated:1}});assert.equal(stale.live,false);assert.equal(stale.stops.find(s=>s.stop.id==='a').departures.length,2);
+});
+test('search accepts Māori names without a macron',()=>assert.equal(new Planner(network()).search('Waitemata')[0].id,'c'));
+test('Auckland clock is independent of browser timezone',()=>assert.equal(aucklandNow(new Date('2026-09-22T20:00:00Z')).time,'08:00'));
+test('learned routes need repeat use; suggestions stay optional',()=>{
+  const from={id:'a'},to={id:'b'},context={hour:8,day:2,timestamp:10};
+  let prefs={learning:true,journeys:[]};prefs=recordJourney(prefs,from,to,context);assert.equal(suggestions(prefs,context).length,0);
+  prefs=recordJourney(prefs,from,to,context);assert.equal(suggestions(prefs,context).length,1);
+  prefs.learning=false;assert.equal(recordJourney(prefs,from,{id:'c'},context).journeys.length,1);assert.equal(suggestions(prefs,context).length,0);
+  prefs.journeys[0].saved=true;assert.equal(suggestions(prefs,context).length,1);
+});
+test('unavailable or corrupt browser storage does not break planning',()=>{
+  assert.deepEqual(readPreferences({getItem:()=>'{broken'}),{learning:true,journeys:[]});
+  assert.equal(writePreferences({}, {setItem:()=>{throw new Error('Full');}}),false);
+});

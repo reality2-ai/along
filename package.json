@@ -1,0 +1,19 @@
+{
+  "name": "auckland-commute",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "python3 server.py",
+    "start": "python3 server.py",
+    "import": "python3 scripts/import_gtfs.py data/gtfs.zip",
+    "test": "node --test test/*.test.js && python3 -m unittest discover -s test -v",
+    "test:browser": "playwright test",
+    "build": "python3 scripts/build_static.py",
+    "test:updates": "node test/check_updates.mjs",
+    "test:static": "node test/check_static.mjs"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
+    "@playwright/test": "^1.63.0"
+  }
+}

@@ -1,0 +1,310 @@
+# From a commuter idea to an independent travel companion
+
+## Purpose and method
+
+This is a thematic analysis of the user–AI conversation that produced Along. It
+examines both **what the user wanted** and **how the collaboration shaped the
+result**. It is intended for an AI-assisted coding course, not as a transcript of
+usability research or a claim that the design is universally usable.
+
+The corpus is the available design conversation, reviewed on 23 September 2026.
+Requirement-bearing user messages are the primary
+evidence. Assistant proposals, implementation decisions and test results provide
+secondary evidence about the response. Brief requests to resume work are treated
+as interaction context rather than product requirements. Repeated requests about
+calm design and thematic analysis are retained as evidence of emphasis, not counted
+as independent participants or used to imply statistical importance.
+
+The approach is a pragmatic, reflexive thematic analysis:
+
+1. Read the conversation as a whole, retaining earlier requests as later ones arrive.
+2. Code concrete requests and interaction patterns close to the original wording.
+3. Group codes into candidate themes, allowing a message to belong to several themes.
+4. Review whether each theme explains a pattern across the conversation, and check
+   for tensions or contrary evidence rather than forcing everything into agreement.
+5. Name themes, connect them to product decisions, and identify unresolved questions.
+6. Write an account that separates observation, interpretation and implementation.
+
+Some codes are inductive: the request to compare nearby stops exposes a need for
+situational decision support. Others are explicitly theory-led: the user names
+calm computing, experiential cognition, progressive discovery and disability
+inclusion. The analyst is also the AI that helped implement the app. That creates
+a risk of explaining away its own mistakes; failures and unsupported assumptions
+are therefore part of this account. There was no independent coder, participant
+validation, saturation assessment or inter-rater reliability measurement.
+
+Quoted fragments below come from user messages. Spelling is lightly normalised
+where needed for readability; the surrounding summaries are paraphrases.
+
+**Status boundary:** this document analyses requirements and their implications;
+it is not a release or test-completion report. Design responses describe the
+direction of the work, including changes still being verified. The verification
+table identifies relevant checks, not a claim that every check has passed.
+Public documentation and course packaging are separate deliverables; their current status and remaining checks are recorded in RELEASE_CHECKLIST.md. Publication remains separate.
+
+## Working codebook
+
+| Code | Conversation evidence | Analytic interpretation |
+| --- | --- | --- |
+| C01: intuitive commute | “an intuitive tool for commuters” using the AT API | The task begins with a human activity, not a preferred framework. |
+| C02: trusted transport source | “the same as the Auckland Transport app” / “AT webapp” | Familiarity and trustworthy data matter; identical proprietary routing was not established. |
+| C03: situated choice | “which bus stop that [has] different lines has the next bus” | Route choice is a decision about location, direction and time, not merely a list of lines. |
+| C04: routine with agency | “learn my normal routes” and “possible to do something different” | Personalisation should reduce effort without trapping the user in a prediction. |
+| C05: local independence | “exist inside a browser once it has been loaded the first time” | Offline persistence is a product requirement, not a later optimisation. |
+| C06: technology as means | “perhaps using wasm where required”; later, a server inside WASM | The user suggests a possible mechanism while prioritising self-contained behaviour. |
+| C07: familiar entry points | phone testing over Tailscale; “a nice icon” for installation | The experience includes reaching, recognising and reopening the tool. |
+| C08: operational continuity | restart the webapp when the computer restarts | Reliability extends beyond an open terminal and the coding session. |
+| C09: complete journeys | “street address to street address” and multiple transport types | People think in destinations; transit stops are intermediate system details. |
+| C10: calm discovery | repeated request for calm computing, experiential cognition and progressive discovery | Reduce attention demands and organise information around action. |
+| C11: inclusion | “all types of people with various disabilities” | Perception, interaction and real-world route access must all be considered. |
+| C12: reusable learning | anyone can install it; use it in an AI coding course; GitHub README | The development process and its reasoning become deliverables alongside software. |
+| C13: interpretive account | explicit and repeated request for thematic analysis | The requested learning artefact is explanatory, not merely a chronological changelog. |
+| C14: next-action clarity | “what is the user most likely to want to do next” | Hierarchy should follow the user's task stage, with alternatives preserved. |
+| C15: installed continuity | “from the saved webapp, it still looks the same”; refresh should check, but offline “fail quietly” | An update is only useful if the installed experience can receive it without breaking offline calm. |
+| C16: portable working context | copy the AI launcher into a folder and keep its sessions local | The development tools should preserve project context as reliably as the app preserves journey context. |
+
+## Central organising idea: independence with control
+
+Across the conversation, a commuter tool becomes a companion that should support
+independent action without demanding constant attention or connectivity. The user
+asks it to remember, but leaves room for deviation; to guide, but reveal detail
+progressively; to be local and portable, but use trustworthy public data; and to
+include people whose needs cannot be reduced to an average walking speed.
+
+This is an interpretation of the interaction, not a psychological claim about
+the user or evidence about all Auckland commuters.
+
+## Theme 1 — Solve the situation, not only the query
+
+**Evidence:** C03 and C09 connect the next useful bus stop with the later demand
+for street-to-street, mixed-mode journeys.
+
+**Interpretation:** “Best route” is underspecified until it is grounded in a
+situation. A commuter may need to decide whether to walk to another stop, whether
+a service goes in the right direction, and what to do after leaving the vehicle.
+The initial stop-to-stop implementation addressed only part of that activity.
+
+**Design response:** address suggestions include suburbs; the planner joins access
+walks, buses, trains, ferries and the final walk; the nearby board compares stops;
+the first result gives a concrete next action. Walking through the actual street
+graph is preferable to treating straight-line proximity as connectivity.
+
+**Tension:** precision of presentation can exceed precision of data. Building and
+platform access links are estimated; the first route is best among the bounded
+options searched, not a proven global optimum. A late correction expanded walking
+transfers after a real Newmarket-to-Devonport test exposed a missed ferry connection;
+the corrected train-and-ferry journey subsequently passed the browser integration check.
+
+**Course lesson:** turn an abstract adjective such as “intuitive” into scenarios
+before treating a polished interface as a complete product.
+
+## Theme 2 — Remember the routine without taking away choice
+
+**Evidence:** C04 combines adaptation and deviation in the same request.
+
+**Interpretation:** learning is useful when it removes repetition; it becomes
+restrictive if a prediction silently dictates the journey. The phrase “something
+different” is essential, not an exception to discard when implementing favourites.
+
+**Design response:** recurring successful searches and time-of-day patterns create
+local suggestions. Explicit saved journeys coexist with learning. “New journey,”
+pause-learning and clear-history controls preserve agency. New destinations are
+always available through the same primary inputs.
+
+**Tension:** repeated searches are not proof of trips taken. The implementation
+learns search behaviour, does not continuously track travel, and should describe
+itself accordingly. A small transparent heuristic is more accountable here than
+an unexplained claim of AI-powered personalisation.
+
+**Course lesson:** define what “learn” means operationally, identify the data it
+needs, and give the user a way to inspect, bypass and erase the result.
+
+## Theme 3 — Independence is architectural and operational
+
+**Evidence:** C05–C08 link offline browser use, optional WASM, phone access,
+installation identity and restart behaviour.
+
+**Interpretation:** independence is more than an offline landing page. The useful
+work must survive loss of connectivity, closure of the development terminal and
+reopening on another occasion. The proposed technology is subordinate to that
+outcome.
+
+**Design response:** a service worker caches the interface; IndexedDB stores public
+transport, address and walking data; a Web Worker runs routing locally. A static
+build supports public HTTPS hosting. A separate systemd example supports a private
+host, and Tailscale provides HTTPS access during development.
+
+**Tension:** local datasets increase first-download, storage and memory demands.
+Browsers may evict data. Timetables expire. Live predictions cannot be made offline.
+WASM may help later, but it does not by itself provide service-worker persistence,
+HTTPS hosting, a public network listener or fresh external data.
+
+**Course lesson:** verify the user-visible property—disconnect, reload and plan—
+instead of equating an architectural label with success.
+
+## Theme 4 — Calm interaction makes the next action legible
+
+**Later clarification:** the user explicitly asks that the most likely next action
+be the most clearly afforded option. This sharpens the theme from reducing visual
+load to making task progression apparent. The standing rule and state-by-state
+review are recorded in [Interaction principles](INTERACTION_PRINCIPLES.md).
+
+**Evidence:** C10 was repeated. It also complements the request to recognise
+normal journeys rather than reconstruct them every day.
+
+**Interpretation:** the user is asking for an attention budget. Experiential
+cognition is interpreted here as support for recognition and situated action:
+familiar addresses, route names, stop names and a clear next step. This is a design
+hypothesis, not a cognitive effect established by testing.
+
+**Design response:** origin and destination remain primary. Time, modes and access
+preferences sit in a disclosure. Nearby results begin with a small set; more are
+available on request. Journey steps expand first, then street-level directions.
+Manual refresh avoids repeatedly moving a list while someone is reading it.
+
+**Tension:** hiding too much can hide essential controls. Access needs must remain
+findable and remembered; important uncertainty must be visible before relying on a
+route. Calm visual styling must not rely on pale, low-contrast text. An automated
+check caught precisely that problem in the “tight departure” text and prompted a
+contrast correction.
+
+**Course lesson:** progressive disclosure is a hierarchy of decisions, not a
+reason to make important facts difficult to find.
+
+## Theme 5 — Inclusion requires honest evidence, not a label
+
+**Evidence:** C11 broadens the design beyond a single “typical commuter.”
+
+**Interpretation:** disability inclusion has two distinct dimensions: being able
+to operate the interface and being able to undertake the physical journey. A
+screen-reader-compatible form does not make a station step-free; a step-free
+vehicle does not verify the path to it.
+
+**Design response:** semantic controls, keyboard-operable suggestions, text labels
+alongside colour, larger touch targets, stronger contrast, scalable layouts,
+reduced motion, explicit updates and plain-language instructions. Travel
+preferences include slower pace, avoiding mapped steps/barriers and requiring
+confirmed vehicle/stop accessibility.
+
+**Contrary evidence:** the imported AT feed reports wheelchair accessibility as
+unknown for every imported stop and trip. The strict accessibility filter must
+therefore be able to return no verified journey. Missing data cannot become a
+positive accessibility claim. OSM also cannot verify every kerb, surface, lift
+outage or building entrance.
+
+**Course lesson:** test what the data can establish. Automated accessibility checks
+and keyboard tests are necessary evidence, but do not replace testing with disabled
+people and assistive technologies in real travel contexts.
+
+## Theme 6 — The collaboration moves from making to explaining
+
+**Evidence:** C12–C13 ask for a publicly reusable app and thematic learning material.
+
+**Interpretation:** the process is itself part of the product. A useful course
+example must expose reasoning, limitations and correction, not just a successful
+screenshot or a cleaned-up story of one perfect prompt.
+
+**Required handover:** a public README, reproducible data imports, source/licence
+notices, architecture notes, test instructions and this analysis. Development-only
+hostnames, user identities and credentials should be excluded from public instructions.
+
+**Tension:** easy installation and production readiness are different. The public
+bundle is intended to support hosting and installation, but publication, authenticated live-data
+verification, representative device testing and broader accessibility validation
+are separate steps. Documentation must say which has happened.
+
+**Course lesson:** an AI coding exercise should end with reproducible evidence and
+an honest handover, not merely “it works on my machine.”
+
+## Follow-up evidence: the installed experience challenged the completion claim
+
+After the assistant reported that the site was updated, the user said the saved
+webapp still looked unchanged. Server files, an active service worker, a waiting
+worker and an already open installed window are different states. The earlier
+handover did not make that distinction actionable enough. The response added an
+explicit update notice, a recovery page and a test that holds an old tab open.
+
+The next two requests refined the desired experience: refreshing should check for
+updates, but an offline failure should be quiet. Together they reject a false
+choice between freshness and offline resilience. The person should remain able
+to travel while the system takes responsibility for checking in the background.
+That is direct support for themes 3 and 4, rather than a separate “refresh feature.”
+
+The launcher incident supplies a parallel lesson for the course: copied tooling
+contained another project's hard-coded path and session names. The fix derived
+session identity from the containing folder and tested isolation using two
+identically named folders. This is evidence of context leaking through reused
+implementation assumptions; it is not evidence about commuter behaviour.
+
+## What the interaction reveals about AI-assisted work
+
+The interaction follows an expanding sequence: a concrete travel problem becomes
+a contextual assistant, then a dependable installed tool, then an inclusive
+whole-journey service, and finally a public teaching example. These are changes in
+the criteria for success, not merely additions to a feature list. The phrase
+“looking good, but…” is particularly revealing: positive feedback on what exists
+coexists with a substantial correction to what counts as a complete journey.
+
+There is also a useful distinction between outcomes and suggested mechanisms.
+“Street address to street address” specifies an outcome; “perhaps using WASM”
+suggests one possible mechanism. Treating both as equally fixed requirements would
+misread the conversation. Likewise, repetition makes a priority visible, but does
+not establish why it was repeated: emphasis, perceived omission and simple
+duplication are all possible explanations.
+
+| Observed pattern | What it contributed | What needs care |
+| --- | --- | --- |
+| The user supplied short, concrete scenarios progressively. | Revealed requirements that a generic route-planner brief misses. | Later messages must enrich the original task instead of silently replacing it. |
+| The assistant started implementing quickly. | Produced something concrete to inspect and steer. | An early polished stop-to-stop app could be mistaken for completion of the broader commuter task. |
+| The user repeated calm-design and analysis requests. | Kept non-functional goals visible while implementation expanded. | Repetition should trigger a requirements check, not another acknowledgement without changes. |
+| The assistant researched API and data availability. | Found a key-free timetable path and distinguished schedule from live data. | AT's public feed is not proof of access to its proprietary journey-planning engine. |
+| Tool failures and tests interrupted the plan. | Exposed sandbox restrictions, port conflicts, contrast issues and routing gaps. | Report the actual failure, avoid speculative diagnoses, and distinguish a failed test from a product defect. |
+| The user proposed WASM conditionally. | Opened an architectural possibility. | Do not turn an optional mechanism into unnecessary complexity before measurement. |
+| Public use and teaching became explicit deliverables. | Made provenance, repeatability and maintainability relevant. | Keep private deployment details out of the repository and don't equate a prepared bundle with a published service. |
+
+## Traceability from theme to evidence
+
+| Theme | Main implementation | Relevant verification |
+| --- | --- | --- |
+| Situated journeys | `public/planner.js`, `public/streets.js` | Synthetic bus–ferry–train chain, real address searches, direction and connectivity tests |
+| Routine with agency | `public/preferences.js`, `public/app.js` | Repeated-search learning, pausing, erasure and new-journey browser tests |
+| Independence | `public/sw.js`, `public/worker.js`, `scripts/build_static.py` | Offline reload and new searches; public static/subpath smoke test |
+| Calm discovery | `public/index.html`, `public/style.css` | Keyboard flow, limited initial results, progressive detail, responsive screenshots |
+| Inclusion | Routing profile, GTFS fields, UI semantics | Unknown-accessibility rejection, barrier/pace tests, axe checks and narrow viewport tests |
+| Explainable handover | README, this analysis, course guide, notices | Clean setup instructions, explicit limitations, data/source review |
+
+## Questions for further investigation
+
+- Does a commuter with low vision find the next action more easily in this design?
+- Is “Journey preferences” discoverable enough for someone who depends on access filters?
+- How should a person distinguish “not accessible” from “accessibility unknown”?
+- How much initial download/storage is acceptable on older or low-cost phones?
+- Which missed connections result from conservative transfer assumptions, and which
+  result from missing paths, inaccurate schedules or incomplete map coverage?
+- Does learning from searches provide useful suggestions without learning unwanted
+  routines or making someone feel observed?
+
+These require participation and observation beyond the conversation. They cannot
+be answered by thematic interpretation or generated code alone.
+
+## Refinement: context as a sequence, not a dashboard
+
+The user's observation that the page was “still visually very busy” is a negative
+case for the earlier interpretation of calm discovery: collapsible details alone
+did not resolve competition between tasks. Their “wizard almost” suggestion
+supports a refined code, **task-contingent visibility**. Version 15 operationalises
+this as separate destination, origin, review, route choice and journey-step screens.
+This is an implementation hypothesis, not evidence of improved usability. Compare
+time to identify the next action, backtracking and preference discovery in task
+observation; include people using assistive technology and irregular journeys.
+
+## Refinement: information should be explorable in context
+
+“Certain things should be click-onable to take you deeper” refines progressive
+disclosure from hidden panels into connected information. The route-number and
+Symonds Street examples give an observable task: inspect where a service goes
+without first committing to a journey. The subsequent map request supplies a
+spatial representation, while “showing the current context” constrains its scope.
+Version 17 links route → direction/branch → stops and map → stop departures,
+preserving Back, focus and journey state. Test whether this supports route
+understanding; do not equate a plotted shape with confirmed service or access.
