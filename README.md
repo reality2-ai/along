@@ -58,8 +58,8 @@ adds an OpenStreetMap background on request; those tiles are not in the offline
 bundle. Maps supplement the keyboard-accessible stop list.
 
 Source repository: [reality2-ai/along](https://github.com/reality2-ai/along).
-Repository visibility and access are managed by the organisation; no public app
-hosting is enabled by this checkout.
+The source and course material are public. A public app site has not yet been
+deployed; use the hosting instructions below to run your own copy.
 
 ## Run from source
 
