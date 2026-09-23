@@ -791,3 +791,20 @@ the reviewed target and sequence policy, persist the removal and distribute it.
 check valid removal, tamper refusal, replay and reopening. It also cancels during
 signing. User-facing removal, distribution and epoch/key rotation remain pending;
 journey-sharing permission removal is a different operation.
+
+`removeSoftwareMember()` now composes issuer custody with verified target
+membership and a guarded IndexedDB commit. It refuses self removal, an invalid
+certificate, unavailable issuer custody and nonzero epochs. The retained signed
+revocations are the outbound evidence after restart. A compare-and-swap assigns
+the next sequence while preserving concurrent removals; retries return an existing
+record without issuing a replacement. Persona, bootstrap and issuer revisions are
+checked in the same transaction. The existing membership verifier broadcasts
+authenticated local-tab invalidation after commit. A late cancellation does not
+change a committed result into a refusal.
+
+The controller reports `removed-locally` and `delivered: false`. It is not wired to
+a user-facing removal action, does not distribute evidence to another device and
+does not rotate keys or recall previously shared AT credentials. The browser test
+checks concurrent removals, failed writes, early/late cancellation, idempotent
+retry and authenticated retained evidence in a fresh document. No production
+credential is involved.

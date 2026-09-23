@@ -16,8 +16,12 @@ using the runtime's actual signing bytes. The browser check applies this evidenc
 through the membership verifier, rejects tampering, deduplicates replay and checks
 that removal survives a storage reopen. Invalid sequence/reason bounds, closed or
 changed issuer custody and cancellation during signing refuse. This is a tested
-building block, **not a deployed group-removal control**: durable issuance policy,
-review UI, distribution to other members and epoch/key rotation remain unfinished.
+building block, **not a deployed group-removal control**. A removal controller now
+verifies the target certificate and atomically retains signed evidence, assigning
+sequences with compare-and-swap and guarding issuer/persona revisions. Concurrent
+removals survive together, retries reuse their evidence and a fresh-document check
+verifies the retained records. It refuses self removal and reports only local
+completion. Review UI, distribution to other members and epoch/key rotation remain unfinished.
 The existing 3801 preview bundle is unchanged by this source addition.
 
 The experimental existing-device reconnect screen now exchanges public connection

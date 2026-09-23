@@ -5,7 +5,7 @@ import {join} from 'node:path';
 const {chromium} = await import(process.env.PLAYWRIGHT_MODULE || '@playwright/test');
 const sources = new Map();
 for (const name of ['storage.mjs', 'membership.mjs', 'certificate.mjs']) sources.set('/' + name, await readFile(join(process.env.R2_BROWSER_DIR, name)));
-for (const name of ['software-persona.mjs', 'local-persona.mjs']) sources.set('/' + name, await readFile(new URL(name, import.meta.url)));
+for (const name of ['software-persona.mjs', 'local-persona.mjs', 'member-removal.mjs']) sources.set('/' + name, await readFile(new URL(name, import.meta.url)));
 for (const name of ['hive_wasm.js', 'hive_wasm_bg.wasm']) sources.set('/' + name, await readFile(join(process.env.R2_WASM_DIR, name)));
 const server = createServer((req, res) => {
   res.setHeader('Content-Type', req.url.endsWith('.wasm') ? 'application/wasm' : sources.has(req.url) ? 'text/javascript' : 'text/html');
@@ -106,6 +106,47 @@ try {
           membership.close();
         } finally { reopenedStore.close(); }
       } finally { membership?.close(); recipientStore.close(); }
+      const {removeSoftwareMember} = await import('./member-removal.mjs');
+      const peers = await Promise.all([0, 1].map(async () => {
+        const subject = crypto.getRandomValues(new Uint8Array(32));
+        return {subject, certificate: await issuer.issueCertificate(subject)};
+      }));
+      const base = {wasm, store, expectedGroup: group};
+      const originalMembership = await store.read('membership', groupHex);
+      const abortedRemoval = new AbortController(); abortedRemoval.abort();
+      check(await denied(() => removeSoftwareMember({...base, ...peers[0], signal: abortedRemoval.signal})), 'cancelled removal refuses');
+      const badCertificate = peers[0].certificate.slice(); badCertificate[135] ^= 1;
+      check(await denied(() => removeSoftwareMember({...base, ...peers[0], certificate: badCertificate})), 'wrong target proof refuses');
+      const own = (await store.read('candidate-persona', 'active')).value.record;
+      check(await denied(() => removeSoftwareMember({...base, subject: own.subject, certificate: own.certificate})), 'self removal refuses');
+      const failingStore = {...store, compareAndSwapMany: async () => { throw Error('synthetic storage failure'); }};
+      check(await denied(() => removeSoftwareMember({...base, store: failingStore, ...peers[0]})), 'failed commit refuses');
+      const racingStore = {...store, compareAndSwapMany: async (...args) => {
+        const identity = await store.read('candidate-persona', 'active');
+        await store.compareAndSwap('candidate-persona', 'active', identity.revision, identity.value);
+        return store.compareAndSwapMany(...args);
+      }};
+      check(await denied(() => removeSoftwareMember({...base, store: racingStore, ...peers[0]})), 'identity revision changes at commit refuse');
+      check((await store.read('membership', groupHex)).revision === originalMembership.revision, 'refusals leave membership unchanged');
+      const removed = await Promise.all(peers.map(peer => removeSoftwareMember({...base, ...peer})));
+      check(removed.every(result => result.status === 'removed-locally' && result.delivered === false), 'local commit does not claim delivery');
+      const persisted = await store.read('membership', groupHex);
+      check(persisted.value.revocations.length === 2 && new Set(persisted.value.revocations.map(r => r.sequence)).size === 2,
+        'concurrent removals retain both records with unique sequences');
+      const repeated = await removeSoftwareMember({...base, ...peers[0]});
+      check(repeated.evidence.sequence === removed[0].evidence.sequence
+        && (await store.read('membership', groupHex)).revision === persisted.revision, 'retry returns original evidence without rewriting');
+      const observer = openMembership(store, wasm, group, own.subject);
+      try {
+        for (const peer of peers) check(await observer.peerStatus(peer.certificate, peer.subject) === 'revoked', 'persisted removal verifies');
+      } finally { observer.close(); }
+      const lateSubject = crypto.getRandomValues(new Uint8Array(32)), lateCertificate = await issuer.issueCertificate(lateSubject);
+      const lateAbort = new AbortController();
+      const lateStore = {...store, compareAndSwapMany: async (...args) => {
+        const committed = await store.compareAndSwapMany(...args); lateAbort.abort(); return committed;
+      }};
+      check((await removeSoftwareMember({...base, store: lateStore, subject: lateSubject,
+        certificate: lateCertificate, signal: lateAbort.signal})).status === 'removed-locally', 'late cancellation does not undo committed fact');
       issuer.close(); check(await denied(() => issuer.issueCertificate(member)), 'closed custody refuses');
       check(await denied(() => issuer.issueRevocation({subject: member, sequence: 1n, reason: 0})), 'closed revocation custody refuses');
       const duringSigning = new AbortController();
@@ -132,5 +173,17 @@ try {
       return true;
     } finally { store.close(); }
   }, group), true);
-  console.log('PASS: browser software issuer restores encrypted custody and signs actual R2 certificates and revocations; real membership rejects tampering, retains revocation on storage reopen and deduplicates replay. Invalid inputs, closed/changed custody and interrupted initialization refuse. Revocation UI, distribution and epoch rotation are not covered.');
+  await reopened.close();
+  const afterRemoval = await context.newPage(); await afterRemoval.goto(url);
+  assert.equal(await afterRemoval.evaluate(async groupHex => {
+    const wasm = await import('./hive_wasm.js'); await wasm.default();
+    const store = await (await import('./storage.mjs')).openBrowserStorage('software-persona');
+    const group = Uint8Array.from(groupHex.match(/../g), b => parseInt(b, 16));
+    const saved = await store.read('membership', groupHex);
+    const membership = (await import('./membership.mjs')).openMembership(store, wasm, group, saved.value.subject);
+    try {
+      return saved.value.revocations.length === 3 && await membership.status() === 'current';
+    } finally { membership.close(); store.close(); }
+  }, group), true);
+  console.log('PASS: restored software issuer signs verified revocations; durable removals survive a fresh document, serialize concurrent sequences and retry idempotently. Tampering, invalid targets, failed writes and early cancellation refuse; late cancellation retains the committed result. Revocation UI, distribution and epoch rotation are not covered.');
 } finally { await browser?.close(); await new Promise(resolve => server.close(resolve)); }
