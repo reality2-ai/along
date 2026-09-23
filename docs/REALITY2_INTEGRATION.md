@@ -15,6 +15,10 @@ Same-host Chromium automation completes these through the visible controls and
 verifies encrypted traffic-key restore. Rejected comparison preserves the original
 candidate identity. The harness still transfers text and confirms the physical
 comparison; no phone/desktop connectivity or seamless sharing claim follows.
+Optional locally generated QR display and browser-native camera scanning now feed
+the same reviewed fields; unsupported browsers and oversized messages retain
+copy/paste. Independent decoding verifies generated images, while camera tests
+use mocks. Physical QR transfer remains unverified.
 Manual transfer is currently cumbersome, and the one-minute invitation lifetime
 needs real usability assessment. Public deployment, simpler transfer, group epoch
 updates/removal, saved-journey sync and physical-device validation remain work.

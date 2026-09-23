@@ -6,6 +6,7 @@ import {join} from 'node:path';
 const {chromium} = await import(process.env.PLAYWRIGHT_MODULE || '@playwright/test');
 const sources = new Map();
 for (const name of ['transfer-view.mjs', 'comparison.css']) sources.set('/' + name, await readFile(new URL(name, import.meta.url)));
+for (const name of ['qr-transfer.mjs', 'vendor/qrcode.mjs']) sources.set('/' + name, await readFile(new URL(name, import.meta.url)));
 const server = createServer((req, res) => {
   res.setHeader('Content-Type', req.url.endsWith('.css') ? 'text/css' : req.url.endsWith('.wasm') ? 'application/wasm' : sources.has(req.url) ? 'text/javascript' : 'text/html');
   res.end(sources.get(req.url) || '<!doctype html><html lang="en"><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>Local setup</title><link rel="stylesheet" href="/comparison.css"></head><body><main><h1>Connect your devices</h1><div id="setup"></div></main></body></html>');
@@ -26,6 +27,9 @@ try {
     Object.defineProperty(navigator, 'clipboard', {configurable: true, value: {writeText: async value => { window.copied = value; }}});
   });
   assert.equal(await page.evaluate(() => document.activeElement.tagName), 'H2');
+  await page.getByRole('button', {name: 'Show QR code', exact: true}).click();
+  await page.getByRole('img', {name: 'Device message QR code. Copyable text is also available.', exact: true}).waitFor();
+  await page.getByRole('heading', {name: 'Check your other device', exact: true}).focus();
   await page.keyboard.press('Tab'); await page.keyboard.press('Enter');
   await page.getByRole('status').filter({hasText: 'Copied.'}).waitFor();
   assert.equal(await page.evaluate(() => copied), 'public challenge');

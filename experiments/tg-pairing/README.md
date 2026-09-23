@@ -615,3 +615,28 @@ messages under a one-minute invitation lifetime is not the intended seamless
 experience. Physical cross-device signaling, simpler transfer, recovery navigation,
 current-epoch lifecycle, actual AT-sharing integration and saved-journey sync are
 still needed. Passing same-host browser tests does not establish those behaviors.
+
+### Local QR transfer option
+
+The composed flow can display an outgoing public message as a QR code and scan a
+reply into the existing input. Invitation review also offers scanning. A scan
+never accepts the invitation, submits a reply or confirms a code automatically.
+The retained copy/paste path works when a camera or browser QR detector is absent.
+Messages larger than 1,800 UTF-8 bytes fall back to copying; dense-code readability
+and real phone/desktop camera operation still need device testing.
+
+QR generation uses a pinned, locally vendored MIT library (see `vendor/README.md`).
+Camera frames go only to the browser's local `BarcodeDetector`. Camera access is
+requested after a trusted scan action, with audio disabled. Scanning stops on a
+result, Stop, timeout, hidden document, detached view, cancellation or submission.
+Late camera permission and detection results cannot resurrect a cancelled scan.
+The camera permission prompt itself is controlled by the browser. Support varies:
+see the [BarcodeDetector API](https://developer.mozilla.org/en-US/docs/Web/API/BarcodeDetector).
+
+`qr-transfer.test.mjs` renders a real SVG and independently decodes its screenshot
+with ZXing-C++, including macrons. Camera lifecycle cases use mocked camera and
+native-detector results; they do not establish a physical scan. To run that test,
+create a Python virtual environment with `zxing-cpp` and `pillow`, and point
+`QR_PYTHON` at its interpreter (default: `python3`). The browser uses neither Python
+nor these test-only dependencies. The complete pairing regression still succeeds
+through its manual text transport, and view checks exercise actual QR rendering.

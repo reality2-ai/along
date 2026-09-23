@@ -20,15 +20,19 @@ export function showDeviceTransfer(container, {title, explanation, outgoing, inc
   const incoming = element('label', incomingLabel), input = element('textarea', '');
   input.rows = 4; input.maxLength = 65536; input.spellcheck = false; input.autocomplete = 'off'; incoming.append(input);
   const submit = element('button', action); submit.type = 'button';
+  const qr = element('button', 'Show QR code'); qr.type = 'button';
+  const qrArea = element('div', '');
+  const scan = element('button', 'Scan device message'); scan.type = 'button';
+  const scanArea = element('div', '');
   const back = element('button', 'Back'); back.type = 'button';
-  panel.append(heading, description, copy, details, incoming, submit, status, back); container.replaceChildren(panel);
-  if (!receive) incoming.hidden = true;
-  if (!outgoing) { copy.hidden = true; details.hidden = true; submit.className = 'pairing-primary'; }
+  panel.append(heading, description, copy, qr, qrArea, details, incoming, scan, scanArea, submit, status, back); container.replaceChildren(panel);
+  if (!receive) { incoming.hidden = true; scan.hidden = true; }
+  if (!outgoing) { qr.hidden = true; copy.hidden = true; details.hidden = true; submit.className = 'pairing-primary'; }
   if (focus) heading.focus();
   const end = () => {
     if (disposed) return;
     disposed = true; lifetime.abort(); signal?.removeEventListener('abort', end);
-    output.value = ''; input.value = ''; copy.hidden = true; details.hidden = true; incoming.hidden = true; submit.hidden = true;
+    output.value = ''; input.value = ''; qr.hidden = true; scan.hidden = true; qrArea.replaceChildren(); scanArea.replaceChildren(); copy.hidden = true; details.hidden = true; incoming.hidden = true; submit.hidden = true;
     panel.removeAttribute('aria-busy');
     status.textContent = 'This exchange has ended. Go Back and start again when both devices are ready.';
     if ((panel.contains(document.activeElement) || busy && document.activeElement === document.body) && document.activeElement !== back) back.focus();
@@ -39,6 +43,21 @@ export function showDeviceTransfer(container, {title, explanation, outgoing, inc
   const leave = () => { if (!left) { left = true; end(); onBack(); } };
   back.addEventListener('click', leave);
   panel.addEventListener('keydown', event => { if (event.key === 'Escape') { event.preventDefault(); leave(); } });
+  qr.addEventListener('click', async event => {
+    if (!event.isTrusted || disposed || finished) return;
+    try {
+      const module = await import('./qr-transfer.mjs');
+      if (!disposed && !finished) module.renderTransferQr(qrArea, outgoing);
+    } catch { if (!disposed && !finished) status.textContent = 'This message cannot be shown as a QR code. Use Copy device message instead.'; }
+  });
+  scan.addEventListener('click', async event => {
+    if (!event.isTrusted || disposed || busy || finished || scan.disabled) return;
+    scan.disabled = true;
+    try {
+      const module = await import('./qr-transfer.mjs');
+      if (!disposed && !finished) await module.scanTransferQr(scanArea, input, lifetime.signal);
+    } catch { if (!disposed) status.textContent = 'Scanning is unavailable. Paste the device message instead.'; } finally { if (!disposed && !finished) scan.disabled = false; }
+  });
   copy.addEventListener('click', async event => {
     if (!event.isTrusted || disposed || copying || busy || finished) return;
     copying = true;
@@ -56,6 +75,7 @@ export function showDeviceTransfer(container, {title, explanation, outgoing, inc
     if (!event.isTrusted || disposed || busy || finished) return;
     const value = receive ? input.value.trim() : '';
     if (receive && (!value || value.length > 65536)) { status.textContent = 'Paste the message from your other device first.'; input.focus(); return; }
+    scanArea.replaceChildren();
     busy = true; submit.disabled = true; panel.setAttribute('aria-busy', 'true');
     status.textContent = 'Checking the device message…';
     try {
@@ -63,7 +83,7 @@ export function showDeviceTransfer(container, {title, explanation, outgoing, inc
       // it into any newly created session. It retains ownership of its results.
       await onReceive(value, lifetime.signal);
       if (disposed) return;
-      finished = true; output.value = ''; input.value = '';
+      finished = true; output.value = ''; input.value = ''; qr.hidden = true; scan.hidden = true; qrArea.replaceChildren(); scanArea.replaceChildren();
       copy.hidden = true; details.hidden = true; incoming.hidden = true; submit.hidden = true;
       status.textContent = 'Device message checked. Connecting still requires the remaining steps on both devices.';
       if (panel.contains(document.activeElement) || document.activeElement === document.body) back.focus();
