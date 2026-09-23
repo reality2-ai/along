@@ -63,3 +63,11 @@ are not a controlled performance comparison. The older memory diagnostic exclude
 route geometry and Leaflet, and must not be cited as a version 17 peak estimate.
 The geometry adds approximately 2.53 MiB compressed. Online street tiles are
 additional network traffic only when the person explicitly enables that background.
+
+## Version 36 dataset
+
+The enriched timetable increases total compressed datasets to 41,308,937 bytes
+(39.4 MiB). [The Chromium static-host check](evidence/static-v36-metrics.json)
+measured about 70.6 MB of browser storage. Timings in this run were collected
+while other release browser checks ran on the same machine, so they are not a
+controlled speed comparison or a phone performance claim.

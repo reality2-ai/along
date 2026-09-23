@@ -160,7 +160,7 @@ Back preserves your entries. Other routes, nearby departures and saved journeys
 remain available without crowding the current task. Settings shows offline readiness.
 
 Open [Along at reality2.ai/along](https://reality2.ai/along/), or host the static
-build below yourself. The four data bundles total approximately **38 MiB**;
+build below yourself. The four data bundles total approximately **39.4 MiB**;
 uncompressed storage and memory are considerably larger. Browser storage can be
 evicted. Do not rely on an expired timetable or mistake scheduled times for live
 predictions. See [release evidence and limits](docs/RELEASE_CHECKLIST.md).
@@ -230,7 +230,7 @@ coverage, provenance and reproducibility.
 
 ## Static hosting and downloadable build
 
-The [version 35 preview release](https://github.com/reality2-ai/along/releases/tag/v0.35.0)
+The [version 36 preview release](https://github.com/reality2-ai/along/releases/tag/v0.36.0)
 contains the ready-to-host ZIP and SHA-256 checksum. It is an experimental course
 app. The ZIP must be served
 over HTTPS; opening it as a local file does not install the app.

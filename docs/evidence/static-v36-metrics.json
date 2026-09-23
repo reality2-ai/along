@@ -1,0 +1,23 @@
+{
+  "runtime": "v26.4.0",
+  "browser": "151.0.7922.34",
+  "host": "Local static HTTP, repository subpath, Chromium desktop",
+  "physicalPhone": false,
+  "coldReadyMs": 7006,
+  "installability": {
+    "installabilityErrors": []
+  },
+  "mixedModeRouteMs": 5191,
+  "datasetBytes": 41308937,
+  "storage": {
+    "quota": 10807981853,
+    "usage": 70563613,
+    "usageDetails": {
+      "caches": 824832,
+      "indexedDB": 69736208,
+      "serviceWorkerRegistrations": 2573
+    }
+  },
+  "mainPageResourceTransferBytes": 433418,
+  "offlineReadyMs": 3058
+}

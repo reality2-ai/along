@@ -1,13 +1,13 @@
 {
-  "built_at": "2026-09-23T06:21:41.714371+00:00",
+  "built_at": "2026-09-23T07:00:03.921966+00:00",
   "datasets": {
     "addresses.json.gz": {
       "bytes": 10277401,
       "sha256": "cb69efea8b16f06b3bdb75ed766111d2f79657fedb443289afb7616599276c2b"
     },
     "network.json.gz": {
-      "bytes": 12331056,
-      "sha256": "1138ecbcf08667f4123be5c630c913472024bf019a11d41ebe756aebcbaa3888"
+      "bytes": 13536722,
+      "sha256": "06d23f3865ddc6be14158f3196414c5ee82d7221ecbad1c9afd5b00fc1cccdc2"
     },
     "routes.json.gz": {
       "bytes": 2650630,

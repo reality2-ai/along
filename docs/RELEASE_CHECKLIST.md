@@ -672,3 +672,20 @@ but the public live connection remains disabled. Direct AT access and Reality2
 credential integration are the intended architecture; no Along proxy is deployed.
 Installed launchers may refresh their cached icon independently of the app shell;
 actual Android and desktop launcher appearance still needs observation.
+
+## Version 36 release candidate
+
+This candidate retains original GTFS boarding sequences, operator IDs and trip
+directions for contextual live matching. Repeated-stop identities are verified
+against real AT data; wrong operators/directions remain excluded. Predictions
+expire using their individual measurement time, including nearby comparisons.
+The offline timetable keeps its existing services and schedule coverage.
+
+Direct browser access to AT has been verified, but this release does not enable
+public live access or implement Reality2 credential storage. The public app
+continues to use scheduled information. Physical screen-reader and device checks
+remain open; automated Chromium checks cannot substitute for those observations.
+
+Candidate validation: 68 JavaScript and 18 Python tests, all 20 browser scenarios,
+static subpath/offline/accessibility checks and installed-app update checks passed.
+The archive matches dist byte-for-byte and contains no local AT credential.
