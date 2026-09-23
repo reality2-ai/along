@@ -1255,3 +1255,113 @@ Object.assign(messages, {
     "mi": "Kāore he ratonga ōrite i kitea i ngā hāora e whā e whai ake nei mō ēnei manakohanga haere. Ka whakaaturia ētahi atu kōwhiringa mēnā e wātea ana."
   }
 });
+
+Object.assign(messages, {
+  "region.home": {
+    "en": "Along home",
+    "mi": "Kāinga Along"
+  },
+  "region.update": {
+    "en": "App update",
+    "mi": "Whakahou taupānga"
+  },
+  "region.navigation": {
+    "en": "Journey navigation",
+    "mi": "Whakatere haerenga"
+  },
+  "region.destination": {
+    "en": "Choose a destination",
+    "mi": "Kōwhiria he ūnga"
+  },
+  "region.origin": {
+    "en": "Choose a starting place",
+    "mi": "Kōwhiria he wāhi tīmatanga"
+  },
+  "region.review": {
+    "en": "Review journey preferences",
+    "mi": "Arotakengia ngā manakohanga haerenga"
+  },
+  "region.options": {
+    "en": "Journey options",
+    "mi": "Ngā kōwhiringa haerenga"
+  },
+  "region.follow": {
+    "en": "Follow your journey",
+    "mi": "Whāia tō haerenga"
+  },
+  "region.nearby": {
+    "en": "Nearby departures",
+    "mi": "Ngā wehenga e tata ana"
+  },
+  "action.closeAlerts": {
+    "en": "Close updates",
+    "mi": "Katia ngā whakahou"
+  },
+  "course.shortTitle": {
+    "en": "Course exercise · Use at your own risk.",
+    "mi": "He mahi akoranga · Kei a koe te tūraru o te whakamahi."
+  },
+  "course.shortWarning": {
+    "en": "Built for an AI-assisted coding course. Experimental, not an official AT app.",
+    "mi": "I hangaia mō tētahi akoranga tuhi waehere me te āwhina AI. He whakamātau, ehara i te taupānga mana a AT."
+  },
+  "course.checkAT": {
+    "en": "Check with AT ↗",
+    "mi": "Tirohia ki AT ↗"
+  },
+  "place.waitemata": {
+    "en": "Explore around Waitematā Station",
+    "mi": "Tūhuratia te takiwā o Waitematā Station"
+  },
+  "access.limits": {
+    "en": "AT’s current feed does not confirm wheelchair access. The second option may return no journeys. Avoiding mapped barriers does not verify kerbs, lifts, surfaces or the whole route.",
+    "mi": "Kāore ngā raraunga AT o nāianei e whakaū i te urunga tūru wīra. Tērā pea kāore he haerenga ka kitea mā te kōwhiringa tuarua. Ahakoa ka karohia ngā ārai kua maherehia, kāore e whakaūngia ngā tapa huarahi, ngā ararewa, ngā papa, te ara katoa rānei."
+  },
+  "access.at": {
+    "en": "AT accessible travel information",
+    "mi": "Ngā kōrero AT mō te haere e āhei ana ki te katoa"
+  },
+  "journey.limits": {
+    "en": "Urban Auckland street coverage. Up to 3 changes and a 4-hour search window. Walking follows mapped paths with estimated links to buildings and platforms. Kerbs, lifts and overall accessibility are not verified.",
+    "mi": "Ka kapi ngā tiriti o te tāone o Tāmaki Makaurau. Kia kaua e nui ake i te 3 ngā whakawhitinga, ā, e 4 hāora te wā rapu. Ka whai te hīkoi i ngā ara kua maherehia, me ngā hononga whakatau tata ki ngā whare me ngā tūāpapa. Kāore ngā tapa huarahi, ngā ararewa, me te āhei whānui ki te uru i whakaūngia."
+  },
+  "alerts.title": {
+    "en": "Network service updates",
+    "mi": "Ngā whakahou ratonga o te whatunga"
+  },
+  "alerts.at": {
+    "en": "View AT service announcements ↗",
+    "mi": "Tirohia ngā pānui ratonga AT ↗"
+  },
+  "footer.independent": {
+    "en": "Independent tool using",
+    "mi": "He taputapu motuhake e whakamahi ana i"
+  },
+  "footer.at": {
+    "en": "AT data",
+    "mi": "ngā raraunga AT"
+  },
+  "footer.and": {
+    "en": "and",
+    "mi": "me"
+  },
+  "footer.about": {
+    "en": "About Along ↗",
+    "mi": "Mō Along ↗"
+  }
+});
+
+Object.assign(messages, {
+  "guide.title": {
+    "en": "Install Along · Offline and private",
+    "mi": "Tāutahia a Along · Tuimotu, tūmataiti hoki"
+  },
+  "guide.back": {
+    "en": "← Open Along",
+    "mi": "← Huakina a Along"
+  },
+  "guide.open": {
+    "en": "Open Along and prepare this device",
+    "mi": "Huakina a Along, ka whakarite i tēnei pūrere"
+  }
+});
