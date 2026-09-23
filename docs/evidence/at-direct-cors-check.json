@@ -1,0 +1,17 @@
+{
+  "checked_at": "2026-09-23T06:13:53.628587+00:00",
+  "endpoint": "https://api.at.govt.nz/realtime/legacy/vehiclelocations",
+  "origin": "https://reality2.ai",
+  "preflight": {
+    "status": 200,
+    "allow_origin": "*",
+    "allow_methods": "GET",
+    "allow_headers": "ocp-apim-subscription-key"
+  },
+  "authenticated_get": {
+    "status": 200,
+    "allow_origin": "*"
+  },
+  "credential_recorded": false,
+  "scope": "HTTP preflight and authenticated response headers; full browser integration not yet tested"
+}

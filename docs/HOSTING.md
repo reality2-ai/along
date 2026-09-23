@@ -1,5 +1,11 @@
 # Hosting, phone access and restart setup
 
+> **Current direction:** Along must work without an Along-operated central
+> backend. Live information should be requested directly from its original
+> provider. The proxy instructions below describe retained experimental code,
+> not the intended public deployment. No public proxy has been deployed.
+
+
 ## Public static host
 
 Run `npm run build` with all datasets imported. Upload the contents of `dist/` to
@@ -344,3 +350,37 @@ the code and its inputs are on the user's device. It also cannot provide current
 AT data offline. WASM may help local computation where justified, but it does not
 replace the remote secret-holding role of this proxy. A personal-key mode would
 be a separate feature requiring verification of AT's browser access and terms.
+
+### Direct-provider architecture (latest user direction)
+
+The user clarified that independence means no central Along server, including for
+live information. Do not deploy the proposed proxy. A read-only check of AT's
+vehicle-location endpoint returned HTTP 200 for both an OPTIONS preflight allowing
+the subscription-key header and an authenticated GET, with `Access-Control-Allow-Origin: *`.
+See [the recorded header check](evidence/at-direct-cors-check.json). This establishes
+that this endpoint permits cross-origin browser access; all-feed browser integration
+and the credential experience still need implementation and verification.
+
+A shared key embedded in JavaScript or WASM would be public. Optional direct access
+using each user's own AT key is proposed, pending the user's decision. The key
+would be sent only to AT on an explicit live check. Scheduled planning remains
+key-free and offline. Existing proxy code is retained as an experiment, not a
+required service or the planned architecture. The public app still has live
+access disabled.
+
+### Proposed Reality2 trust-group credential integration
+
+The user proposed keeping each person's own AT key within their Reality2 trust
+group. This is the current direction to investigate instead of a standalone
+personal-key settings form. The intended flow is authorised device access to an
+application credential, followed by a direct request to AT; no central Along
+service should be required. TG membership removal cannot invalidate an AT key
+already copied to a device: suspected exposure requires AT-side rotation too.
+
+The Reality2 reading edition inspected is revision `006d57a4`, declared version
+0.9.0 (working draft). Its [L5C management-wallet scope](https://reality2.ai/standard/L5C-management-wallet.html)
+explicitly excludes application data and concerns custody of group-management
+keys. An AT key must therefore not be treated as group identity or assumed to be
+a built-in management-wallet field. Application storage/access policy and a real
+browser-compatible runtime or device bridge still need to be identified and
+verified. No TG credential API or security conformance is claimed by Along yet.

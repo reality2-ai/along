@@ -694,3 +694,15 @@ symbol. Visual inspection supported that reading. A path connecting two stops
 was suggested as a clearer travel metaphor; no redesign has been published.
 This is another example of user interpretation revealing ambiguity that technical
 checks and the designer's intended meaning do not resolve.
+
+### Independence includes the live-data connection
+
+When the AI proposed a separate proxy to protect a shared API key, the user asked
+whether that backend could run in browser WASM, then clarified that Along should
+need no central server except the original information provider. The earlier
+implementation protected the key but introduced an operational dependency that
+conflicted with the intended autonomy. A direct AT preflight and authenticated
+request succeeded, changing the next design question from hosting to personal
+credential handling. Browser integration remains unverified, and the proposed
+personal-key option awaits agreement. This illustrates why satisfying a security
+constraint is not sufficient evidence of alignment with the product's core drivers.

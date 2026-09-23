@@ -273,18 +273,16 @@ from AT or run an importer. All open tabs should be reloaded after an app update
 
 ## Optional live AT data
 
-Register through the [AT developer portal](https://dev-portal.at.govt.nz/), subscribe
-to the relevant realtime API, copy `.env.example` to `.env`, set `AT_API_KEY`, and
-restart `server.py`. The Python proxy sends the key in a server-side header. Never
-put it in browser JavaScript or a static build.
+The public app currently uses scheduled data. The intended live connection goes
+directly to Auckland Transport, without an Along-operated central backend.
+Each person would use their own AT subscription key, with Reality2 trust-group
+integration proposed for managing access across their devices. No shared key will
+be included in the public app.
 
-Nearby departures use matching live predictions when available; expired or failed
-feeds fall back to labelled schedules. **Journey itineraries remain scheduled.**
-Route details and stop-detail timetables also remain scheduled. Live data can add
-arrival predictions, reported cancellations and alerts; AT also offers vehicle
-positions, but Along does not yet display live vehicles or replan around delays.
-The adapter is fixture-tested; authenticated verification remains pending a key.
-See [AT realtime documentation](https://dev-portal.at.govt.nz/realtime-api).
+A direct AT cross-origin request has succeeded, but the browser connection and
+trust-group credential integration are not yet implemented. The repository also
+contains tested experimental live matching and proxy code; that proxy is not the
+planned public architecture. See [hosting and live-data status](docs/HOSTING.md).
 
 ## Limits and accessibility
 
