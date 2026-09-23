@@ -96,19 +96,35 @@ capability denial. The policy transformation changes only the upstream flags and
 profile shapes. Both new hosted jobs passed environment setup, including direct
 execution of the captured script and ELF. The [Rust run](https://github.com/reality2-ai/r2-standard/actions/runs/35847336109)
 and [repository gate run](https://github.com/reality2-ai/r2-standard/actions/runs/35847336188)
-were still running at this observation: the setup repair has evidence, but the
-complete hosted gates are not yet established. Isolation remains mandatory.
+now have different outcomes: the Rust run passed host and WASM checks, then
+refused the runner's Android NDK version. The repository gate remains in progress
+at this observation. The CI correction reads the versions declared by
+the Android checkers, provisions those tools and explicitly selects the required
+NDK. Hosted success still needs a new run; isolation remains mandatory.
 
 ### Core ceremony adapter work
 
-The current core `Ceremony::request` requires an opaque `Minted` value, while
-`Minted::from_mint` is crate-private and the production creation paths are inside
-core boot. A browser adapter must obtain that proof through an actual platform
-key-generation path; exposing a constructor accepting arbitrary public bytes
-would defeat the boundary. The next adapter work must provide a usable keystore
-mint path, retain candidate key custody, then drive the actual ceremony and its
-second OPEN check immediately before atomic installation. The existing payload
-validator does not replace any of these checks.
+The core `Ceremony::request` requires an opaque `Minted` value. The
+[runtime increment](https://github.com/reality2-ai/r2-standard/commit/62b5c71b6374bbf4e1ceb46b1a6c8778a4ae8edd) provides `Minted::from_keystore`, with core boot using the same
+platform member-mint operation. The browser adapter generates its own
+nonextractable Ed25519 private key through Web Crypto and obtains the mint proof
+from that operation. It accepts no imported key or caller-supplied public identity.
+The raw identity constructor remains private to the core.
+
+Along's experimental `candidate-session.mjs` owns that key for one confirmed
+session. Cancellation closes custody automatically; cancellation while generation
+is pending closes the late key without emitting a claim. Actual Chromium peer
+tests cover both paths and repeated disposal. The runtime browser tests also
+verify real signatures, private-export refusal and rejection of late signatures
+after closure. These are synthetic enrollment tests, not AT credential handling.
+
+The unchanged runtime snapshot passed `cargo xtask verify`; repository commit
+checks also passed. Status prose was refreshed after verification without
+implementation changes. Hosted verification of this increment remains pending. Volatile
+nonextractable custody does not establish hardware-backed durable storage.
+Driving the core ceremony, checking OPEN again immediately before atomic
+installation, issuer custody and application-secret authorization remain required.
+The existing payload validator does not replace those boundaries.
 
 ### Notekeeper reference inspection
 

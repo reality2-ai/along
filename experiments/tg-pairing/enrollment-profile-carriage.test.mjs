@@ -7,7 +7,7 @@ const {chromium} = await import(process.env.PLAYWRIGHT_MODULE || '@playwright/te
 if (!process.env.R2_BROWSER_DIR) throw new Error('Set R2_BROWSER_DIR to the experimental Reality2 browser module directory');
 if (!process.env.R2_WASM_DIR) throw new Error('Set R2_WASM_DIR');
 const sources = new Map(await Promise.all(['certificate', 'enrollment-session', 'storage', 'invitation-journal', 'enrollment-link', 'enrollment-exchange', 'enrollment-protection', 'peer-link', 'invitation'].map(async name => ['/' + name + '.mjs', await readFile(join(process.env.R2_BROWSER_DIR, name + '.mjs'))])));
-for (const name of ['enrollment-profile.mjs', 'enrollment-payloads.mjs']) sources.set('/' + name, await readFile(new URL('./' + name, import.meta.url)));
+for (const name of ['enrollment-profile.mjs', 'enrollment-payloads.mjs', 'candidate-session.mjs']) sources.set('/' + name, await readFile(new URL('./' + name, import.meta.url)));
 for (const name of ['hive_wasm.js', 'hive_wasm_bg.wasm']) sources.set('/' + name, await readFile(join(process.env.R2_WASM_DIR, name)));
 const server = createServer((req, res) => {
   if (sources.has(req.url)) { res.writeHead(200, {'Content-Type': req.url.endsWith('.wasm') ? 'application/wasm' : 'text/javascript'}); res.end(sources.get(req.url)); }
@@ -26,6 +26,10 @@ try {
       window.module = await import('./enrollment-session.mjs');
       window.profile = await import('./enrollment-profile.mjs');
       window.controller = await import('./enrollment-payloads.mjs');
+      window.candidateModule = await import('./candidate-session.mjs');
+      window.closedKeys = 0;
+      const originalClose = wasm.BrowserCandidateKey.prototype.close;
+      wasm.BrowserCandidateKey.prototype.close = function() { closedKeys++; return originalClose.call(this); };
       window.codec = (await import('./certificate.mjs')).certificateCodec(wasm);
       window.store = await (await import('./storage.mjs')).openBrowserStorage('carriage-test'); window.code = 2;
       window.role = index === 0 ? 'candidate' : 'provisioner';
@@ -71,9 +75,8 @@ try {
   const closed = () => Promise.all(pages.map(page => page.waitForFunction(() => enrollment.state() === 'closed' && enrollment.invitationState() === 'void')));
   await setup();
   await pages[0].evaluate(async () => {
-    window.memberKey = await crypto.subtle.generateKey('Ed25519', false, ['sign', 'verify']);
-    const subject = new Uint8Array(await crypto.subtle.exportKey('raw', memberKey.publicKey));
-    await payloads.sendClaim(subject);
+    window.candidate = await candidateModule.createCandidateEnrollment({wasm, invitation, epoch: 7n, session: enrollment});
+    await candidate.sendClaim();
   });
   await pages[1].evaluate(async () => {
     const subject = await payloads.claim(), epoch = 7n;
@@ -83,11 +86,35 @@ try {
       payloadKey: new Uint8Array(32).fill(4), integrityKey: new Uint8Array(32).fill(5)});
   });
   assert.equal(await pages[0].evaluate(async () => {
-    window.receivedBundle = await payloads.bundle();
+    window.receivedBundle = await candidate.bundle();
     return receivedBundle.payloadKey.every(b => b === 4) && receivedBundle.integrityKey.every(b => b === 5);
   }), true);
   await pages[0].evaluate(() => enrollment.cancel()); await closed();
+  assert.equal(await pages[0].evaluate(() => closedKeys), 1);
+  await pages[0].evaluate(() => candidate.dispose());
+  assert.equal(await pages[0].evaluate(() => closedKeys), 1);
   assert.equal(await pages[0].evaluate(() => receivedBundle.payloadKey.every(b => b === 0) && receivedBundle.integrityKey.every(b => b === 0)), true);
+
+  // Cancellation while Web Crypto generation is pending must close the newly
+  // returned key and must never emit a claim, even after its promise resolves.
+  await setup();
+  await pages[0].evaluate(() => {
+    const original = wasm.BrowserCandidateKey.generate;
+    window.generationReady = false;
+    wasm.BrowserCandidateKey.generate = async () => {
+      const generated = await original(); generationReady = true;
+      await new Promise(resolve => { window.releaseGeneration = resolve; });
+      return generated;
+    };
+    window.creation = candidateModule.createCandidateEnrollment({wasm, invitation, epoch: 7n, session: enrollment})
+      .then(() => true, () => false).finally(() => { wasm.BrowserCandidateKey.generate = original; });
+  });
+  await pages[0].waitForFunction(() => generationReady);
+  await pages[1].evaluate(() => enrollment.cancel()); await closed();
+  await pages[0].evaluate(() => releaseGeneration());
+  assert.equal(await pages[0].evaluate(() => creation), false);
+  assert.equal(await pages[0].evaluate(() => closedKeys), 2);
+  assert.equal(await pages[0].evaluate(() => frames.some(frame => frame.type === 'claim')), false);
 
   // Authenticated encryption alone accepts these bytes; the application profile
   // must reject them and durably cancel enrollment on both peers.
@@ -134,5 +161,5 @@ try {
   await pages[1].evaluate(() => enrollment.claim());
   await pages[0].evaluate(() => inject(frames.find(frame => frame.type === 'claim')));
   await closed();
-  console.log('PASS: a candidate-generated key reaches a group-signed validated bundle through the encrypted peer session, using an explicitly synthetic initial trust bootstrap; confirmed actual peers exchange authenticated encrypted synthetic claim/bundle payloads; tampering, cross-session replay, same-session replay, early claim, out-of-order bundle and reads after closure refuse. The later transport counterexamples use opaque payloads; initial trust, key custody and membership installation remain unproven.');
+  console.log('PASS: a candidate-generated key reaches a group-signed validated bundle through the encrypted peer session, using an explicitly synthetic initial trust bootstrap; confirmed actual peers exchange authenticated encrypted synthetic claim/bundle payloads; tampering, cross-session replay, same-session replay, early claim, out-of-order bundle and reads after closure refuse. The later transport counterexamples use opaque payloads; candidate keys close with the session, including after delayed generation; initial trust, durable custody and membership installation remain unproven.');
 } finally { await browser?.close(); if (server.listening) await new Promise(resolve => server.close(resolve)); }

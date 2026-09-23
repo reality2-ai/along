@@ -279,6 +279,10 @@ Include these cases:
   device or epoch. Compare the transport check with the application profile's
   certificate and invitation checks in `experiments/tg-pairing/`; neither alone
   establishes permission to install membership or retain credentials.
+- A person cancels while the browser is still generating a candidate key. The
+  generation finishes later. Check whether the late key is closed and whether
+  any claim was sent; merely removing the pairing screen proves neither. The
+  candidate-session test uses actual browser cryptography with controlled delay.
 - A full verification command succeeds while the source changes during the run;
   the result cannot establish that one final source snapshot passed every check.
 - A confirmation appears expired by design, but a backgrounded browser delays

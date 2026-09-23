@@ -38,6 +38,11 @@ physical co-presence, Android TalkBack, hardware protection or AT access.
 
 ## Connection to the experimental runtime
 
+Use Reality2 revision
+[`62b5c71b`](https://github.com/reality2-ai/r2-standard/commit/62b5c71b6374bbf4e1ceb46b1a6c8778a4ae8edd)
+or a compatible later revision, with WASM built from the same source. This is a
+draft branch dependency, not a merged runtime release.
+
 `session-view.mjs` supplies the actual code from Reality2's experimental
 `createEnrollmentSession`, and sends the person's decision back to that same
 session. Both peers must confirm. Replacing or disposing the view cancels the
@@ -65,8 +70,9 @@ protected bundle delivery, full enrollment or physical-person co-presence.
 `enrollment-profile.mjs` defines an **Along experimental application format**,
 not a normative Reality2 wire format or a claim of Notekeeper compatibility.
 The test harness serves the runtime's `invitation.mjs` and `certificate.mjs`
-alongside this module. Use the runtime at draft PR #1, commit `c4f5b794` or a
-compatible successor, with its matching compiled WASM package.
+alongside this module. Use the candidate-mint increment of runtime draft PR #1
+with its matching compiled WASM package, including `BrowserCandidateKey`. Earlier
+protected-carriage builds alone do not provide that candidate-key API.
 
 | Message | Exact contents |
 | --- | --- |
@@ -99,3 +105,12 @@ invitation journals after stopping the asset host. Its initial trust bootstrap
 is explicitly synthetic. A malformed encrypted claim or bundle must close both
 peers and void their reservations. Neither test establishes issuer authority,
 fresh epoch policy, core ceremony completion, durable installation or AT access.
+
+`candidate-session.mjs` owns the candidate key for a confirmed peer session. It
+generates the key through the actual WASM adapter, emits the claim using that
+key, and closes/frees its handle when the session aborts or the controller is
+disposed. Cancellation during asynchronous key generation rejects creation and
+closes the late key without emitting a claim. Repeated disposal is safe. The
+peer test covers this delayed-generation case and automatic cleanup after a
+successful bundle exchange. This connects key lifetime to the session; it still
+does not perform the core ceremony's admission or installation steps.
