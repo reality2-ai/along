@@ -21,7 +21,7 @@ this audit. Later public-hosting work supplements that brief.
 | 8. Course material | Thematic analysis, six lessons, exercises, assessment rubric and negative-case/contextual-map refinements | Course effectiveness has not been studied |
 | 9. Release checks and handover | 24 JavaScript and 4 Python tests; four real-data browser scenarios; static/update suites; source/archive/live asset comparison | Remaining physical and spoken screen-reader checks prevent claiming full goal completion |
 
-| 10. English / Te reo Māori | Device-local language module, 275-phrase draft catalogue and review sheet; flow selector connected in development; five foundation and two language-browser tests pass | Remaining screen text and full catalogue/guides, subpath/update checks, broader language/accessibility tests and fluent-speaker review |
+| 10. English / Te reo Māori | Device-local language module, 296-phrase draft catalogue and review sheet; flow selector connected in development; five foundation and two language-browser tests pass | Remaining screen text and full catalogue/guides, subpath/update checks, broader language/accessibility tests and fluent-speaker review |
 
 | 11. Contextual repository feedback | Added to goal; not implemented | Accessible bilingual feedback UI, explicit public submission, minimal disclosed context, offline drafts, receipt/duplicate checks and next-round issue review |
 
@@ -404,3 +404,12 @@ a language switch. Browser checks exercise manual refresh failure with retained
 offline address search. On emulated offline reload Chromium may retain an online
 connection hint: the test accepts either offline-capable readiness label while
 still requiring a new journey with network access disabled.
+
+App-update announcements, activation errors and recovery progress now support the
+stored language. The complete update regression suite passed, including the
+ten-minute HTTP cache, held old windows, mismatched shell rejection, preserved
+localStorage/IndexedDB and quiet offline refresh. Added checks confirm Māori
+recovery and successful English recovery when the document cannot load its
+optional translation module. Recovery retains independent English source text so
+a language-asset failure cannot disable its controls. Five localisation unit tests
+also passed. No public release or fluent-speaker approval is implied.

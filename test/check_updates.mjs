@@ -86,5 +86,25 @@ try{
  await context.setOffline(true);await page.reload();
  assert.match(await page.locator('#settings').textContent(),/App version 9/);
  assert.equal(await page.evaluate(()=>localStorage.getItem('update-check')),'saved');
+ // A standalone recovery page uses stored language, and remains functional
+ // when the optional translation module cannot load in the document.
+ version=11;htmlVersion=null;
+ const bilingual=await browser.newContext();
+ await bilingual.addInitScript(()=>localStorage.setItem('along-language-v1','mi'));
+ const reo=await bilingual.newPage();await reo.goto(origin+'/update.html');
+ await reo.waitForFunction(()=>document.querySelector('h1').textContent==='Whakahoutia a Along');
+ assert.equal(await reo.locator('#recovery-draft').isVisible(),true);
+ await reo.locator('#recover-update').click();
+ await reo.waitForFunction(()=>document.getElementById('recovery-status').textContent==='Kua tāutahia te putanga 11.',{timeout:45000});
+ assert.equal(await reo.locator('#recover-update').textContent(),'Huakina a Along →');
+ await bilingual.close();
+ const fallback=await browser.newContext();
+ await fallback.route('**/i18n.js',route=>route.request().resourceType()==='script'?route.abort():route.continue());
+ const rescue=await fallback.newPage();await rescue.goto(origin+'/update.html');
+ await rescue.locator('#recover-update').click();
+ await rescue.waitForFunction(()=>document.getElementById('recovery-status').textContent==='Installed version 11.',{timeout:45000});
+ assert.equal(await rescue.locator('#recover-update').textContent(),'Open Along →');
+ await fallback.close();
+ console.log('PASS: Māori recovery uses stored language; missing document translation module leaves English recovery operational.');
  console.log('PASS: ten-minute HTTP cache cannot contaminate new shell; mismatched deployment keeps old offline app; old app held open; recovery activates new version; saved localStorage and IndexedDB retained; offline pull stays silent; pull-to-refresh finds new release; stale open window offers reload; update-confirmation URL reopens offline.');
 }finally{await browser.close();server.closeAllConnections();await new Promise(r=>server.close(r));}

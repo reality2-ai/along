@@ -1026,3 +1026,90 @@ Object.assign(messages, {
     "mi": "Ka taea te tiro i ngā pānui o nāianei i te pae tukutuku a AT ina hono ki te ipurangi."
   }
 });
+
+Object.assign(messages, {
+  "update.noActive": {
+    "en": "No active app version was found.",
+    "mi": "Kāore i kitea he putanga taupānga hohe."
+  },
+  "update.noVersion": {
+    "en": "The active app did not confirm its version. Keep this page open and try again.",
+    "mi": "Kāore te taupānga hohe i whakaū i tōna putanga. Waiho tēnei whārangi kia tuwhera, ka whakamātau anō."
+  },
+  "update.failed": {
+    "en": "The new version could not be installed. Your existing app is still available.",
+    "mi": "Kāore i taea te tāuta i te putanga hou. Kei te wātea tonu tō taupānga o nāianei."
+  },
+  "update.slow": {
+    "en": "The update is taking longer than expected. Try again while online.",
+    "mi": "Kei te roa ake te whakahoutanga i tā te whakaaro. Whakamātau anō ina hono ki te ipurangi."
+  },
+  "update.activation": {
+    "en": "Could not activate the update. Please try again.",
+    "mi": "Kāore i taea te whakahohe i te whakahoutanga. Whakamātau anō."
+  },
+  "update.replaced": {
+    "en": "This update was replaced. Please try again.",
+    "mi": "Kua whakakapihia tēnei whakahoutanga. Whakamātau anō."
+  },
+  "update.ready": {
+    "en": "An app update is ready. Choose Update and reopen.",
+    "mi": "Kua rite he whakahoutanga taupānga. Kōwhiria te Whakahou, ka huaki anō."
+  },
+  "update.current": {
+    "en": "Your app is up to date.",
+    "mi": "Kei te putanga hou tō taupānga."
+  },
+  "update.checking": {
+    "en": "Checking and downloading the latest interface…",
+    "mi": "Kei te tirotiro me te tikiake i te atanga hou…"
+  },
+  "update.https": {
+    "en": "Open this page using the same HTTPS address as your installed Along app.",
+    "mi": "Huakina tēnei whārangi mā te wāhitau HTTPS kotahi o tō taupānga Along kua tāutahia."
+  },
+  "update.already": {
+    "en": "Already up to date — version {version}.",
+    "mi": "Kei te putanga hou kē — putanga {version}."
+  },
+  "update.updated": {
+    "en": "Updated to version {version}.",
+    "mi": "Kua whakahoutia ki te putanga {version}."
+  },
+  "update.installed": {
+    "en": "Installed version {version}.",
+    "mi": "Kua tāutahia te putanga {version}."
+  },
+  "update.open": {
+    "en": "Open Along →",
+    "mi": "Huakina a Along →"
+  },
+  "update.title": {
+    "en": "Update Along",
+    "mi": "Whakahoutia a Along"
+  },
+  "update.intro": {
+    "en": "Get the latest app interface. Your saved journeys and downloaded travel data stay on this device.",
+    "mi": "Tikina te atanga taupānga hou. Ka noho ō haerenga kua tiakina me ngā raraunga haerenga kua tikiakehia ki tēnei pūrere."
+  },
+  "update.check": {
+    "en": "Check for updates →",
+    "mi": "Tirohia ngā whakahoutanga →"
+  },
+  "update.browser": {
+    "en": "Use the same browser as your installed app. After updating, close and reopen the installed app.",
+    "mi": "Whakamahia te pūtirotiro kotahi o tō taupānga kua tāutahia. I muri i te whakahou, katia, ka huaki anō i te taupānga kua tāutahia."
+  },
+  "update.back": {
+    "en": "Back to Along",
+    "mi": "Hoki ki Along"
+  },
+  "update.notice": {
+    "en": "A new version of Along is ready.",
+    "mi": "Kua rite he putanga hou o Along."
+  },
+  "update.apply": {
+    "en": "Update and reopen",
+    "mi": "Whakahou, ka huaki anō"
+  }
+});
