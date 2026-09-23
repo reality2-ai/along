@@ -22,7 +22,61 @@ sequence of findings, so earlier source-only/version statements are historical.
 | Enrollment comparison | Committed X25519 exchange, canonical invitation fields and connection-bound core comparison strings | Connect initial trust, invitation validity/custody, person confirmation, protected bundle delivery and the core ceremony |
 | Invitation use | Durable reservation, decline/consumption, restart refusal and atomic write-set tests | Connect the journal to a validated OPEN-to-OWNER install and resolve interrupted distributed receipts |
 | Comparison UI | [Isolated component](../experiments/tg-pairing/README.md), keyboard/reflow/axe and cancellation tests | Bind it to the live ceremony, test actual TalkBack and physical co-presence; it is not loaded by Along |
-| Complete runtime gate | One full run passed; a second is running against a recorded unchanged snapshot | Inspect the terminal result and source hashes, run repository commit checks, then publish reviewable runtime source |
+| Complete runtime gate | Both full runs passed; the second matched the recorded unchanged snapshot, committed locally as `4d4977141f3b9b35023e00a8d36c6e463fe6c06c` | Finish repository publication checks, then publish reviewable runtime source; this does not establish complete enrollment |
+
+### Notekeeper reference inspection
+
+At the user's request, inspected `reality2-ai/r2-notekeeper` local revision
+`f771c3b7e258394fc4d7998c369a9b2668dd9b35`. This was a source review, not a
+two-device interoperability test. Its `AGENTS.md` explicitly describes a
+deliberately simplified application of R2, rather than a canonical implementation.
+
+The relevant pattern is a browser-loaded WASM runtime, locally retained data,
+an optional trust-group panel, invitations by QR/link/words, and automatic
+WebSocket reconnect. These are useful references for Along's eventual
+“Connect my devices” flow. Joining a group must remain optional for journey
+planning; AT credentials should be requested only when enabling contextual live
+information.
+
+There are material boundaries to preserve:
+
+- **Connectivity:** Notekeeper's `R2RelayTransport` uses a configurable WebSocket
+  relay. Its README defaults to a community relay and explicitly requires a
+  reachable relay for cross-device sync. A relay can be user-controlled, but is
+  still a server dependency; this does not satisfy Along's stricter request for
+  independence from servers other than the information provider by itself.
+  Do not silently add the community relay as an Along dependency.
+- **Storage:** `saveAuth()` base64-encodes serialized member and issuer state
+  into `localStorage`. The adjacent `r2-core` WASM source documents those
+  serializers as containing secret material and requiring encryption before
+  storage. Base64 is not encryption. Reuse the persistence lifecycle concept,
+  not this storage treatment for the AT key or current-standard TG secrets.
+- **Authentication:** the inspected incoming-frame handler strips the HMAC
+  before decoding and does not explicitly verify it before applying changes.
+  In the adjacent Rust source, `decode_extended_frame` is a decoder, not a
+  key-based verifier. This source finding needs qualification against the
+  shipped WASM build; it is sufficient reason not to copy this receive path
+  into a credential-sharing implementation.
+- **Catch-up:** the inspected sender transmits only while connected, and its
+  reconnect path requests relay catch-up. This is not evidence of a durable
+  outbound queue or reconciliation after both devices edit offline. Along must
+  test those cases before promising seamless saved-journey synchronisation.
+- **Compatibility:** Notekeeper imports `R2TrustGroup` and `R2Member` from its
+  bundled `r2_wasm`; the Along prototype targets the separate `r2-standard`
+  browser runtime. Shared R2 branding does not establish wire, invitation or
+  storage compatibility. Verify an explicit adapter before claiming that an
+  existing Notekeeper trust group can be joined.
+
+Implementation direction: use Notekeeper as the interaction and application
+integration reference, retaining Along's validated storage, authentication and
+enrollment boundaries. Keep transport separate from group identity and app data
+so an explicitly chosen existing R2 transport can be supported without making
+the portal or a default community service necessary for offline use. No new
+relay dependency or Notekeeper interoperability has been enabled in Along.
+
+Source: [Notekeeper application at the inspected revision](https://github.com/reality2-ai/r2-notekeeper/blob/f771c3b7e258394fc4d7998c369a9b2668dd9b35/index.html),
+[repository guidance](https://github.com/reality2-ai/r2-notekeeper/blob/f771c3b7e258394fc4d7998c369a9b2668dd9b35/AGENTS.md),
+and [README](https://github.com/reality2-ai/r2-notekeeper/blob/f771c3b7e258394fc4d7998c369a9b2668dd9b35/README.md).
 
 ### Next integration boundaries
 
