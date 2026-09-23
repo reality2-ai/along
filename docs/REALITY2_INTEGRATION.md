@@ -92,8 +92,12 @@ Invoking the script through `/bin/sh` worked; the probe still correctly failed.
 The Ubuntu package used by that run lacks the upstream `mediate_deleted` profile
 flags. The [published correction](https://github.com/reality2-ai/r2-standard/commit/9ad6286f) applies [AppArmor MR 1272](https://gitlab.com/apparmor/apparmor/-/merge_requests/1272)
 to those flags only, preserving the packaged ABI, access rules and child
-capability denial. This is a tested policy transformation, not yet a verified
-hosted repair. The isolation and captured-execution checks remain mandatory.
+capability denial. The policy transformation changes only the upstream flags and refuses unknown
+profile shapes. Both new hosted jobs passed environment setup, including direct
+execution of the captured script and ELF. The [Rust run](https://github.com/reality2-ai/r2-standard/actions/runs/35847336109)
+and [repository gate run](https://github.com/reality2-ai/r2-standard/actions/runs/35847336188)
+were still running at this observation: the setup repair has evidence, but the
+complete hosted gates are not yet established. Isolation remains mandatory.
 
 ### Core ceremony adapter work
 
