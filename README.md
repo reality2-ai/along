@@ -17,6 +17,47 @@ Along uses Auckland Transport's public data and its own bounded routing engine.
 It is **not an official AT app** and does not reproduce AT Mobile's journey planner.
 Live predictions are optional and require a separately configured backend.
 
+## What drives the design
+
+These principles come from the original brief and the user's repeated feedback
+throughout development. They are the criteria for judging changes, not a claim
+that every need has already been met.
+
+- **Help with the situation at hand.** Make Auckland journeys intuitive using AT
+  data: compare useful departures across nearby stops and lines, and plan from
+  street address to street address across walking, bus, train and ferry.
+- **Make the likely next action clearest.** Let the current task determine what is
+  shown, almost like a wizard. Anticipate a useful next step without taking control
+  or hiding alternatives.
+- **Keep interaction calm and grounded in experience.** Apply calm computing,
+  experiential cognition and progressive discovery: favour recognisable places,
+  routes and actions over a busy dashboard. Reveal detail when it becomes useful.
+- **Let people explore and return.** Make routes, vehicle/service numbers and stops
+  entry points to paths, times and relevant maps—such as checking whether a service
+  goes down Symonds Street. Back should preserve the journey and its context.
+- **Learn routines while allowing something different.** Reduce repeated input,
+  keep new journeys easy, and let people pause or erase learning.
+- **Design for people with varied disabilities.** Support different ways of seeing,
+  understanding and operating the interface, alongside walking and access needs.
+  Keep unknown accessibility explicit and validate with people and assistive tools.
+- **Work independently after preparation.** Support installed desktop and home-screen
+  use, offline address search and routing, a recognisable icon and reliable reopening.
+  Check for updates on refresh; when offline, fail quietly. The portal distributes
+  the app, but is not required for downloaded routing to work.
+- **Keep personal data under the person's control.** Searches, saved journeys and
+  preferences stay on the device. Trusted-device synchronisation is a proposed
+  extension, not a current feature; it must preserve local offline operation.
+- **Make the result reusable and the process teachable.** Provide public source,
+  clear installation instructions across browsers and platforms, honest screenshots,
+  and an account of decisions and corrections. This is a course exercise used at
+  the user's own risk, with limitations visible in both the app and repository.
+
+Read the [thematic analysis of this design conversation](docs/CONVERSATION_ANALYSIS.md)
+for the evidence, interpretations, tensions and later refinements behind these
+principles, and the [interaction principles](docs/INTERACTION_PRINCIPLES.md) for
+how to apply them to each screen. WASM and hosting choices are possible means;
+useful, accessible and independent operation is the goal.
+
 ## See Along in use
 
 Actual app screens using public example addresses and the preserved Auckland

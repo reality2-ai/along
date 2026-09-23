@@ -7,7 +7,11 @@ examines both **what the user wanted** and **how the collaboration shaped the
 result**. It is intended for an AI-assisted coding course, not as a transcript of
 usability research or a claim that the design is universally usable.
 
-The corpus is the available design conversation, reviewed on 23 September 2026.
+The corpus is the available design conversation, reviewed on 23 September 2026,
+including the requests for public hosting, installation guidance, privacy, course
+status, consistent screenshots with a real map, and this README summary of the
+original drivers. This is a synthesis of the available conversation, not a
+complete verbatim transcript.
 Requirement-bearing user messages are the primary
 evidence. Assistant proposals, implementation decisions and test results provide
 secondary evidence about the response. Brief requests to resume work are treated
@@ -40,7 +44,11 @@ where needed for readability; the surrounding summaries are paraphrases.
 it is not a release or test-completion report. Design responses describe the
 direction of the work, including changes still being verified. The verification
 table identifies relevant checks, not a claim that every check has passed.
-Public documentation and course packaging are separate deliverables; their current status and remaining checks are recorded in RELEASE_CHECKLIST.md. Publication remains separate.
+Public documentation, publication and course packaging are distinct deliverables.
+The repository is now public and the app is hosted at
+[reality2.ai/along](https://reality2.ai/along/). Current release evidence and
+remaining checks are recorded in [the release checklist](RELEASE_CHECKLIST.md);
+publication does not establish readiness for every person or journey.
 
 ## Working codebook
 
@@ -62,6 +70,16 @@ Public documentation and course packaging are separate deliverables; their curre
 | C14: next-action clarity | “what is the user most likely to want to do next” | Hierarchy should follow the user's task stage, with alternatives preserved. |
 | C15: installed continuity | “from the saved webapp, it still looks the same”; refresh should check, but offline “fail quietly” | An update is only useful if the installed experience can receive it without breaking offline calm. |
 | C16: portable working context | copy the AI launcher into a folder and keep its sessions local | The development tools should preserve project context as reliably as the app preserves journey context. |
+| C17: task-contingent visibility | “still visually very busy”; “like a wizard almost” | The current activity should determine what is visible; collapsible panels alone did not satisfy calm design. |
+| C18: connected exploration | select a route or stop, go deeper, and back out; the Symonds Street example | Understanding a service is a legitimate task before choosing a journey. |
+| C19: contextual spatial detail | a map “where it would be relevant”; “always” keep current context | Maps should answer a situated question, not become a permanent competing dashboard. |
+| C20: trusted-device continuity | use Reality2 to synchronise devices “in the same trust group” when online | Continuity is desired within an explicit trust boundary, while offline independence remains essential. |
+| C21: public distribution | AWS or GitHub Pages; public repository; “reality2.ai as the github.io portal” | Make the app reachable and reusable without making routing depend on that portal. |
+| C22: understandable installation | browser/platform instructions; the app “does not require the web portal to operate” | Explain preparation and reopening in terms people can verify, beyond offering an install icon. |
+| C23: explicit privacy | “your data stays on your device” | Local data ownership must be understandable in public wording, not only present in code. |
+| C24: visible educational status | emphasise a course exercise and “use it at your own risk” in repo and app | Public presentation should communicate the basis and limits of trust at the point of use. |
+| C25: representative presentation | UX images; equal heights and full-width pairs; “map one showing an actual map” | Readers need a coherent, concrete preview, with real behaviour and its conditions represented honestly. |
+| C26: preserve the design rationale | add “core drivers” repeatedly given and link/update this analysis | Documentation should retain the user's priorities as implementation and distribution expand. |
 
 ## Central organising idea: independence with control
 
@@ -157,10 +175,12 @@ cognition is interpreted here as support for recognition and situated action:
 familiar addresses, route names, stop names and a clear next step. This is a design
 hypothesis, not a cognitive effect established by testing.
 
-**Design response:** origin and destination remain primary. Time, modes and access
-preferences sit in a disclosure. Nearby results begin with a small set; more are
-available on request. Journey steps expand first, then street-level directions.
-Manual refresh avoids repeatedly moving a list while someone is reading it.
+**Design response:** the initial disclosures were refined into a destination-first
+sequence: origin, preferences, options and one journey step at a time follow as
+needed. Route and stop details open deeper layers with a way back. Nearby departures
+have their own task flow. Manual refresh avoids repeatedly moving a list while
+someone is reading it. The later wizard request is corrective evidence, not proof
+that the initial design already achieved calm interaction.
 
 **Tension:** hiding too much can hide essential controls. Access needs must remain
 findable and remembered; important uncertainty must be visible before relying on a
@@ -319,3 +339,83 @@ instructions explain concrete actions while separating documented paths from
 physical validation. Privacy wording names which data stays local and which
 optional actions still contact services; it does not promise that online use makes
 no network requests. The portal is a distribution channel, not a routing engine.
+
+## Refinement: continuity must respect the trust boundary
+
+The Reality2 question (C20) complicates a simple equation of independence with
+one-device isolation. The user wants their own devices to share useful state
+when online, while later insisting that personal data stays on the device (C23).
+Read together, these suggest control over who receives data, not permission to
+upload all journey history to a general service. This is an interpretation to
+validate before implementation, not an agreed synchronisation policy.
+
+The [Reality2 proposal](R2_SYNC_DESIGN.md) separates local routing from optional
+trusted-device synchronisation. Pairing, revocation, conflicts, deletion and
+reconnection would need explicit handling. No synchronisation is implemented;
+current local-storage claims must not imply either an existing sync feature or
+that a future synced copy could literally remain on only one device. The course
+lesson is to keep a promising architectural proposal distinct from delivered and
+verified behaviour.
+
+## Refinement: distribution is part of the experience
+
+C21–C23 extend independence beyond the routing engine. A public source repository,
+an HTTPS portal, an installed icon and an offline-ready app are different states.
+The user's report that the public URL did not work is concrete contrary evidence
+to treating repository setup as completed distribution. Likewise, earlier Android
+version uncertainty shows why a successful desktop check cannot stand in for the
+installed phone experience.
+
+The design response is a working public portal, browser/platform installation
+instructions, preparation and offline checks, and clear explanations of local
+storage. Instructions cover Chrome, Edge, Brave and Safari on relevant desktop
+and mobile platforms; coverage in documentation is not evidence of physical tests
+on all of them. The user reported successful journey/offline/touch checks and
+desktop keyboard/zoom checks, and later positive feedback on the guided flow.
+TalkBack was explicitly not yet tested when the user asked how to use it; later
+general approval does not establish a TalkBack result.
+
+An About link in the app's general-information area connects use to source,
+instructions and learning material. It makes provenance available in context,
+while avoiding another large panel in the journey flow. The course lesson is to
+verify the entire path from discovery to installed use and to retain the scope
+of each observation when reporting evidence.
+
+## Refinement: public trust needs honest framing and concrete examples
+
+The course-exercise and own-risk request (C24) changes what must be visible before
+someone relies on the app. It is not enough to place limitations deep in developer
+documentation. The README opening, app notice and Settings now identify the
+educational, experimental status and distinguish Along from an official AT
+service. This framing informs expectations; it does not substitute for accessible
+design, correct implementation or verification.
+
+The screenshot requests (C25) address another part of public understanding. Equal
+capture dimensions and paired images filling the reading area make different
+states easier to compare. A route drawn over an actual street map demonstrates
+spatial context more clearly than markers on a plain background. The captures use
+real app states and public example addresses. The map caption explains that the
+street background is an optional online layer; downloaded route geometry and
+stops are separate, and no live vehicle tracking is shown. A presentation image
+must not silently imply a capability the installed offline app does not have.
+
+There is a continuing tension between visible qualification and calm design:
+necessary notices can themselves crowd a small screen. The response uses a short
+visible notice and deeper explanation in Settings and documentation. Whether this
+balance works for different readers remains an observation question. Screenshots
+show appearance, not accessibility or successful travel.
+
+## Refinement: keep the original drivers available for future decisions
+
+The request to put the recurring drivers in the initial README (C26) makes
+traceability itself a deliverable. The README now states the principles near the
+start and links here for evidence and tensions. This account organises the latest
+requests within the existing themes rather than treating every message as an
+independent feature or inventing a new theme for each implementation change.
+
+For course discussion, compare an implemented change with its original driver:
+does a map help answer the current question, does a notice make limitations clear
+without dominating the task, and does installation preserve independence? A useful
+analysis makes these decisions open to challenge. It should not retrospectively
+present every assistant choice as inevitable, or treat the user's positive
+feedback as validation of untested claims.
