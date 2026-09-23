@@ -6,7 +6,7 @@ import {join} from 'node:path';
 const {chromium} = await import(process.env.PLAYWRIGHT_MODULE || '@playwright/test');
 const sources = new Map();
 for (const name of ['storage.mjs', 'membership.mjs', 'certificate.mjs', 'peer-session.mjs', 'peer-link.mjs', 'challenge.mjs', 'session-statement.mjs']) sources.set('/' + name, await readFile(join(process.env.R2_BROWSER_DIR, name)));
-for (const name of ['../tg-pairing/initial-persona.mjs', '../tg-pairing/local-persona.mjs', 'local-owner.mjs', 'owner-policy.mjs', 'owner-policy-send.mjs', 'owner-delivery.mjs', 'delivery-history.mjs', 'delivery-recovery.mjs', 'remote-owner.mjs', 'policy-update.mjs', 'policy-update-message.mjs', 'remote-owner-view.mjs', 'settings-view.mjs', 'credential-view.mjs', '../tg-pairing/comparison.css', '../tg-pairing/local-persona-session.mjs', 'policy.mjs', 'policy-store.mjs', 'local-vault.mjs', 'delivery-ack.mjs', 'delivery-message.mjs']) sources.set('/' + name.split('/').pop(), await readFile(new URL(name, import.meta.url)));
+for (const name of ['../tg-pairing/initial-persona.mjs', '../tg-pairing/local-persona.mjs', 'local-owner.mjs', 'owner-policy.mjs', 'owner-policy-send.mjs', 'policy-sync.mjs', 'owner-delivery.mjs', 'delivery-history.mjs', 'delivery-recovery.mjs', 'remote-owner.mjs', 'policy-update.mjs', 'policy-update-message.mjs', 'remote-owner-view.mjs', 'settings-view.mjs', 'credential-view.mjs', '../tg-pairing/comparison.css', '../tg-pairing/local-persona-session.mjs', 'policy.mjs', 'policy-store.mjs', 'local-vault.mjs', 'delivery-ack.mjs', 'delivery-message.mjs']) sources.set('/' + name.split('/').pop(), await readFile(new URL(name, import.meta.url)));
 for (const name of ['hive_wasm.js', 'hive_wasm_bg.wasm']) sources.set('/' + name, await readFile(join(process.env.R2_WASM_DIR, name)));
 for (const name of ['live-client.mjs', '../../public/at-client.js', '../../public/live-client.js']) sources.set('/' + name.split('/').pop(), await readFile(new URL(name, import.meta.url)));
 const server = createServer((req, res) => {
@@ -42,6 +42,7 @@ try {
     const {applyRemoteATPolicy, encodePolicyUpdate, decodePolicyUpdate} = await import('./policy-update.mjs');
     const {updateLocalATPolicy} = await import('./owner-policy.mjs');
     const {sendOwnerPolicy} = await import('./owner-policy-send.mjs');
+    const {createPolicySync, answerPolicyCheck, isPolicyCheckRequest, isPolicyCheckResponse} = await import('./policy-sync.mjs');
     const codec = (await import('./certificate.mjs')).certificateCodec(wasm);
     const hex = bytes => Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
     const check = (v, message) => { if (!v) throw new Error(message); };
@@ -78,9 +79,14 @@ try {
     let timeout, acknowledgmentContext, confirm, rejectConfirmation, dropAcknowledgment = true;
     const confirmed = new Promise((yes, no) => { confirm = yes; rejectConfirmation = no; });
     void confirmed.catch(() => {});
-    let recovering = false;
+    let recovering = false, policySync, lastPolicyResponse, policyCheckError, holdPolicyChecks = false;
     try {
       const receiverHandler = async packet => {
+          if (isPolicyCheckResponse(packet)) {
+            lastPolicyResponse = packet.slice();
+            try { await policySync.receive(packet); } catch (error) { policyCheckError = error; }
+            return;
+          }
           if (recovering) {
             try { await answerDeliveryRecovery({wasm, store: receiver.store, expectedGroup: group, peer: owner.subject, connection: receiving, packet}); }
             catch (error) { rejectConfirmation(error); }
@@ -172,6 +178,12 @@ try {
         peer: owner.subject, role: 'offer', onMessage: receiverHandler});
       sending = await openLocalPersonaSession({wasm, store: owner.store, expectedGroup: group,
         peer: receiver.subject, role: 'answer', onMessage: async packet => {
+          if (isPolicyCheckRequest(packet)) {
+            if (holdPolicyChecks) return;
+            try { await answerPolicyCheck({wasm, store: owner.store, expectedGroup: group, connection: sending, packet}); }
+            catch (error) { policyCheckError = error; }
+            return;
+          }
           try { confirm(await history.confirm(packet, {signal: sending.signal})); }
           catch (error) { rejectConfirmation(error); }
         }});
@@ -255,7 +267,38 @@ try {
         devices: [hex(owner.subject), hex(receiver.subject)], certificates: [receiver.certificate]});
       await sendPolicy();
       check(await receiverVault.getKey() === 'synthetic-peer-delivery', 'explicit newer grant restores local use');
-    } finally { clearTimeout(timeout); request?.close(); sending?.close(); receiving?.close(); owner.store.close(); receiver.store.close(); }
+      policySync = createPolicySync({wasm, store: receiver.store, expectedGroup: group, peer: owner.subject, connection: receiving});
+      let gatedFetches = 0;
+      const guardedLive = (await import('./live-client.mjs')).createVaultATClient({vault: receiverVault,
+        synchronizePolicy: options => policySync.check(options), now: () => 1001,
+        fetcher: async () => { gatedFetches++; return {ok: true, json: async () => ({header: {timestamp: 1000}, entity: []})}; }});
+      check((await guardedLive.read('predictions', {requested: true})).available && gatedFetches === 1,
+        'live request follows actual owner policy response');
+      check(!policyCheckError, 'policy exchange completed without dispatch error');
+      check(await denied(() => policySync.receive(lastPolicyResponse)), 'already consumed response refused');
+      await updateLocalATPolicy({wasm, store: owner.store, expectedGroup: group, expectedRevision: 4n, devices: [hex(owner.subject)]});
+      // Do not push removal: the recipient must discover it before provider I/O.
+      check(await receiverVault.getKey() === 'synthetic-peer-delivery', 'recipient has not yet learned removal');
+      check(!(await guardedLive.read('vehicles', {requested: true})).available && gatedFetches === 1,
+        'catch-up learns removal before sending another provider request');
+      check(await denied(() => receiverVault.getKey()), 'catch-up saved owner removal');
+      guardedLive.close();
+      holdPolicyChecks = true;
+      const abortCheck = new AbortController();
+      const waitingCheck = policySync.check({signal: abortCheck.signal});
+      const cancelledCheck = denied(() => waitingCheck);
+      check(await denied(() => policySync.receive(lastPolicyResponse)), 'previous nonce cannot satisfy a new check');
+      abortCheck.abort(); check(await cancelledCheck, 'pending catch-up cancels');
+      policySync.close();
+      policySync = createPolicySync({wasm, store: receiver.store, expectedGroup: group, peer: owner.subject,
+        connection: receiving, timeoutMs: 25});
+      check(await denied(() => policySync.check()), 'silent owner check times out');
+      policySync.close(); holdPolicyChecks = false;
+      await updateLocalATPolicy({wasm, store: owner.store, expectedGroup: group, expectedRevision: 5n,
+        devices: [hex(owner.subject), hex(receiver.subject)], certificates: [receiver.certificate]});
+      await sendPolicy();
+
+    } finally { policySync?.close(); clearTimeout(timeout); request?.close(); sending?.close(); receiving?.close(); owner.store.close(); receiver.store.close(); }
   });
   const restoredGroup = await page.evaluate(() => restoreGroup);
   const reopened = await context.newPage(); await reopened.goto(page.url());

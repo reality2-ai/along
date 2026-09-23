@@ -3,9 +3,11 @@ import {createATClient} from '../../public/at-client.js';
 // Experimental transport adapter. Callers still apply Along's verified journey/
 // stop filters; a network feed is not itself contextual advice. No shared cache.
 export function createVaultATClient({vault, fetcher = globalThis.fetch,
+  synchronizePolicy,
   online = () => globalThis.navigator?.onLine !== false,
   now = () => Date.now() / 1000, timeoutMs = 5000} = {}) {
   if (typeof vault?.getKey !== 'function') throw new Error('AT vault required');
+  if (synchronizePolicy !== undefined && typeof synchronizePolicy !== 'function') throw new Error('Invalid policy synchronizer');
   const pending = new Set();
   let closed = false;
   const unavailable = reason => ({available: false, reason});
@@ -25,6 +27,8 @@ export function createVaultATClient({vault, fetcher = globalThis.fetch,
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     const work = (async () => {
       try {
+        if (synchronizePolicy) await synchronizePolicy({signal});
+        if (signal.aborted || !online()) return unavailable('cancelled');
         client = createATClient({fetcher, online, now, timeoutMs, getKey: async () => {
           const key = await vault.getKey({signal});
           if (signal.aborted || !online()) throw new Error('Cancelled');

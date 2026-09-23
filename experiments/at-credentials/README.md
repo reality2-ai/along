@@ -480,3 +480,34 @@ reconciliation machinery, not automatic reconnect scheduling or a live-access
 freshness gate. A controller must still order catch-up before contextual provider
 requests; no persisted freshness lease or independent challenge-bound owner
 confirmation is claimed. Physical-device and public interface checks remain open.
+
+## Policy check before a recipient's live request
+
+`policy-sync.mjs` provides a bounded request/reply exchange on the authenticated
+owner connection. Each check uses a fresh random nonce, consumes one matching
+response, reconciles its signed policy through the pinned owner, and supports
+cancellation, connection loss and timeout. Previous or unsolicited replies cannot
+complete a newer check. The trusted session controller routes policy-check frames;
+the response binds its nonce through the authenticated channel, not a separate
+portable signature or durable freshness certificate.
+
+`createVaultATClient` accepts `synchronizePolicy`, which runs before key access or
+provider I/O. Recipient wiring supplies `policySync.check`; locally owned keys do
+not need a remote owner check. Failure returns unavailable and preserves the
+scheduled experience. The existing post-fetch key/access recheck still suppresses
+results when a locally received removal or rotation invalidates them.
+
+The actual WebRTC test confirms a successful provider read after policy catch-up,
+then removes the grant on the owner without pushing it. The next recipient read
+learns the removal through this exchange, saves it, and makes no further provider
+request. It also refuses a previously consumed response, an old nonce during a
+new check, and cancellation. Provider responses and keys remain synthetic.
+Separate live-client tests cover ordering, synchronization failure and cancellation
+before key access. The restoration test explicitly regrants access afterwards.
+
+This experimental recipient mode requires its owner to be reachable for each
+live request; there is no persistent lease. Only one check runs at a time per
+synchronizer; overlapping requests fail quietly and can be retried. This does not
+solve discovery, remote connectivity, owner availability, or the interval between
+an owner response and a subsequent owner-side change. Public app wiring and
+physical-device tests remain incomplete; offline timetable planning is unaffected.

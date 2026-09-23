@@ -99,3 +99,26 @@ test('cancel is reusable while close is terminal', async () => {
   client.cancel(); assert.equal((await client.read('vehicles', {requested: true})).available, true);
   client.close(); assert.equal((await client.read('vehicles', {requested: true})).available, false);
 });
+
+test('policy synchronization precedes key access and failed catch-up prevents provider I/O', async () => {
+  const order = []; let permitted = true;
+  const client = createVaultATClient({synchronizePolicy: async () => {
+    order.push('policy'); if (!permitted) throw new Error('Unavailable');
+  }, vault: {getKey: async () => { order.push('key'); return 'synthetic-key'; }}, now: () => 1001,
+  fetcher: async () => { order.push('fetch'); return response(); }});
+  assert.equal((await client.read('vehicles', {requested: true})).available, true);
+  assert.deepEqual(order, ['policy', 'key', 'fetch', 'key']);
+  order.length = 0; permitted = false;
+  assert.equal((await client.read('vehicles', {requested: true})).available, false);
+  assert.deepEqual(order, ['policy']); client.close();
+});
+
+test('cancellation during catch-up prevents late key access and provider I/O', async () => {
+  const entered = deferred(), release = deferred(); let accesses = 0;
+  const client = createVaultATClient({synchronizePolicy: async () => { entered.resolve(); await release.promise; },
+    vault: {getKey: async () => { accesses++; return 'synthetic-key'; }}, fetcher: async () => { accesses++; return response(); }});
+  const pending = client.read('vehicles', {requested: true}); await entered.promise;
+  client.cancel(); assert.equal((await pending).available, false);
+  release.resolve(); await new Promise(resolve => setTimeout(resolve, 0));
+  assert.equal(accesses, 0); client.close();
+});
