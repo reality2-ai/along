@@ -19,7 +19,7 @@ this audit. Later public-hosting work supplements that brief.
 | 6. Distribution | About 38 MiB ZIP/checksum, four data bundles, import scripts, MIT/data/Leaflet notices, AWS/Pages hosting instructions | Public Pages deployment is live; authenticated live verification needs an AT key |
 | 7. GitHub documentation | README, architecture, data, hosting, privacy, limits and contribution guidance; v21 course notice and current design-driver/goal summaries | Public source repository: [reality2-ai/along](https://github.com/reality2-ai/along); app hosted at [reality2.ai/along](https://reality2.ai/along/) |
 | 8. Course material | Thematic analysis, six lessons, exercises, assessment rubric and negative-case/contextual-map refinements | Course effectiveness has not been studied |
-| 9. Release checks and handover | 21 JavaScript and 4 Python tests; four real-data browser scenarios; static/update suites; source/archive/live asset comparison | Remaining physical and spoken screen-reader checks prevent claiming full goal completion |
+| 9. Release checks and handover | 24 JavaScript and 4 Python tests; four real-data browser scenarios; static/update suites; source/archive/live asset comparison | Remaining physical and spoken screen-reader checks prevent claiming full goal completion |
 
 ## Evidence and reproduction
 
@@ -285,3 +285,10 @@ service preference and reopening offline. The static subpath suite passed
 ([measurements](evidence/static-v27-metrics.json)). The stop-board dialog also
 passed 320-pixel reflow, axe, route drill-down and visible scheduled labelling.
 The final guide wording is checked in the deployed offline-help smoke test.
+
+
+Version 27 is deployed to the private site and GitHub Pages. Core CI and the
+[public-site smoke check](evidence/public-site-v27.json) passed, including
+installation eligibility, new offline address routing, cached help and its
+scheduled-only notice. The public and offline installation guides now carry the
+same limitations. Saved endpoints and service preferences remain device-local.
