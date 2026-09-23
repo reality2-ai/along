@@ -285,3 +285,19 @@ identity and passes them through the compiled L5 verifier. Changes to each field
 including reversing participants, are refused; the intended statement succeeds.
 This is proof-context separation, not yet an authenticated transport state machine,
 application-secret authorization, enrollment or a public live-data release.
+
+The next browser increment connects those statements to a mutual handshake over
+the direct WebRTC channel. Both peers prove their expected identities and confirm
+readiness; only locally reconstructed statements are signed. Serialized, bounded
+frames, a handshake timeout, current local membership reads, and closure on
+membership invalidation constrain the session. This still exposes no credential
+exchange or application access grant.
+
+A real-browser test with isolated contexts and compiled L5 verification passes
+with the asset host stopped: mutual authentication succeeds, wrong expected peer
+or group fails, a learned signed revocation closes both sessions, and reconnect
+cannot restore the revoked peer. Premature readiness and authentication queries
+after closure are refused. The test harness supplies trusted synthetic enrollment
+inputs; it does not prove end-user enrollment, globally fresh membership,
+physical-device connectivity or protected AT key storage. Full runtime
+verification remains in progress.
