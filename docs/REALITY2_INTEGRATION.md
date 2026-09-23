@@ -272,3 +272,16 @@ credential channel or automatic cross-network reconnection. No AT key is used.
 The full runtime gate has now terminated with a failure in the canon-table
 self-test's positive control for check-requirements. Diagnosis is in progress;
 no full verification success or merge readiness is claimed.
+
+The hook-path failure was reproduced as a linked-worktree assumption in the
+repository checker, with no hook override configured. Work has moved to an
+isolated full clone using the tracked hooks unchanged. Its requirements self-test
+passes; the complete implementation gate is running again, not yet green.
+
+Application session statements now bind the group, epoch, verifier, prover and
+connection transcript with a fixed encoding and domain separation. The real
+browser test signs altered contexts using the synthetic member's actual stored
+identity and passes them through the compiled L5 verifier. Changes to each field,
+including reversing participants, are refused; the intended statement succeeds.
+This is proof-context separation, not yet an authenticated transport state machine,
+application-secret authorization, enrollment or a public live-data release.
