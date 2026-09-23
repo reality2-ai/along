@@ -5,7 +5,7 @@ import {readPreferences,writePreferences,recordJourney,suggestions,journeyRoutes
 const $=id=>document.getElementById(id);
 const language=createLocalizer();
 const textBindings=new Map();
-const translated=(id,key,values)=>{textBindings.set(id,{key,values});return setLocalizedText($(id),language,key,values);};
+const translated=(id,key,values)=>{const phrase=setLocalizedText($(id),language,key,values);textBindings.set(id,{key,values,text:phrase.text});return phrase;};
 // Acknowledgement is local to this browser, separate from journey learning.
 function collapseCourseNotice(focus=false){
   const notice=$('course-notice');notice.open=false;
@@ -41,8 +41,8 @@ function updatePreferenceSummary(){
   translated('active-preferences','preference.summary',values);
 }
 function walkingDirections(leg){
-  if(!leg.directions)return '<p>Station access is estimated. Check the entrance, lift and platform signs.</p>';
-  return `<details class="walk-directions"><summary>Walking directions · ${leg.directions.metres} m</summary><ol>${leg.directions.steps.map(s=>`<li>${escape(s.name)} · ${s.metres} m${s.estimated?' (access link estimated)':''}</li>`).join('')}</ol><p>Follow local crossing and access signs. Unmapped barriers and changes may affect this path.</p></details>`;
+  if(!leg.directions)return `<p>${message('walk.stationAccess')}</p>`;
+  return `<details class="walk-directions"><summary>${message('walk.directions',{metres:leg.directions.metres})}</summary><ol>${leg.directions.steps.map(s=>`<li>${escape(s.name)} · ${s.metres} m${s.estimated?message('walk.estimated'):''}</li>`).join('')}</ol><p>${message('walk.checkSigns')}</p></details>`;
 }
 async function loadStreets(refresh=false){
   $('address-status').hidden=false;$('address-status').textContent='Preparing offline addresses and walking paths. This first download is about 24 MB.';
@@ -92,7 +92,11 @@ function applyLanguage(){
   $('language-choice').value=language.language;
   $('language-draft').hidden=language.language!=='mi';
   $('language-notice').hidden=language.language!=='mi';
-  for(const [id,binding] of textBindings)if($(id))setLocalizedText($(id),language,binding.key,binding.values);
+  for(const [id,binding] of textBindings){
+    // A cleared or replaced status must not reappear when the language changes.
+    if($(id)?.textContent===binding.text)translated(id,binding.key,binding.values);
+    else textBindings.delete(id);
+  }
   renderFlowLanguage();updatePreferenceSummary();renderSavedPlaces();
 }
 $('language-choice').onchange=()=>{
@@ -145,7 +149,7 @@ for(const field of ['origin','destination']){
   input.addEventListener('input',()=>{state[field==='origin'?'from':'to']=null;if(field==='origin'){state.location=null;state.nearbySequence++;}const current=++sequence;clearTimeout(timer);timer=setTimeout(async()=>{
     if(input.value.trim().length<2){close();return;}
     try{const result=await ask('search',{query:input.value});if(current!==sequence)return;items=result;active=-1;
-      list.innerHTML=items.length?items.map((s,i)=>`<li role="option" aria-selected="false" id="${field}-option-${i}" data-index="${i}">${escape(s.name)}<small>${s.placeType==='address'?'Street address':s.kind===1?'Station':`Stop ${escape(s.code||s.id)}`}</small></li>`).join(''):'<li role="option" aria-disabled="true">No matching place. Try the street number, street name and suburb.</li>';
+      list.innerHTML=items.length?items.map((s,i)=>`<li role="option" aria-selected="false" id="${field}-option-${i}" data-index="${i}">${escape(s.name)}<small>${message(s.placeType==='address'?'place.addressType':s.kind===1?'place.stationType':'place.stopType',{code:s.code||s.id})}</small></li>`).join(''):`<li role="option" aria-disabled="true">${message('place.noMatch')}</li>`;
       list.hidden=false;input.setAttribute('aria-expanded','true');
       list.querySelectorAll('[data-index]').forEach(item=>{item.addEventListener('pointerdown',event=>event.preventDefault());item.addEventListener('click',()=>choose(Number(item.dataset.index)));});
     }catch(error){$('form-error').textContent=error.message;}
@@ -160,10 +164,10 @@ $('new-journey').onclick=startNew;
 $('journey-form').onsubmit=event=>{
   event.preventDefault();$('form-error').textContent='';
   if(state.screen==='destination'){
-    if(!state.to){$('form-error').textContent='Choose a destination from the suggestions.';$('destination').focus();return;}
+    if(!state.to){translated('form-error','error.destination');$('destination').focus();return;}
     state.intent='plan';showScreen(state.from?'review':'origin');
   }else if(state.screen==='origin'){
-    if(!state.from){$('form-error').textContent='Choose a starting place from the suggestions, or use your location.';$('origin').focus();return;}
+    if(!state.from){translated('form-error','error.origin');$('origin').focus();return;}
     review();
   }else if(state.screen==='review'){
     if(state.intent==='nearby')nearby();else searchJourney();
@@ -172,7 +176,7 @@ $('journey-form').onsubmit=event=>{
 async function searchJourney(){
   const from=state.from,to=state.to;$('form-error').textContent='';
   if(state.savedPreference&&(state.savedPreference.from!==from?.id||state.savedPreference.to!==to?.id))state.savedPreference=null;
-  if(!from||!to){$('form-error').textContent='Choose both places from the suggestions.';return;}
+  if(!from||!to){translated('form-error','error.places');return;}
   const modes=[...document.querySelectorAll('.modes input:checked')].map(i=>i.value);
   state.lastSearch={from,to,date:$('date').value,time:$('time').value};
   showScreen('options');
@@ -335,7 +339,7 @@ function renderDepartures(data){
   $('departures').innerHTML=data.stops.slice(0,state.showAllStops?8:3).map((s,i)=>`<article class="stop-card"><div class="stop-header"><div>${i===0?'<span class="context-tag">First stop to consider</span>':''}<h3>${placeDetail(s.stop)}</h3><p>Stop ${escape(s.stop.code||s.stop.id)} · ${s.distance} m away</p></div><span class="walk-time">↗ ${s.walk} min walk est.</span></div>${s.departures.slice(0,3).map(d=>`<div class="departure-row ${d.tight?'tight':''}">${routeLink(escape(d.route),{tripId:d.trip},`route-badge detail-link ${d.mode}`)}<div class="departure-info"><strong>${escape(d.headsign||'See route destination')}</strong><small>${d.mode[0].toUpperCase()+d.mode.slice(1)}${d.tight?' · Tight on estimated walking time':''}</small></div><div class="departure-time"><strong>${d.minutes} <small>${message('journey.minuteUnit')}</small></strong><small>${d.live?'● Live prediction':'Scheduled'}</small></div></div>`).join('')}</article>`).join('');
 }
 $('refresh').onclick=()=>{predictionsAt=0;refreshNearby();};$('nearby-mode').onchange=refreshNearby;$('direct-only').onchange=refreshNearby;
-$('location').onclick=()=>{if(!navigator.geolocation){$('form-error').textContent='Location is unavailable in this browser. Choose a stop instead.';return;}$('location').disabled=true;$('location').textContent='Finding your location…';navigator.geolocation.getCurrentPosition(position=>{setPlace('origin',{id:`location:${position.coords.latitude.toFixed(5)},${position.coords.longitude.toFixed(5)}`,name:'Current location',lat:position.coords.latitude,lon:position.coords.longitude,placeType:'address'});state.locationLabel='your location';$('location').disabled=false;$('location').textContent='Use my current location';$('announcement').textContent='Current location selected. Continue when ready.';},()=>{$('location').disabled=false;$('location').textContent='Use my current location';$('form-error').textContent='Could not get your location. You can choose a stop or station instead.';},{enableHighAccuracy:false,timeout:12000,maximumAge:60000});};
+$('location').onclick=()=>{if(!navigator.geolocation){translated('form-error','location.unavailable');return;}$('location').disabled=true;translated('location','location.finding');navigator.geolocation.getCurrentPosition(position=>{setPlace('origin',{id:`location:${position.coords.latitude.toFixed(5)},${position.coords.longitude.toFixed(5)}`,name:'Current location',lat:position.coords.latitude,lon:position.coords.longitude,placeType:'address'});state.locationLabel='your location';$('location').disabled=false;translated('location','location.use');translated('announcement','location.selected');},()=>{$('location').disabled=false;translated('location','location.use');translated('form-error','location.failed');},{enableHighAccuracy:false,timeout:12000,maximumAge:60000});};
 $('try-britomart').onclick=async()=>{try{const matches=await ask('search',{query:'Waitemata'});const alternatives=matches.length?matches:await ask('search',{query:'Britomart'});const stop=alternatives.find(s=>s.kind===1)||alternatives[0];if(!stop)throw new Error('Try searching for Waitematā or Britomart in the origin field.');setPlace('origin',stop);review();}catch(error){$('form-error').textContent=error.message;}};
 $('settings-open').onclick=()=>$('settings').showModal();document.querySelectorAll('.close-dialog').forEach(b=>b.onclick=()=>b.closest('dialog').close());
 $('learning-enabled').onchange=()=>{state.preferences.learning=$('learning-enabled').checked;persist();};
@@ -352,6 +356,6 @@ $('update-timetable').onclick=async()=>{$('update-timetable').disabled=true;$('o
 window.addEventListener('online',()=>{updateStatus();if(state.location)refreshNearby();});window.addEventListener('offline',()=>{predictions={available:false};updateStatus();if(state.location)refreshNearby();});
 // Departure updates are requested explicitly; avoid moving lists while people read.
 history.replaceState({alongScreen:'destination',depth:0,intent:'plan'},'');showScreen('destination',{focus:false,historyEntry:false});
-applyLanguage();renderUsual();setNow();$('today').textContent=new Intl.DateTimeFormat('en-NZ',{timeZone:'Pacific/Auckland',weekday:'long',day:'numeric',month:'short'}).format(new Date());
+translated('location','location.use');applyLanguage();renderUsual();setNow();$('today').textContent=new Intl.DateTimeFormat('en-NZ',{timeZone:'Pacific/Auckland',weekday:'long',day:'numeric',month:'short'}).format(new Date());
 if('serviceWorker' in navigator){navigator.serviceWorker.register(new URL('./sw.js',import.meta.url),{type:'module',updateViaCache:'none'}).then(registration=>{setupUpdates(registration);return navigator.serviceWorker.ready;}).then(()=>{state.shellReady=true;updateStatus();}).catch(()=>{});}
 ask('init').then(async result=>{ready(result);navigator.storage?.persist?.().catch(()=>{});await loadStreets();}).catch(error=>{$('data-status').textContent='Timetable unavailable';$('form-error').textContent=error.message;$('offline-info').textContent=error.message;});

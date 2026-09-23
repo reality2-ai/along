@@ -442,3 +442,70 @@ Object.assign(messages, {
     "mi": "Waka kōpiko"
   }
 });
+
+Object.assign(messages, {
+  "walk.stationAccess": {
+    "en": "Station access is estimated. Check the entrance, lift and platform signs.",
+    "mi": "He whakatau tata te ara uru ki te teihana. Tirohia ngā tohu mō te tomokanga, te ararewa me te tūāpapa."
+  },
+  "walk.directions": {
+    "en": "Walking directions · {metres} m",
+    "mi": "Ngā tohutohu hīkoi · {metres} m"
+  },
+  "walk.estimated": {
+    "en": " (access link estimated)",
+    "mi": " (he whakatau tata te ara urunga)"
+  },
+  "walk.checkSigns": {
+    "en": "Follow local crossing and access signs. Unmapped barriers and changes may affect this path.",
+    "mi": "Whāia ngā tohu whakawhiti me ngā tohu urunga o te wāhi. Ka pā pea ngā tauārai kāore i te mahere me ngā panonitanga ki tēnei ara."
+  },
+  "place.addressType": {
+    "en": "Street address",
+    "mi": "Wāhitau"
+  },
+  "place.stationType": {
+    "en": "Station",
+    "mi": "Teihana"
+  },
+  "place.stopType": {
+    "en": "Stop {code}",
+    "mi": "Tūnga {code}"
+  },
+  "place.noMatch": {
+    "en": "No matching place. Try the street number, street name and suburb.",
+    "mi": "Kāore he wāhi e hāngai ana. Whakamātauria te tau whare, te ingoa tiriti me te takiwā."
+  },
+  "error.destination": {
+    "en": "Choose a destination from the suggestions.",
+    "mi": "Kōwhiria he ūnga mai i ngā huatau."
+  },
+  "error.origin": {
+    "en": "Choose a starting place from the suggestions, or use your location.",
+    "mi": "Kōwhiria he wāhi tīmatanga mai i ngā huatau, whakamahia rānei tō tauwāhi."
+  },
+  "error.places": {
+    "en": "Choose both places from the suggestions.",
+    "mi": "Kōwhiria ngā wāhi e rua mai i ngā huatau."
+  },
+  "location.use": {
+    "en": "Use my current location",
+    "mi": "Whakamahia tōku tauwāhi o nāianei"
+  },
+  "location.finding": {
+    "en": "Finding your location…",
+    "mi": "Kei te kimi i tō tauwāhi…"
+  },
+  "location.unavailable": {
+    "en": "Location is unavailable in this browser. Choose a stop instead.",
+    "mi": "Kāore e wātea te tauwāhi i tēnei pūtirotiro. Kōwhiria kē he tūnga."
+  },
+  "location.failed": {
+    "en": "Could not get your location. You can choose a stop or station instead.",
+    "mi": "Kāore i taea te tiki i tō tauwāhi. Ka taea te kōwhiri he tūnga, he teihana rānei."
+  },
+  "location.selected": {
+    "en": "Current location selected. Continue when ready.",
+    "mi": "Kua kōwhiria tō tauwāhi o nāianei. Haere tonu ina rite koe."
+  }
+});

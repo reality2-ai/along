@@ -21,7 +21,7 @@ this audit. Later public-hosting work supplements that brief.
 | 8. Course material | Thematic analysis, six lessons, exercises, assessment rubric and negative-case/contextual-map refinements | Course effectiveness has not been studied |
 | 9. Release checks and handover | 24 JavaScript and 4 Python tests; four real-data browser scenarios; static/update suites; source/archive/live asset comparison | Remaining physical and spoken screen-reader checks prevent claiming full goal completion |
 
-| 10. English / Te reo Māori | Device-local language module, 132-phrase draft catalogue and review sheet; flow selector connected in development; five foundation and two language-browser tests pass | Remaining screen text and full catalogue/guides, subpath/update checks, broader language/accessibility tests and fluent-speaker review |
+| 10. English / Te reo Māori | Device-local language module, 148-phrase draft catalogue and review sheet; flow selector connected in development; five foundation and two language-browser tests pass | Remaining screen text and full catalogue/guides, subpath/update checks, broader language/accessibility tests and fluent-speaker review |
 
 ## Evidence and reproduction
 
@@ -365,3 +365,10 @@ fresh trip updates, service alerts and vehicle locations. Trip ID matching was
 1,827 of 2,129 update instances. This is aggregate feed/adapter evidence, not an
 on-street test or deployment of live information to the public app. The local
 credential file is ignored by Git and readable only by its owner.
+
+Walking instructions, address-result type labels, place-selection validation and
+location failure/recovery now use the draft catalogue. Five unit tests and three
+language browser scenarios passed. The browser tests check Māori walking guidance,
+recoverable location denial, preservation of the current task and saved services,
+and that previously cleared validation errors do not reappear on language changes.
+The public app is still version 28; complete bilingual coverage is outstanding.

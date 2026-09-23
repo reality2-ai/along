@@ -19,12 +19,15 @@ test('draft language switch preserves current task, saved places, Back and offli
   await page.goto('/');
   await expect(page.locator('#data-status')).toContainText('offline ready',{timeout:90000});
   await page.locator('#course-understood').click();
+  await page.locator('#destination-next').click();
+  await expect(page.locator('#form-error')).toHaveText('Choose a destination from the suggestions.');
   await choose(page,'destination','10 Victoria Road Devonport');
   await page.locator('#destination-next').click();
   const destination=await page.locator('#destination').inputValue();
   await switchTo(page,'mi');
   await expect(page.locator('html')).toHaveAttribute('lang','mi-NZ');
   await expect(page.locator('#flow-title')).toHaveText('Kei te haere mai koe i hea?');
+  await expect(page.locator('#form-error')).toBeEmpty();
   await expect(page.locator('#flow-title')).toHaveAttribute('lang','mi-NZ');
   await expect(page.locator('#flow-context')).toContainText(destination);
   await expect(page.locator('#flow-context')).toHaveAttribute('lang','mi-NZ');
@@ -75,6 +78,7 @@ test('draft language switch preserves current task, saved places, Back and offli
   const step=await page.locator('#step-count').textContent();
   await switchTo(page,'mi');
   await expect(page.locator('#step-count')).toContainText('Hipanga');
+  await expect(page.locator('#itinerary-legs')).toContainText('Ngā tohutohu hīkoi');
   await expect(page.locator('#prefer-services')).toContainText('Ngā ratonga e manakohia ana');
   await expect(page.locator('#full-itinerary')).toHaveAttribute('open','');
   expect(await page.evaluate(()=>localStorage.getItem('along-journeys-v1'))).toBe(savedServices);
@@ -97,4 +101,21 @@ test('blocked language storage reports session-only choice without breaking navi
   await page.locator('#settings .close-dialog').click();
   await expect(page.locator('#flow-title')).toHaveText('Kei te hiahia haere koe ki hea?');
   await page.reload();await expect(page.locator('html')).toHaveAttribute('lang','en-NZ');
+});
+
+
+test('location failure and form validation are translated and recoverable',async({page})=>{
+  await page.addInitScript(()=>Object.defineProperty(navigator,'geolocation',{value:{getCurrentPosition(success,failure){failure({code:1});}}}));
+  await page.goto('/');await switchTo(page,'mi');
+  await page.locator('#destination-next').click();
+  await expect(page.locator('#form-error')).toHaveText('Kōwhiria he ūnga mai i ngā huatau.');
+  await expect(page.locator('#form-error')).toHaveAttribute('lang','mi-NZ');
+  await page.locator('#nearby-start').click();
+  await page.locator('#location').click();
+  await expect(page.locator('#form-error')).toContainText('Kāore i taea te tiki');
+  await expect(page.locator('#location')).toBeEnabled();
+  await expect(page.locator('#location')).toHaveText('Whakamahia tōku tauwāhi o nāianei');
+  await switchTo(page,'en');
+  await expect(page.locator('#form-error')).toContainText('Could not get your location');
+  await expect(page.locator('#location')).toHaveText('Use my current location');
 });
