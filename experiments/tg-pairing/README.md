@@ -559,3 +559,28 @@ nonce, certificate, signature and invitation, cancellation, oversized input and
 retries after refusal. Reuse after successful verification is refused too. The
 harness still carries the public messages and session descriptions between pages;
 copy/paste exchange screens and physical-device connectivity remain unfinished.
+
+### Public-message transfer step
+
+`showDeviceTransfer` provides copy/manual-copy, a labelled reply field and a
+trusted submission action. The primary action moves from copying to checking once
+a reply is entered. The controller validates the message; text is never rendered
+as markup and the screen performs no automatic clipboard read or network send.
+On cancellation, expiry signalled by its parent, replacement or refusal, it clears
+visible messages and aborts its lifetime signal. Late callbacks cannot update a
+successor screen. Copying cannot retract clipboard contents already transferred.
+
+The controller owns all protocol results and must pass the view signal into any
+created session. This is a flow lifetime: retain the view/controller while moving
+to subsequent connection steps, and dispose on cancellation or completion. The
+actual software enrollment test now checks the proof through this screen, creates
+the core candidate session from the verified reply and connects the cancellation
+signal to it. It still uses the harness for message transport, inviter response,
+WebRTC descriptions and code confirmation; this is not yet a complete connection
+wizard or physical-device test.
+
+The view test covers keyboard entry, copy success/fallback, empty input, next-action
+emphasis, synthetic-click refusal, one submission, Back during pending validation,
+late completion, protocol refusal, pre-cancelled entry, axe and narrow enlarged
+text. Clipboard and the focused view callback are mocked; the separate enrollment
+test exercises real proof verification and installation.

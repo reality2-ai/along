@@ -7,7 +7,7 @@ const {chromium} = await import(process.env.PLAYWRIGHT_MODULE || '@playwright/te
 if (!process.env.R2_BROWSER_DIR) throw new Error('Set R2_BROWSER_DIR to the experimental Reality2 browser module directory');
 if (!process.env.R2_WASM_DIR) throw new Error('Set R2_WASM_DIR');
 const sources = new Map(await Promise.all(['peer-session', 'challenge', 'session-statement', 'membership', 'certificate', 'enrollment-session', 'storage', 'invitation-journal', 'enrollment-link', 'enrollment-exchange', 'enrollment-protection', 'peer-link', 'invitation'].map(async name => ['/' + name + '.mjs', await readFile(join(process.env.R2_BROWSER_DIR, name + '.mjs'))])));
-for (const name of ['enrollment-profile.mjs', 'enrollment-payloads.mjs', 'core-candidate-session.mjs', 'software-traffic.mjs', 'initial-persona.mjs', 'software-persona.mjs', 'software-invitation.mjs', 'invitation-proof.mjs', 'receive-invitation-view.mjs', 'stored-claim.mjs', 'installation-receipt.mjs', 'local-persona.mjs', 'local-persona-session.mjs', 'receipt-recovery.mjs']) sources.set('/' + name, await readFile(new URL('./' + name, import.meta.url)));
+for (const name of ['enrollment-profile.mjs', 'enrollment-payloads.mjs', 'core-candidate-session.mjs', 'software-traffic.mjs', 'initial-persona.mjs', 'software-persona.mjs', 'software-invitation.mjs', 'invitation-proof.mjs', 'transfer-view.mjs', 'receive-invitation-view.mjs', 'stored-claim.mjs', 'installation-receipt.mjs', 'local-persona.mjs', 'local-persona-session.mjs', 'receipt-recovery.mjs']) sources.set('/' + name, await readFile(new URL('./' + name, import.meta.url)));
 if (process.env.RECOVERY_MODULE) sources.set('/receipt-recovery.mjs', await readFile(process.env.RECOVERY_MODULE));
 for (const name of ['hive_wasm.js', 'hive_wasm_bg.wasm']) sources.set('/' + name, await readFile(join(process.env.R2_WASM_DIR, name)));
 const server = createServer((req, res) => {
@@ -129,15 +129,25 @@ try {
       return denied(fault === 'oversize' ? 'x'.repeat(2049) : JSON.stringify(value)) && denied(response);
     }, {response: negativeResponse, fault}), true);
   }
-  await pages[0].evaluate(async response => {
-    const verified = proofExchange.verify(response);
-    try { proofExchange.verify(response).authorized.free(); throw new Error('Duplicate proof accepted'); }
-    catch (error) { if (error.message === 'Duplicate proof accepted') throw error; }
-
-    window.invitation = verified.invitation;
-    window.session = await (await import('./core-candidate-session.mjs')).createCoreCandidateSession({wasm, store, invitation, authorized: verified.authorized,
-      softwareCustody: true, signal: verified.signal, platform: {candidateDevelopment: false, provisionerDevelopment: false, provisionerHoldsCustody: true, epoch: 0n}});
-  }, response);
+  await pages[0].evaluate(async () => {
+    window.transfer = (await import('./transfer-view.mjs')).showDeviceTransfer(document.body, {
+      title: 'Check your other device', explanation: 'Copy this challenge to your other device, then paste its reply here.',
+      outgoing: proofExchange.request, signal: reviewed.signal, focus: true,
+      onReceive: async (response, signal) => {
+        const verified = proofExchange.verify(response);
+        window.invitation = verified.invitation;
+        window.session = await (await import('./core-candidate-session.mjs')).createCoreCandidateSession({wasm, store, invitation, authorized: verified.authorized,
+          softwareCustody: true, signal: AbortSignal.any([signal, verified.signal]),
+          platform: {candidateDevelopment: false, provisionerDevelopment: false, provisionerHoldsCustody: true, epoch: 0n}});
+      },
+    });
+  });
+  await pages[0].getByLabel('Reply from your other device').fill(response);
+  await pages[0].getByRole('button', {name: 'Check reply', exact: true}).click();
+  await pages[0].getByRole('status').filter({hasText: 'Device message checked'}).waitFor();
+  assert.equal(await pages[0].evaluate(response => {
+    try { proofExchange.verify(response).authorized.free(); return false; } catch { return true; }
+  }, response), true);
   const offer = await pages[0].evaluate(() => session.offer());
   const answer = await pages[1].evaluate(offer => session.accept(offer), offer);
   await pages[0].evaluate(answer => session.accept(answer), answer);
