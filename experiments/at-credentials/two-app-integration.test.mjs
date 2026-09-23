@@ -1,6 +1,7 @@
 // Actual generated journey app on a static subpath, with a real local software
 // identity/vault and mocked provider. No production key or proxy is involved.
 import assert from 'node:assert/strict';
+import AxeBuilder from '@axe-core/playwright';
 import {createHash} from 'node:crypto';
 import {createServer} from 'node:http';
 import {readFile} from 'node:fs/promises';
@@ -14,18 +15,11 @@ const sources = new Map(await Promise.all(Object.entries(manifest.files).map(asy
   const bytes = await readFile(join(root, name));
   assert.equal(createHash('sha256').update(bytes).digest('hex'), hash); return [name, bytes];
 })));
-// First-use grant/consent composition is still a fixture. These extra modules
-// serve only during setup and are disabled before the generated app is opened.
-let allowSetupModules = true;
-const setupSources = new Map();
-for (const name of ['owner-delivery.mjs', 'remote-owner.mjs', 'delivery-history.mjs']) {
-  setupSources.set('experiments/at-credentials/' + name, await readFile(new URL(name, import.meta.url)));
-}
 const prefix = '/along-exp/';
 const server = createServer((req, res) => {
   const path = new URL(req.url, 'http://localhost').pathname;
   const name = path.startsWith(prefix) ? path.slice(prefix.length) + (path.endsWith('/') ? 'index.html' : '') : '';
-  const body = sources.get(name) || (allowSetupModules ? setupSources.get(name) : undefined);
+  const body = sources.get(name);
   if (!body) { res.writeHead(404); res.end(); return; }
   res.setHeader('Content-Type', ({'.js': 'text/javascript', '.mjs': 'text/javascript', '.wasm': 'application/wasm', '.html': 'text/html', '.css': 'text/css', '.gz': 'application/gzip', '.json': 'application/json', '.webmanifest': 'application/manifest+json', '.png': 'image/png', '.svg': 'image/svg+xml'})[extname(name)] || 'text/plain');
   res.end(body);
@@ -78,73 +72,52 @@ try {
   await candidate.getByRole('heading', {name: 'Device connected', exact: true}).waitFor();
   await owner.getByRole('heading', {name: 'Other device installed', exact: true}).waitFor();
 
-  // Restore real enrolled identities. The harness supplies reviewed descriptors
-  // and explicit setup consent; credentials themselves travel only over WebRTC.
-  const records = await Promise.all(pages.map(page => page.evaluate(async () => {
-    const wasm = await import('./tg-pairing/hive_wasm.js'); await wasm.default();
+  await Promise.all(pages.map(page => page.reload()));
+  await Promise.all(pages.map(page => page.getByRole('button', {name: 'Restore saved test device', exact: true}).click()));
+  await owner.getByRole('button', {name: 'Test optional AT-key storage', exact: true}).click();
+  await owner.getByRole('button', {name: 'Set up live information', exact: true}).click();
+  await owner.getByLabel('Personal AT API key', {exact: true}).fill('synthetic-two-app-key');
+  await owner.getByRole('button', {name: 'Save key on this device', exact: true}).click();
+  await owner.getByRole('heading', {name: 'AT key saved on this device', exact: true}).waitFor();
+  await owner.getByRole('button', {name: 'Back', exact: true}).click();
+  await owner.getByRole('button', {name: 'Restore saved test device', exact: true}).click();
+  await owner.getByRole('button', {name: 'Share my AT key', exact: true}).click();
+  await candidate.getByRole('button', {name: 'Receive a shared AT key', exact: true}).click();
+  await owner.getByRole('heading', {name: 'Share your AT key', exact: true}).waitFor();
+  await move(owner, candidate, 'AT-key sharing message', 'Review sharing device');
+  await candidate.getByRole('button', {name: 'Back', exact: true}).click();
+  await candidate.getByRole('button', {name: 'Restore saved test device', exact: true}).click();
+  await candidate.getByRole('button', {name: 'Receive a shared AT key', exact: true}).click();
+  await move(owner, candidate, 'AT-key sharing message', 'Review sharing device');
+  const noAcceptedOwner = () => candidate.evaluate(async () => {
     const store = await (await import('./tg-pairing/storage.mjs')).openBrowserStorage('along-pairing-lab-v1');
-    const record = (await store.read('candidate-persona', 'active')).value.record;
-    window.setup = {wasm, store, group: record.group};
-    return {subject: [...record.subject], certificate: [...record.certificate]};
-  })));
-  const descriptor = await owner.evaluate(async receiver => {
-    const {wasm, store, group} = setup;
-    const {binding} = await (await import('./at-credentials/local-owner.mjs')).establishLocalATOwner({wasm, store, expectedGroup: group});
-    const hex = bytes => bytes.map(value => value.toString(16).padStart(2, '0')).join('');
-    await (await import('./at-credentials/owner-policy.mjs')).updateLocalATPolicy({wasm, store, expectedGroup: group, expectedRevision: 1n,
-      devices: [binding.owner, hex(receiver.subject)], certificates: [new Uint8Array(receiver.certificate)]});
-    const vault = (await import('./at-credentials/local-vault.mjs')).openLocalATVault({wasm, store, ...binding});
-    await vault.saveOwnerKey('synthetic-two-app-key');
-    setup.binding = binding;
-    const signed = await store.read('along-at-policy:' + binding.owner, binding.group + ':' + binding.credential);
-    return {binding, bytes: [...signed.value.bytes], signature: [...signed.value.signature]};
-  }, records[0]);
-  const offer = await candidate.evaluate(async owner => {
-    const {wasm, store, group} = setup;
-    setup.session = await (await import('./tg-pairing/local-persona-session.mjs')).openLocalPersonaSession({wasm, store, expectedGroup: group,
-      peer: new Uint8Array(owner.subject), role: 'offer', onMessage: async packet => {
-        try {
-          setup.receipt = await setup.request.install(packet);
-          await setup.session.send(await setup.request.acknowledgment({signal: setup.session.signal}));
-        } catch (error) { setup.error = error.message; }
-      }});
-    return setup.session.offer();
-  }, records[1]);
-  const answer = await owner.evaluate(async ({offer, receiver}) => {
-    const {wasm, store, group, binding} = setup;
-    const hex = bytes => bytes.map(value => value.toString(16).padStart(2, '0')).join('');
-    setup.session = await (await import('./tg-pairing/local-persona-session.mjs')).openLocalPersonaSession({wasm, store, expectedGroup: group,
-      peer: new Uint8Array(receiver.subject), role: 'answer', onMessage: async packet => {
-        try {
-          if (setup.sent) {
-            const history = (await import('./at-credentials/delivery-history.mjs')).openDeliveryHistory({store, ...binding, recipient: hex(receiver.subject)});
-            setup.ack = await history.confirm(packet, {signal: setup.session.signal});
-          } else {
-            setup.sent = await (await import('./at-credentials/owner-delivery.mjs')).sendOwnerCredential({wasm, store, expectedGroup: group,
-              peer: new Uint8Array(receiver.subject), peerCertificate: new Uint8Array(receiver.certificate), nonce: packet, connection: setup.session});
-          }
-        } catch (error) { setup.error = error.message; }
-      }});
-    return setup.session.accept(offer);
-  }, {offer, receiver: records[0]});
-  await candidate.evaluate(answer => setup.session.accept(answer), answer);
-  await Promise.all(pages.map(page => page.evaluate(() => setup.session.authenticated())));
-  await candidate.evaluate(async ({descriptor, owner}) => {
-    const {wasm, store, group} = setup;
-    await (await import('./at-credentials/remote-owner.mjs')).acceptRemoteATOwner({wasm, store, expected: descriptor.binding,
-      ownerCertificate: new Uint8Array(owner.certificate), policyBytes: new Uint8Array(descriptor.bytes), policySignature: new Uint8Array(descriptor.signature), connection: setup.session});
-    const vault = (await import('./at-credentials/local-vault.mjs')).openLocalATVault({wasm, store, ...descriptor.binding});
-    setup.request = await vault.prepareDelivery({ownerCertificate: new Uint8Array(owner.certificate), signal: setup.session.signal});
-    await setup.session.send(setup.request.nonce);
-  }, {descriptor, owner: records[1]});
-  await candidate.waitForFunction(() => setup.receipt || setup.error);
-  await owner.waitForFunction(() => setup.ack || setup.error);
-  assert.equal(await candidate.evaluate(() => setup.error), undefined);
-  assert.equal(await owner.evaluate(() => setup.error), undefined);
-  assert.equal(await candidate.evaluate(() => setup.receipt.status), 'credential-saved');
-  await Promise.all(pages.map(page => page.evaluate(() => { setup.request?.close(); setup.session.close(); setup.store.close(); delete window.setup; })));
+    try {
+      const record = (await store.read('candidate-persona', 'active')).value.record;
+      const group = Array.from(record.group, b => b.toString(16).padStart(2, '0')).join('');
+      return await store.read('along-at-owners', group) === null;
+    } finally { store.close(); }
+  });
+  assert.equal(await noAcceptedOwner(), true);
+  await candidate.setViewportSize({width: 320, height: 640});
+  await candidate.evaluate(() => { document.documentElement.style.fontSize = '200%'; });
+  assert.equal(await candidate.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+  assert.deepEqual((await new AxeBuilder({page: candidate}).analyze()).violations.map(v => v.id), []);
+  await candidate.getByRole('button', {name: 'Connect to this sharing device', exact: true}).click();
+  await candidate.getByRole('heading', {name: 'Connect for key sharing', exact: true}).waitFor();
+  await move(candidate, owner, 'Sharing connection request', 'Connect for key sharing');
+  await owner.getByRole('heading', {name: 'Send the sharing reply', exact: true}).waitFor();
+  await move(owner, candidate, 'Sharing connection reply', 'Check sharing connection');
+  await owner.getByRole('button', {name: 'Allow AT access', exact: true}).click();
+  const acceptKey = candidate.getByRole('button', {name: 'Allow this device to receive the key', exact: true});
+  await acceptKey.waitFor();
+  await acceptKey.evaluate(button => button.click());
+  assert.equal(await noAcceptedOwner(), true, 'synthetic activation cannot accept an owner or request delivery');
+  assert.deepEqual((await new AxeBuilder({page: candidate}).analyze()).violations.map(v => v.id), []);
+  await acceptKey.focus(); await candidate.keyboard.press('Enter');
+  await candidate.getByRole('heading', {name: 'Shared AT key saved', exact: true}).waitFor();
+  await owner.getByRole('heading', {name: 'Other device saved the key', exact: true}).waitFor();
   assert.equal(providerRequests.length, 0);
-  allowSetupModules = false;
+  await candidate.setViewportSize({width: 1280, height: 900});
   await Promise.all(pages.map(page => page.goto(origin + 'public/')));
   await Promise.all(pages.map(page => expect(page.locator('#data-status')).toContainText('offline ready', {timeout: 90000})));
   for (const page of pages) {
@@ -215,5 +188,5 @@ try {
   await expect(candidate.locator('#journey-live')).toBeHidden();
   assert.equal(providerRequests.length, 2);
   assert.deepEqual(errors, []);
-  console.log('PASS: two isolated browser app instances restore actual enrollment and encrypted WebRTC-delivered key, reconnect through Settings, close Settings, request contextual mocked AT feeds for a real bus/ferry journey, learn withheld removal before further provider I/O, disconnect without changing the selected step, and reopen/route offline. Setup grant/consent uses harness descriptors; one host, not physical devices or real provider verification.');
+  console.log('PASS: two isolated browser app instances restore actual enrollment and encrypted WebRTC-delivered key, reconnect through Settings, close Settings, request contextual mocked AT feeds for a real bus/ferry journey, learn withheld removal before further provider I/O, disconnect without changing the selected step, and reopen/route offline. Setup grant/consent uses visible controls; removal uses a runtime harness call; one host, not physical devices or real provider verification.');
 } finally { await browser?.close(); await new Promise(resolve => server.close(resolve)); }

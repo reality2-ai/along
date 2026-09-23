@@ -935,3 +935,13 @@ For the course, distinguish this evidence from component tests, a fully composed
 setup experience, physical-device usability and provider acceptance. Passing one
 does not establish the others. This is new development evidence, not a new user
 acceptance report; the human still performs no coding.
+
+The next increment replaced the two-profile test's initial grant and consent
+harness calls with visible controls in the experimental device lab. This changes
+the evidence: owner grant, recipient device review and consent, encrypted receipt,
+and owner acknowledgment are now exercised as a composed interaction. The
+remaining manual descriptor transfer, one-host execution and mocked provider
+limits still apply. Interrupted sharing recovery is a separate unfinished path;
+the successful path does not establish it. This illustrates how a course can
+track increasing integration coverage without relabeling every passing test as
+release acceptance.

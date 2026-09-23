@@ -807,8 +807,9 @@ Settings → Connect an existing AT-key device opens the role-appropriate reconn
 flow. An authenticated connection survives closing the dialog; Disconnect devices
 or pagehide closes it. Owner devices retain their own optional live access after
 disconnection. Recipient devices expose live checks only while a saved-owner
-connection is available. First-time enrollment, approval and key delivery still
-need a composed app setup flow; reconnect cannot supply them.
+connection is available. First-time enrollment, approval and key delivery are available through the
+experimental device lab linked from the build. Reconnect does not supply them;
+bringing that setup directly into main-app Settings remains work.
 
 `scoped-session-client.mjs` gives each journey screen its own request cancellation.
 The saved-key adapter accepts a per-read AbortSignal, so leaving one screen stops
@@ -834,13 +835,13 @@ remain unverified. None of these tests establishes automatic background discover
 `two-app-integration.test.mjs` serves the generated app on a static subpath and
 checks each manifest hash. Two isolated browser profiles create groups, enroll
 through the actual lab controls, compare codes and acknowledge installation.
-The setup harness then grants AT access and supplies the explicitly reviewed
-owner descriptor/consent to the existing runtime APIs. The synthetic key travels
+The owner saves a synthetic key through the visible settings form. Both devices
+then use the sharing flow: review the group device, authenticate, grant access on
+the owner and consent on the recipient. The synthetic key travels
 over an actual authenticated WebRTC connection and is encrypted in recipient
 storage; the test does not seed a recipient key or fabricate membership.
 
-Additional setup-only modules are served for this fixture and disabled before
-opening the app. From that point both profiles use only the generated payload:
+Both profiles use only the generated payload for setup and journey use:
 Settings reconnection, explicit connection handoff, closing Settings, recipient
 address-to-address bus/ferry planning and an explicit contextual AT check. The
 provider is mocked with empty timestamped feeds, and the request handler checks
@@ -851,13 +852,43 @@ The test also changes signed owner policy without pushing it. The recipient's
 next check must learn removal before another provider request. Disconnecting
 from Settings preserves the selected journey step. The recipient then reloads
 with its browser context offline, searches different addresses and obtains a
-scheduled journey without a live connection. First-use sharing consent/grant
-and removal are still harness operations; their complete application workflow,
-physical devices, cross-network reachability and real provider acceptance remain
-separate work.
+scheduled journey without a live connection. Removal still uses a harness call
+to the signed-policy API. Physical devices, cross-network reachability and real
+provider acceptance remain separate work. The harness copies public messages and
+confirms matching device codes; it does not stand in for physical co-presence.
 
 Run after building the experimental app:
 
 ```sh
 CHROMIUM_PATH=/path/to/chromium node experiments/at-credentials/two-app-integration.test.mjs
 ```
+
+
+### First-use sharing through the experimental lab
+
+`key-sharing-flow.mjs` connects the existing access and consent views to actual
+saved-member authentication and credential delivery. The owner starts **Share my
+AT key** after saving a key. The recipient chooses **Receive a shared AT key**,
+reviews the public descriptor and explicitly selects the sharing device. Group
+membership is checked before connection; mutual authentication precedes the
+owner's grant. The signed policy travels on that connection. Only after the
+recipient explicitly accepts does it request a nonce-bound credential delivery.
+
+The copied public messages contain identifiers, certificates and signaling, never
+the AT key. The key travels only on the authenticated channel. Recipient success
+requires encrypted installation; owner success requires a verified receipt saved
+in delivery history. Sending alone is not reported as confirmed receipt. Back
+closes the exchange while preserving previously committed data. Synthetic clicks
+cannot select the sharing device or accept a key.
+
+This is the first-grant flow. It refuses an existing owner binding or existing
+grant instead of silently replacing it or accidentally showing a removal action.
+A combined retry/recovery flow for interrupted grants, acceptance or delivery is
+still needed. The generic unconfirmed outcome explicitly warns that permission
+or a key may already have been saved. Browser software-custody limits still apply.
+
+The two-app test now obtains its shared key entirely through these visible setup
+controls before testing Settings reconnection and journey use. It also cancels
+at the device-review stage, checks that no owner was accepted, refuses synthetic
+recipient consent, and checks the recipient review/consent at 320px and 200% font
+size with axe. These checks do not establish TalkBack or physical-device usability.

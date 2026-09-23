@@ -1,3 +1,4 @@
+import {showKeySharingFlow} from '../at-credentials/key-sharing-flow.mjs';
 // Standalone development entry point. Its separate database is not isolation from
 // scripts on the same origin. It is not loaded by the public journey app.
 import * as wasm from './hive_wasm.js';
@@ -75,6 +76,7 @@ const showHome = async () => {
         if (identity.origin === 'enrolled' && !identity.peerAcknowledged) button('Recover installation confirmation', () => recover('candidate'));
         if (identity.origin === 'initial') button('Confirm an interrupted connection', () => recover('provisioner'));
         button('Test optional AT-key storage', () => { clear(); view = showATSettings(container, {wasm, store, expectedGroup: group, focus: true, onBack: showHome}); });
+        for (const [role, title] of [['owner', 'Share my AT key'], ['recipient', 'Receive a shared AT key']]) button(title, () => { clear(); view = showKeySharingFlow(container, {wasm, store, expectedGroup: group, role, focus: true, onBack: showHome}); });
         button('Back', showHome);
       } catch {
         if (!closed && generation === restoringGeneration) { clear(); const note = element('p', 'Saved device data could not be restored. It has not been replaced. Recovery needs separate development. Use the lab’s remove option only if you intend to lose this test identity.'); note.setAttribute('role', 'status'); container.append(note); const back = element('button', 'Back'); back.type = 'button'; back.addEventListener('click', showHome); container.append(back); }

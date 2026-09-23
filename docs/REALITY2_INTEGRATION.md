@@ -16,8 +16,11 @@ this flow in Settings. A generated-app test now passes across two isolated brows
 profiles: actual lab enrollment, encrypted key delivery, Settings reconnection,
 recipient bus/ferry planning and contextual mocked AT reads. A withheld owner
 removal is learned before further provider I/O; disconnect preserves the journey,
-and the recipient reopens and routes offline. Initial grant/consent and removal
-use harness calls to the real runtime, not a completed first-use app workflow.
+and the recipient reopens and routes offline. Initial grant and recipient consent now run through a composed sharing flow in
+the linked experimental lab. It verifies the selected group member, authenticates
+the channel and distinguishes stored permission, encrypted key installation and
+acknowledged receipt. Removal still uses a harness call. Interrupted first-use
+sharing recovery and bringing setup into main-app Settings remain outstanding.
 Physical phone/desktop connectivity remains unverified; this is not seamless
 background reconnection or a public release.
 
@@ -79,8 +82,8 @@ Optional runtime restoration now has a bounded startup wait; stalled WASM and a
 newer unreadable IndexedDB schema are tested without blocking the scheduled
 planner or replacing saved lab records. The public build is untouched;
 the two-profile generated-app test now covers shared-key reconnection and journey
-use as described above. Public deployment, first-use sharing UI and physical
-verification remain outstanding. See the [experimental build instructions](../experiments/at-credentials/README.md#actual-journey-app-integration-build-local-only).
+use as described above. Public deployment, interrupted-sharing recovery, main-app setup integration and
+physical verification remain outstanding. See the [experimental build instructions](../experiments/at-credentials/README.md#actual-journey-app-integration-build-local-only).
 Manual transfer is currently cumbersome, and the one-minute invitation lifetime
 needs real usability assessment. Public deployment, simpler transfer, group epoch
 updates/removal, saved-journey sync and physical-device validation remain work.
