@@ -2,8 +2,8 @@
 // owns protocol resources. No automatic clipboard read or network transmission.
 const mounted = new WeakMap();
 export function showDeviceTransfer(container, {title, explanation, outgoing, incomingLabel = 'Reply from your other device',
-  action = 'Check reply', onReceive, signal, focus = false, onBack = () => {}}) {
-  if (typeof onReceive !== 'function' || typeof outgoing !== 'string' || outgoing.length > 65536) throw new Error('Transfer configuration unavailable');
+  action = 'Check reply', receive = true, onReceive, signal, focus = false, onBack = () => {}}) {
+  if (typeof receive !== 'boolean' || typeof onReceive !== 'function' || typeof outgoing !== 'string' || outgoing.length > 65536) throw new Error('Transfer configuration unavailable');
   mounted.get(container)?.();
   const document = container.ownerDocument, lifetime = new AbortController();
   let disposed = false, busy = false, finished = false, copying = false, left = false;
@@ -22,6 +22,7 @@ export function showDeviceTransfer(container, {title, explanation, outgoing, inc
   const submit = element('button', action); submit.type = 'button';
   const back = element('button', 'Back'); back.type = 'button';
   panel.append(heading, description, copy, details, incoming, submit, status, back); container.replaceChildren(panel);
+  if (!receive) incoming.hidden = true;
   if (!outgoing) { copy.hidden = true; details.hidden = true; submit.className = 'pairing-primary'; }
   if (focus) heading.focus();
   const end = () => {
@@ -43,7 +44,7 @@ export function showDeviceTransfer(container, {title, explanation, outgoing, inc
     copying = true;
     try {
       await document.defaultView.navigator.clipboard.writeText(outgoing);
-      if (!disposed && !finished) status.textContent = 'Copied. Transfer this message to your other device, then paste its reply here.';
+      if (!disposed && !finished) status.textContent = receive ? 'Copied. Transfer this message to your other device, then paste its reply here.' : 'Copied. Transfer this message to your other device, then continue here.';
     } catch {
       if (!disposed && !finished) { details.open = true; output.focus(); output.select(); status.textContent = 'Copy was unavailable. Select and copy the device message below.'; }
     } finally { copying = false; }
@@ -53,8 +54,8 @@ export function showDeviceTransfer(container, {title, explanation, outgoing, inc
   });
   submit.addEventListener('click', async event => {
     if (!event.isTrusted || disposed || busy || finished) return;
-    const value = input.value.trim();
-    if (!value || value.length > 65536) { status.textContent = 'Paste the message from your other device first.'; input.focus(); return; }
+    const value = receive ? input.value.trim() : '';
+    if (receive && (!value || value.length > 65536)) { status.textContent = 'Paste the message from your other device first.'; input.focus(); return; }
     busy = true; submit.disabled = true; panel.setAttribute('aria-busy', 'true');
     status.textContent = 'Checking the device message…';
     try {

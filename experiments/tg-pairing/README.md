@@ -584,3 +584,34 @@ emphasis, synthetic-click refusal, one submission, Back during pending validatio
 late completion, protocol refusal, pre-cancelled entry, axe and narrow enlarged
 text. Clipboard and the focused view callback are mocked; the separate enrollment
 test exercises real proof verification and installation.
+
+### Complete experimental pairing flow
+
+`showPairingFlow` composes both roles from an already initialized local identity:
+reviewed invitation, actual nonce proof, manual offer/answer transfer, displayed
+comparison, core enrollment, encrypted software installation and acknowledgment.
+Opening the provisioner flow is an explicit create-invitation action. It uses the
+selected software subset at initial epoch zero; it makes no hardware claim.
+Public-message fields can contain network addresses during WebRTC signaling, which
+the screen discloses. No Along relay or automatic clipboard read is introduced.
+
+All child views remain owned by the flow until it ends, so moving forward does not
+accidentally cancel a session. Back closes protocol resources; late-created
+sessions are closed too. Session failure ends the flow. A completed local install
+is reported separately if its peer confirmation fails. The provisioner's success
+says acknowledgment was sent, not that it knows the recipient received it. Code
+confirmation now requires trusted activation; synthetic clicks cannot accept it.
+
+`pairing-flow.test.mjs` drives both sides through their fields and buttons, compares
+the displayed codes, completes actual WebRTC installation/acknowledgment and checks
+the installed member plus encrypted traffic-key restore. `CANCEL_FLOW=1` rejects
+the comparison and checks that both screens end with the candidate identity still
+initial. Comparison reflow and axe checks run at 320px/200% text. The harness moves
+public text and confirms the physical comparison; it does not inject membership,
+proof authorization, session decisions or installation into the controller.
+
+This remains a development flow excluded from public Along. Copying several long
+messages under a one-minute invitation lifetime is not the intended seamless
+experience. Physical cross-device signaling, simpler transfer, recovery navigation,
+current-epoch lifecycle, actual AT-sharing integration and saved-journey sync are
+still needed. Passing same-host browser tests does not establish those behaviors.

@@ -7,6 +7,19 @@ architecture, not an implemented feature.
 
 ## Current status
 
+The selected profile is a **browser-only R2 subset with encrypted software
+storage**, not hardware-rooted sealing or full R2 conformance. The experimental
+`pairing-flow.mjs` now joins invitation review, nonce proof, manual WebRTC signaling,
+code comparison, real installation and acknowledgment into both device flows.
+Same-host Chromium automation completes these through the visible controls and
+verifies encrypted traffic-key restore. Rejected comparison preserves the original
+candidate identity. The harness still transfers text and confirms the physical
+comparison; no phone/desktop connectivity or seamless sharing claim follows.
+Manual transfer is currently cumbersome, and the one-minute invitation lifetime
+needs real usability assessment. Public deployment, simpler transfer, group epoch
+updates/removal, saved-journey sync and physical-device validation remain work.
+
+
 The user has approved developing the missing browser TG capability. The public
 Along app remains on version 37 with scheduled offline planning; its live-data
 connection and trusted-device enrollment are not enabled. Runtime work is in an
@@ -26,7 +39,7 @@ has also passed; the draft remains unmerged.
 | Area | Evidence now available | What remains before an end-user claim |
 | --- | --- | --- |
 | Direct AT access | Authenticated browser reads and strict timetable matching | Connect each user's authorized credential to contextual UI; verify actual installed devices |
-| Local installation | Core ceremony, candidate-generated key and atomic installation; real initial group-of-one, first-use storage, reopen and cancellation checks | Local setup integration, reset, issuer custody across restarts and application-secret policy |
+| Local installation | Core ceremony, candidate-generated key and atomic installation; browser software issuer/traffic-key persistence and restore; complete experimental pairing flow through visible controls | Public setup integration, practical cross-device transfer, reset, epoch lifecycle and physical-device checks |
 | Membership | Core certificates, local epoch policy, signed revocations; restored signing refuses revoked identity | Freshness after partition, epoch advancement and removal propagation |
 | AT credential custody | Encrypted IndexedDB storage; owner grant/removal and key-replacement review; recipient policy check before provider I/O; browser save/restore/cancellation checks | Public UI integration, complete device-sharing flow, owner availability and installed-device provider verification |
 | Credential transport | Authenticated WebRTC delivery, explicit recipient consent, atomic encrypted installation, signed receipts and recovery over a fresh session | Complete device selection/signaling, epoch catch-up and physical-device reachability; initial trust/comparison and signaling remain harness inputs |

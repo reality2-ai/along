@@ -36,7 +36,7 @@ export function showComparison(container, {code, onDecision, signal, focus = fal
       if (!disposed) status.textContent = 'Could not finish this step. Start a new invitation to try again.';
     }
   };
-  match.addEventListener('click', () => { void decide(true); });
+  match.addEventListener('click', event => { if (event.isTrusted) void decide(true); });
   cancel.addEventListener('click', () => { void decide(false); });
   section.addEventListener('keydown', event => {
     if (event.key === 'Escape') { event.preventDefault(); void decide(false); }

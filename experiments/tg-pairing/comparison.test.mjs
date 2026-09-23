@@ -31,6 +31,8 @@ try {
   assert.deepEqual((await new AxeBuilder({page}).analyze()).violations.map(v => v.id), []);
   assert.equal(await page.locator('.pairing-screen-reader').textContent(), 'Comparison code: A, 1; B, 2; C, 3; D, 4.');
   assert.equal(await page.evaluate(() => [...document.querySelectorAll('button')].every(button => Math.abs(button.getBoundingClientRect().width - document.querySelector('.pairing-code').getBoundingClientRect().width) < 1)), true);
+  await page.evaluate(() => document.querySelector('.pairing-primary').click());
+  assert.deepEqual(await page.evaluate(() => calls), []);
   await page.keyboard.press('Tab'); await page.keyboard.press('Enter');
   await page.evaluate(() => document.querySelector('.pairing-primary').click());
   assert.deepEqual(await page.evaluate(() => calls), [true]);
