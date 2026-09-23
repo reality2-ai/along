@@ -665,3 +665,122 @@ Object.assign(messages, {
   'map.zoomIn': {en:'Zoom in',mi:'Topa mai'},
   'map.zoomOut': {en:'Zoom out',mi:'Topa atu'},
 });
+
+Object.assign(messages, {
+  "settings.title": {
+    "en": "Your commute, your control.",
+    "mi": "Tō haerenga, tō mana whakahaere."
+  },
+  "settings.course": {
+    "en": "About this course project",
+    "mi": "Mō tēnei kaupapa akoranga"
+  },
+  "course.risk": {
+    "en": "Use at your own risk.",
+    "mi": "Māu anō te mōrea o te whakamahi."
+  },
+  "course.warning": {
+    "en": "Along was created as an exercise for an AI-assisted coding course. It is experimental and is not an official Auckland Transport service. Routes, times, walking directions and accessibility information may be incomplete, outdated or incorrect. Check your journey and access requirements with AT before travelling.",
+    "mi": "I hangaia a Along hei mahi mō tētahi akoranga waehere e tautokona ana e te atamai horihori. He whakamātautau tēnei, ehara i te ratonga mana a Auckland Transport. He kōrero hē, tawhito, kāore rānei i oti mō ngā ara, ngā wā, ngā tohutohu hīkoi me te āhei ki te uru. Tirohia tō haerenga me ō hiahia urunga ki a AT i mua i te haere."
+  },
+  "settings.privacy": {
+    "en": "Along learns from successful journey searches, not background tracking. Your searches, saved routes and preferences stay on this device. No account or uploaded journey history.",
+    "mi": "Ka ako a Along i ngā rapunga haerenga kua angitu, kāore mā te aroturuki papamuri. Ka noho ō rapunga, ō ara kua tiakina me ō manakohanga ki tēnei pūrere. Kāore he pūkete, kāore hoki e tukuna ake tō hītori haerenga."
+  },
+  "settings.suggest": {
+    "en": "Suggest my usual journeys",
+    "mi": "Huatautia ōku haerenga auau"
+  },
+  "settings.learningHelp": {
+    "en": "Suggestions reflect how often you search, the time of day and weekday versus weekend. You can always plan somewhere different.",
+    "mi": "Ka hāngai ngā huatau ki te auau o ō rapunga, te wā o te rā, me ngā rā mahi, ngā rā whakatā rānei. Ka taea tonu te whakarite haerenga ki wāhi kē."
+  },
+  "settings.forget": {
+    "en": "Forget my journey history",
+    "mi": "Mukua tōku hītori haerenga"
+  },
+  "settings.device": {
+    "en": "On this device",
+    "mi": "Kei tēnei pūrere"
+  },
+  "settings.updates": {
+    "en": "Service updates",
+    "mi": "Ngā whakahoutanga ratonga"
+  },
+  "settings.checkUpdate": {
+    "en": "Check for an app update",
+    "mi": "Tirohia he whakahoutanga taupānga"
+  },
+  "settings.aboutLink": {
+    "en": "About Along on GitHub ↗",
+    "mi": "Mō Along i GitHub ↗"
+  },
+  "settings.aboutAria": {
+    "en": "About Along on GitHub (opens in a new tab)",
+    "mi": "Mō Along i GitHub (ka huaki ki tētahi ripa hou)"
+  },
+  "course.made": {
+    "en": "How Along was made",
+    "mi": "Te hanga o Along"
+  },
+  "course.process": {
+    "en": "The human directs the design and tries the app; the AI writes and changes the code, investigates problems and runs technical checks. No coding by the human is required.",
+    "mi": "Mā te tangata te hoahoa e ārahi me te taupānga e whakamātau; mā te atamai horihori te waehere e tuhi, e whakarerekē, ngā raruraru e tūhura, me ngā arowhai hangarau e whakahaere. Kāore te tangata e mate ki te tuhi waehere."
+  },
+  "course.links": {
+    "en": "Explore the course material on GitHub (opens in a new tab):",
+    "mi": "Tūhuratia ngā rauemi akoranga i GitHub (ka huaki ki tētahi ripa hou):"
+  },
+  "course.goal": {
+    "en": "Project goal and completion criteria",
+    "mi": "Te whāinga kaupapa me ngā paearu whakaoti"
+  },
+  "course.analysis": {
+    "en": "Thematic analysis of the design conversation",
+    "mi": "Te tātari ā-kaupapa o te kōrerorero hoahoa"
+  },
+  "course.guide": {
+    "en": "Course guide and exercises",
+    "mi": "Te aratohu akoranga me ngā mahi"
+  },
+  "offline.title": {
+    "en": "Works offline. Live information is optional.",
+    "mi": "Ka mahi tuimotu. Māu e kōwhiri ngā kōrero o nāianei."
+  },
+  "offline.explanation": {
+    "en": "After preparation, address search and scheduled journey planning work offline on your device. Optional online AT information can add current predictions and alerts. The public app’s live connection is not yet enabled; its journey times use the downloaded timetable. The portal supplies downloads and updates, not your journey calculations.",
+    "mi": "I muri i te whakarite, ka mahi tuimotu te rapu wāhitau me te whakamahere haerenga ā-wātaka ki tō pūrere. Ki te kōwhiria, ka tāpiri ngā kōrero AT ā-ipurangi i ngā matapae me ngā whakatūpato o nāianei. Kāore anō kia whakahohea te hononga wā-tūturu o te taupānga tūmatanui; ka ahu ngā wā haerenga i te wātaka kua tikiakehia. Mā te tomokanga ngā tikiake me ngā whakahoutanga e tuku, ehara i ngā tātaitanga haerenga."
+  },
+  "offline.guide": {
+    "en": "Install on your device · offline and privacy guide",
+    "mi": "Tāutahia ki tō pūrere · aratohu tuimotu me te tūmataitinga"
+  },
+  "offline.refresh": {
+    "en": "Update downloaded timetable",
+    "mi": "Whakahoutia te wātaka kua tikiakehia"
+  },
+  "offline.install": {
+    "en": "Install Along",
+    "mi": "Tāutahia a Along"
+  },
+  "offline.apple": {
+    "en": "On iPhone or iPad, open the Share menu and choose Add to Home Screen. Offline storage remains subject to your browser’s storage settings.",
+    "mi": "I runga i te iPhone, te iPad rānei, huakina te tahua Share, ka kōwhiri i te Add to Home Screen. Ka hāngai tonu te rokiroki tuimotu ki ngā tautuhinga rokiroki o tō pūtirotiro."
+  },
+  "learning.active": {
+    "en": "Your searches help your usual journeys find their way here. Stored only on this device.",
+    "mi": "Mā ō rapunga ka puta mai ō haerenga auau ki konei. Ka rokirokia ki tēnei pūrere anake."
+  },
+  "learning.paused": {
+    "en": "Journey learning is paused. Saved routes stay available, and every new journey is yours to choose.",
+    "mi": "Kua whakatārewatia te ako haerenga. Ka wātea tonu ngā ara kua tiakina, ā, māu ia haerenga hou e kōwhiri."
+  },
+  "storage.failed": {
+    "en": "This browser could not save your preferences. They will last for this session only.",
+    "mi": "Kāore i taea e tēnei pūtirotiro te tiaki ō manakohanga. Ka mau mō tēnei wā whakamahi anake."
+  },
+  "learning.cleared": {
+    "en": "Your journey history and saved routes have been cleared.",
+    "mi": "Kua mukua tō hītori haerenga me ō ara kua tiakina."
+  }
+});

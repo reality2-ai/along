@@ -58,14 +58,14 @@ for(const input of document.querySelectorAll('#date,#time,.modes input'))input.a
 $('leave-now').onclick=setNow;
 $('more-stops').onclick=()=>{state.showAllStops=!state.showAllStops;if(state.departureData)renderDepartures(state.departureData);};
 const context=()=>{const at=aucklandNow();return {hour:Number(at.time.slice(0,2)),day:new Date(at.date+'T12:00:00Z').getUTCDay(),timestamp:Date.now()};};
-function persist(){const saved=writePreferences(state.preferences);$('storage-message').textContent=saved?'':'This browser could not save your preferences. They will last for this session only.';renderUsual();}
+function persist(){const saved=writePreferences(state.preferences);if(saved)$('storage-message').textContent='';else translated('storage-message','storage.failed');renderUsual();}
 function renderUsual(){
   const usual=suggestions(state.preferences,context());
   $('usual-journeys').innerHTML=usual.length?usual.map((j,i)=>`<button type="button" class="usual-card" data-usual="${i}"><span class="usual-icon">${j.saved?'☆':'↗'}</span><span><strong>${escape(j.to.name)}</strong><small>From ${escape(j.from.name)}</small><small>${j.saved?(j.savedRoutes?'Saved · '+escape(routePreferenceLabel(j.savedRoutes)):'Saved journey'):`${j.count} searches · one tap to plan`}</small></span></button>`).join(''):`<div class="usual-placeholder"><span class="usual-icon">↗</span><div><strong>${state.preferences.learning?'Your routine starts with a journey.':'Somewhere different? You’re in the right place.'}</strong>${state.preferences.learning?'Search a route a few times, or save one, and it will appear here.':'Learning is paused. You can still save journeys yourself.'}</div></div>`;
   document.querySelectorAll('[data-usual]').forEach(button=>button.onclick=()=>{state.intent='plan';const trip=usual[Number(button.dataset.usual)];state.savedPreference=trip.saved&&trip.savedRoutes?{from:trip.from.id,to:trip.to.id,routes:trip.savedRoutes}:null;setPlace('origin',trip.from);setPlace('destination',trip.to);setNow();searchJourney();});
   document.querySelector('.usual-section').hidden=!usual.length;
   $('learning-enabled').checked=state.preferences.learning;
-  $('learning-note').textContent=state.preferences.learning?'Your searches help your usual journeys find their way here. Stored only on this device.':'Journey learning is paused. Saved routes stay available, and every new journey is yours to choose.';
+  translated('learning-note',state.preferences.learning?'learning.active':'learning.paused');
 }
 function setNow(){const now=aucklandNow();$('date').value=now.date;$('time').value=now.time;updatePreferenceSummary();}
 function setPlace(field,stop){state[field==='origin'?'from':'to']=stop;$(field).value=stop?.name||'';$(field+'-options').hidden=true;$(field).setAttribute('aria-expanded','false');if(field==='origin'){state.location=null;if(stop){state.location={lat:stop.lat,lon:stop.lon};state.locationLabel=stop.name;}}}
@@ -348,7 +348,7 @@ $('location').onclick=()=>{if(!navigator.geolocation){translated('form-error','l
 $('try-britomart').onclick=async()=>{try{const matches=await ask('search',{query:'Waitemata'});const alternatives=matches.length?matches:await ask('search',{query:'Britomart'});const stop=alternatives.find(s=>s.kind===1)||alternatives[0];if(!stop)throw new Error('Try searching for Waitematā or Britomart in the origin field.');setPlace('origin',stop);review();}catch(error){$('form-error').textContent=error.message;}};
 $('settings-open').onclick=()=>$('settings').showModal();document.querySelectorAll('.close-dialog').forEach(b=>b.onclick=()=>b.closest('dialog').close());
 $('learning-enabled').onchange=()=>{state.preferences.learning=$('learning-enabled').checked;persist();};
-$('clear-history').onclick=()=>{state.preferences.journeys=[];persist();$('storage-message').textContent='Your journey history and saved routes have been cleared.';if(state.lastSearch)renderJourneys();if(state.selectedJourney)renderFollow();};
+$('clear-history').onclick=()=>{state.preferences.journeys=[];persist();translated('storage-message','learning.cleared');if(state.lastSearch)renderJourneys();if(state.selectedJourney)renderFollow();};
 $('alerts-open').onclick=async()=>{$('alerts').showModal();$('alerts-content').innerHTML='<div class="loading">Checking service updates…</div>';try{const response=await fetch(new URL('./api/alerts',import.meta.url),{signal:AbortSignal.timeout(10000)});if(!response.ok)throw new Error();const data=await response.json();$('alerts-content').innerHTML=data.available?(data.alerts.length?data.alerts.map(a=>`<article class="alert-item"><h3>${escape(a.title)}</h3><p>${escape(a.description)}</p></article>`).join(''):'<p>No alerts returned by AT.</p>'):`<p>${escape(data.message)} You can view current announcements on the AT website when online.</p>`;}catch{$('alerts-content').innerHTML='<p>Service updates need an internet connection. Your downloaded timetable is still available.</p>';}};
 let installPrompt;
 window.addEventListener('beforeinstallprompt',event=>{event.preventDefault();installPrompt=event;$('install').hidden=false;});
