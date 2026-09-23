@@ -170,7 +170,7 @@ document.addEventListener('click',event=>openInformation(event.target.closest('[
 $('detail-back').onclick=()=>history.back();
 $('information').addEventListener('cancel',event=>{event.preventDefault();history.back();});
 function explorationTime(){return ['options','follow','arrived'].includes(state.screen)&&state.lastSearch?{date:state.lastSearch.date,time:state.lastSearch.time,seconds:Number(state.lastSearch.time.slice(0,2))*3600+Number(state.lastSearch.time.slice(3))*60}:aucklandNow();}
-function mapMarkup(){return '<div id="context-map" class="context-map" role="region" aria-label="Map. Use arrow keys to pan and plus or minus to zoom." tabindex="0"></div><button type="button" class="text-button" id="map-streets">Show street map (online)</button><p class="field-help">Street tiles load from OpenStreetMap only when requested. Route lines and stop locations use downloaded AT data.</p>';}
+function mapMarkup(){return '<div class="context-map-frame"><div id="context-map" class="context-map" role="region" aria-label="Map. Use arrow keys to pan and plus or minus to zoom." tabindex="0"></div><button type="button" class="map-load-button" id="map-streets"><strong>Show street map</strong><span>Needs internet · OpenStreetMap</span></button></div><p class="field-help">Street tiles load from OpenStreetMap only when requested. Route lines and stop locations use downloaded AT data.</p>';}
 let contextMap;
 function mountMap(points,stops){
   if(!$('context-map')||!globalThis.L)return;
