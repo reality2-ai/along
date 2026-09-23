@@ -12,3 +12,6 @@ test-results/
 .agent-handoff/
 
 .along-static-profile-*/
+
+# Local AT subscription credential
+/APIKey

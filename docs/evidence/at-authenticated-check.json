@@ -1,0 +1,27 @@
+{
+  "checked_at": "2026-09-23T03:53:40.261363+00:00",
+  "authentication": "subscription header; credential not recorded",
+  "feeds": {
+    "tripupdates": {
+      "available": true,
+      "entities": 2129,
+      "updated": 1790135622,
+      "age_seconds": 1
+    },
+    "servicealerts": {
+      "available": true,
+      "entities": 186,
+      "updated": 1790135624,
+      "age_seconds": 0
+    },
+    "vehiclelocations": {
+      "available": true,
+      "entities": 1885,
+      "updated": 1790135625,
+      "age_seconds": 1
+    }
+  },
+  "public_proxy_deployed": false,
+  "prediction_trip_instances": 2129,
+  "prediction_instances_matching_downloaded_trip_ids": 1827
+}

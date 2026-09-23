@@ -135,9 +135,12 @@ request URLs. A public GitHub Pages build cannot hold this secret: connecting li
 data requires a separately hosted proxy and client endpoint configuration. That
 public proxy is not currently deployed.
 
-The user has obtained keys, but authenticated verification remains pending until
-the credential location and subscribed product are available to the implementation
-agent. Existing fixture tests do not prove that a real subscription works.
+Authenticated checks on 23 September 2026 returned fresh trip updates, service
+alerts and vehicle locations through the existing adapter. See the
+[aggregate evidence](evidence/at-authenticated-check.json). Of 2,129 trip update
+instances, 1,827 matched downloaded trip IDs; this does not establish a prediction
+for every scheduled service. A public live proxy is still not deployed. Credentials
+remain outside Git and all public build assets.
 
 AT documents English-only text for realtime alert descriptions and headings in
 [its realtime guide](https://dev-portal.at.govt.nz/realtime-api). Preserve the

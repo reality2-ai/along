@@ -81,3 +81,16 @@ GitHub Pages at https://reality2.ai/along/ is the public serving location. The u
 has retired the private server. Public deployment and offline installation replace
 the original requirement to maintain an updated private site. Retain the remaining
 original verification and course requirements.
+
+
+## Offline first, optional current information
+
+The app must clearly explain that downloaded address search and scheduled journey
+planning work offline. Users may choose online information to improve that local
+picture with current predictions, cancellations and alerts. This is an optional
+enhancement, not a dependency for planning. Label scheduled, live, estimated,
+stale and unavailable information distinctly; fail quietly back to the downloaded
+timetable when live information cannot be obtained. Match live records to verified
+trip identities rather than guessing. Preserve local journey history and user
+control. A successful AT credential check does not mean the public live connection
+has been deployed.

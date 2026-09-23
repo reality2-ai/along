@@ -16,7 +16,7 @@ this audit. Later public-hosting work supplements that brief.
 | 3. Inclusion | Keyboard, axe, contrast, zoom, narrow screens, touch emulation, reduced motion and forced colours; text alternatives to maps | Spoken TalkBack/desktop-reader check; no disabled-commuter participant study |
 | 4. Installation and updates | Icons/manifest/installability; offline reopening; old-tab migration; quiet offline pull; failed/successful dataset refresh with saved journeys retained; Android update repair accepted after v23 | Exact Android installation browser not recorded; latest contextual interface needs physical checks |
 | 5. Browser independence | Static `/along/` host with no Python API; offline new address routes; stored route geometry; measured download/storage/time | Low-memory phone performance not characterised; no evidence requiring WASM |
-| 6. Distribution | About 38 MiB ZIP/checksum, four data bundles, import scripts, MIT/data/Leaflet notices, AWS/Pages hosting instructions | Public Pages deployment is live; authenticated live verification needs an AT key |
+| 6. Distribution | About 38 MiB ZIP/checksum, four data bundles, import scripts, MIT/data/Leaflet notices, AWS/Pages hosting instructions | Public Pages deployment is live; authenticated feeds now verified; public live proxy remains undeployed |
 | 7. GitHub documentation | README, architecture, data, hosting, privacy, limits and contribution guidance; v21 course notice and current design-driver/goal summaries | Public source repository: [reality2-ai/along](https://github.com/reality2-ai/along); app hosted at [reality2.ai/along](https://reality2.ai/along/) |
 | 8. Course material | Thematic analysis, six lessons, exercises, assessment rubric and negative-case/contextual-map refinements | Course effectiveness has not been studied |
 | 9. Release checks and handover | 24 JavaScript and 4 Python tests; four real-data browser scenarios; static/update suites; source/archive/live asset comparison | Remaining physical and spoken screen-reader checks prevent claiming full goal completion |
@@ -358,3 +358,10 @@ browser scenarios passed, including offline planning, unchanged saved services
 and keeping the whole-journey disclosure open through a language switch. Dynamic
 text is updated in place rather than regenerating route-detail links. Full text
 coverage and the public bilingual release remain outstanding.
+
+
+The supplied AT key passed [authenticated feed checks](evidence/at-authenticated-check.json):
+fresh trip updates, service alerts and vehicle locations. Trip ID matching was
+1,827 of 2,129 update instances. This is aggregate feed/adapter evidence, not an
+on-street test or deployment of live information to the public app. The local
+credential file is ignored by Git and readable only by its owner.

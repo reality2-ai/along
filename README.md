@@ -15,7 +15,10 @@ or uploaded journey history is needed.
 
 Along uses Auckland Transport's public data and its own bounded routing engine.
 It is **not an official AT app** and does not reproduce AT Mobile's journey planner.
-Live predictions are optional and require a separately configured backend.
+**Offline planning is the foundation; live information is an optional addition.**
+When connected, current AT predictions and alerts can help refine the scheduled
+picture. The public app currently uses the downloaded timetable; its optional live
+connection is not yet deployed. Losing connectivity will not remove offline planning.
 
 <p align="center">
   <a href="https://reality2.ai/along/"><img src="docs/images/open-webapp.svg" width="304" height="56" alt="Open and install Along webapp"></a>
