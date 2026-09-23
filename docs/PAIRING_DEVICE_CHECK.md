@@ -1,9 +1,9 @@
 # Experimental device-pairing check
 
-This checks the standalone Along pairing lab, not the public journey app. The lab
-has not yet been published: use the HTTPS test URL supplied with a verified lab
-build when it is available. Do not substitute the normal Along URL. No coding,
-terminal commands or AT key are required from the tester.
+Open the [Along device-pairing lab](https://reality2.ai/along/pairing-lab/) on both
+devices. It should show **Lab build 5dd96dcabf9a**. This checks the standalone lab,
+not the installed journey app. No coding, terminal commands or AT key are required
+from the tester. The normal Along app remains version 37.
 
 The test creates encrypted software group keys in this browser. It also offers
 local AT-key storage testing with dummy text only. It does not sync journeys,
@@ -80,7 +80,7 @@ if you only used ordinary touch interaction.
 
 ## Check local AT-key storage with dummy text
 
-After pairing, return home, restore the device, and choose **Test optional AT-key
+After pairing, on desktop return home, restore the device, and choose **Test optional AT-key
 storage** → **Set up live information**. Enter `along-test-key` as dummy text and
 choose **Save key on this device**. Do not use a real AT key in this experiment.
 Saving should report that the key has not been checked with AT.
@@ -89,6 +89,27 @@ Reload, restore the device, and reopen the same settings. It should report that
 an AT key is saved without displaying its value or asking you to create settings
 again. This does not share the key with the other device or fetch live information.
 The reset below also removes these local test credentials and settings.
+
+## Optional: share the dummy key
+
+After the desktop storage check, return home and restore both devices. On desktop,
+choose **Share my AT key**. On the phone choose **Receive a shared AT key**.
+Transfer the desktop message to the phone's **AT-key sharing message** field,
+choose **Review sharing device**, and confirm **Connect to this sharing device**
+only for the device you intend to use.
+
+Transfer the phone's connection request to desktop, choose **Connect for key
+sharing**, then transfer the desktop reply to the phone and choose **Check
+sharing connection**. On desktop, review the enrolled device and choose **Allow
+AT access**. On the phone, review and accept the sharing permission. Keep both
+pages open. The phone should show **Shared AT key saved** and desktop **Other
+device saved the key**. Sending alone is not confirmation of receipt.
+
+Do not use real credentials. These controls share only the dummy key in this
+check; the lab has no live-provider view. Some shared component messages mention
+reconnecting from Along Settings, but that connection is not available in public
+version 37. If a connection fails after a save, preserve the data and report the
+last screen; do not clear either device just to retry.
 
 ## Restart only the lab test
 
@@ -106,7 +127,7 @@ Do not use it as recovery for an interrupted installation you want to preserve.
 ## Report results
 
 Report the lab build, both browsers, whether the devices shared Wi-Fi, and the last
-screen reached. Mark setup, pairing, reload/restore, QR scanning, camera stop,
+screen reached. Mark setup, pairing, reload/restore, dummy-key sharing, QR scanning, camera stop,
 keyboard/zoom and TalkBack as passed, failed or not tested. Describe what you
 expected and what happened. Do not include invitation text, connection details,
 keys, saved journeys or precise location in public feedback.

@@ -994,3 +994,12 @@ Students can distinguish same-host reproducibility, hash consistency, licence
 scope and physical-device acceptance: each answers a different question. The
 recorded build is neither a compiler signature nor proof of full R2 conformance.
 The AI performs this work; the participant does not need to write build scripts.
+
+The standalone device lab subsequently received a concrete HTTPS test URL and
+visible build identifier. Every deployed payload hash was checked against the
+reviewed build, followed by first-use setup and reload/restore in a fresh browser
+profile. This turns a technical handoff into a testable task for the participant:
+open the same named build on the S23 and desktop, with no terminal commands or
+real credentials. It does not establish physical pairing, screen-reader usability
+or seamless journey synchronization. Those distinctions keep publication evidence
+separate from user acceptance and from completion of the original product goal.

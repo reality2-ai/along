@@ -679,8 +679,9 @@ files into `build-info.json`. It does not traverse the project tree for data or
 credentials. The generated folder can be served by an ordinary static server over
 HTTPS (localhost also works for desktop checks). No service worker or Along
 backend is involved. It is not included in `npm run build` or the public Pages app.
-Distribution/hosting of this lab still needs the runtime dependency-notice audit
-and real-device instructions; it has not been published as a supported feature.
+The standalone [device-test lab](https://reality2.ai/along/pairing-lab/) is published
+as build `5dd96dcabf9a`, with the runtime records and notices. It remains an
+experiment requiring physical-device acceptance, not a supported app feature.
 
 Run `node experiments/tg-pairing/lab.test.mjs` after building, with the usual
 `CHROMIUM_PATH` if required. `PAIRING_LAB_DIR` can select another generated folder.
@@ -694,8 +695,9 @@ that is not evidence of camera usability or phone-to-desktop reachability.
 
 The [runtime notice audit](../../docs/PAIRING_LICENSE_AUDIT.md) records the exact
 56-package closure and outstanding local R2 notice/declaration gaps. The
-[S23/desktop check guide](../../docs/PAIRING_DEVICE_CHECK.md) is prepared for a
-published lab URL; it does not claim that such a URL or physical pass exists yet.
+[S23/desktop check guide](../../docs/PAIRING_DEVICE_CHECK.md) gives the published
+URL and build identifier. All deployed payload hashes and HTTPS setup/restore
+were checked; physical pairing has not yet been verified.
 
 ### Connection loss while a save result is returning
 

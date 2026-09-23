@@ -1,8 +1,9 @@
 # Pairing runtime distribution audit
 
 Status: the runtime has now been rebuilt twice from committed source with matching
-outputs, recorded compiler tools and bundled notices. Final distribution review
-and a published device-test build remain outstanding. The project
+outputs, recorded compiler tools and bundled notices. The standalone device-test
+lab has been reviewed and published; physical-device acceptance and the full
+experimental journey-app release remain outstanding. The project
 owner has selected MIT, matching Along, for the R2 subset used
 in Along. The scoped distribution grant is now included as
 [MIT text](licenses/R2-MIT.txt) and an [explicit scope](licenses/R2-SCOPE.md).
@@ -143,8 +144,9 @@ repairing the missing declaration, not evidence that today's missing notices hav
 already been repaired. Preserve existing declarations and copyright attribution;
 do not invent a new owner or silently relicense framework material.
 
-Remaining work: review the final static distribution and publish a specific test URL with the
-[device-check guide](PAIRING_DEVICE_CHECK.md).
+The standalone distribution is now available with the
+[device-check guide](PAIRING_DEVICE_CHECK.md). The full experimental journey app
+remains local while its release checks continue.
 
 ## Reproduce the inventory
 
@@ -202,3 +204,25 @@ passed lost-confirmation recovery, shared-key contextual mocked reads, removal
 before further provider I/O and offline reopening. All inputs came from the
 verified runtime bundle. These results retain the same one-host, synthetic-key
 and mocked-provider limits.
+
+## Published standalone device-test build
+
+[Lab build 5dd96dcabf9a](https://reality2.ai/along/pairing-lab/) was published at
+site-preview commit `32eeb00f8dc61849db13077ba6d7fe1d35ae836c`, from Along source
+`9cc411b`. Its 170 payload files total 1,635,003 bytes (excluding build-info.json).
+The exact file-set and hashes were checked locally and against every deployed
+file. No credential files, test fixtures, journey datasets or source archive are
+included. Dependency notices retain their original bytes, including original
+whitespace and line endings; they were not reformatted to satisfy diff whitespace
+warnings.
+
+The local browser check runs under `/along/pairing-lab/` and includes actual
+WebRTC enrollment, saved-key restoration, isolated reset and a genuine cached
+Back return. The deployed HTTPS smoke check creates and restores an identity in
+an ephemeral browser profile, with no external-provider requests. It is not a
+phone-to-desktop pairing result. The existing version-37 app files were unchanged.
+
+Recheck deployment with `CHROMIUM_PATH=/path/to/chromium node
+scripts/check_pairing_release.mjs https://reality2.ai/along/pairing-lab/` after
+building the matching local lab. Physical QR, touch, TalkBack and network behavior
+remain for the device check.

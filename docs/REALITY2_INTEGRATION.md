@@ -54,8 +54,9 @@ A separate static device lab now provides first-use setup, explicit saved-state
 restore and both roles. Its generated-bundle test completes pairing through the
 UI and restores membership after reload. Explicit lab-only reset now waits for
 confirmed database deletion and preserves Along’s journey preferences and offline
-database in the browser test. It does not revoke other devices. It is not yet published; runtime notices
-and physical-device testing remain necessary. The
+database in the browser test. It does not revoke other devices. The standalone
+[device-test lab](https://reality2.ai/along/pairing-lab/) is now published as build
+`5dd96dcabf9a`, with runtime notices; physical-device testing remains necessary. The
 [runtime notice audit](PAIRING_LICENSE_AUDIT.md) records missing local R2 texts
 and a conflict with an older explicit PolyForm Noncommercial change. The owner selected MIT, matching Along, for the included R2 subset on
 24 September 2026. A scoped MIT grant and verbatim dependency/Rust notices are now included in both
@@ -65,9 +66,9 @@ recorded compiler tools and matching notices. Both experimental builders can ver
 and consume that recorded bundle. Pairing, lost-confirmation recovery, full-app
 journey use, browser Back and offline reopening tests pass with the rebuilt runtime.
 This is same-host build/browser evidence, not full R2 conformance or physical
-acceptance. A final distribution review and publication of the experimental test
-URL remain. The [device-test guide](PAIRING_DEVICE_CHECK.md) is
-ready for a verified test URL.
+acceptance. The standalone lab's deployed hashes and HTTPS setup/restore were
+verified; the full experimental journey-app release remains pending.
+The [device-test guide](PAIRING_DEVICE_CHECK.md) supplies the live lab URL.
 The lab also exposes interrupted-installation confirmation recovery using saved
 identities and an authenticated receipt exchange. A browser test interrupts the
 original connection after the inviter’s receipt commit, then recovers confirmation

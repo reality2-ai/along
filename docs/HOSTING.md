@@ -131,6 +131,21 @@ origin-based, so host only mutually trusted applications on the same domain;
 subdirectories are not separate security origins. Saved data from a private host
 will not automatically move to the public origin.
 
+### Standalone device-test lab
+
+`https://reality2.ai/along/pairing-lab/` serves experimental build `5dd96dcabf9a`.
+It is a separate static directory on `site-preview`; publishing it changed no
+version-37 app files. It has no service worker, journey datasets or live AT view.
+It uses a separate test database, but shares the domain's origin and therefore
+does not provide isolation from other code hosted on that origin. Use dummy keys.
+See the [device-check guide](PAIRING_DEVICE_CHECK.md) and
+[runtime distribution record](PAIRING_LICENSE_AUDIT.md#published-standalone-device-test-build).
+
+When publishing a later app build, preserve this reviewed directory or rebuild
+and verify its replacement explicitly. `scripts/build_static.py` does not include
+the lab; replacing the entire Pages tree with only `dist/` would remove its URL.
+The lab's build identifier is separate from the installed app's version.
+
 
 ## AT subscription credentials
 

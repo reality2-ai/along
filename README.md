@@ -283,6 +283,13 @@ Authenticated browser reads of the AT feeds and matching against the downloaded
 timetable have been tested. The complete trust-group credential connection and
 its public interface are unfinished, so live data remains disabled in the public
 app. See the [runtime integration evidence](docs/REALITY2_INTEGRATION.md).
+
+For Samsung S23/desktop testing, the separate
+[device-pairing lab](https://reality2.ai/along/pairing-lab/) is available as build
+`5dd96dcabf9a`. Follow the [device-check guide](docs/PAIRING_DEVICE_CHECK.md), using
+dummy key text only. No coding is needed. This experiment does not enable live
+information or journey synchronization in the installed app.
+
 The repository also contains tested experimental live matching and proxy code; that proxy is not the
 planned public architecture. See [hosting and live-data status](docs/HOSTING.md).
 
