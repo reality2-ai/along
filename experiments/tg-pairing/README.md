@@ -39,7 +39,7 @@ physical co-presence, Android TalkBack, hardware protection or AT access.
 ## Connection to the experimental runtime
 
 Use Reality2 revision
-[`62b5c71b`](https://github.com/reality2-ai/r2-standard/commit/62b5c71b6374bbf4e1ceb46b1a6c8778a4ae8edd)
+[`5af4caab`](https://github.com/reality2-ai/r2-standard/commit/5af4caabb3ff6bcac1536dc892ded0db00f79ada)
 or a compatible later revision, with WASM built from the same source. This is a
 draft branch dependency, not a merged runtime release.
 
@@ -114,3 +114,38 @@ closes the late key without emitting a claim. Repeated disposal is safe. The
 peer test covers this delayed-generation case and automatic cleanup after a
 successful bundle exchange. This connects key lifetime to the session; it still
 does not perform the core ceremony's admission or installation steps.
+
+## Core-driven candidate session (experimental)
+
+`core-candidate-session.mjs` starts from an authorized invitation and explicit
+platform facts, then connects the live peer exchange to the core ceremony. The
+runtime must provide actual claim state, build modes, custody and epoch; the
+controller refuses missing or out-of-range facts instead of defaulting them.
+The invitation passed to the session must match the verified statement.
+
+The exchange records its actual commitment and contributions as they happen.
+Both peer confirmations advance core verification once. The session reports
+confirmation only after the core accepts that transition; a refusal closes it. Claim generation transfers
+the newly generated key into the core request; receiving a protected bundle runs
+certificate validation and a fresh claim-state read before core preparation.
+`prepare()` returns public metadata only. It does not persist membership, consume
+the invitation successfully, or grant access to a credential. Atomic installation,
+qualified custody and the provenance of platform facts remain unfinished.
+
+An optional setup `signal` cancels even before the session has been returned.
+The real-browser test covers cancellation during the initial state read, after
+an invitation reservation commits, during key generation and during the final
+claim-state read, as well as early claims and changes to OWNER. It runs with
+the asset server stopped. Initial trust, issuer custody and person consent are
+explicitly synthetic fixture facts.
+
+This increment requires Reality2
+[`5af4caab`](https://github.com/reality2-ai/r2-standard/commit/5af4caabb3ff6bcac1536dc892ded0db00f79ada)
+or a compatible later revision, and WASM compiled from the same source. The
+combined core/session snapshot passed `cargo xtask verify` unchanged; status prose
+was refreshed afterwards. `core-candidate-session.test.mjs` passes against that
+tree and fails at missing core confirmation without the hooks. The existing
+protected-carriage test also passes. A separate control restoring the premature
+confirmed-state expression fails at the expected state assertion; the corrected
+expression passes. Do not copy
+these components into the public app or treat them as a released TG connection.

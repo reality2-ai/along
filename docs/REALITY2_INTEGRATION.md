@@ -102,6 +102,16 @@ at this observation. The CI correction reads the versions declared by
 the Android checkers, provisions those tools and explicitly selects the required
 NDK. Hosted success still needs a new run; isolation remains mandatory.
 
+The subsequent [repository gate](https://github.com/reality2-ai/r2-standard/actions/runs/35851372113)
+passed. The [hosted Rust run](https://github.com/reality2-ai/r2-standard/actions/runs/35851372104)
+passed Android setup/build checks and reached board builds, but the runner failed
+with a disk-space exhaustion annotation. The follow-up job removes specified
+unused runner-image toolchains only on GitHub-hosted runners, with before/after
+capacity output; compiler settings and the full verification suite stay intact.
+The cleanup guard refuses developer/self-hosted environments. Its syntax and
+stubbed guard controls passed locally without deleting any toolchains. A new
+hosted run must establish whether this supplies sufficient capacity.
+
 ### Core ceremony adapter work
 
 The core `Ceremony::request` requires an opaque `Minted` value. The
@@ -120,11 +130,78 @@ after closure. These are synthetic enrollment tests, not AT credential handling.
 
 The unchanged runtime snapshot passed `cargo xtask verify`; repository commit
 checks also passed. Status prose was refreshed after verification without
-implementation changes. Hosted verification of this increment remains pending. Volatile
+implementation changes. The hosted repository gate passed; hosted Rust verification exhausted disk
+during board builds, as described above. Volatile
 nonextractable custody does not establish hardware-backed durable storage.
 Driving the core ceremony, checking OPEN again immediately before atomic
 installation, issuer custody and application-secret authorization remain required.
 The existing payload validator does not replace those boundaries.
+
+### Core-driven session increment
+
+The browser bridge now consumes authorized invitation evidence and generated
+candidate-key custody, then delegates ordering, confirmation, request and
+certificate validation to the core ceremony. Its compiled-WASM test passed for
+wrong certificates, declined verification, incompatible platform facts and changed
+claim state. The full implementation gate passed against that unchanged source
+snapshot.
+
+The tested hooks now connect actual peer commitments, contributions and mutual
+confirmation to those core calls in the runtime branch. Confirmation is reported
+only after the core accepts the transition. A control restoring the premature
+confirmed-state expression fails at the expected assertion. Along's `core-candidate-session.mjs` then sends the core-approved claim
+and validates the received bundle before returning prepared public metadata.
+The real-browser test passes against the combined runtime tree and fails at
+missing core confirmation without the hooks. The existing protected-carriage regression suite also
+passes with those hooks. The combined snapshot passed full verification unchanged and is recorded at
+[`5af4caab`](https://github.com/reality2-ai/r2-standard/commit/5af4caabb3ff6bcac1536dc892ded0db00f79ada).
+The repository commit checks also passed. These are draft runtime dependencies,
+not a public Along feature.
+
+Cancellation tests cover an initial state read, a reservation already committed
+while setup is pending, key generation and the final state read. They show no late
+claim or prepared result; a committed reservation is voided. Missing claim state
+is rejected before transferring an owned WASM key/token. The tests use synthetic
+initial group trust, issuer custody, platform facts and person decisions.
+
+A prepared persona is not durable installation. The current state read and core
+check must still be joined to an atomic custody/persona/invitation transaction,
+with completion reported only after commit. Initial trust and provisioner custody
+must come from the real runtime rather than the fixture. Credential access,
+revocation/rotation and contextual AT integration remain required.
+
+A separate installation-storage draft adds cancellation to atomic batches. Real
+IndexedDB tests show that an already-aborted request performs no write,
+cancellation after both writes are queued rolls back both, and cancellation during
+completion delivery preserves the actual committed result. Reopening agrees with
+those outcomes. The test fails against storage without cancellation support, and
+the existing storage/identity/journal regression suite passes with the draft.
+The draft journal also forwards cancellation into its atomic consumption batch
+and returns installation-record revisions only after commit. Pending cancellation
+rolls back the synthetic claim/persona and leaves the reservation non-reopenable;
+late cancellation preserves the consumed receipt. Reopened journal records agree.
+The existing storage/identity/journal suite passes after that change.
+This draft is outside the frozen runtime snapshot: it is not covered by that
+running full gate and is not yet an enrollment installation implementation.
+
+A separate WASM prototype transfers the core-prepared candidate's nonextractable
+member key and validated public metadata into one browser record. A real-browser
+fixture writes it together with synthetic claim state and invitation consumption;
+after document reload, the restored key signs a fresh challenge that verifies
+against the requested member identity. Private byte export refuses. The record
+explicitly carries unqualified browser custody, contains no group issuer or
+traffic keys, and grants no credential access. This is a storage/ownership bridge,
+not hardware-backed protection, a physical power-loss test or end-to-end enrollment.
+The fixture still supplies initial trust, platform facts and consent. A subsequent
+real-peer prototype now reads stored claim state for discovery/request and again
+before preparation, then atomically compares that record's revision while writing
+the core-prepared key/certificate and consuming the invitation. A competing claim
+wins without being overwritten. Cancellation while the transaction is pending
+rolls it back; cancellation during completion still returns the durable local
+receipt. The result explicitly says the peer has not acknowledged it. These
+standalone draft changes are not part of the verified core/session increment and
+remain unpublished; peer receipts, qualified custody and credential access remain
+unfinished.
 
 ### Notekeeper reference inspection
 

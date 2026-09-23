@@ -283,6 +283,10 @@ Include these cases:
   generation finishes later. Check whether the late key is closed and whether
   any claim was sent; merely removing the pairing screen proves neither. The
   candidate-session test uses actual browser cryptography with controlled delay.
+- Cancellation arrives while a database transaction is pending, or just after it
+  commits. Ask the assistant to test both orders. The first must leave no partial
+  installation; the second must report the committed local result even if peer
+  acknowledgement is still missing. “Cancelled” is not proof that nothing changed.
 - A full verification command succeeds while the source changes during the run;
   the result cannot establish that one final source snapshot passed every check.
 - A confirmation appears expired by design, but a backgrounded browser delays
