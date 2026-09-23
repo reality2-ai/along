@@ -5,7 +5,7 @@ import {join} from 'node:path';
 const {chromium} = await import(process.env.PLAYWRIGHT_MODULE || '@playwright/test');
 const sources = new Map();
 for (const name of ['storage.mjs', 'membership.mjs', 'certificate.mjs', 'peer-session.mjs', 'peer-link.mjs', 'challenge.mjs', 'session-statement.mjs']) sources.set('/' + name, await readFile(join(process.env.R2_BROWSER_DIR, name)));
-for (const name of ['../tg-pairing/initial-persona.mjs', '../tg-pairing/local-persona.mjs', 'local-owner.mjs', 'owner-policy.mjs', 'owner-delivery.mjs', '../tg-pairing/local-persona-session.mjs', 'policy.mjs', 'policy-store.mjs', 'local-vault.mjs', 'delivery-message.mjs']) sources.set('/' + name.split('/').pop(), await readFile(new URL(name, import.meta.url)));
+for (const name of ['../tg-pairing/initial-persona.mjs', '../tg-pairing/local-persona.mjs', 'local-owner.mjs', 'owner-policy.mjs', 'owner-delivery.mjs', 'remote-owner.mjs', '../tg-pairing/local-persona-session.mjs', 'policy.mjs', 'policy-store.mjs', 'local-vault.mjs', 'delivery-message.mjs']) sources.set('/' + name.split('/').pop(), await readFile(new URL(name, import.meta.url)));
 for (const name of ['hive_wasm.js', 'hive_wasm_bg.wasm']) sources.set('/' + name, await readFile(join(process.env.R2_WASM_DIR, name)));
 for (const name of ['live-client.mjs', '../../public/at-client.js', '../../public/live-client.js']) sources.set('/' + name.split('/').pop(), await readFile(new URL(name, import.meta.url)));
 const server = createServer((req, res) => {
@@ -55,12 +55,6 @@ try {
     await ownerVault.saveOwnerKey('synthetic-peer-delivery');
     const policyKey = binding.group + ':' + binding.credential, policyScope = 'along-at-policy:' + binding.owner;
     const signed = await owner.store.read(policyScope, policyKey);
-    // Explicit fixture for prior receiver consent/policy acceptance, not a
-    // production bootstrap path and never learned from the credential message.
-    await receiver.store.compareAndSwapMany([
-      {scope: 'along-at-owners', key: binding.group, expectedRevision: 0, value: {format: 1, ...binding}},
-      {scope: policyScope, key: policyKey, expectedRevision: 0, value: signed.value},
-    ]);
     const receiverVault = openLocalATVault({wasm, store: receiver.store, ...binding});
     let sending, receiving, request, resolve, reject, messages = 0;
     const installed = new Promise((yes, no) => { resolve = yes; reject = no; });
@@ -78,6 +72,32 @@ try {
         }});
       const offer = await receiving.offer(), answer = await sending.accept(offer); await receiving.accept(answer);
       await Promise.all([receiving.authenticated(), sending.authenticated()]);
+      const {acceptRemoteATOwner} = await import('./remote-owner.mjs');
+      const accept = changes => acceptRemoteATOwner({wasm, store: receiver.store, expected: binding,
+        ownerCertificate: owner.certificate, policyBytes: signed.value.bytes, policySignature: signed.value.signature,
+        connection: receiving, ...changes});
+      const denied = fn => fn().then(() => false, () => true);
+      const badSignature = signed.value.signature.slice(); badSignature[0] ^= 1;
+      check(await denied(() => accept({policySignature: badSignature})), 'invalid policy cannot establish owner');
+      check(await denied(() => accept({expected: {...binding, credential: '00'.repeat(16)}})), 'credential not adopted from incoming policy');
+      check(await denied(() => accept({ownerCertificate: receiver.certificate})), 'wrong owner certificate refused');
+      const ownerIdentity = await (await import('./local-persona.mjs')).loadLocalPersona({wasm, store: owner.store, expectedGroup: group});
+      const ungranted = (await import('./policy.mjs')).credentialPolicyBytes({...binding, revision: 2n, generation: 1n, devices: [binding.owner]});
+      const ungrantedSignature = await ownerIdentity.sign(ungranted);
+      check(await denied(() => accept({policyBytes: ungranted, policySignature: ungrantedSignature})), 'valid owner policy without local grant refused');
+      const cancelled = new AbortController(); cancelled.abort();
+      check(await denied(() => accept({signal: cancelled.signal})), 'cancelled consent refused');
+      const originalPut = IDBObjectStore.prototype.put; let writes = 0;
+      IDBObjectStore.prototype.put = function(...args) {
+        const result = originalPut.apply(this, args); if (++writes === 2) this.transaction.abort(); return result;
+      };
+      try { check(await denied(() => accept({})), 'partial owner acceptance rolls back'); }
+      finally { IDBObjectStore.prototype.put = originalPut; }
+      check(await receiver.store.read('along-at-owners', binding.group) === null
+        && await receiver.store.read(policyScope, policyKey) === null, 'no orphan pin or policy');
+      const accepted = await accept({});
+      check(accepted.status === 'remote-owner-accepted', 'receiver accepted owner and grant');
+      check(await denied(() => accept({})), 'accepted owner is not replaced');
       request = await receiverVault.prepareDelivery({ownerCertificate: owner.certificate, signal: receiving.signal});
       await receiving.send(request.nonce);
       const result = await Promise.race([installed, new Promise((_, no) => { timeout = setTimeout(() => no(new Error('Delivery timeout')), 15000); })]);
@@ -92,5 +112,5 @@ try {
       check(messages === 1, 'no removed-peer message sent');
     } finally { clearTimeout(timeout); request?.close(); sending?.close(); receiving?.close(); owner.store.close(); receiver.store.close(); }
   });
-  console.log('PASS: distinct real browser identities mutually authenticate over direct WebRTC, owner grant gates signed delivery, receiver encrypts/consumes request, removed peer is refused. Synthetic issuer, consent bootstrap and keys; one browser host, not physical-device reachability or public release.');
+  console.log('PASS: distinct real browser identities mutually authenticate over direct WebRTC, owner grant gates signed delivery, receiver encrypts/consumes request, removed peer is refused. Synthetic issuer, reviewed-descriptor fixture and keys; checked receiver acceptance; one browser host, not physical-device reachability or public release.');
 } finally { await browser?.close(); await new Promise(resolve => server.close(resolve)); }

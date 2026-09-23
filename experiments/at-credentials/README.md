@@ -298,9 +298,26 @@ WebRTC channel. The recipient consumes its request and encrypts the received key
 under its own browser wrapping key. Removing its owner-side grant prevents a
 further send. No relay, STUN, TURN or real AT request is used in this check.
 
-The test runs on one browser host. Its issuer and prior receiver owner-consent/
-policy bootstrap are synthetic fixtures; they are not the missing production
-setup workflow. This evidence extends the earlier self-recipient storage checks
+The test runs on one browser host. Its issuer and reviewed descriptor remain
+synthetic fixtures; receiver policy acceptance now uses the checked operation
+below. The user-facing setup workflow remains incomplete. This evidence extends the earlier self-recipient storage checks
 to distinct members and an encrypted transport, but does not establish physical
 device reachability, automatic discovery, policy freshness after partitions,
 durable issuer custody, recipient acknowledgments or public release readiness.
+
+## Receiver owner acceptance
+
+`acceptRemoteATOwner` supplies the explicit receiver-side acceptance operation.
+The trusted connection controller supplies the reviewed group, owner and credential
+binding independently of the incoming policy. The operation checks the authenticated
+connection, owner certificate, local persona and signed grant, then atomically saves
+the owner pin and policy with local evidence revision guards. Existing owner state
+is never replaced by this first-acceptance path. Cancellation follows the actual
+transaction outcome. No credential is stored by accepting the owner.
+
+The distinct-member WebRTC test now uses this operation instead of directly writing
+receiver pins. It passes refusal of invalid signatures, mismatched credentials,
+wrong owner certificates, a valid signed policy lacking the local grant, cancellation,
+interrupted writes and repeated acceptance; then it installs the delivered key.
+The issuer and reviewed descriptor are still fixtures. User-facing review/consent,
+descriptor exchange, removal propagation and reconnect freshness remain open.
