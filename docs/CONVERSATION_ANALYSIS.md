@@ -954,3 +954,13 @@ test checks unchanged ciphertext and permission revisions, rather than inferring
 preservation from a success message. This extends the theme that visible outcomes
 must follow durable evidence. It still establishes a browser test with synthetic
 credentials, not physical-device or live-provider acceptance.
+
+The setup flow subsequently moved into the experimental journey app's Settings.
+The same visible identity, enrollment, key consent and receipt-recovery controls
+now run over the commuter's current task. The single-profile check preserves a
+partially entered address through setup; two-profile checks cover sharing and
+lost-confirmation recovery before returning to journey use. The design keeps
+advanced enrollment/recovery choices behind a disclosure and retains a way back
+while optional storage/runtime work is pending. This advances progressive
+disclosure and task continuity without establishing physical-device acceptance
+or changing the still-scheduled public release.

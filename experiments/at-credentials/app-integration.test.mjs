@@ -41,18 +41,28 @@ try {
     requests.push(new URL(request.url()).pathname);
     await route.fulfill({status: 200, contentType: 'application/json', body: JSON.stringify({header: {timestamp: Math.floor(Date.now()/1000)}, entity: []})});
   });
-  await page.goto(origin + 'experiments/');
-  await page.getByRole('button', {name: 'Set up this test device', exact: true}).click();
+  await page.goto(origin + 'public/');
+  await expect(page.locator('#data-status')).toContainText('offline ready', {timeout: 90000});
+  await page.locator('#destination').fill('10 Victoria Road');
+  await page.locator('#settings-open').click();
+  await page.getByRole('button', {name: 'Device and AT-key setup', exact: true}).click();
+  await page.getByRole('button', {name: 'Set up my device', exact: true}).click();
   await page.getByRole('button', {name: 'Create my device group', exact: true}).click();
-  await page.getByRole('button', {name: 'Restore saved test device', exact: true}).click();
-  await page.getByRole('button', {name: 'Test optional AT-key storage', exact: true}).click();
+  await page.getByRole('button', {name: 'Use my own AT key', exact: true}).click();
   await page.getByRole('button', {name: 'Set up live information', exact: true}).click();
   await page.getByLabel('Personal AT API key').fill('synthetic-full-app-key');
   await page.getByRole('button', {name: 'Save key on this device', exact: true}).click();
   await page.getByRole('heading', {name: 'AT key saved on this device', exact: true}).waitFor();
   assert.equal(requests.length, 0);
-  await page.goto(origin + 'public/');
-  await expect(page.locator('#data-status')).toContainText('offline ready', {timeout: 90000});
+  // Two navigation actions in the same task leave while overview storage is
+  // still awaiting its first read. The committed key must still become usable.
+  await page.evaluate(() => {
+    const dialog = document.querySelector('dialog[aria-label="Device and AT-key setup"]');
+    [...dialog.querySelectorAll('button')].find(button => button.textContent === 'Back').click();
+    [...dialog.querySelectorAll('button')].find(button => button.textContent === 'Back to settings').click();
+  });
+  await page.getByRole('button', {name: 'Close settings', exact: true}).click();
+  await expect(page.locator('#destination')).toHaveValue('10 Victoria Road');
   // The actual Settings dialog reaches the restored-owner reconnect screen.
   await page.locator('#settings-open').click();
   await page.getByRole('button', {name: 'Connect an existing AT-key device', exact: true}).click();
@@ -191,5 +201,5 @@ try {
   console.log('PASS: unreadable newer lab schema leaves the planner ready and preserves the actual database version and record count.');
   console.log('PASS: stalled optional WASM cannot block actual bus/ferry planning; late restore cannot enable live access after its startup deadline.');
   console.log('Offline evidence:', JSON.stringify({uncachedRequestFailed: true, reportedOnline, blockedMockProviderAttempts: offlineAttempts}));
-  console.log('PASS: actual static journey app -> real device/key setup -> address-to-address bus/ferry journey -> explicit direct mocked AT reads using encrypted key; no startup request or displayed key; offline reopen includes experimental runtime and address routing; offline live check falls back quietly without a provider response. Local-only owner-key journey test; Settings reconnect entry and Back verified; full two-device app flow remains untested.');
+  console.log('PASS: actual static journey app -> real device/key setup -> address-to-address bus/ferry journey -> explicit direct mocked AT reads using encrypted key; no startup request or displayed key; offline reopen includes experimental runtime and address routing; offline live check falls back quietly without a provider response. Local-only owner-key journey test; Settings setup/reconnect and Back verified; separate two-app test covers shared-device use.');
 } finally { await browser?.close(); await new Promise(resolve => server.close(resolve)); }

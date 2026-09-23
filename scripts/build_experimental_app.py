@@ -83,7 +83,7 @@ window.addEventListener('along-live-connection-changed', () => {
         index = stage / 'public/index.html'
         text = index.read_text().replace('href="/"', 'href="./"').replace('href="/', 'href="./').replace('src="/', 'src="./')
         text = text.replace('</head>', '<link rel="stylesheet" href="../experiments/tg-pairing/comparison.css"></head>')
-        text = text.replace('<body>', '<body><p role="note">Local integration experiment — use dummy AT keys only. Do not publish this build. <a href="../experiments/">Device and test-key setup</a></p>')
+        text = text.replace('<body>', '<body><p role="note">Local integration experiment — use dummy AT keys only. Do not publish this build. Device and AT-key setup is in Settings.</p>')
         text = text.replace('the server receives your IP address.', 'Auckland Transport receives your IP address and personal key.')
         index.write_text(text)
         manifest = json.loads((stage / 'public/manifest.webmanifest').read_text())

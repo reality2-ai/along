@@ -1,11 +1,28 @@
 import {configureAppLiveConnection} from './app-live-bridge.mjs';
+import {mountAppDeviceSettings} from './app-device-settings.mjs';
+import {mountAppConnectionSettings} from './app-connection-settings.mjs';
 // Restore optional lab settings only. A stalled runtime/storage operation cannot
 // hold the scheduled planner indefinitely or enable live access after timeout.
-let store, timer, settings;
+let store, timer, settings, configuredContext, manual = false, closed = false;
+const hex = bytes => Array.from(bytes, value => value.toString(16).padStart(2, '0')).join('');
+const contextKey = ({group, member, binding}) => JSON.stringify([hex(group), member, binding?.role, binding?.binding.owner, binding?.binding.credential]);
 const lifetime = new AbortController();
 const current = () => { if (lifetime.signal.aborted) throw new Error('Optional restore ended'); };
-const stop = () => { lifetime.abort(); settings?.dispose(); configureAppLiveConnection(undefined); store?.close(); };
-window.addEventListener('pagehide', stop, {once: true});
+const stop = () => { lifetime.abort(); if (!manual) { settings?.dispose(); configureAppLiveConnection(undefined); store?.close(); } };
+const deviceSettings = mountAppDeviceSettings({onChanged: context => {
+  if (closed) return;
+  const key = contextKey(context);
+  if (key === configuredContext) return;
+  configuredContext = key;
+  lifetime.abort(); manual = true;
+  settings?.dispose(); settings = undefined;
+  if (store !== context.store) store?.close();
+  store = context.store;
+  configureAppLiveConnection(undefined);
+  if (context.binding) settings = mountAppConnectionSettings({wasm: context.wasm, store,
+    expectedGroup: context.group, role: context.binding.role});
+}});
+window.addEventListener('pagehide', () => { closed = true; manual = false; stop(); deviceSettings.dispose(); }, {once: true});
 export const restoration = (async () => {
   try {
     const {openBrowserStorage} = await import('../tg-pairing/storage.mjs'); current();
@@ -21,7 +38,8 @@ export const restoration = (async () => {
     const {loadATBinding} = await import('./local-owner.mjs'); current();
     const binding = await loadATBinding({wasm, store, expectedGroup: group, signal: lifetime.signal}); current();
     if (!binding) { store.close(); return; }
-    const {mountAppConnectionSettings} = await import('./app-connection-settings.mjs'); current();
+    current();
+    configuredContext = contextKey({group, member: hex(saved.value.record.subject), binding});
     settings = mountAppConnectionSettings({wasm, store, expectedGroup: group, role: binding.role});
   } catch { stop(); }
 })();

@@ -10,6 +10,7 @@ const {chromium, expect} = await import(process.env.PLAYWRIGHT_MODULE || '@playw
 const variants = ['INTERRUPT_GRANT', 'INTERRUPT_ACCEPTANCE', 'LOSE_KEY_CONFIRMATION', 'LOSE_KEY_DELIVERY'].filter(name => process.env[name] === '1');
 assert.ok(variants.length <= 1, 'Select one interruption scenario per run');
 let pendingLostDelivery;
+const mainSetup = process.env.MAIN_APP_SETUP === '1';
 const root = new URL('../../releases/along-experimental-app/', import.meta.url).pathname;
 const manifest = JSON.parse(await readFile(join(root, 'build-info.json'), 'utf8'));
 assert.equal(manifest.profile, 'along-experimental-app-v1');
@@ -41,11 +42,26 @@ try {
     providerRequests.push(new URL(route.request().url()).pathname);
     await route.fulfill({status: 200, contentType: 'application/json', body: JSON.stringify({header: {timestamp: Math.floor(Date.now()/1000)}, entity: []})});
   });
+  const restoreSetup = async page => {
+    if (mainSetup) {
+      const setup = page.getByRole('dialog', {name: 'Device and AT-key setup', exact: true});
+      if (!await setup.isVisible()) {
+        await page.locator('#settings-open').click();
+        await page.getByRole('button', {name: 'Device and AT-key setup', exact: true}).click();
+      }
+      await page.getByRole('heading', {name: 'Your devices and AT key', exact: true}).waitFor();
+    } else await page.getByRole('button', {name: 'Restore saved test device', exact: true}).click();
+  };
   await Promise.all(pages.map(async (page, index) => {
-    await page.goto(origin + 'experiments/');
-    await page.getByRole('button', {name: 'Set up this test device', exact: true}).click();
+    await page.goto(origin + (mainSetup ? 'public/' : 'experiments/'));
+    if (mainSetup) {
+      await page.locator('#settings-open').click();
+      await page.getByRole('button', {name: 'Device and AT-key setup', exact: true}).click();
+    }
+    await page.getByRole('button', {name: mainSetup ? 'Set up my device' : 'Set up this test device', exact: true}).click();
     await page.getByRole('button', {name: 'Create my device group', exact: true}).click();
-    await page.getByRole('button', {name: 'Restore saved test device', exact: true}).click();
+    await restoreSetup(page);
+    if (mainSetup) await page.getByText('Connect or recover another device', {exact: true}).click();
     await page.getByRole('button', {name: index ? 'Invite my other device' : 'Join my other device', exact: true}).click();
   }));
   const [candidate, owner] = pages;
@@ -76,24 +92,24 @@ try {
   await owner.getByRole('heading', {name: 'Other device installed', exact: true}).waitFor();
 
   await Promise.all(pages.map(page => page.reload()));
-  await Promise.all(pages.map(page => page.getByRole('button', {name: 'Restore saved test device', exact: true}).click()));
-  await owner.getByRole('button', {name: 'Test optional AT-key storage', exact: true}).click();
+  await Promise.all(pages.map(restoreSetup));
+  await owner.getByRole('button', {name: mainSetup ? 'Use my own AT key' : 'Test optional AT-key storage', exact: true}).click();
   await owner.getByRole('button', {name: 'Set up live information', exact: true}).click();
   await owner.getByLabel('Personal AT API key', {exact: true}).fill('synthetic-two-app-key');
   await owner.getByRole('button', {name: 'Save key on this device', exact: true}).click();
   await owner.getByRole('heading', {name: 'AT key saved on this device', exact: true}).waitFor();
   await owner.getByRole('button', {name: 'Back', exact: true}).click();
-  await owner.getByRole('button', {name: 'Restore saved test device', exact: true}).click();
+  await restoreSetup(owner);
   await owner.getByRole('button', {name: 'Share my AT key', exact: true}).click();
   await candidate.getByRole('button', {name: 'Receive a shared AT key', exact: true}).click();
   await owner.getByRole('heading', {name: 'Share your AT key', exact: true}).waitFor();
   await move(owner, candidate, 'AT-key sharing message', 'Review sharing device');
   await candidate.getByRole('button', {name: 'Back', exact: true}).click();
-  await candidate.getByRole('button', {name: 'Restore saved test device', exact: true}).click();
+  await restoreSetup(candidate);
   await candidate.getByRole('button', {name: 'Receive a shared AT key', exact: true}).click();
   await move(owner, candidate, 'AT-key sharing message', 'Review sharing device');
   const noAcceptedOwner = () => candidate.evaluate(async () => {
-    const store = await (await import('./tg-pairing/storage.mjs')).openBrowserStorage('along-pairing-lab-v1');
+    const store = await (await import('../experiments/tg-pairing/storage.mjs')).openBrowserStorage('along-pairing-lab-v1');
     try {
       const record = (await store.read('candidate-persona', 'active')).value.record;
       const group = Array.from(record.group, b => b.toString(16).padStart(2, '0')).join('');
@@ -115,7 +131,7 @@ try {
   await acceptKey.waitFor();
   if (process.env.INTERRUPT_GRANT === '1') {
     const snapshot = page => page.evaluate(async () => {
-      const store = await (await import('./tg-pairing/storage.mjs')).openBrowserStorage('along-pairing-lab-v1');
+      const store = await (await import('../experiments/tg-pairing/storage.mjs')).openBrowserStorage('along-pairing-lab-v1');
       try {
         const record = (await store.read('candidate-persona', 'active')).value.record;
         const hex = bytes => Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
@@ -127,7 +143,7 @@ try {
     const before = await Promise.all(pages.map(snapshot));
     assert.equal(await noAcceptedOwner(), true);
     await Promise.all(pages.map(page => page.reload()));
-    await Promise.all(pages.map(page => page.getByRole('button', {name: 'Restore saved test device', exact: true}).click()));
+    await Promise.all(pages.map(restoreSetup));
     await owner.getByRole('button', {name: 'Share my AT key', exact: true}).click();
     await candidate.getByRole('button', {name: 'Receive a shared AT key', exact: true}).click();
     await owner.getByRole('heading', {name: 'Share your AT key', exact: true}).waitFor();
@@ -177,7 +193,7 @@ try {
     if (process.env.LOSE_KEY_DELIVERY === '1') await owner.waitForFunction(() => window.droppedKeyDelivery > 0);
     else await candidate.waitForFunction(() => window.withheldSharingMessages > 0);
     const snapshot = () => candidate.evaluate(async () => {
-      const store = await (await import('./tg-pairing/storage.mjs')).openBrowserStorage('along-pairing-lab-v1');
+      const store = await (await import('../experiments/tg-pairing/storage.mjs')).openBrowserStorage('along-pairing-lab-v1');
       try {
         const record = (await store.read('candidate-persona', 'active')).value.record;
         const hex = bytes => Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
@@ -192,8 +208,8 @@ try {
     assert.equal(before.missingKey, true); assert.equal(await noAcceptedOwner(), false);
     if (process.env.LOSE_KEY_DELIVERY === '1') {
       pendingLostDelivery = await owner.evaluate(async saved => {
-        const store = await (await import('./tg-pairing/storage.mjs')).openBrowserStorage('along-pairing-lab-v1');
-        try { return await (await import('./at-credentials/delivery-history.mjs')).openDeliveryHistory({store, ...saved, recipient: saved.member}).read(); }
+        const store = await (await import('../experiments/tg-pairing/storage.mjs')).openBrowserStorage('along-pairing-lab-v1');
+        try { return await (await import('../experiments/at-credentials/delivery-history.mjs')).openDeliveryHistory({store, ...saved, recipient: saved.member}).read(); }
         finally { store.close(); }
       }, before);
       assert.equal(pendingLostDelivery.status, 'pending');
@@ -202,7 +218,7 @@ try {
     // Destroy the connection and start fresh documents, preserving the actual
     // committed owner acceptance. No storage records are seeded or modified.
     await Promise.all(pages.map(page => page.reload()));
-    await Promise.all(pages.map(page => page.getByRole('button', {name: 'Restore saved test device', exact: true}).click()));
+    await Promise.all(pages.map(restoreSetup));
     await owner.getByRole('button', {name: 'Share my AT key', exact: true}).click();
     await candidate.getByRole('button', {name: 'Receive a shared AT key', exact: true}).click();
     await owner.getByRole('heading', {name: 'Share your AT key', exact: true}).waitFor();
@@ -213,7 +229,7 @@ try {
     await candidate.getByRole('heading', {name: 'Sharing is not confirmed', exact: true}).waitFor();
     assert.deepEqual(await snapshot(), before, 'a different credential descriptor cannot replace the saved choice');
     await candidate.getByRole('button', {name: 'Back', exact: true}).click();
-    await candidate.getByRole('button', {name: 'Restore saved test device', exact: true}).click();
+    await restoreSetup(candidate);
     await candidate.getByRole('button', {name: 'Receive a shared AT key', exact: true}).click();
     await move(owner, candidate, 'AT-key sharing message', 'Review sharing device');
     await candidate.getByRole('button', {name: 'Connect to this sharing device', exact: true}).click();
@@ -237,7 +253,7 @@ try {
   if (process.env.LOSE_KEY_CONFIRMATION === '1') {
     await candidate.waitForFunction(() => window.droppedConfirmation > 0);
     const snapshot = page => page.evaluate(async () => {
-      const store = await (await import('./tg-pairing/storage.mjs')).openBrowserStorage('along-pairing-lab-v1');
+      const store = await (await import('../experiments/tg-pairing/storage.mjs')).openBrowserStorage('along-pairing-lab-v1');
       try {
         const record = (await store.read('candidate-persona', 'active')).value.record;
         const hex = bytes => Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
@@ -252,15 +268,15 @@ try {
     });
     const before = await Promise.all(pages.map(snapshot));
     const historyState = () => owner.evaluate(async recipient => {
-      const store = await (await import('./tg-pairing/storage.mjs')).openBrowserStorage('along-pairing-lab-v1');
+      const store = await (await import('../experiments/tg-pairing/storage.mjs')).openBrowserStorage('along-pairing-lab-v1');
       try {
-        return await (await import('./at-credentials/delivery-history.mjs')).openDeliveryHistory({store, ...recipient.binding, recipient: recipient.member}).read();
+        return await (await import('../experiments/at-credentials/delivery-history.mjs')).openDeliveryHistory({store, ...recipient.binding, recipient: recipient.member}).read();
       } finally { store.close(); }
     }, before[0]);
     assert.equal((await historyState()).status, 'pending');
     assert.equal(await owner.getByRole('heading', {name: 'Other device saved the key', exact: true}).count(), 0);
     await Promise.all(pages.map(page => page.reload()));
-    await Promise.all(pages.map(page => page.getByRole('button', {name: 'Restore saved test device', exact: true}).click()));
+    await Promise.all(pages.map(restoreSetup));
     await owner.getByRole('button', {name: 'Share my AT key', exact: true}).click();
     await candidate.getByRole('button', {name: 'Receive a shared AT key', exact: true}).click();
     await owner.getByRole('heading', {name: 'Share your AT key', exact: true}).waitFor();
@@ -288,8 +304,8 @@ try {
   await owner.getByRole('heading', {name: 'Other device saved the key', exact: true}).waitFor();
   if (pendingLostDelivery) {
     const confirmed = await owner.evaluate(async previous => {
-      const store = await (await import('./tg-pairing/storage.mjs')).openBrowserStorage('along-pairing-lab-v1');
-      try { return await (await import('./at-credentials/delivery-history.mjs')).openDeliveryHistory({store, ...previous.context}).read(); }
+      const store = await (await import('../experiments/tg-pairing/storage.mjs')).openBrowserStorage('along-pairing-lab-v1');
+      try { return await (await import('../experiments/at-credentials/delivery-history.mjs')).openDeliveryHistory({store, ...previous.context}).read(); }
       finally { store.close(); }
     }, pendingLostDelivery);
     assert.equal(confirmed.status, 'recipient-confirmed-saved');
@@ -300,7 +316,13 @@ try {
   }
   assert.equal(providerRequests.length, 0);
   await candidate.setViewportSize({width: 1280, height: 900});
-  await Promise.all(pages.map(page => page.goto(origin + 'public/')));
+  if (mainSetup) {
+    for (const page of pages) {
+      await page.getByRole('button', {name: 'Back', exact: true}).click();
+      await page.getByRole('button', {name: 'Back to settings', exact: true}).click();
+      await page.getByRole('button', {name: 'Close settings', exact: true}).click();
+    }
+  } else await Promise.all(pages.map(page => page.goto(origin + 'public/')));
   await Promise.all(pages.map(page => expect(page.locator('#data-status')).toContainText('offline ready', {timeout: 90000})));
   for (const page of pages) {
     await page.locator('#settings-open').click();

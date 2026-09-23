@@ -807,9 +807,9 @@ Settings → Connect an existing AT-key device opens the role-appropriate reconn
 flow. An authenticated connection survives closing the dialog; Disconnect devices
 or pagehide closes it. Owner devices retain their own optional live access after
 disconnection. Recipient devices expose live checks only while a saved-owner
-connection is available. First-time enrollment, approval and key delivery are available through the
-experimental device lab linked from the build. Reconnect does not supply them;
-bringing that setup directly into main-app Settings remains work.
+connection is available. First-time enrollment, approval and key delivery are now available through
+**Device and AT-key setup** in the experimental app’s Settings. The separate lab
+remains a diagnostic entry point; reconnect itself does not grant access.
 
 `scoped-session-client.mjs` gives each journey screen its own request cancellation.
 The saved-key adapter accepts a per-read AbortSignal, so leaving one screen stops
@@ -997,3 +997,34 @@ Select only one interruption scenario in each run:
 These browser checks cover the named boundaries. They do not establish arbitrary
 crash recovery, every storage failure, cross-network connectivity or physical-
 device usability. The provider feeds are mocked and the keys are synthetic.
+
+
+### Device setup within the journey app
+
+`app-device-settings.mjs` adds **Device and AT-key setup** to Settings even before
+an identity exists. Opening it loads the optional runtime; it never automatically
+creates a group or saves a key. The overview chooses actions from verified local
+state: create a group, manage an AT key, share or receive a key, and progressively
+reveal enrollment and installation recovery. Existing child flows retain their
+explicit consent and software-custody disclosures. Unreadable saved state is kept.
+
+Setup uses a dialog over the current journey. Back returns to Settings with focus
+restored. A newly saved binding updates the live connection without reloading or
+clearing entered addresses. Returning quickly while the overview is reading
+storage still discovers a committed key in the background. Reopening an unchanged
+setup does not tear down an existing shared-device connection. A changed member,
+group or owner binding closes the previous context. Pagehide disposes setup and
+its store; browser back/forward-cache restoration still needs separate validation.
+
+The generated-app test now creates its owner identity and key through Settings,
+returns with a partially entered destination intact, and proceeds to bus/ferry
+planning and mocked live reads. `MAIN_APP_SETUP=1` runs the two-profile test with
+identity creation, enrollment, sharing and recovery in the actual journey app's
+Settings rather than the standalone lab. Both the uninterrupted path and
+`MAIN_APP_SETUP=1 LOSE_KEY_CONFIRMATION=1` pass. Provider responses remain mocked;
+physical-device and public-release acceptance remain outstanding.
+
+```sh
+MAIN_APP_SETUP=1 CHROMIUM_PATH=/path/to/chromium node experiments/at-credentials/two-app-integration.test.mjs
+MAIN_APP_SETUP=1 LOSE_KEY_CONFIRMATION=1 CHROMIUM_PATH=/path/to/chromium node experiments/at-credentials/two-app-integration.test.mjs
+```

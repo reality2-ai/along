@@ -2,8 +2,8 @@
 
 Along should contact AT directly and keep each person's AT key within their own
 trust group, without requiring an Along-operated central server. Offline planning
-must continue without a key, a peer connection or a portal. This is the intended
-architecture, not an implemented feature.
+must continue without a key, a peer connection or a portal. The implementation described here is experimental and is not yet enabled in
+the public app.
 
 ## Current status
 
@@ -17,7 +17,7 @@ profiles: actual lab enrollment, encrypted key delivery, Settings reconnection,
 recipient bus/ferry planning and contextual mocked AT reads. A withheld owner
 removal is learned before further provider I/O; disconnect preserves the journey,
 and the recipient reopens and routes offline. Initial grant and recipient consent now run through a composed sharing flow in
-the linked experimental lab. It verifies the selected group member, authenticates
+the experimental app’s Settings as well as the diagnostic lab. It verifies the selected group member, authenticates
 the channel and distinguishes stored permission, encrypted key installation and
 acknowledged receipt. Removal still uses a harness call. An interrupted owner
 grant can now resume after both devices reload, with explicit owner continuation
@@ -33,7 +33,8 @@ confirmation, not provider verification. A separate lost-delivery check now
 observes a pending send with no recipient key, then retries through visible
 controls using a fresh nonce and unchanged permissions. The four named reload
 boundaries are documented in the credential test guide; further fault combinations
-and bringing setup into main-app Settings remain outstanding.
+remain subject to further validation. Device setup is now mounted in the
+experimental app’s Settings, preserving the current journey.
 Physical phone/desktop connectivity remains unverified; this is not seamless
 background reconnection or a public release.
 
@@ -95,8 +96,8 @@ Optional runtime restoration now has a bounded startup wait; stalled WASM and a
 newer unreadable IndexedDB schema are tested without blocking the scheduled
 planner or replacing saved lab records. The public build is untouched;
 the two-profile generated-app test now covers shared-key reconnection and journey
-use as described above. Public deployment, interrupted-sharing recovery, main-app setup integration and
-physical verification remain outstanding. See the [experimental build instructions](../experiments/at-credentials/README.md#actual-journey-app-integration-build-local-only).
+use as described above. Public deployment, additional interruption/lifecycle checks and physical
+verification remain outstanding. See the [experimental build instructions](../experiments/at-credentials/README.md#actual-journey-app-integration-build-local-only).
 Manual transfer is currently cumbersome, and the one-minute invitation lifetime
 needs real usability assessment. Public deployment, simpler transfer, group epoch
 updates/removal, saved-journey sync and physical-device validation remain work.
