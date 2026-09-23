@@ -1,0 +1,12 @@
+{
+  "url": "https://reality2.ai/along/",
+  "appVersion": 20,
+  "workerScope": "https://reality2.ai/along/",
+  "installability": true,
+  "settingsAboutLink": true,
+  "offlineNewAddressJourney": true,
+  "offlineInstallGuide": true,
+  "pageErrors": [],
+  "environment": "Fresh persistent Chromium profile; not a physical device",
+  "checked": "2026-09-23"
+}

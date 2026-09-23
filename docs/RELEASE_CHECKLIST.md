@@ -104,3 +104,9 @@ were not changed. Source updates on main are separate from the built deployment.
 The README includes four screenshots captured from the running app using public
 example addresses. Both the footer and Settings link to the public GitHub source.
 Public-site installation/offline checks are run with `test/check_public_site.mjs`.
+
+The [public deployment check](evidence/public-site-v20.json) passed in a fresh
+persistent Chromium profile: version 20, `/along/` worker scope, installability,
+visible Settings About link, new address journey after network disconnection and
+offline installation help. No page JavaScript errors were recorded. Physical
+installation and screen-reader observations remain separate from this result.
