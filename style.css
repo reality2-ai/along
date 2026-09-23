@@ -127,7 +127,7 @@ button,.secondary-button,.tab,.setting,select,input[type=date],input[type=time]{
 .context-map-frame .context-map{position:relative;z-index:0}
 .guided-app .map-load-button{position:absolute;z-index:1;top:50%;left:50%;transform:translate(-50%,-50%);width:max-content;max-width:calc(100% - 100px);padding:14px 16px;border:2px solid #173e37;border-radius:12px;background:#fff;color:#173e37;box-shadow:0 3px 14px #173e3726;text-align:center;line-height:1.4;cursor:pointer}
 .map-load-button strong{display:block;font-size:16px}
-.map-load-button span{display:block;font-size:12px;margin-top:4px}
+.map-load-button > span{display:block;font-size:12px;margin-top:4px}
 .map-load-button:hover{background:#f0f5ee}
 .map-load-button:focus-visible{outline:3px solid #173e37;outline-offset:4px}
 
@@ -157,3 +157,9 @@ button,.secondary-button,.tab,.setting,select,input[type=date],input[type=time]{
 }
 
 .brand-icon{display:block;width:36px;height:36px;flex-shrink:0}
+
+.language-setting{margin:16px 0;padding-bottom:16px;border-bottom:1px solid var(--line)}
+.language-setting label{display:block;margin-bottom:8px}
+.language-setting select{min-height:44px;max-width:100%;font:inherit;padding:8px 12px}
+
+.guided-app .journey-preferences summary .preference-heading{display:inline;font:inherit;color:inherit;margin:0}
