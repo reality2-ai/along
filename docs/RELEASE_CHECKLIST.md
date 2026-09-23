@@ -1,6 +1,6 @@
 # Release evidence and remaining gates
 
-Current deployed app: **version 29**, reviewed 23 September 2026. The static ZIP
+Current release candidate: **version 30**, reviewed 23 September 2026. The static ZIP
 is prepared and the private server is retired. GitHub Pages is published at `reality2.ai/along/`; no AWS deployment has been made.
 This register separates automated evidence, user observations and remaining checks.
 
@@ -21,7 +21,7 @@ this audit. Later public-hosting work supplements that brief.
 | 8. Course material | Thematic analysis, six lessons, exercises, assessment rubric and negative-case/contextual-map refinements | Course effectiveness has not been studied |
 | 9. Release checks and handover | 24 JavaScript and 4 Python tests; four real-data browser scenarios; static/update suites; source/archive/live asset comparison | Remaining physical and spoken screen-reader checks prevent claiming full goal completion |
 
-| 10. English / Te reo Māori | Device-local language module, 356-phrase source draft catalogue and review sheet (330 in deployed v29); flow selector available as an explicitly labelled draft; six localisation unit checks pass; targeted browser evidence is recorded below | Remaining screen text and full catalogue/guides, subpath/update checks, broader language/accessibility tests and fluent-speaker review |
+| 10. English / Te reo Māori | Device-local language module, 356-phrase source draft catalogue and review sheet; flow selector available as an explicitly labelled draft; six localisation unit checks pass; targeted browser evidence is recorded below | Remaining generated text and alias verification, physical language/accessibility tests and fluent-speaker review |
 
 | 11. Contextual repository feedback | Added to goal; not implemented | Accessible bilingual feedback UI, explicit public submission, minimal disclosed context, offline drafts, receipt/duplicate checks and next-round issue review |
 
@@ -483,3 +483,18 @@ English fallback when the guide script fails. Six localisation unit checks and
 the static subpath suite also passed. Both guides are bundled in the static build;
 public deployment awaits the next version. Human linguistic/platform validation
 remains outstanding.
+
+## Version 30: installation guidance in both languages
+
+Version 30 packages the bilingual installation guide, remaining static course and
+accessibility labels, and the saved-service announcement fix. The guide follows
+the local language, works offline, preserves the expanded platform section when
+switching, and falls back to readable English if its script cannot load. The
+Māori text remains an unreviewed AI-generated draft. Named-business/POI search
+was discussed but is not part of this release.
+
+Prepublication checks passed: 30 JavaScript and four Python tests, all 16 browser
+scenarios, update/recovery regressions and the local release smoke check. The
+static subpath suite passed on these guide changes before the version bump.
+The ZIP checksum and every archived file were compared with `dist/`; both guide
+sources are present and local credentials are excluded.
