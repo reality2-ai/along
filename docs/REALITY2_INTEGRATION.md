@@ -170,38 +170,28 @@ with completion reported only after commit. Initial trust and provisioner custod
 must come from the real runtime rather than the fixture. Credential access,
 revocation/rotation and contextual AT integration remain required.
 
-A separate installation-storage draft adds cancellation to atomic batches. Real
-IndexedDB tests show that an already-aborted request performs no write,
-cancellation after both writes are queued rolls back both, and cancellation during
-completion delivery preserves the actual committed result. Reopening agrees with
-those outcomes. The test fails against storage without cancellation support, and
-the existing storage/identity/journal regression suite passes with the draft.
-The draft journal also forwards cancellation into its atomic consumption batch
-and returns installation-record revisions only after commit. Pending cancellation
-rolls back the synthetic claim/persona and leaves the reservation non-reopenable;
-late cancellation preserves the consumed receipt. Reopened journal records agree.
-The existing storage/identity/journal suite passes after that change.
-This draft is outside the frozen runtime snapshot: it is not covered by that
-running full gate and is not yet an enrollment installation implementation.
+The installation work extended that baseline with cancellation-aware atomic
+storage, candidate-key ownership transfer and a real-peer controller. The
+integrated evidence and remaining boundaries are recorded below.
 
-A separate WASM prototype transfers the core-prepared candidate's nonextractable
-member key and validated public metadata into one browser record. A real-browser
-fixture writes it together with synthetic claim state and invitation consumption;
-after document reload, the restored key signs a fresh challenge that verifies
-against the requested member identity. Private byte export refuses. The record
-explicitly carries unqualified browser custody, contains no group issuer or
-traffic keys, and grants no credential access. This is a storage/ownership bridge,
-not hardware-backed protection, a physical power-loss test or end-to-end enrollment.
-The fixture still supplies initial trust, platform facts and consent. A subsequent
-real-peer prototype now reads stored claim state for discovery/request and again
-before preparation, then atomically compares that record's revision while writing
-the core-prepared key/certificate and consuming the invitation. A competing claim
-wins without being overwritten. Cancellation while the transaction is pending
-rolls it back; cancellation during completion still returns the durable local
-receipt. The result explicitly says the peer has not acknowledged it. These
-standalone draft changes are not part of the verified core/session increment and
-remain unpublished; peer receipts, qualified custody and credential access remain
-unfinished.
+### Verified local installation increment
+
+The previously standalone installation prototype has now been promoted into the
+R2 and Along working trees. A fresh integrated WASM build passes the atomic
+storage cancellation, persisted-persona reload/signature and actual peer-session
+installation tests. The latter includes a competing claim revision and both
+sides of the cancellation/commit boundary. The full R2 gate passed against an
+unchanged frozen snapshot. Status prose was refreshed afterwards without
+implementation changes. Publication reference: [`5aae14c4`](https://github.com/reality2-ai/r2-standard/commit/5aae14c4e0e2416f3395dee072f5f9e75b258ba6).
+The Along controller now includes initial public membership evidence in the same
+atomic installation, refusing to replace existing group evidence. Its restoration
+adapter verifies certificate/key binding and invitation consumption, and consults
+local membership before restoration and around signing. Actual signed revocations
+are exercised against both fresh restoration and existing handles. This does not
+replace fresh peer verification after an offline interval.
+This extends the preceding verified core/session baseline.
+No public-app TG connection, peer acknowledgment, hardware sealing or credential
+access is implied by these tests.
 
 ### Notekeeper reference inspection
 
@@ -729,3 +719,21 @@ fixture confirms that an old button cannot submit again and a late result cannot
 overwrite the replacement screen. Controllers still have to observe the signal
 before protected operations; UI cancellation does not undo an already-committed
 operation. The component remains outside the released app.
+
+
+### Receipt transport prototype
+
+A separate unpublished prototype adds purpose-separated encrypted installation
+receipts and acknowledgments to the experimental Along carriage. Browser crypto
+checks pass for direction, replay and purpose substitution, alongside the existing
+claim/bundle checks. It is outside the running integrated gate. A subsequent real-peer session test
+passes the encrypted receipt/acknowledgment round trip, refuses sending before
+the local transaction commits, and proves that replay closes transport without
+undoing a consumed invitation. That test uses a synthetic installation write set;
+receipt semantics, actual persona binding and durable acknowledgment bookkeeping
+remain to be integrated.
+
+L5B 6.5 distinguishes membership at the atomic commit from knowledge spreading
+through ordinary verified traffic. Peer acknowledgment must report that knowledge,
+not become an invented admission requirement. A lost acknowledgment must not undo
+an already committed persona or invite a fresh claim of an OWNER device.

@@ -149,3 +149,60 @@ protected-carriage test also passes. A separate control restoring the premature
 confirmed-state expression fails at the expected state assertion; the corrected
 expression passes. Do not copy
 these components into the public app or treat them as a released TG connection.
+
+
+### Verified local installation increment
+
+`installLocal()` now reads `candidate-persona/active` directly,
+runs the core installation check against that claim, and uses its expected
+revision in the same transaction as invitation consumption and initial public
+membership evidence. Existing membership evidence is never overwritten; initial
+admission accepts only the enrollment epoch, with no grace window. It stores the
+requested nonextractable member key and validated certificate; group issuer and
+traffic secrets are not persisted. This requires R2 [`5aae14c4`](https://github.com/reality2-ai/r2-standard/commit/5aae14c4e0e2416f3395dee072f5f9e75b258ba6) and matching compiled WASM,
+not merely the earlier core/session revision above.
+
+Its receipt says `installed-local` and `peerAcknowledged: false`. Cancellation
+before commit rolls everything back; cancellation after commit preserves the
+actual receipt. A competing claim update refuses installation without overwriting
+the winner. Initial claim creation/reset and group trust remain synthetic test
+setup, not finished user flows. Browser custody is explicitly unqualified and
+no AT credential authority follows from this local receipt.
+
+`core-install-session.test.mjs` passes against the integrated WASM build using
+actual peer exchange. The R2 `persona-install.test.mjs` also reloads the document
+and verifies a signature from the persisted key against the requested identity.
+The original core-session test remains a separate regression check. The full
+R2 implementation gate passed against its unchanged recorded snapshot. Status
+prose was refreshed afterwards. This is not enabled in the public webapp.
+
+
+`local-persona.mjs` restores only local custody. The caller supplies an already
+established expected group; the loader never learns trust from its own saved
+record. It validates the core certificate, exact certificate epoch, consumed
+invitation and a fresh signing challenge against the member public key. It
+returns a bounded signing closure, not the private key handle. Saved-record and
+journal revisions are rechecked around signing, so replacement invalidates old
+handles. This does not establish network-fresh membership or access
+to application secrets. The integrated peer test also covers altered certificates,
+epoch metadata, invitation references, mismatched keys, wrong groups and record
+replacement before and during signing.
+
+Restoration now consults the R2 membership implementation before returning a
+handle and around each signature. A valid signed local revocation refuses both
+new restoration and signing through an existing handle. Missing, stale, revoked
+or invalid membership evidence cannot act as current membership. These checks
+use locally retained evidence; fresh peer verification after a partition and
+application-specific credential authorization remain separate requirements.
+
+The integrated test also pre-populates conflicting membership evidence and proves
+that a new enrollment preserves it while leaving the claim OPEN. Cancellation
+before commit leaves no membership record. These checks cover the complete local
+write set, including the revocation-bearing record, rather than only the persona.
+
+`installation-receipt.mjs` binds a public receipt to the exact invitation, member
+and certificate digest. The controller returns it only after local commit. Its
+bytes alone are not evidence of a commit; eventual transmission must use the
+confirmed encrypted session. Changed version, invitation, subject, digest and
+truncated receipts are refused in the integrated test. Receipt transport remains
+a separate unpublished prototype and is not connected to this controller yet.

@@ -3,6 +3,7 @@
 import {createEnrollmentSession} from './enrollment-session.mjs';
 import {invitationStatement} from './invitation.mjs';
 import {enrollmentPayloads} from './enrollment-payloads.mjs';
+import {installationReceipt} from './installation-receipt.mjs';
 
 export async function createCoreCandidateSession({wasm, invitation, authorized, platform, readClaimState, store, signal}) {
   const expected = structuredClone(invitation);
@@ -83,6 +84,34 @@ export async function createCoreCandidateSession({wasm, invitation, authorized, 
         try { return Object.freeze({group: prepared.group(), member: prepared.member()}); }
         finally { prepared.free(); }
       }),
+      installLocal: async () => {
+        try {
+          current();
+          const bundle = await payloads.bundle(); current();
+          const stored = await store.read('candidate-persona', 'active');
+          const ceremony = current();
+          if (!stored || stored.value?.format !== 1 || !['open', 'owner'].includes(stored.value.claim)) throw new Error('Stored claim state unavailable');
+          const prepared = ceremony.prepare_install(bundle.certificate, stored.value.claim);
+          // Transfer only candidate member custody. The browser record explicitly
+          // has no hardware-sealing qualification; no group traffic keys persist.
+          const record = prepared.into_browser_record();
+          current();
+          // New membership only: never overwrite an existing group's epoch or
+          // revocations. Enrollment admits the current epoch, with no grace.
+          const membership = {format: 1, group: record.group, subject: record.subject,
+            certificate: record.certificate, current: bundle.epoch, depth: 0n, revocations: []};
+          const receiptBytes = await installationReceipt(wasm, expected, record.subject, record.certificate);
+          current();
+          const membershipKey = Array.from(record.group, b => b.toString(16).padStart(2, '0')).join('');
+          const receipt = await session.consume([{scope: 'candidate-persona', key: 'active', expectedRevision: stored.revision,
+            value: {format: 1, claim: 'owner', record, epoch: bundle.epoch,
+              invitation: {group: expected.group, code: expected.code}}},
+            {scope: 'membership', key: membershipKey, expectedRevision: 0, value: membership}]);
+          // Do not apply the ordinary post-await cancellation guard here. A
+          // transaction that already committed must still report that fact.
+          return Object.freeze({status: 'installed-local', revision: receipt.revisions[0], peerAcknowledged: false, receipt: receiptBytes});
+        } catch (error) { await dispose(); throw error; }
+      },
       dispose,
     });
   } catch (error) { authorized?.free(); await dispose(); throw error; }
