@@ -315,3 +315,16 @@ hardware-rooted sealing required for persistent TG issuer/derived keys by L5
 5.3.1a–5.3.2. Those keys cannot be treated as durably supported by the identity
 storage prototype. These requirements remain implementation work, not claimed
 capabilities of the public app.
+
+Browser storage now supports a bounded atomic compare-and-swap across multiple
+records, with all comparisons completed before any write is queued. The real
+browser test races two tabs on a synthetic claim/membership pair, confirms one
+winner and matching records after restart, and injects a failure during the
+second write to verify rollback of the first. Conflict, duplicate-key and clone
+failure cases leave no partial update. Existing identity, membership and mutual
+session tests also pass using this shared storage path.
+
+This is the transaction primitive for atomic enrollment, not a completed L5B
+ceremony or a claim of power-loss qualification. The complete runtime gate is
+still running and has progressed from host tests into platform builds. The
+public Along app remains unchanged while the integration is unfinished.
