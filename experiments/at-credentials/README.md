@@ -409,8 +409,8 @@ and input-snapshot checks; receiver tests distinguish committed from interrupted
 cancelled and superseded installations. This is a recipient's authenticated report
 of a local commit, not proof of hardware sealing or resistance to physical power
 loss. The durable sender journal below preserves the latest result;
-local receipt recovery is described below; reconnect dispatch and public status
-presentation remain unfinished.
+receipt recovery over a fresh authenticated session is described below; public
+status presentation remains unfinished.
 
 ## Durable sender status
 
@@ -439,9 +439,20 @@ and does not grant or restore permission to use it.
 The receiver test verifies recovery in a fresh document, unchanged secret storage,
 and refusal for a wrong nonce, missing journal, cancellation or a record changing
 during recovery. The WebRTC test deliberately drops the first acknowledgment,
-checks that the owner remains pending, then confirms a recovered receipt through
-the authenticated channel. That test supplies the public recovery context through
-the harness and uses the existing connection: it does not yet implement recovery
-request framing or dispatch over a newly established session. The reconnect
-controller must authenticate the owner and match the receipt to its saved pending
-delivery. User-facing recovery and physical-device reconnection remain open.
+checks that the owner remains pending, closes both connections, then authenticates
+new sessions with the restored identities. `delivery-recovery.mjs` sends the
+owner's persisted pending context in a bounded, versioned request through that
+new channel. The recipient checks the actual controller-supplied peer against its
+pinned owner and answers from its consumed journal; the owner verifies and commits
+the reply through its delivery history. The key is not sent again.
+
+Tests also refuse malformed/trailing request bytes, zero generation, an unrelated
+peer, an unmatched nonce, a closed connection and recovery of an already confirmed
+record. The request is public context carried by the authenticated session, not
+an independently signed authority or permission to use the key. The runtime
+controller must supply actual authenticated peers, rather than trusting payload
+identifiers. Existing grants need not be restored to acknowledge historical storage.
+
+This is a one-browser-host test with synthetic issuer and manually exchanged
+connection descriptions. User-facing recovery, automatic discovery/signaling,
+physical-device reconnection and reconnect policy catch-up remain open.

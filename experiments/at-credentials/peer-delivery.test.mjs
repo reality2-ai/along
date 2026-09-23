@@ -6,7 +6,7 @@ import {join} from 'node:path';
 const {chromium} = await import(process.env.PLAYWRIGHT_MODULE || '@playwright/test');
 const sources = new Map();
 for (const name of ['storage.mjs', 'membership.mjs', 'certificate.mjs', 'peer-session.mjs', 'peer-link.mjs', 'challenge.mjs', 'session-statement.mjs']) sources.set('/' + name, await readFile(join(process.env.R2_BROWSER_DIR, name)));
-for (const name of ['../tg-pairing/initial-persona.mjs', '../tg-pairing/local-persona.mjs', 'local-owner.mjs', 'owner-policy.mjs', 'owner-delivery.mjs', 'delivery-history.mjs', 'remote-owner.mjs', 'policy-update.mjs', 'policy-update-message.mjs', 'remote-owner-view.mjs', 'settings-view.mjs', 'credential-view.mjs', '../tg-pairing/comparison.css', '../tg-pairing/local-persona-session.mjs', 'policy.mjs', 'policy-store.mjs', 'local-vault.mjs', 'delivery-ack.mjs', 'delivery-message.mjs']) sources.set('/' + name.split('/').pop(), await readFile(new URL(name, import.meta.url)));
+for (const name of ['../tg-pairing/initial-persona.mjs', '../tg-pairing/local-persona.mjs', 'local-owner.mjs', 'owner-policy.mjs', 'owner-delivery.mjs', 'delivery-history.mjs', 'delivery-recovery.mjs', 'remote-owner.mjs', 'policy-update.mjs', 'policy-update-message.mjs', 'remote-owner-view.mjs', 'settings-view.mjs', 'credential-view.mjs', '../tg-pairing/comparison.css', '../tg-pairing/local-persona-session.mjs', 'policy.mjs', 'policy-store.mjs', 'local-vault.mjs', 'delivery-ack.mjs', 'delivery-message.mjs']) sources.set('/' + name.split('/').pop(), await readFile(new URL(name, import.meta.url)));
 for (const name of ['hive_wasm.js', 'hive_wasm_bg.wasm']) sources.set('/' + name, await readFile(join(process.env.R2_WASM_DIR, name)));
 for (const name of ['live-client.mjs', '../../public/at-client.js', '../../public/live-client.js']) sources.set('/' + name.split('/').pop(), await readFile(new URL(name, import.meta.url)));
 const server = createServer((req, res) => {
@@ -38,6 +38,7 @@ try {
     const {sendOwnerCredential} = await import('./owner-delivery.mjs');
     const {verifyDeliveryAck} = await import('./delivery-ack.mjs');
     const {openDeliveryHistory} = await import('./delivery-history.mjs');
+    const {requestDeliveryRecovery, answerDeliveryRecovery, encodeRecoveryRequest, decodeRecoveryRequest} = await import('./delivery-recovery.mjs');
     const {applyRemoteATPolicy, encodePolicyUpdate, decodePolicyUpdate} = await import('./policy-update.mjs');
     const {updateLocalATPolicy} = await import('./owner-policy.mjs');
     const codec = (await import('./certificate.mjs')).certificateCodec(wasm);
@@ -76,9 +77,14 @@ try {
     let timeout, acknowledgmentContext, confirm, rejectConfirmation, dropAcknowledgment = true;
     const confirmed = new Promise((yes, no) => { confirm = yes; rejectConfirmation = no; });
     void confirmed.catch(() => {});
+    let recovering = false;
     try {
-      receiving = await openLocalPersonaSession({wasm, store: receiver.store, expectedGroup: group, peer: owner.subject,
-        role: 'offer', onMessage: async packet => {
+      const receiverHandler = async packet => {
+          if (recovering) {
+            try { await answerDeliveryRecovery({wasm, store: receiver.store, expectedGroup: group, peer: owner.subject, connection: receiving, packet}); }
+            catch (error) { rejectConfirmation(error); }
+            return;
+          }
           if (policyReply) {
             try { policyReply(await applyRemoteATPolicy({wasm, store: receiver.store, expectedGroup: group,
               peer: owner.subject, connection: receiving, ...decodePolicyUpdate(packet)})); }
@@ -92,7 +98,8 @@ try {
             await receiving.send(await request.acknowledgment({signal: receiving.signal}));
             resolve(receipt);
           } catch (error) { reject(error); }
-        }});
+        };
+      receiving = await openLocalPersonaSession({wasm, store: receiver.store, expectedGroup: group, peer: owner.subject, role: 'offer', onMessage: receiverHandler});
       sending = await openLocalPersonaSession({wasm, store: owner.store, expectedGroup: group, peer: receiver.subject,
         role: 'answer', onMessage: async nonce => {
           try {
@@ -154,14 +161,43 @@ try {
       check(result.status === 'credential-saved' && messages === 1, 'one authenticated delivery installed');
       const pendingStatus = await history.read();
       check(pendingStatus.status === 'pending', 'lost acknowledgment leaves owner uncertain');
-      // Harness supplies the saved owner's request context. Full reconnect
-      // request framing/dispatch is separate from this storage-recovery check.
-      await receiving.send(await receiverVault.recoverAcknowledgment(pendingStatus.context, {signal: receiving.signal}));
+      request.close(); sending.close(); receiving.close();
+      check(await denied(() => requestDeliveryRecovery({wasm, store: owner.store, expectedGroup: group,
+        peer: receiver.subject, connection: sending})), 'closed session cannot request recovery');
+      recovering = true;
+      // Restore both identities into new authenticated sessions. Only the owner
+      // reads its pending context; the recipient gets the request over WebRTC.
+      receiving = await openLocalPersonaSession({wasm, store: receiver.store, expectedGroup: group,
+        peer: owner.subject, role: 'offer', onMessage: receiverHandler});
+      sending = await openLocalPersonaSession({wasm, store: owner.store, expectedGroup: group,
+        peer: receiver.subject, role: 'answer', onMessage: async packet => {
+          try { confirm(await history.confirm(packet, {signal: sending.signal})); }
+          catch (error) { rejectConfirmation(error); }
+        }});
+      const nextOffer = await receiving.offer(), nextAnswer = await sending.accept(nextOffer);
+      await receiving.accept(nextAnswer);
+      await Promise.all([receiving.authenticated(), sending.authenticated()]);
+      const recoveryPacket = encodeRecoveryRequest(pendingStatus.context);
+      check(decodeRecoveryRequest(recoveryPacket).nonce === pendingStatus.context.nonce, 'recovery context round trip');
+      check(await denied(async () => decodeRecoveryRequest(recoveryPacket.slice(1))), 'malformed request refused');
+      const extra = new Uint8Array(recoveryPacket.length + 1); extra.set(recoveryPacket);
+      check(await denied(async () => decodeRecoveryRequest(extra)), 'trailing bytes refused');
+      const invalidGeneration = recoveryPacket.slice(); invalidGeneration.fill(0, invalidGeneration.length - 8);
+      check(await denied(async () => decodeRecoveryRequest(invalidGeneration)), 'invalid generation refused');
+      check(await denied(() => answerDeliveryRecovery({wasm, store: receiver.store, expectedGroup: group,
+        peer: receiver.subject, connection: receiving, packet: recoveryPacket})), 'unrelated peer cannot request receipt');
+      check(await denied(() => answerDeliveryRecovery({wasm, store: receiver.store, expectedGroup: group,
+        peer: owner.subject, connection: receiving, packet: encodeRecoveryRequest({...pendingStatus.context, nonce: '00'.repeat(16)})})), 'unmatched request refused');
+      await requestDeliveryRecovery({wasm, store: owner.store, expectedGroup: group,
+        peer: receiver.subject, connection: sending});
       clearTimeout(timeout);
       const acknowledgment = await Promise.race([confirmed, new Promise((_, no) => {
         timeout = setTimeout(() => no(new Error('Acknowledgment timeout')), 15000);
       })]);
-      check(acknowledgment.status === 'recipient-confirmed-saved', 'owner receives recipient acknowledgment');
+      check(acknowledgment.status === 'recipient-confirmed-saved', 'owner receives recipient acknowledgment on fresh session');
+      recovering = false;
+      check(await denied(() => requestDeliveryRecovery({wasm, store: owner.store, expectedGroup: group,
+        peer: receiver.subject, connection: sending})), 'confirmed record does not request recovery');
       check(await receiverVault.getKey() === 'synthetic-peer-delivery', 'receiver decrypts its own record');
       const receivedRecord = await receiver.store.read('along-at-secret:' + binding.owner, policyKey);
       check(receivedRecord.value.member === hex(receiver.subject), 'ciphertext bound to receiver');
