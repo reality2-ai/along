@@ -6,7 +6,7 @@ import {enrollmentPayloads} from './enrollment-payloads.mjs';
 import {installationReceipt} from './installation-receipt.mjs';
 import {readStoredClaim} from './stored-claim.mjs';
 
-export async function createCoreCandidateSession({wasm, invitation, authorized, platform, readClaimState, store, signal}) {
+export async function createCoreCandidateSession({wasm, invitation, authorized, platform, readClaimState, store, signal, softwareCustody = false}) {
   const expected = structuredClone(invitation);
   let core, session, key, cancellation, installed, acknowledgmentStarted = false, started = false, ended = false;
   const close = () => {
@@ -26,6 +26,7 @@ export async function createCoreCandidateSession({wasm, invitation, authorized, 
   signal?.addEventListener('abort', abort, {once: true});
   try {
     initiating();
+    if (typeof softwareCustody !== 'boolean') throw new Error('Custody profile required');
     if (readClaimState === undefined) readClaimState = () => readStoredClaim(store);
     const statement = invitationStatement(wasm, expected), checked = authorized.statement();
     if (checked.length !== statement.length || !checked.every((v, i) => v === statement[i])) throw new Error('Authorized invitation differs');
@@ -94,8 +95,8 @@ export async function createCoreCandidateSession({wasm, invitation, authorized, 
           const ceremony = current();
           if (!stored || stored.value?.format !== 1 || !['open', 'owner'].includes(stored.value.claim)) throw new Error('Stored claim state unavailable');
           const prepared = ceremony.prepare_install(bundle.certificate, stored.value.claim);
-          // Transfer only candidate member custody. The browser record explicitly
-          // has no hardware-sealing qualification; no group traffic keys persist.
+          // Member custody remains unqualified. Only the explicitly selected
+          // Along software profile also persists encrypted traffic material.
           const record = prepared.into_browser_record();
           current();
           // New membership only: never overwrite an existing group's epoch or
@@ -105,10 +106,14 @@ export async function createCoreCandidateSession({wasm, invitation, authorized, 
           const receiptBytes = await installationReceipt(wasm, expected, record.subject, record.certificate);
           current();
           const membershipKey = Array.from(record.group, b => b.toString(16).padStart(2, '0')).join('');
+          const traffic = softwareCustody ? await (await import('./software-traffic.mjs')).prepareSoftwareTraffic({group: record.group, subject: record.subject,
+            epoch: bundle.epoch, payloadKey: bundle.payloadKey, integrityKey: bundle.integrityKey, signal: session.signal}) : null;
+          current();
           const receipt = await session.consume([{scope: 'candidate-persona', key: 'active', expectedRevision: stored.revision,
             value: {format: 1, claim: 'owner', record, epoch: bundle.epoch, peerAcknowledged: false,
               invitation: structuredClone(expected), receipt: receiptBytes}},
-            {scope: 'membership', key: membershipKey, expectedRevision: 0, value: membership}]);
+            {scope: 'membership', key: membershipKey, expectedRevision: 0, value: membership}, ...(traffic ? [traffic] : [])]);
+          bundle.destroy();
           // Do not apply the ordinary post-await cancellation guard here. A
           // transaction that already committed must still report that fact.
           installed = {revision: receipt.revisions[0], receipt: receiptBytes.slice()};

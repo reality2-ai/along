@@ -589,3 +589,10 @@ It runs on one browser host with synthetic AT credentials/provider replies.
 These remaining boundaries must become a usable device-selection and pairing
 flow; traffic-key persistence is also unfinished. This connected test does not
 enable public live data or establish physical-device reachability.
+
+
+The actual-enrollment AT scenario now opts into encrypted software traffic-key
+persistence as part of the candidate installation transaction. The dedicated
+enrollment test covers reopening those keys and rollback of an interrupted write.
+Earlier traffic-key-persistence limitations describe the previous increment;
+epoch rotation, invitation/device UX and physical connectivity remain open.

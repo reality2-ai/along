@@ -29,7 +29,7 @@ has also passed; the draft remains unmerged.
 | Local installation | Core ceremony, candidate-generated key and atomic installation; real initial group-of-one, first-use storage, reopen and cancellation checks | Local setup integration, reset, issuer custody across restarts and application-secret policy |
 | Membership | Core certificates, local epoch policy, signed revocations; restored signing refuses revoked identity | Freshness after partition, epoch advancement and removal propagation |
 | AT credential custody | Encrypted IndexedDB storage; owner grant/removal and key-replacement review; recipient policy check before provider I/O; browser save/restore/cancellation checks | Public UI integration, complete device-sharing flow, owner availability and installed-device provider verification |
-| Credential transport | Authenticated WebRTC delivery, explicit recipient consent, atomic encrypted installation, signed receipts and recovery over a fresh session | Complete device selection/signaling, traffic-key persistence and physical-device reachability; initial trust/comparison and signaling remain harness inputs |
+| Credential transport | Authenticated WebRTC delivery, explicit recipient consent, atomic encrypted installation, signed receipts and recovery over a fresh session | Complete device selection/signaling, epoch catch-up and physical-device reachability; initial trust/comparison and signaling remain harness inputs |
 | Receipts | Published encrypted receipt/acknowledgment exchange and durable records; authenticated recovery passes fresh-document, mismatch, cancellation and concurrent-write checks | Group announcement and end-user integration |
 | Reconnection | Installed-key mutual peer authentication, revocation closure and screen-cancellation checks | End-user signaling, actual device/network reachability and operation-specific authorization |
 | Comparison UI | Isolated comparison/live-session adapter, keyboard/reflow/axe and cancellation checks | Enclosing setup flow, actual TalkBack and physical co-presence; not loaded by Along |
@@ -87,11 +87,12 @@ Old volatile-only identities cannot silently gain a replacement issuer or change
 groups. Initial-epoch group material is now derived from the actual software issuer. A
 separate browser test exercises signed invitation proof, core enrollment and
 fresh-document member restore with that issuer. Initial trust review, comparison
-approval and signaling remain harness inputs. Traffic-key persistence, epoch
-rotation and public setup wiring remain unfinished.
+approval and signaling remain harness inputs. The selected software profile now persists recipient traffic keys encrypted in the
+same installation transaction and checks current membership when restoring them.
+Epoch rotation and public setup wiring remain unfinished.
 The actual enrollment path is now joined to the AT credential scenario. The next
-integration work is encrypted traffic-key persistence plus invitation review and
-device signaling in the interface. More downstream UI tests alone cannot establish that outcome.
+integration work is invitation review and device signaling in the interface,
+plus epoch rotation and catch-up. More downstream UI tests alone cannot establish that outcome.
 
 ### Next integration boundary: starting a device
 

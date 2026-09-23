@@ -432,3 +432,31 @@ The AT credential peer test now also uses this actual enrollment path, including
 both sides of installation acknowledgment and recipient restore before key sharing.
 Earlier references to its bootstrap fixture are historical. Initial trust,
 comparison approval and manual signaling are still supplied by the harness.
+
+
+## Atomic encrypted traffic-key custody
+
+The explicitly selected browser software profile now adds `softwareCustody: true`
+to the core candidate adapter. It encrypts the received payload/integrity keys with
+a fresh nonextractable AES-GCM key and binds group, member and epoch as additional
+authenticated data. The encrypted record joins the same transaction as persona,
+membership and consumed invitation. The default adapter path remains volatile-only;
+no hardware-sealing qualification is inferred from the software option.
+
+`loadSoftwareTraffic` checks the restored enrolled member, exact current membership
+epoch, record shape and storage revisions before returning temporary key bytes.
+It checks membership again after decryption. Callers must destroy the returned
+material and restore/check again before a subsequent operation; the returned
+arrays are not a continuing permission or a revocation-proof capability.
+
+The software enrollment test verifies fresh-document restoration against hashes
+of the actual issuer-derived keys, refuses tampered ciphertext, a mismatched epoch
+and cancelled reads, and clears returned bytes. With `ABORT_TRAFFIC=1`, it aborts
+IndexedDB during the traffic-record write and proves the previous initial persona
+survives without target membership or an orphan traffic record. The AT peer test
+uses this profile too. Existing default core installation/recovery checks pass.
+
+This closes initial recipient group-material persistence for the chosen software
+profile. It does not establish hardware protection, full-profile rollback
+resistance, epoch rotation/catch-up, practical discovery or physical-device use.
+All of this remains excluded from public Along.

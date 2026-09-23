@@ -7,7 +7,7 @@ const {chromium} = await import(process.env.PLAYWRIGHT_MODULE || '@playwright/te
 if (!process.env.R2_BROWSER_DIR) throw new Error('Set R2_BROWSER_DIR to the experimental Reality2 browser module directory');
 if (!process.env.R2_WASM_DIR) throw new Error('Set R2_WASM_DIR');
 const sources = new Map(await Promise.all(['peer-session', 'challenge', 'session-statement', 'membership', 'certificate', 'enrollment-session', 'storage', 'invitation-journal', 'enrollment-link', 'enrollment-exchange', 'enrollment-protection', 'peer-link', 'invitation'].map(async name => ['/' + name + '.mjs', await readFile(join(process.env.R2_BROWSER_DIR, name + '.mjs'))])));
-for (const name of ['enrollment-profile.mjs', 'enrollment-payloads.mjs', 'core-candidate-session.mjs', 'initial-persona.mjs', 'software-persona.mjs', 'stored-claim.mjs', 'installation-receipt.mjs', 'local-persona.mjs', 'local-persona-session.mjs', 'receipt-recovery.mjs']) sources.set('/' + name, await readFile(new URL('./' + name, import.meta.url)));
+for (const name of ['enrollment-profile.mjs', 'enrollment-payloads.mjs', 'core-candidate-session.mjs', 'software-traffic.mjs', 'initial-persona.mjs', 'software-persona.mjs', 'stored-claim.mjs', 'installation-receipt.mjs', 'local-persona.mjs', 'local-persona-session.mjs', 'receipt-recovery.mjs']) sources.set('/' + name, await readFile(new URL('./' + name, import.meta.url)));
 if (process.env.RECOVERY_MODULE) sources.set('/receipt-recovery.mjs', await readFile(process.env.RECOVERY_MODULE));
 for (const name of ['hive_wasm.js', 'hive_wasm_bg.wasm']) sources.set('/' + name, await readFile(join(process.env.R2_WASM_DIR, name)));
 const server = createServer((req, res) => {
@@ -59,7 +59,7 @@ try {
     const authorized = membership.authorise_invitation(statement, new Uint8Array(input.certificate), nonce, new Uint8Array(input.proof));
     membership.free(); if (!authorized) throw new Error('Actual invitation proof refused');
     window.session = await (await import('./core-candidate-session.mjs')).createCoreCandidateSession({wasm, store, invitation, authorized,
-      platform: {candidateDevelopment: false, provisionerDevelopment: false, provisionerHoldsCustody: true, epoch: 0n}});
+      softwareCustody: true, platform: {candidateDevelopment: false, provisionerDevelopment: false, provisionerHoldsCustody: true, epoch: 0n}});
   }, invitation);
   const offer = await pages[0].evaluate(() => session.offer());
   const answer = await pages[1].evaluate(offer => session.accept(offer), offer);
@@ -68,26 +68,66 @@ try {
   assert.deepEqual(comparisons[0], comparisons[1]);
   await Promise.all(pages.map(page => page.evaluate(() => session.decide(true))));
   await pages[0].evaluate(() => session.sendClaim());
-  await pages[1].evaluate(async () => {
+  const expectedKeys = await pages[1].evaluate(async () => {
     const subject = await payloads.claim();
     const material = await issuer.enrollmentMaterial(subject);
+    const digests = await Promise.all([material.payloadKey, material.integrityKey].map(async key => [...new Uint8Array(await crypto.subtle.digest('SHA-256', key))]));
     try { await payloads.sendBundle(material); }
     finally { material.destroy(); }
     if (material.payloadKey.some(Boolean) || material.integrityKey.some(Boolean)) throw new Error('Temporary bundle was not cleared');
+    return digests;
   });
+  if (process.env.ABORT_TRAFFIC === '1') {
+    assert.equal(await pages[0].evaluate(async () => {
+      const original = IDBObjectStore.prototype.put; let triggered = false;
+      IDBObjectStore.prototype.put = function(...args) {
+        const result = original.apply(this, args);
+        if (args[1]?.[0] === 'along-browser-traffic') { triggered = true; this.transaction.abort(); }
+        return result;
+      };
+      try {
+        if (await session.installLocal().then(() => true, () => false)) return false;
+      } finally { IDBObjectStore.prototype.put = original; }
+      const groupId = Array.from(invitation.group, b => b.toString(16).padStart(2, '0')).join('');
+      return triggered && (await store.read('candidate-persona', 'active')).value.origin === 'initial'
+        && await store.read('along-browser-traffic', groupId) === null && await store.read('membership', groupId) === null;
+    }), true);
+    console.log('PASS: interrupted traffic-key write rolls back recipient membership and persona with no orphan traffic record.');
+  } else {
   const receipt = await pages[0].evaluate(() => session.installLocal());
   assert.equal(receipt.status, 'installed-local');
   await pages[0].evaluate(async () => { await session.dispose(); store.close(); });
   await pages[1].evaluate(async () => { issuer.close(); await session.cancel(); store.close(); });
   await pages[0].close();
   const reopened = await contexts[0].newPage(); await reopened.goto(url);
-  assert.equal(await reopened.evaluate(async group => {
+  assert.equal(await reopened.evaluate(async ({group, expectedKeys}) => {
     const wasm = await import('./hive_wasm.js'); await wasm.default();
     const store = await (await import('./storage.mjs')).openBrowserStorage('software-enrollment');
     try {
       const restored = await (await import('./local-persona.mjs')).loadLocalPersona({wasm, store, expectedGroup: new Uint8Array(group)});
+      const module = await import('./software-traffic.mjs');
+      const material = await module.loadSoftwareTraffic({wasm, store, expectedGroup: new Uint8Array(group)});
+      const digests = await Promise.all([material.payloadKey, material.integrityKey].map(async key => [...new Uint8Array(await crypto.subtle.digest('SHA-256', key))]));
+      if (JSON.stringify(digests) !== JSON.stringify(expectedKeys)) throw new Error('Restored group material differs');
+      material.destroy();
+      const denied = fn => fn().then(() => false, () => true);
+      const corrupt = {...store, read: async (...args) => {
+        const saved = await store.read(...args);
+        if (args[0] === 'along-browser-traffic') saved.value.ciphertext[0] ^= 1;
+        return saved;
+      }};
+      if (!await denied(() => module.loadSoftwareTraffic({wasm, store: corrupt, expectedGroup: new Uint8Array(group)}))) throw new Error('Tampered material accepted');
+      const stale = {...store, read: async (...args) => {
+        const saved = await store.read(...args);
+        if (args[0] === 'along-browser-traffic') saved.value.epoch += 1n;
+        return saved;
+      }};
+      if (!await denied(() => module.loadSoftwareTraffic({wasm, store: stale, expectedGroup: new Uint8Array(group)}))) throw new Error('Wrong epoch accepted');
+      const aborted = new AbortController(); aborted.abort();
+      if (!await denied(() => module.loadSoftwareTraffic({wasm, store, expectedGroup: new Uint8Array(group), signal: aborted.signal}))) throw new Error('Cancelled traffic read accepted');
       return restored.origin === 'enrolled' && restored.claim === 'owner' && (await restored.sign(new Uint8Array(32))).length === 64;
     } finally { store.close(); }
-  }, invitation.group), true);
-  console.log('PASS: actual restored software issuer derives enrollment material, signs the candidate certificate, and completes core browser installation over WebRTC; fresh-document member restore/sign succeeds. Harness supplies trust review, comparison decision and signaling; no hardware custody, traffic-key persistence or physical-device claim.');
+  }, {group: invitation.group, expectedKeys}), true);
+  console.log('PASS: actual restored software issuer derives enrollment material, signs the candidate certificate, and completes core browser installation over WebRTC; fresh-document member restore/sign succeeds. Harness supplies trust review, comparison decision and signaling; encrypted traffic-key restore verified; no hardware custody or physical-device claim.');
+  }
 } finally { await browser?.close(); await new Promise(resolve => server.close(resolve)); }
