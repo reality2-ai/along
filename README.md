@@ -110,7 +110,8 @@ this repository for source, installation help and the course material.
 - Search addresses or stops, compare journey options, then reveal steps and walking detail.
 - Tap route badges to explore directions, branches, mapped paths and scheduled stop times.
 - Open a stop for its location and upcoming scheduled departures; Back returns to your task.
-- Save journeys or let repeated searches suggest a routine; pause learning or clear it.
+- Save endpoints and your chosen bus/train/ferry service sequence; reopen with fresh scheduled departures.
+- Let repeated searches suggest a routine; pause learning or clear it.
 - Choose more walking time, avoid mapped steps/barriers, or require confirmed stop/vehicle access.
 - Install on desktop or Android, and reopen with downloaded data when offline.
 - Check for app updates by refreshing or returning to the app; offline checks stay quiet.
@@ -143,6 +144,25 @@ uncompressed storage and memory are considerably larger. Browser storage can be
 evicted. Do not rely on an expired timetable or mistake scheduled times for live
 predictions. See [release evidence and limits](docs/RELEASE_CHECKLIST.md).
 
+## Save places and optional service preferences
+
+On the review screen, before choosing a route, **Save these places** remembers
+just your start and destination. It does not save a departure time or itinerary.
+Reopen the saved places from **Your usual journeys** to plan again.
+
+After choosing a journey, **Prefer these services** can separately remember the
+ordered bus, train or ferry numbers (and saves the places if needed). Reopening
+then searches the current timetable for that combination, with freshly calculated
+walking connections, boarding stops and departures. It does not track a particular
+vehicle or retain the original departure time.
+
+If no match is found within the four-hour search window and your travel
+preferences, Along says so and offers other options. **Compare without saved
+route preference** lets you explore freely. One preferred combination is stored
+per endpoint pair; selecting another replaces it. Turning off **Preferred
+services** keeps the saved places. Removing **Saved places** removes both.
+Older saved places stay usable and acquire no service preference automatically.
+
 ## Explore a route or stop
 
 Tap a route badge in a journey or nearby departures, or choose **Explore a bus,
@@ -151,7 +171,9 @@ published AT path, full stop sequence and a scheduled service's stop times.
 Filter stop names with a term such as **Symonds**. A street without a matching
 stop name may still be on the path; this is not a street-intersection search.
 
-Tap a stop name or map marker for its location and scheduled departures. Back or
+Tap a stop name or map marker for its location and a departure-board view, clearly
+labelled **Scheduled departures — not live**. The AT Mobile link opens AT’s website
+for live times and vehicle tracking; it does not send Along’s saved journeys to AT. Back or
 Escape returns through the detail layers without changing your planned journey.
 Downloaded paths and stop locations work offline. **Show street map** in the centre of the map
 adds an OpenStreetMap background on request; those tiles are not in the offline

@@ -65,9 +65,9 @@ try{
  await page.locator('[data-follow]').first().focus();await page.keyboard.press('Enter');
  await page.locator('#full-itinerary > summary').focus();await page.keyboard.press('Enter');
  await expect(page.locator('.leg').first()).toBeVisible();
- await page.locator('#save-journey').click();await expect(page.locator('#save-journey')).toHaveAttribute('aria-pressed','true');
+ await page.locator('#prefer-services').click();await expect(page.locator('#prefer-services')).toHaveAttribute('aria-pressed','true');
  await expect(page.locator('.journey-steps').first()).toHaveAttribute('open','');
- await expect(page.locator('#save-journey')).toBeFocused();
+ await expect(page.locator('#prefer-services')).toBeFocused();
  const audit=await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa','wcag22aa']).analyze();expect(audit.violations).toEqual([]);
  await mkdir('test-results',{recursive:true});
  await writeFile('test-results/accessibility-tree.txt',await page.locator('main').ariaSnapshot());
@@ -110,7 +110,7 @@ try{
  }));
  expect(stored.version).toBe('refresh-regression-2');expect(stored.keys.sort()).toEqual(['addresses','network','routes','streets']);
  await page.locator('#settings .close-dialog').click();
- await expect(page.locator('#save-journey')).toHaveAttribute('aria-pressed','true');
+ await expect(page.locator('#prefer-services')).toHaveAttribute('aria-pressed','true');
  await context.setOffline(true);const warm=performance.now();await page.reload();
  await expect(page.locator('#data-status')).toContainText(/(?:offline ready|Offline · journeys ready)/,{timeout:90000});
  measurements.offlineReadyMs=Math.round(performance.now()-warm);

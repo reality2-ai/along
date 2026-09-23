@@ -14,6 +14,20 @@ app works even when you have no connection or the portal is unavailable.**
 this browser on this device.** No account, analytics service, uploaded journey
 history or background tracking is required. Along does not currently sync devices.
 
+## Scheduled information, not live tracking
+
+**The public Along app uses downloaded timetables. It does not show live bus,
+train or ferry positions, current delays or cancellations.** Being online does
+not turn its journey plans or stop departure boards into live information.
+Displayed departures are scheduled times; walking and transfer times are estimates.
+A saved journey does not reserve a service or guarantee a connection.
+
+For live departure information and vehicle tracking, use
+[AT Mobile](https://at.govt.nz/atmobile/) or check the
+[AT website before travelling](https://at.govt.nz/bus-train-ferry/service-announcements/check-before-you-travel).
+These links need an internet connection and open AT's services. Check the timetable
+date and current service/access conditions before relying on a journey.
+
 ## Prepare once, then check the installed app
 
 1. Open the hosted Along app over HTTPS in a normal browser window, not private

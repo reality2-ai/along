@@ -526,3 +526,31 @@ now appears beside the step count at the top of the selected journey, with a
 clear button boundary and saved-state text. The current travel instruction and
 Next step remain the main task. This balances remembering a future routine with
 following the present journey, rather than making every action equally dominant.
+
+
+## Refinement: saving should preserve the choice the person made
+
+The question about whether saving kept only endpoints revealed a mismatch between
+the implemented record and the meaning of “this journey”. The user asked to retain
+chosen bus/train numbers. Saving now records an ordered service preference and
+replans its departures when reopened, with explicit fallback and an unrestricted
+comparison action. This extends routine learning with deliberate choice; it does
+not equate a remembered preference with a promise that a particular trip operates.
+
+## Refinement: familiar visual language must not overstate freshness
+
+A departure-board appearance was requested for stop times, followed immediately
+by the requirement to distinguish scheduled times from live ones and link to AT.
+The combined design uses aligned time/route/destination columns, readable contrast
+and a prominent scheduled-only caption. A live-tracking information link is a
+separate online action. Familiar appearance helps recognition, but must not imply
+live operational data that the displayed table does not contain.
+
+
+The next clarification identified a second ambiguity: a save control after route
+selection could imply preserving the exact dated itinerary. The final design
+separates **Save these places** before route selection from **Prefer these
+services** afterwards. Service preferences are optional, and neither action saves
+an old departure time. This distinction reconciles saving general endpoints with
+the earlier request to remember chosen service numbers, rather than replacing one
+requirement with the other.

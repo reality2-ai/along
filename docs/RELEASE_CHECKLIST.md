@@ -1,6 +1,6 @@
 # Release evidence and remaining gates
 
-Current candidate: **version 26**, reviewed 23 September 2026. The private site and
+Current candidate: **version 27**, reviewed 23 September 2026. The private site and
 static ZIP are prepared. GitHub Pages is published at `reality2.ai/along/`; no AWS deployment has been made.
 This register separates automated evidence, user observations and remaining checks.
 
@@ -253,3 +253,35 @@ the route dialog with the button visible.
 instruction, as an outlined 48-pixel-minimum-height button. The filled primary
 Next step action remains below the travel instruction. Saved state still uses
 text and `aria-pressed`; the header wraps on narrow screens rather than clipping.
+
+
+## Version 27: saved service preferences and scheduled departure boards
+
+“Save these places” on the review screen saves endpoints before route selection.
+“Prefer these services” after selection optionally adds the ordered service sequence.
+Reopening a saved card performs a separate timetable search for that sequence,
+so a slower preferred route is not lost through ordinary earliest-arrival pruning.
+Mode/access/transfer constraints still apply; unavailable matches are explained
+and alternatives remain available. No old trip ID, departure time or vehicle
+position is treated as current. Legacy saves remain usable, and one combination
+per endpoint pair can be replaced explicitly.
+
+Stop details use a semantic, high-contrast departure table with an explicit
+“Scheduled departures — not live” caption and online AT Mobile information link.
+The linked official AT page describes live times and vehicle tracking; Along's
+stop table itself remains scheduled. There is no flashing or automatic row motion.
+
+
+The installation guide now places scheduled-only/live-tracking limitations before
+installation steps and links to official AT Mobile and current-service guidance.
+The same content is generated into cached install.html and packaged INSTALL.md.
+
+
+Validation for version 27: 24 JavaScript and four Python tests passed, including
+preferred sequences hidden by faster alternatives, unavailable/reversed routes,
+mode/transfer rules and legacy storage. All four browser scenarios passed; saved
+places and optional services were tested separately, including clearing only the
+service preference and reopening offline. The static subpath suite passed
+([measurements](evidence/static-v27-metrics.json)). The stop-board dialog also
+passed 320-pixel reflow, axe, route drill-down and visible scheduled labelling.
+The final guide wording is checked in the deployed offline-help smoke test.

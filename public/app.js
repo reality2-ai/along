@@ -1,11 +1,11 @@
 import {setupUpdates} from './updates.js';
 import {aucklandNow} from './planner.js';
-import {readPreferences,writePreferences,recordJourney,suggestions} from './preferences.js';
+import {readPreferences,writePreferences,recordJourney,suggestions,journeyRoutes,sameRoutes,routePreferenceLabel} from './preferences.js';
 const $=id=>document.getElementById(id);
 const escape=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const clock=seconds=>{const s=((seconds%86400)+86400)%86400;return `${String(Math.floor(s/3600)).padStart(2,'0')}:${String(Math.floor(s%3600/60)).padStart(2,'0')}${seconds>=86400?' +1 day':''}`;};
 const minutes=seconds=>Math.ceil(seconds/60);
-const state={from:null,to:null,location:null,locationLabel:'',journeys:[],preferences:readPreferences(),ready:false,stored:false,shellReady:false,streetsReady:false,streetsStored:false,showAllStops:false,nearbySequence:0,searchSequence:0,lastSearch:null,screen:'destination',intent:'plan',selectedJourney:null,legIndex:0};
+const state={from:null,to:null,location:null,locationLabel:'',journeys:[],preferences:readPreferences(),ready:false,stored:false,shellReady:false,streetsReady:false,streetsStored:false,showAllStops:false,nearbySequence:0,searchSequence:0,lastSearch:null,screen:'destination',intent:'plan',selectedJourney:null,legIndex:0,savedPreference:null};
 const worker=new Worker(new URL('./worker.js',import.meta.url),{type:'module'});
 let requestId=0;
 const pending=new Map();
@@ -39,8 +39,8 @@ const context=()=>{const at=aucklandNow();return {hour:Number(at.time.slice(0,2)
 function persist(){const saved=writePreferences(state.preferences);$('storage-message').textContent=saved?'':'This browser could not save your preferences. They will last for this session only.';renderUsual();}
 function renderUsual(){
   const usual=suggestions(state.preferences,context());
-  $('usual-journeys').innerHTML=usual.length?usual.map((j,i)=>`<button type="button" class="usual-card" data-usual="${i}"><span class="usual-icon">${j.saved?'☆':'↗'}</span><span><strong>${escape(j.to.name)}</strong><small>From ${escape(j.from.name)}</small><small>${j.saved?'Saved journey':`${j.count} searches · one tap to plan`}</small></span></button>`).join(''):`<div class="usual-placeholder"><span class="usual-icon">↗</span><div><strong>${state.preferences.learning?'Your routine starts with a journey.':'Somewhere different? You’re in the right place.'}</strong>${state.preferences.learning?'Search a route a few times, or save one, and it will appear here.':'Learning is paused. You can still save journeys yourself.'}</div></div>`;
-  document.querySelectorAll('[data-usual]').forEach(button=>button.onclick=()=>{state.intent='plan';const trip=usual[Number(button.dataset.usual)];setPlace('origin',trip.from);setPlace('destination',trip.to);setNow();searchJourney();});
+  $('usual-journeys').innerHTML=usual.length?usual.map((j,i)=>`<button type="button" class="usual-card" data-usual="${i}"><span class="usual-icon">${j.saved?'☆':'↗'}</span><span><strong>${escape(j.to.name)}</strong><small>From ${escape(j.from.name)}</small><small>${j.saved?(j.savedRoutes?'Saved · '+escape(routePreferenceLabel(j.savedRoutes)):'Saved journey'):`${j.count} searches · one tap to plan`}</small></span></button>`).join(''):`<div class="usual-placeholder"><span class="usual-icon">↗</span><div><strong>${state.preferences.learning?'Your routine starts with a journey.':'Somewhere different? You’re in the right place.'}</strong>${state.preferences.learning?'Search a route a few times, or save one, and it will appear here.':'Learning is paused. You can still save journeys yourself.'}</div></div>`;
+  document.querySelectorAll('[data-usual]').forEach(button=>button.onclick=()=>{state.intent='plan';const trip=usual[Number(button.dataset.usual)];state.savedPreference=trip.saved&&trip.savedRoutes?{from:trip.from.id,to:trip.to.id,routes:trip.savedRoutes}:null;setPlace('origin',trip.from);setPlace('destination',trip.to);setNow();searchJourney();});
   document.querySelector('.usual-section').hidden=!usual.length;
   $('learning-enabled').checked=state.preferences.learning;
   $('learning-note').textContent=state.preferences.learning?'Your searches help your usual journeys find their way here. Stored only on this device.':'Journey learning is paused. Saved routes stay available, and every new journey is yours to choose.';
@@ -61,6 +61,7 @@ function showScreen(screen,{focus=true,historyEntry=true}={}){
   $('review-origin').textContent=state.from?.name||'Choose a starting place';$('review-destination').textContent=state.to?.name||'';
   $('review-destination-row').hidden=state.intent==='nearby';$('swap').hidden=state.intent==='nearby';
   $('origin-next').textContent=state.intent==='nearby'?'Review departure preferences →':'Review journey →';
+  renderSavedPlaces();
   $('find').textContent=state.intent==='nearby'?'Show nearby departures →':'Find my way →';
   $('try-britomart').hidden=state.intent!=='nearby';
   $('journey-notes').hidden=!['options','follow'].includes(screen);
@@ -79,7 +80,7 @@ window.addEventListener('popstate',event=>{
   showScreen(screen,{historyEntry:false});
 });
 $('flow-back').onclick=()=>{if(navDepth)history.back();else showScreen('destination');};
-function startNew(){state.searchSequence++;state.nearbySequence++;$('find').disabled=false;state.intent='plan';setPlace('origin',null);setPlace('destination',null);state.journeys=[];state.lastSearch=null;state.selectedJourney=null;$('direct-only').checked=false;setNow();showScreen('destination');}
+function startNew(){state.savedPreference=null;state.searchSequence++;state.nearbySequence++;$('find').disabled=false;state.intent='plan';setPlace('origin',null);setPlace('destination',null);state.journeys=[];state.lastSearch=null;state.selectedJourney=null;$('direct-only').checked=false;setNow();showScreen('destination');}
 function review(){showScreen('review');}
 function nearby(){showScreen('nearby');refreshNearby();}
 $('nearby-start').onclick=()=>{state.intent='nearby';showScreen('origin');};
@@ -88,7 +89,7 @@ $('change-search').onclick=review;$('nearby-edit').onclick=()=>{state.intent='ne
 $('nearby-from-options').onclick=()=>{state.intent='nearby';nearby();};
 $('nearby-plan').onclick=()=>{state.intent='plan';showScreen('destination');};
 $('another-journey').onclick=startNew;
-$('return-journey').onclick=()=>{const last=state.lastSearch;state.intent='plan';setPlace('origin',last.to);setPlace('destination',last.from);setNow();review();};
+$('return-journey').onclick=()=>{const last=state.lastSearch;state.savedPreference=null;state.intent='plan';setPlace('origin',last.to);setPlace('destination',last.from);setNow();review();};
 for(const field of ['origin','destination']){
   const input=$(field),list=$(field+'-options');let timer,sequence=0,items=[],active=-1;
   const close=()=>{list.hidden=true;input.setAttribute('aria-expanded','false');input.removeAttribute('aria-activedescendant');};
@@ -122,6 +123,7 @@ $('journey-form').onsubmit=event=>{
 };
 async function searchJourney(){
   const from=state.from,to=state.to;$('form-error').textContent='';
+  if(state.savedPreference&&(state.savedPreference.from!==from?.id||state.savedPreference.to!==to?.id))state.savedPreference=null;
   if(!from||!to){$('form-error').textContent='Choose both places from the suggestions.';return;}
   const modes=[...document.querySelectorAll('.modes input:checked')].map(i=>i.value);
   state.lastSearch={from,to,date:$('date').value,time:$('time').value};
@@ -129,7 +131,7 @@ async function searchJourney(){
   const date=$('date').value,time=$('time').value,sequence=++state.searchSequence;
  $('find').disabled=true;$('journeys').innerHTML='<div class="loading">Finding your way through Auckland…</div>';
   try{
-    const journeys=await ask('plan',{from,to,date,time,modes,maxWalk:Number($('max-walk').value),profile:accessProfile()});if(sequence!==state.searchSequence)return;
+    const journeys=await ask('plan',{from,to,date,time,modes,maxWalk:Number($('max-walk').value),profile:accessProfile(),preferredRoutes:state.savedPreference?.routes});if(sequence!==state.searchSequence)return;
     state.journeys=journeys;state.lastSearch={from,to,date,time};$('journey-title').textContent=journeys.length?`${journeys.length} way${journeys.length===1?'':'s'} to get there`:'No journey found in this window';
     if(journeys.length){state.preferences=recordJourney(state.preferences,from,to,{hour:Number(time.slice(0,2)),day:new Date(date+'T12:00:00Z').getUTCDay(),timestamp:Date.now()});persist();}renderJourneys();$('announcement').textContent=journeys.length?`${journeys.length} journey options. Earliest arrival ${clock(journeys[0].arrival)}.`:'No journey found with these preferences.';$('journey-title').focus();
   }catch(error){if(sequence===state.searchSequence){showScreen('review');$('form-error').textContent=error.message;$('form-error').focus();}}
@@ -145,7 +147,7 @@ function placeDetail(place){
   const label=escape(place.name),id=detailId+1;
   const link=detailLink(label,place.name,async()=>{
     const now=explorationTime(),departures=place.placeType==='address'?[]:await ask('stopDetails',{id:place.id,now});
-    return `<p>${place.placeType==='address'?'Street address':'Station or stop'}${place.code?' · Stop '+escape(place.code):''}</p>${mapMarkup()}<p>Accessibility at this location is not verified. Check entrances, crossings and any lifts before travelling.</p>${place.placeType==='address'?'':`<h3>Departures from ${clock(now.seconds)} · ${escape(now.date)}</h3><p>Scheduled, next two hours. Choose a route to explore its full path.</p>${departures.length?departures.map(d=>`<p>${clock(d.departure)} · ${routeLink(escape(d.route),{routeId:d.routeId,tripId:d.trip})} · ${escape(d.headsign)}</p>`).join(''):'<p>No scheduled departures in this window.</p>'}`}`;
+    return `<p>${place.placeType==='address'?'Street address':'Station or stop'}${place.code?' · Stop '+escape(place.code):''}</p>${mapMarkup()}<p>Accessibility at this location is not verified. Check entrances, crossings and any lifts before travelling.</p>${place.placeType==='address'?'':`<h3>Departures from ${clock(now.seconds)} · ${escape(now.date)}</h3><p>Next two hours from the downloaded timetable. Delays, cancellations and vehicle positions are not shown here.</p><p><a href="https://at.govt.nz/atmobile/" target="_blank" rel="noopener noreferrer">AT Mobile: live times and vehicle tracking ↗</a> <small>(online · opens AT’s website)</small></p>${departures.length?`<div class="departure-board"><table><caption>Scheduled departures — not live</caption><thead><tr><th scope="col">Time</th><th scope="col">Route</th><th scope="col">Destination</th></tr></thead><tbody>${departures.map(d=>`<tr><td class="board-time">${clock(d.departure)}</td><td>${routeLink(escape(d.route),{routeId:d.routeId,tripId:d.trip},'board-route')}</td><td>${escape(d.headsign)}</td></tr>`).join('')}</tbody></table></div>`:'<p>No scheduled departures in this window. These are not live times.</p>'}`}`;
   });detailViews.get(id).mount=()=>mountMap(null,[place]);return link;
 }
 function legDetail(leg,label,className){
@@ -215,10 +217,12 @@ function legMarkup(l){
   return `<div class="leg"><strong>${clock(l.departure)}</strong><div>${l.mode==='walk'?`Walk to ${escape(l.to.name)}`:` ${routeLink(`${l.mode} ${escape(l.route)}`,{routeId:l.routeId,tripId:l.trip},`route-badge detail-link ${l.mode}`)} ${escape(l.headsign||l.to.name)}`}<p>From ${placeDetail(l.from)}${l.from.code?' · '+escape(l.from.code):''}</p><p>To ${placeDetail(l.to)} · ${clock(l.arrival)} · ${minutes(l.arrival-l.departure)} min</p>${l.mode==='walk'?walkingDirections(l):''}</div></div>`;
 }
 function renderJourneys(){
-  const sort=$('sort').value,journeys=[...state.journeys].sort((a,b)=>a[sort]-b[sort]||a.arrival-b.arrival);state.displayJourneys=journeys;
+  const sort=$('sort').value,journeys=[...state.journeys].sort((a,b)=>Number(!!b.preferred)-Number(!!a.preferred)||a[sort]-b[sort]||a.arrival-b.arrival);state.displayJourneys=journeys;
   $('sort').hidden=journeys.length<2;
+  $('saved-route-context').hidden=!state.savedPreference;$('use-any-route').hidden=!state.savedPreference;
+  if(state.savedPreference)$('saved-route-context').textContent=`Saved preference: ${routePreferenceLabel(state.savedPreference.routes)}. ${journeys.some(j=>j.preferred)?'Matching services shown first, using the timetable for this search.':'No match found in the next four hours with these travel preferences. Other options are shown when available.'}`;
   if(!journeys.length){$('journeys').innerHTML='<div class="empty-state"><h3>Let’s try another option.</h3><p>No route was found within these preferences.</p><button class="primary-button" id="adjust-journey">Adjust journey preferences →</button></div>';$('adjust-journey').onclick=()=>{review();$('journey-preferences').open=true;$('journey-preferences').querySelector('summary').focus();};return;}
-  const card=(j,i)=>`<article class="journey-card"><div class="journey-summary"><span class="context-tag">${i===0?(sort==='arrival'?'Earliest arrival':sort==='transfers'?'Fewest changes':'Least walking'):'Another option'}</span><div class="journey-top"><div class="journey-times">${clock(j.departure)} → ${clock(j.arrival)}</div><div class="journey-duration">${minutes(j.duration)} <small>min</small></div></div><p class="journey-meta">${j.walkOnly?'Walk or roll':j.transfers===0?'No changes':`${j.transfers} change${j.transfers>1?'s':''}`} · ${minutes(j.walking)} min walking / rolling</p><div class="journey-path">${j.legs.map(l=>legDetail(l,l.mode==='walk'?'Walk':`${l.mode==='bus'?'Bus':l.mode==='train'?'Train':'Ferry'} ${escape(l.route)}`,l.mode==='walk'?'detail-link':`route-badge detail-link ${l.mode}`)).join('<span class="path-arrow">›</span>')}</div><button class="${i===0?'primary-button':'secondary-button'}" data-follow="${i}">Use this journey →</button></div></article>`;
+  const card=(j,i)=>`<article class="journey-card"><div class="journey-summary"><span class="context-tag">${j.preferred?'Your saved route':i===0?(sort==='arrival'?'Earliest arrival':sort==='transfers'?'Fewest changes':'Least walking'):'Another option'}</span><div class="journey-top"><div class="journey-times">${clock(j.departure)} → ${clock(j.arrival)}</div><div class="journey-duration">${minutes(j.duration)} <small>min</small></div></div><p class="journey-meta">${j.walkOnly?'Walk or roll':j.transfers===0?'No changes':`${j.transfers} change${j.transfers>1?'s':''}`} · ${minutes(j.walking)} min walking / rolling</p><div class="journey-path">${j.legs.map(l=>legDetail(l,l.mode==='walk'?'Walk':`${l.mode==='bus'?'Bus':l.mode==='train'?'Train':'Ferry'} ${escape(l.route)}`,l.mode==='walk'?'detail-link':`route-badge detail-link ${l.mode}`)).join('<span class="path-arrow">›</span>')}</div><button class="${i===0?'primary-button':'secondary-button'}" data-follow="${i}">Use this journey →</button></div></article>`;
   $('journeys').innerHTML=card(journeys[0],0)+(journeys.length>1?`<details class="alternatives"><summary>See ${journeys.length-1} other option${journeys.length>2?'s':''}</summary>${journeys.slice(1).map((j,i)=>card(j,i+1)).join('')}</details>`:'');
   document.querySelectorAll('[data-follow]').forEach(button=>button.onclick=()=>{state.selectedJourney=journeys[Number(button.dataset.follow)];state.legIndex=0;$('full-itinerary').open=false;renderFollow();showScreen('follow');});
 }
@@ -229,17 +233,36 @@ function renderFollow(){
   $('itinerary-legs').innerHTML=journey.legs.map(legMarkup).join('');
   $('previous-leg').hidden=state.legIndex===0;
   $('next-leg').textContent=state.legIndex===journey.legs.length-1?'I’ve arrived':'Next step →';
-  const saved=state.preferences.journeys.some(j=>j.saved&&j.from.id===state.lastSearch.from.id&&j.to.id===state.lastSearch.to.id);
-  $('save-journey').textContent=saved?'★ Saved journey':'☆ Save this journey';$('save-journey').setAttribute('aria-pressed',String(saved));
+  const previousSave=state.preferences.journeys.find(j=>j.saved&&j.from.id===state.lastSearch.from.id&&j.to.id===state.lastSearch.to.id);
+  const saved=!!previousSave&&sameRoutes(previousSave.savedRoutes,journeyRoutes(journey));
+  $('prefer-services').textContent=saved?'★ Preferred services':previousSave?.savedRoutes?'☆ Prefer these services instead':'☆ Prefer these services';$('prefer-services').setAttribute('aria-pressed',String(saved));
 }
 $('next-leg').onclick=()=>{if(state.legIndex===state.selectedJourney.legs.length-1){showScreen('arrived');return;}state.legIndex++;renderFollow();$('flow-title').focus();};
 $('previous-leg').onclick=()=>{if(state.legIndex>0)state.legIndex--;renderFollow();$('flow-title').focus();};
-$('save-journey').onclick=()=>{
+function renderSavedPlaces(){
+  const saved=state.preferences.journeys.some(j=>j.saved&&j.from.id===state.from?.id&&j.to.id===state.to?.id);
+  $('save-places').hidden=state.intent==='nearby';$('save-places-help').hidden=state.intent==='nearby';
+  $('save-places').textContent=saved?'★ Saved places':'☆ Save these places';$('save-places').setAttribute('aria-pressed',String(saved));
+}
+$('save-places').onclick=()=>{
+  const {from,to}=state;if(!from||!to)return;
+  let journey=state.preferences.journeys.find(j=>j.from.id===from.id&&j.to.id===to.id);
+  if(!journey){journey={from,to,count:0,hours:Array(24).fill(0),days:Array(7).fill(0),last:Date.now(),saved:false};state.preferences.journeys.push(journey);}
+  journey.saved=!journey.saved;
+  if(!journey.saved){journey.savedRoutes=null;state.savedPreference=null;}
+  persist();renderSavedPlaces();$('announcement').textContent=journey.saved?'Starting place and destination saved. No departure time is saved.':'Saved places and any service preference removed.';
+};
+$('prefer-services').onclick=()=>{
   const {from,to}=state.lastSearch;let journey=state.preferences.journeys.find(j=>j.from.id===from.id&&j.to.id===to.id);
   if(!journey){journey={from,to,count:0,hours:Array(24).fill(0),days:Array(7).fill(0),last:Date.now(),saved:false};state.preferences.journeys.push(journey);}
-  journey.saved=!journey.saved;persist();$('save-journey').textContent=journey.saved?'★ Saved journey':'☆ Save this journey';$('save-journey').setAttribute('aria-pressed',String(journey.saved));
+  const routes=journeyRoutes(state.selectedJourney);
+  const wasSaved=journey.saved&&sameRoutes(journey.savedRoutes,routes);
+  journey.saved=true;journey.savedRoutes=wasSaved?null:routes;
+  state.savedPreference=null;for(const option of state.journeys)delete option.preferred;
+  renderJourneys();persist();renderFollow();$('announcement').textContent=wasSaved?'Service preference removed. Saved places are kept.':`Places saved with preferred services: ${routePreferenceLabel(routes)}. Times will be checked when you reopen it.`;
 };
 $('sort').onchange=renderJourneys;
+$('use-any-route').onclick=()=>{state.savedPreference=null;searchJourney();};
 let predictions={available:false},predictionsAt=0;
 async function getPredictions(){if(Date.now()-predictionsAt<60000)return predictions;predictionsAt=Date.now();try{const response=await fetch(new URL('./api/predictions',import.meta.url),{signal:AbortSignal.timeout(5000)});predictions=response.ok?await response.json():{available:false};}catch{predictions={available:false};}return predictions;}
 async function refreshNearby(){

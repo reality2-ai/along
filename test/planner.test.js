@@ -70,3 +70,28 @@ test('unavailable or corrupt browser storage does not break planning',()=>{
   assert.deepEqual(readPreferences({getItem:()=>'{broken'}),{learning:true,journeys:[]});
   assert.equal(writePreferences({}, {setItem:()=>{throw new Error('Full');}}),false);
 });
+
+
+test('saved sequence is searched even when a faster direct route dominates it',()=>{
+ const n=network();n.connections[11]=29000;
+ const p=new Planner(n);assert.equal(p.plan(query).length,1);
+ const results=p.plan({...query,preferredRoutes:[{mode:'bus',route:'10'},{mode:'bus',route:'20'}]});
+ assert.equal(results[0].preferred,true);assert.deepEqual(results[0].legs.filter(l=>l.mode!=='walk').map(l=>l.route),['10','20']);
+ assert.equal(results[1].legs[0].route,'30');assert.ok(results[0].arrival>results[1].arrival);
+});
+test('saved sequence respects ordering, departures, modes and forbidden transfers',()=>{
+ const p=new Planner(network()),pref=[{mode:'bus',route:'10'},{mode:'bus',route:'20'}];
+ assert.ok(p.plan({...query,preferredRoutes:pref}).some(j=>j.preferred));
+ assert.ok(p.plan({...query,preferredRoutes:[...pref].reverse()}).every(j=>!j.preferred));
+ assert.ok(p.plan({...query,time:'08:01',preferredRoutes:pref}).every(j=>!j.preferred));
+ assert.deepEqual(p.plan({...query,modes:['train'],preferredRoutes:pref}),[]);
+ assert.ok(new Planner(network({transfers:[['b','b',3,0]]})).plan({...query,preferredRoutes:pref}).every(j=>!j.preferred));
+});
+test('saved preferences persist service numbers and keep legacy saved endpoints usable',()=>{
+ const entry={from:{id:'a'},to:{id:'c'},count:2,hours:Array(24).fill(0),days:Array(7).fill(0),saved:true};
+ let raw='';const storage={getItem:()=>raw,setItem:(key,value)=>raw=value};
+ writePreferences({learning:false,journeys:[entry]},storage);assert.equal(readPreferences(storage).journeys[0].saved,true);assert.equal(readPreferences(storage).journeys[0].savedRoutes,null);
+ entry.savedRoutes=[{mode:'bus',route:'10'},{mode:'train',route:'S-C'}];
+ writePreferences({learning:false,journeys:[entry]},storage);assert.deepEqual(readPreferences(storage).journeys[0].savedRoutes,entry.savedRoutes);
+ entry.savedRoutes=[{mode:'airplane',route:'10'}];writePreferences({journeys:[entry]},storage);assert.equal(readPreferences(storage).journeys[0].savedRoutes,null);
+});

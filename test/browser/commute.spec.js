@@ -22,9 +22,12 @@ test('guided journey, local learning, manual progress, return and offline reopen
  const manifest=await page.evaluate(()=>fetch('/manifest.webmanifest').then(r=>r.json()));expect(manifest.icons.some(i=>i.purpose==='maskable')).toBe(true);
  for(const icon of manifest.icons.filter(i=>i.type==='image/png'))expect(await page.evaluate(async src=>{const i=new Image();i.src=src;await i.decode();return `${i.naturalWidth}x${i.naturalHeight}`;},icon.src)).toBe(icon.sizes);
  await plan(page);await expect(page.locator('.journey-card').first()).toContainText('S-C');
+ await page.locator('#change-search').click();await page.locator('#save-places').click();await expect(page.locator('#save-places')).toHaveAttribute('aria-pressed','true');expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('along-journeys-v1')).journeys.find(j=>j.saved).savedRoutes??null)).toBeNull();await page.locator('#find').click();await expect(page.locator('.journey-card').first()).toBeVisible();
  await expect(page.locator('#origin')).toBeHidden();await expect(page.locator('#destination')).toBeHidden();
  await page.locator('[data-follow]').first().click();await expect(page.locator('#current-step')).toContainText('Newmarket Train Station');
- await page.locator('#save-journey').click();await expect(page.locator('#save-journey')).toHaveAttribute('aria-pressed','true');
+ await page.locator('#prefer-services').click();await expect(page.locator('#prefer-services')).toHaveAttribute('aria-pressed','true');
+ expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('along-journeys-v1')).journeys.find(j=>j.saved).savedRoutes)).toEqual([{mode:'train',route:'S-C'}]);
+ await page.locator('#prefer-services').click();await expect(page.locator('#prefer-services')).toHaveAttribute('aria-pressed','false');expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('along-journeys-v1')).journeys.find(j=>j.saved).savedRoutes)).toBeNull();await page.locator('#prefer-services').click();
  await page.locator('#full-itinerary > summary').click();await expect(page.locator('#full-itinerary')).toHaveAttribute('open','');
  await page.locator('#next-leg').click();await expect(page.locator('#arrived-panel')).toBeVisible();
  await page.locator('#return-journey').click();await expect(page.locator('#review-origin')).toContainText('Waitemata');await expect(page.locator('#review-destination')).toContainText('Newmarket');await page.locator('#swap').click();await expect(page.locator('#review-origin')).toContainText('Newmarket');await expect(page.locator('#review-destination')).toContainText('Waitemata');
@@ -32,7 +35,7 @@ test('guided journey, local learning, manual progress, return and offline reopen
  await context.setOffline(true);await page.reload();await expect(page.locator('#data-status')).toContainText(/offline ready|Offline · journeys ready/,{timeout:60000});
  expect(await page.evaluate(()=>fetch('/api/status').then(()=>false).catch(()=>true))).toBe(true);
  expect(await page.evaluate(()=>fetch('/icons/maskable-512.png').then(r=>r.ok))).toBe(true);
- await expect(page.locator('.usual-card')).toHaveCount(1);await page.locator('.usual-card').first().click();await expect(page.locator('#journey-panel')).toBeVisible();await expect(page.locator('.journey-card').first()).toBeVisible();await plan(page);
+ await expect(page.locator('.usual-card')).toHaveCount(1);await page.locator('.usual-card').first().click();await expect(page.locator('#journey-panel')).toBeVisible();await expect(page.locator('.journey-card').first()).toBeVisible();await expect(page.locator('#saved-route-context')).toContainText('Train S-C');await page.locator('#use-any-route').click();await expect(page.locator('#saved-route-context')).toBeHidden();await plan(page);
  await page.locator('#new-journey').click();await expect(page.locator('#destination')).toHaveValue('');await expect(page.locator('#origin')).toHaveValue('');
  await page.locator('#settings-open').click();await page.locator('#learning-enabled').uncheck();await page.locator('#clear-history').click();await expect(page.locator('#storage-message')).toContainText('cleared');await page.locator('#settings .close-dialog').click();await expect(page.locator('.usual-section')).toBeHidden();
  expect(errors).toEqual([]);
