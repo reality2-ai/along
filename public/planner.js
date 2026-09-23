@@ -160,7 +160,7 @@ export class Planner {
         const parts=connections.filter(c=>this.data.trips[c[2]][0]===l.trip && c[7]===l.serviceOffset && c[0]>=l.departure && c[1]<=l.arrival);
         const calls=parts.map((c,i)=>({stopId:this.stops[c[3]].id,arrival:i?parts[i-1][1]:c[0],departure:c[0]}));
         if(parts.length)calls.push({stopId:this.stops[parts.at(-1)[4]].id,arrival:parts.at(-1)[1],departure:parts.at(-1)[1]});
-        liveIdentity={startTime:tripMetadata.get(l.trip)?.startTime,calls};
+        liveIdentity={startTime:tripMetadata.get(l.trip)?.startTime,stopVisits:tripMetadata.get(l.trip)?.visits.get(from.id),calls};
       }
       return {...l,from,to,...liveIdentity,...(directions?{directions}:{} )};
     })}));

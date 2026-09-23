@@ -118,7 +118,7 @@ test('stop alerts disclose only matching service and time scopes, then expire',a
  }finally{await context.close();}
 });
 
-test('selected journey checks only matching alerts and preserves the chosen route',async({browser})=>{
+test('selected journey checks matched predictions and alerts while preserving the chosen route',async({browser})=>{
  const {page,context}=await openObservedStop(browser);
  try{
   await page.locator('#detail-back').click();await page.locator('#new-journey').click();
@@ -133,12 +133,29 @@ test('selected journey checks only matching alerts and preserves the chosen rout
    const selector={route_id:leg.routeId,trip:{trip_id:leg.trip,start_date:leg.serviceDate}};
    await route.fulfill({contentType:'application/json',body:JSON.stringify({available:true,updated,alerts:[{title:'Relevant service change',description:'Check platform signs.',informed_entity:[selector]},{title:'Wrong day',informed_entity:[{...selector,trip:{trip_id:leg.trip,start_date:'20990101'}}]}]})});
   });
-  const before=await page.locator('#current-step').innerText();expect(requests).toBe(0);
+  let predictionKind='predicted',predictionRequests=0;
+  await context.route('**/api/predictions',async route=>{
+   predictionRequests++;const updated=await page.evaluate(()=>Math.floor(Date.now()/1000));
+   const trip={trip_id:leg.trip,start_date:predictionKind==='unmatched'?'20990101':leg.serviceDate,route_id:leg.routeId,start_time:leg.startTime};
+   if(predictionKind==='cancelled')trip.schedule_relationship='CANCELED';
+   const event={stop_id:leg.from.id,...(predictionKind==='skipped'?{schedule_relationship:'SKIPPED'}:{departure:{delay:120}})};
+   await route.fulfill({contentType:'application/json',body:JSON.stringify({available:true,updated,entities:[{trip_update:{trip,stop_time_update:[event]}}]})});
+  });
+  const before=await page.locator('#current-step').innerText();expect(requests).toBe(0);expect(predictionRequests).toBe(0);
   await page.locator('#journey-alert-check').click();await expect(page.locator('#journey-alert-status')).toContainText('1 matching service update');
+  await expect(page.locator('#journey-prediction-results')).toContainText('Expected');
+  await expect(page.locator('#journey-prediction-results')).toContainText('Scheduled');
   await page.locator('#journey-alert-results summary').click();await expect(page.locator('#journey-alert-results')).toContainText('Relevant service change');await expect(page.locator('#journey-alert-results')).not.toContainText('Wrong day');
   expect(await page.locator('#current-step').innerText()).toBe(before);
   await page.clock.fastForward(181000);await expect(page.locator('#journey-alert-status')).toContainText('expired');
+  await expect(page.locator('#journey-prediction-results')).toContainText('expired');
+  for(const [kind,label] of [['cancelled','Cancelled'],['skipped','Not stopping at your boarding stop'],['unmatched','No live departure match']]){
+   predictionKind=kind;await page.locator('#journey-alert-check').click();
+   await expect(page.locator('#journey-prediction-results')).toContainText(label);
+   expect(await page.locator('#current-step').innerText()).toBe(before);
+  }
   await context.setOffline(true);await page.locator('#journey-alert-check').click();await expect(page.locator('#journey-alert-status')).toContainText('scheduled journey is still here');
-  expect(await page.locator('#current-step').innerText()).toBe(before);expect(requests).toBe(1);
+  expect(await page.locator('#current-step').innerText()).toBe(before);expect(requests).toBe(4);expect(predictionRequests).toBe(4);
+  await expect(page.locator('#journey-prediction-results')).toContainText('unavailable');
  }finally{await context.close();}
 });

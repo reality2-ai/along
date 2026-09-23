@@ -1,5 +1,5 @@
 import {contextualAlerts} from './live-context.js';
-import {stopAlertContexts,journeyAlertContexts} from './live-time.js';
+import {stopAlertContexts,journeyAlertContexts,aucklandWallEpoch} from './live-time.js';
 import {departurePrediction} from './live-predictions.js';
 import {createLiveClient} from './live-client.js';
 import {liveBaseURL} from './live-config.js';
@@ -12,7 +12,7 @@ const $=id=>document.getElementById(id);
 const language=createLocalizer({storage:null});
 const liveClient=createLiveClient({baseURL:liveBaseURL,pageURL:import.meta.url});
 const journeyAlertClient=createLiveClient({baseURL:liveBaseURL,pageURL:import.meta.url});
-let journeyAlertSequence=0,journeyAlertTimer=null;
+let journeyAlertSequence=0,journeyAlertTimer=null,journeyPredictionTimer=null;
 $('nearby-live').hidden=!liveClient.configured;
 $('nearby-live-help').hidden=!liveClient.configured;
 const textBindings=new Map();
@@ -389,16 +389,41 @@ function renderFollow(){
   translated('prefer-services',saved?'service.preferred':previousSave?.savedRoutes?'service.instead':'service.prefer');$('prefer-services').setAttribute('aria-pressed',String(saved));
 }
 function resetJourneyAlerts(){
-  journeyAlertSequence++;clearTimeout(journeyAlertTimer);journeyAlertClient.cancel();
+  journeyAlertSequence++;clearTimeout(journeyAlertTimer);clearTimeout(journeyPredictionTimer);journeyAlertClient.cancel();
+  $('journey-prediction-results').replaceChildren();
   $('journey-alert-check').disabled=false;$('journey-alert-status').textContent='';$('journey-alert-results').replaceChildren();
 }
 $('journey-alert-check').onclick=async()=>{
   resetJourneyAlerts();const sequence=journeyAlertSequence;
-  const contexts=journeyAlertContexts(state.selectedJourney.legs.slice(state.legIndex),state.lastSearch.date);
+  const legs=state.selectedJourney.legs.slice(state.legIndex),date=state.lastSearch.date;
+  const contexts=journeyAlertContexts(legs,date);
   $('journey-alert-check').disabled=true;$('journey-alert-status').textContent='Checking relevant service updates…';
-  const feed=await journeyAlertClient.read('alerts',{requested:true});
+  const [feed,predictions]=await Promise.all([journeyAlertClient.read('alerts',{requested:true}),journeyAlertClient.read('predictions',{requested:true})]);
   if(sequence!==journeyAlertSequence||state.screen!=='follow')return;
   $('journey-alert-check').disabled=false;
+  const predictionBox=$('journey-prediction-results');
+  let matched=0;
+  for(const leg of legs.filter(l=>l.trip)){
+    const prediction=departurePrediction(predictions,{...leg,stop:leg.from});
+    if(prediction.status==='scheduled')continue;
+    let label=prediction.status==='cancelled'?'Cancelled':prediction.status==='skipped'?'Not stopping at your boarding stop':'';
+    if(prediction.status==='predicted'){
+      const scheduled=aucklandWallEpoch(date,leg.departure);
+      const epoch=prediction.epoch??(scheduled===null?null:scheduled+prediction.delay);
+      if(epoch===null)continue;
+      const expected=aucklandNow(new Date(epoch*1000));
+      label='Expected '+clock(expected.seconds)+(expected.date!==date?' · '+expected.date:'');
+    }
+    matched++;
+    const item=document.createElement('p');
+    item.textContent=leg.route+' from '+leg.from.name+': '+label+'. Scheduled '+clock(leg.departure)+'.';
+    predictionBox.append(item);
+  }
+  if(matched){
+    const stamp=document.createElement('p');stamp.className='field-help';
+    stamp.textContent='Live feed updated '+clock(aucklandNow(new Date(predictions.updated*1000)).seconds)+'. Your scheduled itinerary has not changed.';predictionBox.append(stamp);
+    journeyPredictionTimer=setTimeout(()=>{if(sequence===journeyAlertSequence)predictionBox.textContent='Live predictions have expired. Your scheduled itinerary is still here.';},Math.max(0,(predictions.updated+180-Date.now()/1000)*1000));
+  }else predictionBox.textContent=predictions.available?'No live departure match for the remaining steps. Times remain scheduled.':'Live departure predictions unavailable. Times remain scheduled.';
   if(!feed.available){$('journey-alert-status').textContent='Service updates unavailable. Your scheduled journey is still here.';return;}
   const alerts=contextualAlerts(feed,contexts);
   $('journey-alert-status').textContent=alerts.length?alerts.length+' matching service update'+(alerts.length===1?'':'s')+'. Your chosen journey has not changed.':'No matching service updates returned. This does not confirm that every service is running normally.';

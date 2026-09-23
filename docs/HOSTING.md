@@ -248,12 +248,12 @@ stop-only context covers the inspected stop's two-hour window, including when no
 departures are returned. Wall-time conversion does not depend on the device's
 timezone; ambiguous or missing daylight-saving wall times are left unmatched.
 Agency/direction restrictions still need corresponding source metadata before
-those selectors can match. This does not yet implement selected-journey alerts.
+those selectors can match. Selected-journey integration is described below.
 The public proxy remains unconfigured; version 34 is still the deployed release.
 
 ### Selected-journey service alerts (source integration)
 
-Configured deployments now offer “Check service updates for this journey” below
+Configured deployments now offer “Check live times and alerts” below
 the primary progress action. It checks the remaining legs only, on explicit
 request. Dated trip identities and intermediate stop arrival/departure intervals
 are retained by the planner, including runs beginning on the previous service
@@ -264,7 +264,7 @@ Advancing a step or leaving the journey clears and cancels the check. Results
 expire after the feed freshness window, and offline failure retains the chosen
 schedule. Unknown agency/direction selectors still require additional source
 metadata; this is not a guarantee that every relevant alert can be identified.
-Journey predictions and vehicle positions remain unfinished. Public version 34
+Vehicle positions remain unfinished. Public version 34
 still has no configured live proxy.
 
 For the journey-alert integration, all 54 JavaScript and 11 Python tests pass,
@@ -272,3 +272,19 @@ as do all five live-data browser scenarios. The journey fixture verifies matchin
 against a real downloaded leg with a synthetic alert, exclusion of a wrong-date
 alert, unchanged chosen-step content, expiry and quiet offline fallback. These
 checks do not establish authenticated public live availability.
+
+### Selected-journey departure predictions (source integration)
+
+The same explicit check now fetches predictions alongside alerts. Each remaining
+transit leg is matched by dated trip, route, start time and boarding stop. The
+planner retains full-trip stop visit counts; repeated visits remain scheduled
+rather than guessing which visit a prediction refers to. Matched expected times,
+cancellations and skipped boarding stops appear beside the scheduled itinerary.
+Unmatched legs retain their schedule. Expected departures do not imply predicted
+arrival times or guaranteed transfers, and do not change journey progress.
+
+Prediction and alert results expire independently. The browser fixture exercises
+an expected departure, cancellation, skipped stop, wrong service date, expiry and
+offline fallback against a real downloaded journey, using synthetic live records.
+Public version 34 still uses the offline schedule; this source integration needs
+a configured secure live proxy and a subsequent release before public use.
