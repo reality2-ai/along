@@ -253,3 +253,11 @@ real two-tab test passes with a simulated quota failure in the source tab: the
 receiver persists the removal and the source remains unavailable. This does not
 prove cross-device propagation or authorize application-secret access. The full
 runtime gate is still building its platform targets.
+
+The browser now exercises Reality2's L5 member evidence through WASM. A
+verifier-owned challenge binds the expected peer and complete statement, expires
+after 60 seconds on the monotonic clock, and accepts only one successful response.
+The real-browser test rejects replay, another nonce, expiry and learned revocation
+while allowing a valid retry after forgery. Membership revision is rechecked
+before success. This proves a protocol primitive, not globally fresh membership,
+application rights or encrypted key transport; no credential is released.
