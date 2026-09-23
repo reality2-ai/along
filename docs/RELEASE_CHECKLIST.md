@@ -21,7 +21,7 @@ this audit. Later public-hosting work supplements that brief.
 | 8. Course material | Thematic analysis, six lessons, exercises, assessment rubric and negative-case/contextual-map refinements | Course effectiveness has not been studied |
 | 9. Release checks and handover | 24 JavaScript and 4 Python tests; four real-data browser scenarios; static/update suites; source/archive/live asset comparison | Remaining physical and spoken screen-reader checks prevent claiming full goal completion |
 
-| 10. English / Te reo Māori | Device-local language module, 148-phrase draft catalogue and review sheet; flow selector connected in development; five foundation and two language-browser tests pass | Remaining screen text and full catalogue/guides, subpath/update checks, broader language/accessibility tests and fluent-speaker review |
+| 10. English / Te reo Māori | Device-local language module, 187-phrase draft catalogue and review sheet; flow selector connected in development; five foundation and two language-browser tests pass | Remaining screen text and full catalogue/guides, subpath/update checks, broader language/accessibility tests and fluent-speaker review |
 
 | 11. Contextual repository feedback | Added to goal; not implemented | Accessible bilingual feedback UI, explicit public submission, minimal disclosed context, offline drafts, receipt/duplicate checks and next-round issue review |
 
@@ -374,3 +374,11 @@ language browser scenarios passed. The browser tests check Māori walking guidan
 recoverable location denial, preservation of the current task and saved services,
 and that previously cleared validation errors do not reappear on language changes.
 The public app is still version 28; complete bilingual coverage is outstanding.
+
+Route/stop exploration, scheduled departure-board labels and map controls now
+use the draft catalogue. The English route exploration, bilingual journey and
+Māori offline route → stop → Back scenarios passed; the five localisation unit
+tests also passed. Cached detail markup reapplies the current language while
+retaining filters and focus restoration. The map button's main label retains its
+16-pixel emphasis after adding translation spans. No public bilingual release is
+claimed. Repository feedback triage found no open issues on this development round.

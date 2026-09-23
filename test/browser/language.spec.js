@@ -119,3 +119,30 @@ test('location failure and form validation are translated and recoverable',async
   await expect(page.locator('#form-error')).toContainText('Could not get your location');
   await expect(page.locator('#location')).toHaveText('Use my current location');
 });
+
+
+test('Māori route and stop exploration retains filters and cached Back offline',async({page,context})=>{
+  await page.goto('/');await expect(page.locator('#data-status')).toContainText('offline ready',{timeout:90000});
+  await switchTo(page,'mi');await context.setOffline(true);
+  await page.locator('#browse-routes').click();
+  await expect(page.locator('#detail-title')).toHaveText('Tūhuratia he ara');
+  await page.locator('#route-search').fill('70');await page.locator('#route-search-results button').first().click();
+  await expect(page.locator('#detail-title')).toHaveText('Ngā taipitopito ara');
+  await page.locator('#detail-body > .route-variant').first().click();
+  await expect(page.locator('#map-streets')).toContainText('Whakaaturia te mahere tiriti');
+  await expect(page.locator('#map-streets strong > span')).toHaveCSS('font-size','16px');
+  await expect(page.locator('.leaflet-control-zoom-in')).toHaveAttribute('aria-label','Topa mai');
+  await page.locator('#route-stop-filter').fill('Symonds');
+  await expect(page.locator('#route-match-status')).toContainText('ngā tūnga e hāngai ana');
+  await page.locator('.route-stop-list li:visible [data-detail]').first().click();
+  await expect(page.locator('#detail-body')).toContainText('Ngā wehenga mai i');
+  await expect(page.locator('.departure-board caption')).toHaveText('Ngā wehenga kua whakaritea — ehara i te wā tūturu');
+  expect((await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa']).analyze()).violations).toEqual([]);
+  await page.locator('#detail-back').click();
+  await expect(page.locator('#route-stop-filter')).toHaveValue('symonds');
+  await expect(page.locator('#map-streets')).toContainText('Whakaaturia te mahere tiriti');
+  await page.keyboard.press('Escape');await page.keyboard.press('Escape');
+  await expect(page.locator('#route-search')).toHaveValue('70');
+  await page.keyboard.press('Escape');await switchTo(page,'en');
+  await expect(page.locator('#flow-title')).toHaveText('Where would you like to go?');
+});

@@ -509,3 +509,159 @@ Object.assign(messages, {
     "mi": "Kua kōwhiria tō tauwāhi o nāianei. Haere tonu ina rite koe."
   }
 });
+
+Object.assign(messages, {
+  "explore.loading": {
+    "en": "Loading details…",
+    "mi": "Kei te uta i ngā taipitopito…"
+  },
+  "explore.routeTitle": {
+    "en": "Route details",
+    "mi": "Ngā taipitopito ara"
+  },
+  "explore.title": {
+    "en": "Explore a route",
+    "mi": "Tūhuratia he ara"
+  },
+  "explore.walkTitle": {
+    "en": "Walking connection",
+    "mi": "Ara hīkoi tūhono"
+  },
+  "explore.walkEstimate": {
+    "en": "Walking duration and access links are estimates.",
+    "mi": "He whakatau tata te roanga hīkoi me ngā ara urunga."
+  },
+  "explore.stationStop": {
+    "en": "Station or stop",
+    "mi": "Teihana, tūnga rānei"
+  },
+  "explore.access": {
+    "en": "Accessibility at this location is not verified. Check entrances, crossings and any lifts before travelling.",
+    "mi": "Kāore anō kia whakaūngia te āhei ki te uru ki tēnei wāhi. Tirohia ngā tomokanga, ngā whakawhitinga me ngā ararewa i mua i te haere."
+  },
+  "board.heading": {
+    "en": "Departures from {time} · {date}",
+    "mi": "Ngā wehenga mai i te {time} · {date}"
+  },
+  "board.limit": {
+    "en": "Next two hours from the downloaded timetable. Delays, cancellations and vehicle positions are not shown here.",
+    "mi": "Ko ngā hāora e rua e whai ake nei mai i te wātaka kua tikiakehia. Kāore e whakaaturia ngā takaroa, ngā whakakorenga me ngā tauwāhi waka i konei."
+  },
+  "board.at": {
+    "en": "AT Mobile: live times and vehicle tracking ↗",
+    "mi": "AT Mobile: ngā wā o nāianei me te aroturuki waka ↗"
+  },
+  "board.online": {
+    "en": "(online · opens AT’s website)",
+    "mi": "(ā-ipurangi · ka huaki te pae tukutuku a AT)"
+  },
+  "board.caption": {
+    "en": "Scheduled departures — not live",
+    "mi": "Ngā wehenga kua whakaritea — ehara i te wā tūturu"
+  },
+  "board.time": {
+    "en": "Time",
+    "mi": "Wā"
+  },
+  "board.route": {
+    "en": "Route",
+    "mi": "Ara"
+  },
+  "board.destination": {
+    "en": "Destination",
+    "mi": "Ūnga"
+  },
+  "board.none": {
+    "en": "No scheduled departures in this window. These are not live times.",
+    "mi": "Kāore he wehenga kua whakaritea i tēnei wā. Ehara ēnei i ngā wā tūturu."
+  },
+  "map.show": {
+    "en": "Show street map",
+    "mi": "Whakaaturia te mahere tiriti"
+  },
+  "map.internet": {
+    "en": "Needs internet · OpenStreetMap",
+    "mi": "Me whai ipurangi · OpenStreetMap"
+  },
+  "map.help": {
+    "en": "Street tiles load from OpenStreetMap only when requested. Route lines and stop locations use downloaded AT data.",
+    "mi": "Ka utaina ngā mahere tiriti mai i OpenStreetMap ina tonoa anake. Ka whakamahia ngā raraunga AT kua tikiakehia mō ngā ara me ngā tūnga."
+  },
+  "map.controls": {
+    "en": "Map. Use arrow keys to pan and plus or minus to zoom.",
+    "mi": "Mahere. Whakamahia ngā pātuhi pere ki te neke, me te tāpiri, te tango rānei ki te topa."
+  },
+  "explore.noServices": {
+    "en": "No services in the downloaded timetable for {date}.",
+    "mi": "Kāore he ratonga i te wātaka kua tikiakehia mō te {date}."
+  },
+  "explore.stopsFrom": {
+    "en": "{count} stops · from {place}",
+    "mi": "{count} tūnga · mai i {place}"
+  },
+  "explore.choose": {
+    "en": "Scheduled services for {date}. Choose a direction or branch to see its full path and times.",
+    "mi": "Ngā ratonga kua whakaritea mō te {date}. Kōwhiria he ahunga, he peka rānei kia kite i tōna ara katoa me ngā wā."
+  },
+  "explore.branches": {
+    "en": "Other directions and branches ({count})",
+    "mi": "Ētahi atu ahunga me ngā peka ({count})"
+  },
+  "explore.scheduled": {
+    "en": "Scheduled times. This is a service route, not a live vehicle position.",
+    "mi": "He wā kua whakaritea. He ara ratonga tēnei, ehara i te tauwāhi waka o nāianei."
+  },
+  "explore.geometry": {
+    "en": "Published AT route geometry.",
+    "mi": "Te āhua o te ara i whakaputaina e AT."
+  },
+  "explore.noGeometry": {
+    "en": "Route geometry unavailable; the map shows stop locations only.",
+    "mi": "Kāore e wātea te āhua o te ara; ko ngā tūnga anake kei te mahere."
+  },
+  "explore.run": {
+    "en": "Service departing its first stop",
+    "mi": "Te ratonga e wehe ana i tōna tūnga tuatahi"
+  },
+  "explore.filter": {
+    "en": "Find a street or stop on this direction",
+    "mi": "Kimihia he tiriti, he tūnga rānei i tēnei ahunga"
+  },
+  "explore.filterHint": {
+    "en": "For example, Symonds",
+    "mi": "Hei tauira, Symonds"
+  },
+  "explore.filterHelp": {
+    "en": "Matches stop names. A street with no matching stop may still be on the route: check the map. Other branches can take different paths.",
+    "mi": "Ka rapua ngā ingoa tūnga. Kei runga tonu pea tētahi tiriti i te ara ahakoa kāore he tūnga e hāngai ana: tirohia te mahere. He ara rerekē pea tō ētahi atu peka."
+  },
+  "explore.lastStop": {
+    "en": " · Last stop",
+    "mi": " · Te tūnga whakamutunga"
+  },
+  "explore.noPickup": {
+    "en": " · No regular pickup",
+    "mi": " · Kāore he ekenga auau"
+  },
+  "explore.matches": {
+    "en": "{count} matching stops in this direction",
+    "mi": "E {count} ngā tūnga e hāngai ana i tēnei ahunga"
+  },
+  "explore.search": {
+    "en": "Route number or name",
+    "mi": "Te tau, te ingoa rānei o te ara"
+  },
+  "explore.searchHint": {
+    "en": "For example, 70 or Western",
+    "mi": "Hei tauira, 70, Western rānei"
+  },
+  "explore.noRoutes": {
+    "en": "No matching routes.",
+    "mi": "Kāore he ara e hāngai ana."
+  }
+});
+
+Object.assign(messages, {
+  'map.zoomIn': {en:'Zoom in',mi:'Topa mai'},
+  'map.zoomOut': {en:'Zoom out',mi:'Topa atu'},
+});

@@ -78,17 +78,19 @@ function renderFlowLanguage(){
   translated('origin-next',state.intent==='nearby'?'action.reviewNearby':'action.review');
   translated('find',state.intent==='nearby'?'action.findNearby':'action.find');
 }
-function applyLanguage(){
-  document.documentElement.lang=language.tag;
-  // Unmigrated content remains explicitly English during catalogue expansion.
-  document.body.lang='en-NZ';
-  for(const element of document.querySelectorAll('[data-i18n]'))setLocalizedText(element,language,element.dataset.i18n,element.dataset.i18nValues?JSON.parse(element.dataset.i18nValues):{});
-  for(const element of document.querySelectorAll('[data-i18n-aria]')){
-    const phrase=language.phrase(element.dataset.i18nAria);element.setAttribute('aria-label',phrase.text);element.lang=phrase.lang;
+function applyBindings(root=document){
+  for(const element of root.querySelectorAll('[data-i18n]'))setLocalizedText(element,language,element.dataset.i18n,element.dataset.i18nValues?JSON.parse(element.dataset.i18nValues):{});
+  for(const element of root.querySelectorAll('[data-i18n-aria]')){
+    const phrase=language.phrase(element.dataset.i18nAria);element.setAttribute('aria-label',phrase.text);element.lang=phrase.lang;if(element.hasAttribute('title'))element.title=phrase.text;
   }
-  for(const element of document.querySelectorAll('[data-i18n-placeholder]')){
+  for(const element of root.querySelectorAll('[data-i18n-placeholder]')){
     const phrase=language.phrase(element.dataset.i18nPlaceholder);element.placeholder=phrase.text;element.lang=phrase.lang;
   }
+}
+function applyLanguage(){
+  document.documentElement.lang=language.tag;
+  document.body.lang='en-NZ';
+  applyBindings();
   $('language-choice').value=language.language;
   $('language-draft').hidden=language.language!=='mi';
   $('language-notice').hidden=language.language!=='mi';
@@ -192,27 +194,27 @@ async function searchJourney(){
 // Detail layers keep the underlying task, scroll position and explicit journey progress.
 const detailViews=new Map();let detailId=0,activeDetail=null;
 function detailLink(label,title,body,className='detail-link'){
-  const id=++detailId;detailViews.set(id,{title,body});
+  const id=++detailId;detailViews.set(id,{title,body,titleKey:({'Route details':'explore.routeTitle','Walking connection':'explore.walkTitle'})[title]});
   return `<button type="button" class="${className}" data-detail="${id}" aria-haspopup="dialog">${label}</button>`;
 }
 function placeDetail(place){
   const label=escape(place.name),id=detailId+1;
   const link=detailLink(label,place.name,async()=>{
     const now=explorationTime(),departures=place.placeType==='address'?[]:await ask('stopDetails',{id:place.id,now});
-    return `<p>${place.placeType==='address'?'Street address':'Station or stop'}${place.code?' · Stop '+escape(place.code):''}</p>${mapMarkup()}<p>Accessibility at this location is not verified. Check entrances, crossings and any lifts before travelling.</p>${place.placeType==='address'?'':`<h3>Departures from ${clock(now.seconds)} · ${escape(now.date)}</h3><p>Next two hours from the downloaded timetable. Delays, cancellations and vehicle positions are not shown here.</p><p><a href="https://at.govt.nz/atmobile/" target="_blank" rel="noopener noreferrer">AT Mobile: live times and vehicle tracking ↗</a> <small>(online · opens AT’s website)</small></p>${departures.length?`<div class="departure-board"><table><caption>Scheduled departures — not live</caption><thead><tr><th scope="col">Time</th><th scope="col">Route</th><th scope="col">Destination</th></tr></thead><tbody>${departures.map(d=>`<tr><td class="board-time">${clock(d.departure)}</td><td>${routeLink(escape(d.route),{routeId:d.routeId,tripId:d.trip},'board-route')}</td><td>${escape(d.headsign)}</td></tr>`).join('')}</tbody></table></div>`:'<p>No scheduled departures in this window. These are not live times.</p>'}`}`;
+    return `<p>${message(place.placeType==='address'?'place.addressType':'explore.stationStop')}${place.code?' · '+message('place.stopType',{code:place.code}):''}</p>${mapMarkup()}<p>${message('explore.access')}</p>${place.placeType==='address'?'':`<h3>${message('board.heading',{time:clock(now.seconds),date:now.date})}</h3><p>${message('board.limit')}</p><p><a href="https://at.govt.nz/atmobile/" target="_blank" rel="noopener noreferrer">${message('board.at')}</a> <small>${message('board.online')}</small></p>${departures.length?`<div class="departure-board"><table><caption>${message('board.caption')}</caption><thead><tr><th scope="col">${message('board.time')}</th><th scope="col">${message('board.route')}</th><th scope="col">${message('board.destination')}</th></tr></thead><tbody>${departures.map(d=>`<tr><td class="board-time">${clock(d.departure)}</td><td>${routeLink(escape(d.route),{routeId:d.routeId,tripId:d.trip},'board-route')}</td><td>${escape(d.headsign)}</td></tr>`).join('')}</tbody></table></div>`:`<p>${message('board.none')}</p>`}`}`;
   });detailViews.get(id).mount=()=>mountMap(null,[place]);return link;
 }
 function legDetail(leg,label,className){
   if(leg.mode!=='walk')return routeLink(label,{routeId:leg.routeId,tripId:leg.trip},className);
-  return detailLink(label,leg.mode==='walk'?'Walking connection':`${leg.mode[0].toUpperCase()+leg.mode.slice(1)} ${leg.route}`,()=>`${legMarkup(leg)}<p>${leg.mode==='walk'?'Walking duration and access links are estimates.':'Times are scheduled, not live predictions.'}</p>`,className);
+  return detailLink(label,leg.mode==='walk'?'Walking connection':`${leg.mode[0].toUpperCase()+leg.mode.slice(1)} ${leg.route}`,()=>`${legMarkup(leg)}<p>${leg.mode==='walk'?message('explore.walkEstimate'):'Times are scheduled, not live predictions.'}</p>`,className);
 }
 async function displayDetail(id){
   const view=detailViews.get(id);if(!view)return;
   if(contextMap){contextMap.remove();contextMap=null;}
-  activeDetail=id;$('detail-title').textContent=view.title;$('detail-body').innerHTML='<p role="status">Loading details…</p>';
+  activeDetail=id;if(view.titleKey)translated('detail-title',view.titleKey);else {$('detail-title').textContent=view.title;$('detail-title').lang='en-NZ';textBindings.delete('detail-title');}$('detail-body').innerHTML=`<p role="status">${message('explore.loading')}</p>`;
   if(!$('information').open)$('information').showModal();
   $('information').scrollTop=0;$('detail-title').focus();
-  try{const markup=view.markup??await view.body();view.markup=markup;if(activeDetail!==id||!$('information').open)return;$('detail-body').innerHTML=markup;view.mount?.();mountVariant(view);$('detail-body').querySelectorAll('details').forEach((d,i)=>{if(view.openDetails)d.open=!!view.openDetails[i];});if(view.restoreDetail)$('detail-body').querySelector(`[data-detail="${view.restoreDetail}"]`)?.focus();$('information').scrollTop=view.scroll||0;}
+  try{const markup=view.markup??await view.body();view.markup=markup;if(activeDetail!==id||!$('information').open)return;$('detail-body').innerHTML=markup;view.mount?.();mountVariant(view);applyBindings($('detail-body'));$('detail-body').querySelectorAll('details').forEach((d,i)=>{if(view.openDetails)d.open=!!view.openDetails[i];});if(view.restoreDetail)$('detail-body').querySelector(`[data-detail="${view.restoreDetail}"]`)?.focus();$('information').scrollTop=view.scroll||0;}
   catch(error){if(activeDetail===id)$('detail-body').textContent=error.message;}
 }
 function openInformation(button){
@@ -224,12 +226,15 @@ document.addEventListener('click',event=>openInformation(event.target.closest('[
 $('detail-back').onclick=()=>history.back();
 $('information').addEventListener('cancel',event=>{event.preventDefault();history.back();});
 function explorationTime(){return ['options','follow','arrived'].includes(state.screen)&&state.lastSearch?{date:state.lastSearch.date,time:state.lastSearch.time,seconds:Number(state.lastSearch.time.slice(0,2))*3600+Number(state.lastSearch.time.slice(3))*60}:aucklandNow();}
-function mapMarkup(){return '<div class="context-map-frame"><div id="context-map" class="context-map" role="region" aria-label="Map. Use arrow keys to pan and plus or minus to zoom." tabindex="0"></div><button type="button" class="map-load-button" id="map-streets"><strong>Show street map</strong><span>Needs internet · OpenStreetMap</span></button></div><p class="field-help">Street tiles load from OpenStreetMap only when requested. Route lines and stop locations use downloaded AT data.</p>';}
+function mapMarkup(){return `<div class="context-map-frame"><div id="context-map" data-i18n-aria="map.controls" class="context-map" role="region" aria-label="Map. Use arrow keys to pan and plus or minus to zoom." tabindex="0"></div><button type="button" class="map-load-button" id="map-streets"><strong>${message('map.show')}</strong><span>${message('map.internet')}</span></button></div><p class="field-help">${message('map.help')}</p>`;}
 let contextMap;
 function mountMap(points,stops){
   if(!$('context-map')||!globalThis.L)return;
   contextMap=L.map('context-map',{scrollWheelZoom:false,zoomAnimation:false,fadeAnimation:false,markerZoomAnimation:false});
-  contextMap.attributionControl.addAttribution('Route and stops: Auckland Transport');
+  contextMap.attributionControl.addAttribution('<span lang="en-NZ">Route and stops: Auckland Transport</span>');
+  for(const [selector,key] of [['.leaflet-control-zoom-in','map.zoomIn'],['.leaflet-control-zoom-out','map.zoomOut']]){
+    const button=$('context-map').querySelector(selector);button.dataset.i18nAria=key;button.title=language.text(key);
+  }
   if(points?.length)L.polyline(points,{color:'#214e40',weight:5}).addTo(contextMap);
   for(const [i,s] of stops.entries()){
     const marker=L.circleMarker([s.lat,s.lon],{radius:5,color:'#214e40',fillColor:'#fff',fillOpacity:1}).addTo(contextMap);
@@ -242,26 +247,26 @@ function mountMap(points,stops){
 function routeLink(label,args,className='detail-link'){
   return detailLink(label,'Route details',async()=>{
     const data=await ask('routeDetails',{...explorationTime(),...args});
-    if(!data.variants.length)return `<p>${escape(data.number)} · ${escape(data.name)}</p><p>No services in the downloaded timetable for ${escape(data.date)}.</p>`;
-    const variantLink=(v,i)=>{const id=detailId+1,link=detailLink(`${escape(v.headsign||data.name)} · ${v.stops.length} stops · from ${escape(v.stops[0].stop.name)}`,`${data.number} · ${v.headsign||data.name}`,()=>routeVariantMarkup(data,v), 'detail-link route-variant');Object.assign(detailViews.get(id),{variant:v,routeData:data});return link;};
-    return `<p>${escape(data.mode)} ${escape(data.number)} · ${escape(data.name)}</p><p>Scheduled services for ${escape(data.date)}. Choose a direction or branch to see its full path and times.</p>${variantLink(data.variants[0],0)}${data.variants.length>1?`<details><summary>Other directions and branches (${data.variants.length-1})</summary>${data.variants.slice(1).map(variantLink).join('')}</details>`:''}`;
+    if(!data.variants.length)return `<p>${escape(data.number)} · ${escape(data.name)}</p><p>${message('explore.noServices',{date:data.date})}</p>`;
+    const variantLink=(v,i)=>{const id=detailId+1,link=detailLink(`${escape(v.headsign||data.name)} · ${message('explore.stopsFrom',{count:v.stops.length,place:v.stops[0].stop.name})}`,`${data.number} · ${v.headsign||data.name}`,()=>routeVariantMarkup(data,v), 'detail-link route-variant');Object.assign(detailViews.get(id),{variant:v,routeData:data});return link;};
+    return `<p>${message('mode.'+data.mode+'Word')} ${escape(data.number)} · ${escape(data.name)}</p><p>${message('explore.choose',{date:data.date})}</p>${variantLink(data.variants[0],0)}${data.variants.length>1?`<details><summary>${message('explore.branches',{count:data.variants.length-1})}</summary>${data.variants.slice(1).map(variantLink).join('')}</details>`:''}`;
   },className);
 }
 function routeVariantMarkup(data,v){
   const run=v.runs.find(r=>r.trip===v.selectedTrip)||v.runs[0];
-  return `<p>${escape(data.date)} · Scheduled times. This is a service route, not a live vehicle position.</p>${mapMarkup()}<p>${v.shape?'Published AT route geometry.':'Route geometry unavailable; the map shows stop locations only.'}</p><label class="preference-field">Service departing its first stop<select id="route-run">${v.runs.map(r=>`<option value="${escape(r.trip)}" ${r.trip===run.trip?'selected':''}>${clock(r.departure)}</option>`).join('')}</select></label><label class="preference-field">Find a street or stop on this direction<input id="route-stop-filter" type="search" placeholder="For example, Symonds"></label><p class="field-help">Matches stop names. A street with no matching stop may still be on the route: check the map. Other branches can take different paths.</p><p id="route-match-status" role="status"></p><ol class="route-stop-list">${run.stops.map((s,i)=>`<li data-stop-name="${escape(s.stop.name.toLowerCase())}"><span class="stop-schedule">${clock(s.time)}</span> ${placeDetail(s.stop)}${i===run.stops.length-1?' · Last stop':!s.pickup?' · No regular pickup':''}</li>`).join('')}</ol>`;
+  return `<p>${escape(data.date)} · ${message('explore.scheduled')}</p>${mapMarkup()}<p>${message(v.shape?'explore.geometry':'explore.noGeometry')}</p><label class="preference-field">${message('explore.run')}<select id="route-run">${v.runs.map(r=>`<option value="${escape(r.trip)}" ${r.trip===run.trip?'selected':''}>${clock(r.departure)}</option>`).join('')}</select></label><label class="preference-field">${message('explore.filter')}<input id="route-stop-filter" data-i18n-placeholder="explore.filterHint" type="search" placeholder="For example, Symonds"></label><p class="field-help">${message('explore.filterHelp')}</p><p id="route-match-status" role="status"></p><ol class="route-stop-list">${run.stops.map((s,i)=>`<li data-stop-name="${escape(s.stop.name.toLowerCase())}"><span class="stop-schedule">${clock(s.time)}</span> ${placeDetail(s.stop)}${i===run.stops.length-1?message('explore.lastStop'):!s.pickup?message('explore.noPickup'):''}</li>`).join('')}</ol>`;
 }
 function mountVariant(view){
   const v=view.variant;if(!v)return;
   mountMap(v.shape,v.stops.map(s=>s.stop));
   $('route-run').onchange=()=>{v.selectedTrip=$('route-run').value;view.markup=routeVariantMarkup(view.routeData,v);displayDetail(activeDetail);$('route-run')?.focus();};
-  const filter=()=>{const q=$('route-stop-filter').value.toLowerCase().trim();let count=0;document.querySelectorAll('.route-stop-list li').forEach(li=>{li.hidden=!li.dataset.stopName.includes(q);if(!li.hidden)count++;});$('route-match-status').textContent=q?`${count} matching stops in this direction`:'';view.filter=q;};
+  const filter=()=>{const q=$('route-stop-filter').value.toLowerCase().trim();let count=0;document.querySelectorAll('.route-stop-list li').forEach(li=>{li.hidden=!li.dataset.stopName.includes(q);if(!li.hidden)count++;});if(q)translated('route-match-status','explore.matches',{count});else $('route-match-status').textContent='';view.filter=q;};
   $('route-stop-filter').value=view.filter||'';$('route-stop-filter').oninput=filter;filter();
 }
 $('browse-routes').onclick=()=>{
   const label='Explore a route',button=$('browse-routes'),id=++detailId;
-  detailViews.set(id,{title:label,returnFocus:button,body:()=>'<label class="preference-field">Route number or name<input id="route-search" type="search" placeholder="For example, 70 or Western"></label><div id="route-search-results" aria-live="polite"></div>',mount:()=>{
-    const view=detailViews.get(id);$('route-search').value=view.query||'';$('route-search-results').innerHTML=view.results||'';let request=0;$('route-search').oninput=async()=>{const sequence=++request,query=$('route-search').value;view.query=query;const results=await ask('routes',{query});if(sequence!==request||!$('route-search-results'))return;view.results=$('route-search-results').innerHTML=results.length?results.map(r=>routeLink(`${escape(r.number)} · ${escape(r.name)}`,{routeId:r.id},'detail-link route-variant')).join(''):query?'<p>No matching routes.</p>':'';};
+  detailViews.set(id,{title:label,titleKey:'explore.title',returnFocus:button,body:()=>`<label class="preference-field">${message('explore.search')}<input id="route-search" data-i18n-placeholder="explore.searchHint" type="search" placeholder="For example, 70 or Western"></label><div id="route-search-results" aria-live="polite"></div>`,mount:()=>{
+    const view=detailViews.get(id);$('route-search').value=view.query||'';$('route-search-results').innerHTML=view.results||'';let request=0;$('route-search').oninput=async()=>{const sequence=++request,query=$('route-search').value;view.query=query;const results=await ask('routes',{query});if(sequence!==request||!$('route-search-results'))return;view.results=$('route-search-results').innerHTML=results.length?results.map(r=>routeLink(`${escape(r.number)} · ${escape(r.name)}`,{routeId:r.id},'detail-link route-variant')).join(''):query?`<p>${message('explore.noRoutes')}</p>`:'';};
   }});history.pushState({...history.state,alongDetail:id},'');displayDetail(id);
 };
 
