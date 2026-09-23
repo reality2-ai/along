@@ -301,3 +301,17 @@ after closure are refused. The test harness supplies trusted synthetic enrollmen
 inputs; it does not prove end-user enrollment, globally fresh membership,
 physical-device connectivity or protected AT key storage. Full runtime
 verification remains in progress.
+
+Session checks now compare the expected group, local identity and epoch with a
+verified, revision-checked snapshot of the persisted membership. The local
+certificate must also authenticate under the selected group before connection
+creation. A real-browser mismatch test confirms that callers cannot choose a
+different epoch merely through session options. Failed rechecks close the session.
+
+Enrollment implementation must preserve L5B's person confirmation, signed
+single-use invitation, commit-before-reveal exchange, and atomic OPEN-to-OWNER
+installation. Browser nonextractable keys do not by themselves prove the
+hardware-rooted sealing required for persistent TG issuer/derived keys by L5
+5.3.1a–5.3.2. Those keys cannot be treated as durably supported by the identity
+storage prototype. These requirements remain implementation work, not claimed
+capabilities of the public app.
