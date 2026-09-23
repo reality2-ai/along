@@ -2,7 +2,8 @@
 
 Status: incomplete. The standalone lab is built and tested locally; this audit
 has not established that its runtime distribution notices are complete. No new
-runtime licence has been assigned by Along.
+runtime licence has been assigned by Along. A conflicting explicit licence
+change in the older R2 source requires clarification from the project owner.
 
 ## Evidence inspected
 
@@ -31,6 +32,27 @@ licence/copyright/notice files, including BSD and Unicode notices alongside MIT
 and Apache declarations. These files still need assembling into the distributable
 bundle; inventory hashes alone are not redistributed licence texts.
 
+## Conflicting source declaration
+
+The older `r2-core` history contains commit
+`e5bc8d7efda7954f931587a08b57c7ac28b8472f`, dated June 2026, explicitly adopting
+PolyForm Noncommercial and describing it as superseding the earlier whole-stack
+MIT/Apache licence. That checkout still retains MIT/Apache files alongside its
+`LICENSE.md` and `NOTICE`. The matching legacy MIT texts therefore cannot simply
+be copied and treated as resolving the current runtime's licensing conflict.
+
+Current R2-standard Cargo manifests retain MIT or MIT/Apache declarations, and
+the identifier extraction source also used those declarations. Neither inspecting
+those manifests nor discovering the older files settles which instruction is
+authoritative for this distribution. The owner has been asked to clarify. The
+proposed `r2-ident` metadata repair remains uncommitted pending that answer; no
+new permission grant or ownership attribution is being invented here.
+
+The registry notice collection can proceed independently: `--collect` copies 89
+existing files verbatim into `releases/along-pairing-notices`, with the inventory
+and an explicit incomplete-status README. Byte hashes were checked against the
+inventory. These texts are not a substitute for resolving R2's own declarations.
+
 ## Gaps and source history
 
 Ten local R2 packages have no package-level licence/notice files in this checkout.
@@ -49,7 +71,8 @@ repairing the missing declaration, not evidence that today's missing notices hav
 already been repaired. Preserve existing declarations and copyright attribution;
 do not invent a new owner or silently relicense framework material.
 
-Remaining work: repair upstream metadata/notices using that provenance under the
+Remaining work: resolve the owner’s authoritative licensing direction, then repair
+upstream metadata/notices using the source history under the
 R2 repository's normal review/gate process, collect applicable dependency texts,
 and make the lab builder include them with provenance. Then verify the final
 static payload and publish a specific test URL with the
@@ -67,6 +90,7 @@ In Along:
 
 ```sh
 python3 scripts/audit_pairing_licenses.py /tmp/along-wasm-metadata.json
+python3 scripts/audit_pairing_licenses.py /tmp/along-wasm-metadata.json --collect
 ```
 
 The script follows only non-development edges from `hive-wasm`, reports missing

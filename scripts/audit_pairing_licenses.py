@@ -2,6 +2,8 @@
 import argparse
 import hashlib
 import json
+import shutil
+import tempfile
 from pathlib import Path
 
 
@@ -44,8 +46,47 @@ def inventory(metadata):
             'packages': records, 'unresolved': unresolved}
 
 
+def collect(metadata, report):
+    """Copy existing notices only. Unresolved local licences remain unresolved."""
+    output = Path(__file__).resolve().parents[1] / 'releases' / 'along-pairing-notices'
+    output.parent.mkdir(exist_ok=True)
+    packages = {(p['name'], p['version']): p for p in metadata['packages']}
+    with tempfile.TemporaryDirectory(dir=output.parent) as temporary:
+        stage = Path(temporary)
+        for record in report['packages']:
+            package = packages[record['name'], record['version']]
+            root = Path(package['manifest_path']).parent
+            for notice in record['notices']:
+                original = root / notice['file']
+                data = original.read_bytes()
+                if hashlib.sha256(data).hexdigest() != notice['sha256']:
+                    raise ValueError('Notice changed after inventory')
+                target = stage / (record['name'] + '-' + record['version']) / Path(notice['file']).name
+                target.parent.mkdir(parents=True, exist_ok=True)
+                if target.exists():
+                    raise ValueError('Duplicate notice destination')
+                target.write_bytes(data)
+        (stage / 'inventory.json').write_text(json.dumps(report, indent=2) + '\n')
+        (stage / 'README.txt').write_text('Partial notice collection for Along pairing experiments.\n'
+            'Existing package texts are preserved verbatim. See inventory.json for scope and unresolved entries.\n'
+            'This collection does not resolve conflicting or missing R2 licence declarations.\n')
+        if output.exists():
+            marker = output / 'inventory.json'
+            if not marker.is_file() or json.loads(marker.read_text()).get('root') != 'hive-wasm':
+                raise ValueError('Refusing to replace unrecognised output')
+            shutil.rmtree(output)
+        shutil.copytree(stage, output)
+    return output
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('metadata', type=Path)
+    parser.add_argument('--collect', action='store_true', help='Copy found notice texts into releases/along-pairing-notices; does not resolve missing entries')
     args = parser.parse_args()
-    print(json.dumps(inventory(json.loads(args.metadata.read_text())), indent=2))
+    metadata = json.loads(args.metadata.read_text())
+    report = inventory(metadata)
+    if args.collect:
+        print(collect(metadata, report))
+    else:
+        print(json.dumps(report, indent=2))

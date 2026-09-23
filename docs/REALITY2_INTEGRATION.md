@@ -24,7 +24,9 @@ restore and both roles. Its generated-bundle test completes pairing through the
 UI and restores membership after reload. It is not yet published; runtime notices
 and physical-device testing remain necessary. The
 [runtime notice audit](PAIRING_LICENSE_AUDIT.md) records missing local R2 texts
-and one missing declaration; the [device-test guide](PAIRING_DEVICE_CHECK.md) is
+and a conflict with an older explicit PolyForm Noncommercial change. The owner’s
+licensing clarification is pending; registry notice texts have been collected
+without assigning R2 a licence. The [device-test guide](PAIRING_DEVICE_CHECK.md) is
 ready for a verified test URL.
 Manual transfer is currently cumbersome, and the one-minute invitation lifetime
 needs real usability assessment. Public deployment, simpler transfer, group epoch
