@@ -1,7 +1,17 @@
-const CACHE = 'along-shell-v22';
+const CACHE = 'along-shell-v23';
 const SHELL = ['./install.html','./vendor/leaflet/images/layers.png','./vendor/leaflet/images/layers-2x.png','./vendor/leaflet/images/marker-icon.png','./vendor/leaflet/images/marker-icon-2x.png','./vendor/leaflet/images/marker-shadow.png','./explore.js', './vendor/leaflet/leaflet.js', './vendor/leaflet/leaflet.css', './', './style.css', './app.js', './updates.js', './worker.js', './planner.js', './streets.js', './preferences.js', './manifest.webmanifest', './icon.svg', './icons/icon-192.png', './icons/icon-512.png', './icons/maskable-512.png', './icons/apple-touch-icon.png', './icons/favicon-32.png'];
 self.addEventListener('install', event => {
-  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(SHELL)));
+  event.waitUntil((async()=>{
+    const cache=await caches.open(CACHE);
+    // A new worker must not copy an old, still-fresh HTTP response into its
+    // permanent offline shell (static hosts can cache HTML for several minutes).
+    await cache.addAll(SHELL.map(path=>new Request(new URL(path,self.registration.scope),{cache:'reload'})));
+    const html=await (await cache.match(self.registration.scope)).text();
+    if(html.match(/App version (\d+)/)?.[1]!==CACHE.replace('along-shell-v','')){
+      await caches.delete(CACHE);
+      throw new Error('The published interface and worker versions do not match. Keep the existing app.');
+    }
+  })());
 });
 self.addEventListener('message', event => {
   if(event.data?.type === 'ACTIVATE_UPDATE') event.waitUntil(self.skipWaiting());

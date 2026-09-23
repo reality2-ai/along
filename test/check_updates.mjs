@@ -3,7 +3,7 @@ import {readFile} from 'node:fs/promises';
 import {chromium} from '@playwright/test';
 import {fileURLToPath} from 'node:url';
 import assert from 'node:assert/strict';
-const root=fileURLToPath(new URL('../',import.meta.url));let version=7;
+const root=fileURLToPath(new URL('../',import.meta.url));let version=7,htmlVersion=null;
 const server=createServer(async(req,res)=>{
  try{
   const path=new URL(req.url,'http://localhost').pathname;
@@ -15,8 +15,8 @@ const server=createServer(async(req,res)=>{
    if(version===7)script=script.replace(/self.addEventListener\('message',[\s\S]*?\n\}\);/,'');
    body=Buffer.from(script);
   }
-  if(path==='/')body=Buffer.from(body.toString().replace(/App version \d+/, `App version ${version}`));
-  res.writeHead(200,{'Content-Type':path.endsWith('.js')?'text/javascript':path.endsWith('.css')?'text/css':path.endsWith('.gz')?'application/gzip':path.endsWith('.png')?'image/png':path.endsWith('.svg')?'image/svg+xml':path.endsWith('webmanifest')?'application/manifest+json':'text/html','Cache-Control':'no-store'});res.end(body);
+  if(path==='/')body=Buffer.from(body.toString().replace(/App version \d+/, `App version ${htmlVersion??version}`));
+  res.writeHead(200,{'Content-Type':path.endsWith('.js')?'text/javascript':path.endsWith('.css')?'text/css':path.endsWith('.gz')?'application/gzip':path.endsWith('.png')?'image/png':path.endsWith('.svg')?'image/svg+xml':path.endsWith('webmanifest')?'application/manifest+json':'text/html','Cache-Control':path==='/sw.js'?'no-store':'public, max-age=600'});res.end(body);
  }catch{res.writeHead(404);res.end();}
 });
 await new Promise(r=>server.listen(0,'127.0.0.1',r));
@@ -66,5 +66,25 @@ try{
   }
  });
  assert.equal(await page.locator('#announcement').textContent(),'Offline journey remains available.');
- console.log('PASS: old app held open; recovery activates new version; saved localStorage and IndexedDB retained; offline pull stays silent; pull-to-refresh finds new release; stale open window offers reload; update-confirmation URL reopens offline.');
+ // A deployment serving mismatched HTML must leave the working shell intact.
+ version=10;htmlVersion=9;
+ await context.setOffline(false);
+ const rejected=await page.evaluate(async()=>{
+  const registration=await navigator.serviceWorker.ready;
+  await registration.update();
+  const worker=registration.installing;
+  if(worker)await new Promise((resolve,reject)=>{
+   const timeout=setTimeout(()=>reject(new Error('Mismatched update did not settle')),15000);
+   const changed=()=>{if(['redundant','installed'].includes(worker.state)){clearTimeout(timeout);worker.removeEventListener('statechange',changed);resolve();}};
+   worker.addEventListener('statechange',changed);changed();
+  });
+  return {state:worker?.state,waiting:!!registration.waiting,caches:await caches.keys()};
+ });
+ assert.equal(rejected.waiting,false);
+ assert.equal(rejected.caches.includes('along-shell-v10'),false);
+ assert.equal(rejected.caches.includes('along-shell-v9'),true);
+ await context.setOffline(true);await page.reload();
+ assert.match(await page.locator('#settings').textContent(),/App version 9/);
+ assert.equal(await page.evaluate(()=>localStorage.getItem('update-check')),'saved');
+ console.log('PASS: ten-minute HTTP cache cannot contaminate new shell; mismatched deployment keeps old offline app; old app held open; recovery activates new version; saved localStorage and IndexedDB retained; offline pull stays silent; pull-to-refresh finds new release; stale open window offers reload; update-confirmation URL reopens offline.');
 }finally{await browser.close();server.closeAllConnections();await new Promise(r=>server.close(r));}

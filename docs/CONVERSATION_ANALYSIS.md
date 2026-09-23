@@ -449,3 +449,21 @@ This rule governs further work. It is not a retrospective audit proving that no
 human has ever edited a file: the available conversation is not a complete record
 of all filesystem activity. For teaching, retain requests, assistant changes and
 verification evidence so the division of work can be examined honestly.
+
+
+## Negative case: a successful update check did not prove a fresh interface
+
+The later Android report—“it keeps asking, and version remains at 21”—challenges
+the earlier update-completion evidence. The test server had disabled HTTP caching;
+GitHub Pages allows assets to remain fresh for ten minutes. Repeating the update
+test with those cache headers reproduced a new worker storing an old screen in
+its offline cache. Checking the worker version alone could therefore report
+success while the user still saw an old interface.
+
+The correction requests fresh shell responses and rejects installation when the
+cached screen and worker versions disagree. The regression also checks that a
+failed installation preserves the previous offline app. This does not establish
+what was in the user's phone cache; it supplies a demonstrated failure and a fix
+to verify on the device. For the course, the important question is which production
+condition a passing test omitted, rather than whether the user pressed the update
+button correctly.

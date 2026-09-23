@@ -1,6 +1,6 @@
 # Release evidence and remaining gates
 
-Current candidate: **version 22**, reviewed 23 September 2026. The private site and
+Current candidate: **version 23**, reviewed 23 September 2026. The private site and
 static ZIP are prepared. GitHub Pages is published at `reality2.ai/along/`; no AWS deployment has been made.
 This register separates automated evidence, user observations and remaining checks.
 
@@ -169,3 +169,21 @@ The current README button was also inspected on GitHub: its 304 × 56-pixel imag
 is centred in the article below the warning and introduction. The earlier
 version 21 draft archive remains historical; the locally rebuilt version 22 ZIP
 and deployed static branch contain the new app context.
+
+
+## Version 23: reject stale interface files during updates
+
+The user reported that Android repeatedly offered “Update and reopen” while
+Settings remained at version 21. The update regression originally served every
+file with `Cache-Control: no-store`, unlike GitHub Pages, which serves shell assets
+with `max-age=600`. With that ten-minute cache policy, the existing test reproduced
+a newer worker activating while its cached HTML still displayed the old version.
+This is a reproducible failure mechanism consistent with the report; the actual
+phone's cache has not been inspected.
+
+New workers now request shell files with `cache: reload` and verify the cached
+HTML's app version before installation succeeds. A mismatch discards only the new
+shell cache and leaves the old app, saved journeys and datasets available. The
+regression covers HTTP-cached old assets, held-open windows, saved data, quiet
+offline refresh and a mismatched deployment retaining the working offline app.
+An Android confirmation is still needed after deployment.
