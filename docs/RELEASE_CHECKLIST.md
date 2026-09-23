@@ -23,7 +23,7 @@ this audit. Later public-hosting work supplements that brief.
 
 | 10. English / Te reo Māori | Device-local language module, 356-phrase source draft catalogue and review sheet; flow selector available as an explicitly labelled draft; six localisation unit checks pass; targeted browser evidence is recorded below | Remaining generated text and alias verification, physical language/accessibility tests and fluent-speaker review |
 
-| 11. Contextual repository feedback | Added to goal; not implemented | Accessible bilingual feedback UI, explicit public submission, minimal disclosed context, offline drafts, receipt/duplicate checks and next-round issue review |
+| 11. Contextual repository feedback | [Local draft/handoff/receipt foundation](FEEDBACK.md); three fixture-based unit checks pass; no public UI yet | Accessible bilingual feedback UI, explicit public submission, minimal disclosed context, offline drafts, receipt/duplicate checks and next-round issue review |
 
 ## Evidence and reproduction
 
@@ -505,3 +505,12 @@ language persistence. [Pages deployment](https://github.com/reality2-ai/along/ac
 succeeded. The [experimental downloadable release](https://github.com/reality2-ai/along/releases/tag/v0.30.0)
 is public and explicitly marked prerelease. Its uploaded ZIP and checksum digests
 match the local verified files: [release evidence](evidence/release-v30.json).
+
+## Feedback foundation after version 30
+
+The local feedback model now preserves drafts and report IDs, permits only
+allowlisted opt-in context, prepares reviewable GitHub handoffs, and verifies an
+explicit issue URL against the frozen report body. Three unit checks pass,
+including blocked storage, long Unicode text, unrelated issues/PRs, offline
+verification and reopening a verified existing issue. No UI or real submission
+check has been completed, and version 30 remains unchanged.
