@@ -21,7 +21,11 @@ verifies the target certificate and atomically retains signed evidence, assignin
 sequences with compare-and-swap and guarding issuer/persona revisions. Concurrent
 removals survive together, retries reuse their evidence and a fresh-document check
 verifies the retained records. It refuses self removal and reports only local
-completion. Review UI, distribution to other members and epoch/key rotation remain unfinished.
+completion. A reviewed removal component now verifies the selected member,
+supports keyboard/Back/Escape and distinguishes saved-local evidence from
+delivery. Browser checks cover its real commit and cancellation boundaries,
+narrow/zoom layout and axe. It still needs a device directory and Settings
+integration; distribution to other members and epoch/key rotation remain unfinished.
 The existing 3801 preview bundle is unchanged by this source addition.
 
 The experimental existing-device reconnect screen now exchanges public connection

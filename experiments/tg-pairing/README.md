@@ -808,3 +808,18 @@ does not rotate keys or recall previously shared AT credentials. The browser tes
 checks concurrent removals, failed writes, early/late cancellation, idempotent
 retry and authenticated retained evidence in a fresh document. No production
 credential is involved.
+
+`member-removal-view.mjs` provides the review for a selected certified member.
+It verifies issuer custody and the target before showing the action, includes
+the complete identity under a disclosure, and explicitly separates a local
+removal from delivery and replacement of keys. Keyboard confirmation returns
+focus to Back; Back/Escape and replacement cancel unfinished work. Failure asks
+for a fresh review rather than claiming that a commit could not have happened.
+An already removed member is shown without a second removal action.
+
+`member-removal-view.test.mjs` exercises that component with actual browser
+issuer/membership storage: trusted keyboard activation, synthetic-click refusal,
+invalid proof, repeated removal, replaced views, cancellation on both sides of
+commit, and 320px/200% layout plus axe. It does not establish physical TalkBack
+acceptance. The component is not yet reachable from app Settings; a durable
+device directory and selection flow still need integration before deployment.
