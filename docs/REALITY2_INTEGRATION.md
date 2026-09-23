@@ -261,3 +261,14 @@ The real-browser test rejects replay, another nonce, expiry and learned revocati
 while allowing a valid retry after forgery. Membership revision is rechecked
 before success. This proves a protocol primitive, not globally fresh membership,
 application rights or encrypted key transport; no credential is released.
+
+A direct application-transport prototype now exchanges ordered messages between
+two isolated browser contexts after the asset server is stopped. It configures
+no signalling, STUN or TURN service; the test harness explicitly copies the
+offer/answer. Transcript hashes agree and oversized/closed sends are refused.
+This is not yet a Reality2 TN bearer, end-user pairing flow, authenticated
+credential channel or automatic cross-network reconnection. No AT key is used.
+
+The full runtime gate has now terminated with a failure in the canon-table
+self-test's positive control for check-requirements. Diagnosis is in progress;
+no full verification success or merge readiness is claimed.
