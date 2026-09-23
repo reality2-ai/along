@@ -751,8 +751,8 @@ the simulated disconnection; an uncached local request must fail as well. In thi
 Chromium check `navigator.onLine` remained true: two attempted mock requests were
 aborted, and the app still fell back quietly. This does not establish zero request
 attempts under every kind of network loss. Bridge checks cover late responses after context change and separate
-screen cancellation. This is a local-owner path; shared-key owner-session
-reconnection still needs its app interface. Physical devices, real provider feeds
+screen cancellation. This test uses a local-owner key; the Settings reconnect
+interface is now mounted, but full two-device app verification remains outstanding. Physical devices, real provider feeds
 and installed-app update behavior are not established by this build/test.
 
 
@@ -796,5 +796,34 @@ wrong-owner refusal, cancellation during restoration, synthetic-click refusal,
 320px/200% reflow and axe, controller survival after view disposal, contextual
 stop/journey/vehicle checks, and removal before further provider I/O. The harness
 copies the messages on one browser host; provider responses are mocked. QR camera
-use and real phone/desktop reachability are not established. This view is not yet
-wired into the full application's Settings or public release.
+use and real phone/desktop reachability are not established. This view is now wired into the experimental application's Settings; it is not
+in the public release.
+
+
+### Experimental app connection settings
+
+`app-connection-settings.mjs` is mounted after a valid saved AT binding restores.
+Settings → Connect an existing AT-key device opens the role-appropriate reconnect
+flow. An authenticated connection survives closing the dialog; Disconnect devices
+or pagehide closes it. Owner devices retain their own optional live access after
+disconnection. Recipient devices expose live checks only while a saved-owner
+connection is available. First-time enrollment, approval and key delivery still
+need a composed app setup flow; reconnect cannot supply them.
+
+`scoped-session-client.mjs` gives each journey screen its own request cancellation.
+The saved-key adapter accepts a per-read AbortSignal, so leaving one screen stops
+its pending work without closing the shared connection or cancelling another
+screen's request. The real peer integration test cancels a saved-key read, then
+successfully reuses the same authenticated connection. Unit checks also cover
+independent screen cancellation and retry. A connection-change event updates
+nearby/selected-journey affordances and invalidates cached detail markup without
+changing the chosen journey or making a provider request. Existing dated detail
+results retain their normal expiry, preserving the current map and scroll.
+
+The generated-app test covers the actual Settings entry, message step, progressive
+Escape/Back behavior and focus return, 320px/200% dialog reflow and axe checks,
+connection-dependent selected-journey
+controls, and the existing offline/startup checks. The peer test covers real
+reconnection separately. A complete shared-key journey through two instances of
+the generated app remains to be verified, as do physical devices and real AT
+responses. Neither test implies automatic background device discovery.

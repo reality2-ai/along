@@ -1,10 +1,10 @@
 import {configureAppLiveConnection} from './app-live-bridge.mjs';
 // Restore optional lab settings only. A stalled runtime/storage operation cannot
 // hold the scheduled planner indefinitely or enable live access after timeout.
-let store, timer;
+let store, timer, settings;
 const lifetime = new AbortController();
 const current = () => { if (lifetime.signal.aborted) throw new Error('Optional restore ended'); };
-const stop = () => { lifetime.abort(); configureAppLiveConnection(undefined); store?.close(); };
+const stop = () => { lifetime.abort(); settings?.dispose(); configureAppLiveConnection(undefined); store?.close(); };
 window.addEventListener('pagehide', stop, {once: true});
 export const restoration = (async () => {
   try {
@@ -21,10 +21,8 @@ export const restoration = (async () => {
     const {loadATBinding} = await import('./local-owner.mjs'); current();
     const binding = await loadATBinding({wasm, store, expectedGroup: group, signal: lifetime.signal}); current();
     if (!binding) { store.close(); return; }
-    const {createSavedATClient} = await import('./saved-client.mjs'); current();
-    // Shared-key reads remain refused without the separately authenticated
-    // owner-session controller; its app connection UI is still pending.
-    configureAppLiveConnection(() => createSavedATClient({wasm, store, expectedGroup: group}));
+    const {mountAppConnectionSettings} = await import('./app-connection-settings.mjs'); current();
+    settings = mountAppConnectionSettings({wasm, store, expectedGroup: group, role: binding.role});
   } catch { stop(); }
 })();
 await Promise.race([restoration, new Promise(resolve => {

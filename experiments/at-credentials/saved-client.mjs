@@ -17,7 +17,7 @@ export function createSavedATClient({wasm, store, expectedGroup, synchronizeOwne
     async read(kind, options = {}) {
       if (!['predictions', 'alerts', 'vehicles'].includes(kind)) throw new Error('Unknown live feed.');
       if (options.requested !== true) return {available: false, reason: 'not-requested'};
-      if (closed) return {available: false, reason: 'cancelled'};
+      if (closed || options.signal?.aborted) return {available: false, reason: 'cancelled'};
       // Per-read state prevents simultaneous alerts/predictions from sharing an
       // asynchronously replaced vault. The inner timeout includes restore/sync.
       let vault;
@@ -45,9 +45,11 @@ export function createSavedATClient({wasm, store, expectedGroup, synchronizeOwne
           if (!latest || latest.role !== saved.role || !equalBinding(latest.binding, saved.binding)) throw new Error('AT settings changed');
           vault = openLocalATVault({wasm, store, ...latest.binding});
         }});
+      const abort = () => client.cancel();
+      options.signal?.addEventListener('abort', abort, {once: true});
       active.add(client);
       try { return await client.read(kind, {requested: true}); }
-      finally { active.delete(client); client.close(); vault = undefined; }
+      finally { options.signal?.removeEventListener('abort', abort); active.delete(client); client.close(); vault = undefined; }
     },
     cancel,
     close() { closed = true; cancel(); },

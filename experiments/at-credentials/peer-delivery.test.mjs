@@ -8,7 +8,7 @@ const sources = new Map();
 for (const name of ['storage.mjs', 'membership.mjs', 'certificate.mjs', 'peer-session.mjs', 'peer-link.mjs', 'challenge.mjs', 'session-statement.mjs', 'enrollment-session.mjs', 'invitation-journal.mjs', 'enrollment-link.mjs', 'enrollment-exchange.mjs', 'enrollment-protection.mjs', 'invitation.mjs']) sources.set('/' + name, await readFile(join(process.env.R2_BROWSER_DIR, name)));
 for (const name of ['../tg-pairing/initial-persona.mjs', '../tg-pairing/software-persona.mjs', '../tg-pairing/core-candidate-session.mjs', '../tg-pairing/software-traffic.mjs', '../tg-pairing/enrollment-payloads.mjs', '../tg-pairing/enrollment-profile.mjs', '../tg-pairing/installation-receipt.mjs', '../tg-pairing/stored-claim.mjs', '../tg-pairing/local-persona.mjs', 'local-owner.mjs', 'owner-policy.mjs', 'owner-access-view.mjs', 'owner-policy-send.mjs', 'policy-sync.mjs', 'owner-delivery.mjs', 'delivery-history.mjs', 'delivery-recovery.mjs', 'remote-owner.mjs', 'policy-update.mjs', 'policy-update-message.mjs', 'remote-owner-view.mjs', 'settings-view.mjs', 'key-replacement-view.mjs', 'credential-view.mjs', '../tg-pairing/comparison.css', '../tg-pairing/local-persona-session.mjs', 'policy.mjs', 'policy-store.mjs', 'local-vault.mjs', 'delivery-ack.mjs', 'delivery-message.mjs']) sources.set('/' + name.split('/').pop(), await readFile(new URL(name, import.meta.url)));
 for (const name of ['hive_wasm.js', 'hive_wasm_bg.wasm']) sources.set('/' + name, await readFile(join(process.env.R2_WASM_DIR, name)));
-for (const name of ['policy-connection-view.mjs', '../tg-pairing/transfer-view.mjs', 'vehicle-live-view.mjs', '../../public/live-vehicles.js', '../../public/vendor/leaflet/leaflet.js', '../../public/vendor/leaflet/leaflet.css', 'journey-live-view.mjs', 'stop-live-view.mjs', '../../public/live-predictions.js', '../../public/live-context.js', '../../public/live-time.js', 'policy-session.mjs', 'saved-client.mjs', 'live-client.mjs', '../../public/at-client.js', '../../public/live-client.js']) sources.set('/' + name.split('/').pop(), await readFile(new URL(name, import.meta.url)));
+for (const name of ['scoped-session-client.mjs', 'policy-connection-view.mjs', '../tg-pairing/transfer-view.mjs', 'vehicle-live-view.mjs', '../../public/live-vehicles.js', '../../public/vendor/leaflet/leaflet.js', '../../public/vendor/leaflet/leaflet.css', 'journey-live-view.mjs', 'stop-live-view.mjs', '../../public/live-predictions.js', '../../public/live-context.js', '../../public/live-time.js', 'policy-session.mjs', 'saved-client.mjs', 'live-client.mjs', '../../public/at-client.js', '../../public/live-client.js']) sources.set('/' + name.split('/').pop(), await readFile(new URL(name, import.meta.url)));
 const server = createServer((req, res) => {
   const path = '/' + req.url.split('/').pop();
   res.setHeader('Content-Type', req.url.endsWith('.wasm') ? 'application/wasm' : req.url.endsWith('.css') ? 'text/css' : sources.has(path) ? 'text/javascript' : 'text/html');
@@ -440,6 +440,12 @@ try {
       ownerMount.remove(); recipientMount.remove();
       delete window.retryOwnerConnection;
       check(!ownerController.signal.aborted && !recipientController.signal.aborted, 'leaving completed view preserves handed-off connection');
+      const {createScopedSessionClient} = await import('./scoped-session-client.mjs');
+      const cancelledScreen = createScopedSessionClient(recipientController);
+      const screenRead = cancelledScreen.read('alerts', {requested: true});
+      cancelledScreen.close();
+      check(!(await screenRead).available && controllerFetches === 0 && !recipientController.signal.aborted,
+        'closing a screen cancels its actual saved-key read without closing the authenticated owner connection');
       check(!(await recipientController.read('alerts')).available && controllerFetches === 0, 'authenticated connection is not automatic provider consent');
       const controllerResults = await Promise.all(['alerts', 'predictions'].map(kind => recipientController.read(kind, {requested: true})));
       check(controllerResults.every(result => result.available) && controllerFetches === 2, 'controller routes authenticated nonce-bound policy replies for parallel feeds');

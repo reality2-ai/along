@@ -1,6 +1,7 @@
 // Actual generated journey app on a static subpath, with a real local software
 // identity/vault and mocked provider. No production key or proxy is involved.
 import assert from 'node:assert/strict';
+import AxeBuilder from '@axe-core/playwright';
 import {createHash} from 'node:crypto';
 import {createServer} from 'node:http';
 import {readFile} from 'node:fs/promises';
@@ -52,6 +53,27 @@ try {
   assert.equal(requests.length, 0);
   await page.goto(origin + 'public/');
   await expect(page.locator('#data-status')).toContainText('offline ready', {timeout: 90000});
+  // The actual Settings dialog reaches the restored-owner reconnect screen.
+  await page.locator('#settings-open').click();
+  await page.getByRole('button', {name: 'Connect an existing AT-key device', exact: true}).click();
+  await page.getByRole('button', {name: 'Connect devices', exact: true}).click();
+  await page.getByRole('heading', {name: 'Connect a device using your AT key', exact: true}).waitFor();
+  await page.setViewportSize({width: 320, height: 640});
+  await page.evaluate(() => { document.documentElement.style.fontSize = '200%'; });
+  assert.equal(await page.evaluate(() => {
+    const dialog = document.querySelector('dialog[aria-label="AT-key device connection"]');
+    return dialog.scrollWidth <= dialog.clientWidth && document.documentElement.scrollWidth <= innerWidth;
+  }), true);
+  assert.deepEqual((await new AxeBuilder({page}).include('dialog[aria-label="AT-key device connection"]').analyze()).violations.map(v => v.id), []);
+  await page.evaluate(() => { document.documentElement.style.fontSize = ''; });
+  await page.setViewportSize({width: 1280, height: 900});
+  assert.equal(requests.length, 0);
+  await page.keyboard.press('Escape');
+  await page.getByRole('heading', {name: 'Connect your existing devices', exact: true}).waitFor();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#settings')).toBeVisible();
+  await expect(page.getByRole('button', {name: 'Connect an existing AT-key device', exact: true})).toBeFocused();
+  await page.getByRole('button', {name: 'Close settings', exact: true}).click();
   const choose = async (field, query) => {
     const input = page.locator('#' + field); await input.fill(query);
     await expect(page.locator('#' + field + '-options [data-index]').first()).toBeVisible();
@@ -66,10 +88,28 @@ try {
   await page.locator('[data-follow]').first().click();
   assert.equal(requests.length, 0);
   await expect(page.locator('#journey-live')).toBeVisible();
+  // A settings connection change updates this selected journey without a new search.
+  await page.evaluate(async () => {
+    const bridge = await import('../experiments/at-credentials/app-live-bridge.mjs');
+    window.restoreTestConnection = bridge.configureAppLiveConnection;
+    bridge.configureAppLiveConnection(undefined);
+  });
+  await expect(page.locator('#journey-live')).toBeHidden();
+  await page.evaluate(async () => {
+    const wasm = await import('../experiments/tg-pairing/hive_wasm.js');
+    const {openBrowserStorage} = await import('../experiments/tg-pairing/storage.mjs');
+    const store = await openBrowserStorage('along-pairing-lab-v1');
+    const saved = await store.read('candidate-persona', 'active');
+    const {createSavedATClient} = await import('../experiments/at-credentials/saved-client.mjs');
+    window.testLiveStore = store;
+    window.restoreTestConnection(() => createSavedATClient({wasm, store, expectedGroup: saved.value.record.group}));
+  });
+  await expect(page.locator('#journey-live')).toBeVisible();
   await page.locator('#journey-alert-check').click();
   await expect(page.locator('#journey-prediction-results')).toContainText('No live departure match', {timeout: 15000});
   assert.deepEqual(requests.sort(), ['/realtime/legacy/servicealerts', '/realtime/legacy/tripupdates']);
   assert.equal((await page.locator('body').textContent()).includes('synthetic-full-app-key'), false);
+  await page.evaluate(() => { window.testLiveStore.close(); delete window.testLiveStore; });
   // A normal installed-shell reopen must retain the runtime modules offline.
   await page.evaluate(async () => { await navigator.serviceWorker.ready; });
   await page.waitForFunction(() => navigator.serviceWorker.controller !== null);
@@ -151,5 +191,5 @@ try {
   console.log('PASS: unreadable newer lab schema leaves the planner ready and preserves the actual database version and record count.');
   console.log('PASS: stalled optional WASM cannot block actual bus/ferry planning; late restore cannot enable live access after its startup deadline.');
   console.log('Offline evidence:', JSON.stringify({uncachedRequestFailed: true, reportedOnline, blockedMockProviderAttempts: offlineAttempts}));
-  console.log('PASS: actual static journey app -> real device/key setup -> address-to-address bus/ferry journey -> explicit direct mocked AT reads using encrypted key; no startup request or displayed key; offline reopen includes experimental runtime and address routing; offline live check falls back quietly without a provider response. Local-only, owner key; shared-owner reconnection not wired.');
+  console.log('PASS: actual static journey app -> real device/key setup -> address-to-address bus/ferry journey -> explicit direct mocked AT reads using encrypted key; no startup request or displayed key; offline reopen includes experimental runtime and address routing; offline live check falls back quietly without a provider response. Local-only owner-key journey test; Settings reconnect entry and Back verified; full two-device app flow remains untested.');
 } finally { await browser?.close(); await new Promise(resolve => server.close(resolve)); }

@@ -64,9 +64,25 @@ def build(browser, wasm, notices=None):
             raise ValueError('App integration point changed')
         text = text.replace(old, "import '../experiments/at-credentials/app-bootstrap.mjs';\nimport {createLiveClient} from '../experiments/at-credentials/app-live-bridge.mjs';")
         text = text.replace('the server receives your IP address.', 'Auckland Transport receives your IP address and personal key.')
+        text += """
+// Experimental connection changes update affordances without changing the journey.
+window.addEventListener('along-live-connection-changed', () => {
+  $('nearby-live').hidden = !liveClient.configured;
+  $('nearby-live-help').hidden = !liveClient.configured;
+  resetJourneyAlerts();
+  $('journey-live').hidden = !journeyAlertClient.configured || !state.selectedJourney?.legs.slice(state.legIndex).some(leg => leg.trip);
+  for (const view of detailViews.values()) {
+    if (view.variant) view.markup = routeVariantMarkup(view.routeData, view.variant);
+    else if (typeof view.body === 'function') delete view.markup;
+  }
+  // Existing dated detail results keep their normal expiry; preserve map/scroll.
+  for (const id of ['stop-live', 'route-vehicle']) if ($(id)) $(id).hidden = !liveClient.configured;
+});
+"""
         app.write_text(text)
         index = stage / 'public/index.html'
         text = index.read_text().replace('href="/"', 'href="./"').replace('href="/', 'href="./').replace('src="/', 'src="./')
+        text = text.replace('</head>', '<link rel="stylesheet" href="../experiments/tg-pairing/comparison.css"></head>')
         text = text.replace('<body>', '<body><p role="note">Local integration experiment — use dummy AT keys only. Do not publish this build. <a href="../experiments/">Device and test-key setup</a></p>')
         text = text.replace('the server receives your IP address.', 'Auckland Transport receives your IP address and personal key.')
         index.write_text(text)

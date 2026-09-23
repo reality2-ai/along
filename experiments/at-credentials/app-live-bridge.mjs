@@ -7,6 +7,7 @@ export function configureAppLiveConnection(createClient) {
   if (createClient !== undefined && typeof createClient !== 'function') throw new Error('Live client factory unavailable');
   for (const client of clients) client.cancel();
   factory = createClient;
+  if (typeof window !== 'undefined') window.dispatchEvent(new Event('along-live-connection-changed'));
 }
 export function createLiveClient() {
   let held, selectedFactory, generation = 0, closed = false;
