@@ -1,6 +1,9 @@
 # Along credential experiments
 
-Not imported by the public app. Use synthetic material only; do not put a real
+Not imported by the regular version-37 app. The separate
+[device preview 3801](https://reality2.ai/along/preview/public/) includes these
+experimental flows for [physical testing](../../docs/PREVIEW_DEVICE_CHECK.md).
+Use synthetic material only; do not put a real
 AT key in this directory. The [credential policy contract](../../docs/AT_CREDENTIAL_POLICY.md)
 is broader than the code currently implemented here.
 

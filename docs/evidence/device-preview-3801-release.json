@@ -1,0 +1,30 @@
+{
+  "profile": "along-preview-release-record-v1",
+  "app_version": "3801",
+  "pages_commit": "eee4e2105e569b47d1016ff66a6f95a19d75cf1d",
+  "pages_run": "https://github.com/reality2-ai/along/actions/runs/35930213335",
+  "application_source": "e0bd07accee60e0c15fa02d87b3f5fa8a2837589",
+  "release_url": "https://github.com/reality2-ai/along/releases/tag/device-preview-3801",
+  "prerelease": true,
+  "assets": [
+    {
+      "name": "along-device-preview-3801.zip",
+      "size": 41639475,
+      "digest": "sha256:c71d2c83b9cd465d46287a21534d622b78f21a259d2885ef35a84fccfba739c4",
+      "browser_download_url": "https://github.com/reality2-ai/along/releases/download/device-preview-3801/along-device-preview-3801.zip"
+    },
+    {
+      "name": "along-device-preview-3801.zip.sha256",
+      "size": 96,
+      "digest": "sha256:cfadff37aee8942f3f95ea9f87cb24c92242e0ba5123b010cb557b5030afd739",
+      "browser_download_url": "https://github.com/reality2-ai/along/releases/download/device-preview-3801/along-device-preview-3801.zip.sha256"
+    }
+  ],
+  "regular_app_files_unchanged": [
+    "index.html",
+    "sw.js",
+    "manifest.webmanifest"
+  ],
+  "public_check": "device-preview-3801-public.json",
+  "qualification": "device-preview-3801-qualification.json"
+}

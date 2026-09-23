@@ -1,6 +1,8 @@
 # Release evidence and remaining gates
 
-Current deployed app: **version 37**, reviewed 23 September 2026. The static ZIP
+Current regular app: **version 37**. The separate [device preview 3801](https://reality2.ai/along/preview/public/)
+is published for [physical checks](PREVIEW_DEVICE_CHECK.md); see its release record below.
+The version-37 static ZIP
 is prepared and the private server is retired. GitHub Pages is published at `reality2.ai/along/`; no AWS deployment has been made.
 This register separates automated evidence, user observations and remaining checks.
 
@@ -776,3 +778,27 @@ survive the upgrade and offline reopening. The regular app's storage/cache remai
 unchanged. This is an upgrade fixture, not evidence of a released version 3800.
 Publishing the qualified test preview and inspecting its HTTPS deployment are next;
 physical observations and the wider unfinished TG/sync goal remain separate gates.
+
+### Preview 3801 published and checked over HTTPS
+
+[Pages deployment 35930213335](https://github.com/reality2-ai/along/actions/runs/35930213335)
+published only the new `preview/` directory. The regular app and standalone lab
+files were unchanged. [HTTPS evidence](evidence/device-preview-3801-public.json)
+records all 242 payload hashes matching the reviewed release, fresh-profile device
+setup and reload, offline installation guidance, and a new offline address-based
+bus/ferry journey. There were no page errors or external requests in that check.
+The public regular app's HTML, worker and manifest also matched the unchanged
+deployment files byte for byte.
+
+The [prerelease download](https://github.com/reality2-ai/along/releases/tag/device-preview-3801)
+is 41,639,475 bytes (about 39.7 MiB), with SHA-256
+`c71d2c83b9cd465d46287a21534d622b78f21a259d2885ef35a84fccfba739c4`.
+The archive matches the prepared release tree, and both GitHub asset digests/sizes
+match their local files. [Release metadata](evidence/device-preview-3801-release.json)
+links the deployment, source, qualification, public check and download.
+
+The candidate's local-only marker is removed only by the release packager after
+its exact manifest matches the recorded qualification. The published test copy
+includes runtime provenance, notices, installation guidance and the device-check
+guide. This publication enables physical testing; it does not establish that those
+observations have passed or that the full project goal is complete.

@@ -3,7 +3,11 @@
 Along should contact AT directly and keep each person's AT key within their own
 trust group, without requiring an Along-operated central server. Offline planning
 must continue without a key, a peer connection or a portal. The implementation described here is experimental and is not yet enabled in
-the public app.
+the regular version-37 app. A separate [device preview, version 3801](https://reality2.ai/along/preview/public/),
+is now published for S23/desktop testing with dummy AT keys. It includes the
+experimental Settings flows and saved-journey sharing, with separate ordinary
+storage names and explicit software-security limits. See the
+[device-check guide](PREVIEW_DEVICE_CHECK.md) and [HTTPS evidence](evidence/device-preview-3801-public.json).
 
 ## Current status
 
@@ -19,7 +23,7 @@ removal is learned before further provider I/O; disconnect preserves the journey
 and the recipient reopens and routes offline. Initial grant and recipient consent now run through a composed sharing flow in
 the experimental app’s Settings as well as the diagnostic lab. It verifies the selected group member, authenticates
 the channel and distinguishes stored permission, encrypted key installation and
-acknowledged receipt. Removal still uses a harness call. An interrupted owner
+acknowledged receipt. Removal uses reviewed controls in Settings. An interrupted owner
 grant can now resume after both devices reload, with explicit owner continuation
 and no rewrite of the existing grant; the two-profile test covers that path.
 Recipient acceptance also survives a reload before key arrival: the matching

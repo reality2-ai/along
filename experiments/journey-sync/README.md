@@ -1,7 +1,8 @@
 # Saved-journey synchronization data layer
 
 Experimental storage, authenticated peer controller and local app integration.
-The public app and published pairing lab do not import these modules. The model
+The regular version-37 app and standalone pairing lab do not import these modules;
+the separately published device preview does. The model
 and store send no data; the explicitly opened controller can transfer snapshots
 to an authorized enrolled peer.
 
@@ -235,8 +236,11 @@ not S23/TalkBack acceptance, remote reachability or a public release.
 `releases/along-device-preview/`, app version 3801. It requires the recorded runtime
 bundle and uses separate localStorage names, a separate device database and
 timetable database, and a separate shell-cache prefix. Its manifest identifies
-**Along Device Preview**. This candidate is not yet published or a replacement
-for the regular installed app; its `DO-NOT-PUBLISH.txt` gate remains in place.
+**Along Device Preview**. Raw candidate output retains its `DO-NOT-PUBLISH.txt`
+marker. `prepare_preview_release.py` verifies qualification against that exact
+candidate manifest, packages the approved payload without the local marker, and
+adds notices, device guidance and qualification evidence. The published test copy
+is not a replacement for the regular installed app.
 
 Separate names prevent accidental mixing during ordinary app operation. They are
 not a security boundary: scripts on the same origin can still access each other's
@@ -266,5 +270,9 @@ offline with narrow/zoom and axe checks. Owner and shared-key app checks also pa
 with the preview namespaces, including key replacement, withheld access removal,
 browser Back, unreadable schema and stalled optional runtime. AT responses are
 mocked and keys synthetic; this does not establish real-provider or physical-device
-acceptance. The [S23/desktop guide](../../docs/PREVIEW_DEVICE_CHECK.md) is ready for
-publication alongside the candidate; the preview has not yet been deployed.
+acceptance. [Preview 3801 is published](https://reality2.ai/along/preview/public/),
+with a [downloadable bundle](https://github.com/reality2-ai/along/releases/tag/device-preview-3801)
+and [S23/desktop guide](../../docs/PREVIEW_DEVICE_CHECK.md). The
+[HTTPS check](../../docs/evidence/device-preview-3801-public.json) verifies all 242
+payload hashes, identity setup/reload, offline help and new-address bus/ferry routing.
+Physical observations remain pending.

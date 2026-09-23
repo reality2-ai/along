@@ -1123,3 +1123,12 @@ distinguishes scheduled planning, direct AT requests and deliberate peer exchang
 An upgrade fixture then checks that a new shell retains the same encrypted key,
 identity and saved choices. The course lesson is that release readiness includes
 accurate user promises and continuity of existing data, alongside functional tests.
+
+The qualified preview was then published alongside the regular app, with its own
+URL and downloadable bundle. The deployment check compares every payload hash,
+then exercises fresh setup and offline routing over the actual HTTPS origin.
+Separate evidence records distinguish local qualification, deployment consistency
+and the still-needed physical observations. Keeping the regular app unchanged
+lets the human test the new device experience without being asked to write code
+or replace a working installation. Publishing a test preview remains a step toward
+the full goal, not a claim that automatic reconnection or the TG lifecycle is finished.

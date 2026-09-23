@@ -146,6 +146,24 @@ and verify its replacement explicitly. `scripts/build_static.py` does not includ
 the lab; replacing the entire Pages tree with only `dist/` would remove its URL.
 The lab's build identifier is separate from the installed app's version.
 
+### Full device preview
+
+[Along Device Preview 3801](https://reality2.ai/along/preview/public/) is deployed in
+the separate `preview/` directory on `site-preview`. It includes journey planning,
+optional device/key setup and saved-journey sharing. It has its own preferences,
+device/timetable databases, manifest name and shell-cache prefix. This prevents
+ordinary data mixing with regular Along; same-origin scripts are not isolated.
+
+The [preview release](https://github.com/reality2-ai/along/releases/tag/device-preview-3801)
+contains a static ZIP/checksum, runtime provenance and licence notices. Serve its
+whole extracted directory over HTTPS and open `public/`; no Along proxy is needed.
+Use dummy keys for the current [physical-device checks](PREVIEW_DEVICE_CHECK.md).
+Manual connection transfer, physical acceptance and wider TG work remain unfinished.
+
+Future Pages updates must preserve both `pairing-lab/` and `preview/`, unless their
+replacement is explicitly built and verified. The ordinary static builder does not
+include either. Source pushes to `main` do not update these deployed directories.
+
 
 ## AT subscription credentials
 

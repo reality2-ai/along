@@ -17,13 +17,18 @@ Along uses Auckland Transport's public data and its own bounded routing engine.
 It is **not an official AT app** and does not reproduce AT Mobile's journey planner.
 **Offline planning is the foundation; live information is an optional addition.**
 When connected, current AT predictions and alerts can help refine the scheduled
-picture. The public app currently uses the downloaded timetable; its optional live
+picture. The regular app currently uses the downloaded timetable; its optional live
 connection is not yet deployed. Losing connectivity will not remove offline planning.
 
 <p align="center">
   <a href="https://reality2.ai/along/"><img src="docs/images/open-webapp.svg" width="304" height="56" alt="Open and install Along webapp"></a>
 </p>
 <p align="center">Open in your browser and install on your device. Prepare it online, then plan scheduled journeys offline.</p>
+
+**Device testing:** [Open Along Device Preview 3801](https://reality2.ai/along/preview/public/)
+and follow the [S23/desktop guide](docs/PREVIEW_DEVICE_CHECK.md). It has separate
+saved places and device setup, with optional sharing between devices you approve.
+Use dummy AT keys for these tests. The regular installation above remains version 37.
 
 The interface is English-only. The unreviewed Māori translation and language
 selector have been withdrawn for now; official place names retain their spelling
@@ -281,7 +286,7 @@ key will be included in the public app.
 
 Authenticated browser reads of the AT feeds and matching against the downloaded
 timetable have been tested. The complete trust-group credential connection and
-its public interface are unfinished, so live data remains disabled in the public
+its final public interface are unfinished, so live data remains disabled in the regular
 app. See the [runtime integration evidence](docs/REALITY2_INTEGRATION.md).
 
 For Samsung S23/desktop testing, the separate
@@ -290,10 +295,13 @@ For Samsung S23/desktop testing, the separate
 dummy key text only. No coding is needed. This experiment does not enable live
 information or journey synchronization in the installed app.
 
-The local experimental build also has [saved-journey sharing through Settings](experiments/journey-sync/README.md#actual-app-saved-places-local-experimental-build).
-Two-browser tests cover saved places, service preferences and offline changes after
-reconnection. Connecting still requires transferring messages between devices;
-automatic reconnection and public release remain unfinished.
+The [full device preview](https://reality2.ai/along/preview/public/) includes
+[saved-journey sharing through Settings](experiments/journey-sync/README.md#actual-app-saved-places-local-experimental-build)
+and optional AT-key setup/sharing. Two-browser tests cover saved places, service
+preferences, offline changes and permission removal. Connecting still requires
+transferring messages; automatic reconnection and full release qualification remain
+unfinished. [Download the static preview and checksum](https://github.com/reality2-ai/along/releases/tag/device-preview-3801)
+to inspect or host it yourself. Runtime provenance and licence notices are included.
 
 The repository also contains tested experimental live matching and proxy code; that proxy is not the
 planned public architecture. See [hosting and live-data status](docs/HOSTING.md).

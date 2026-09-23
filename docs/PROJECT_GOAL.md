@@ -48,7 +48,12 @@ instructions, visible educational/use-at-own-risk notices, real UX screenshots,
 and a README account of the recurring design drivers. Trusted-device sync through
 Reality2 is now approved implementation work. Browser runtime components are
 being developed and tested, but trusted-device sync and credential access are
-not available in the public app. See the [original sync design](R2_SYNC_DESIGN.md)
+not enabled in the regular version-37 app. A separate
+[device preview 3801](https://reality2.ai/along/preview/public/) now makes the tested
+experimental flows available for [S23/desktop checks](PREVIEW_DEVICE_CHECK.md),
+with explicit limits and manual reconnection. Publication of this test copy does
+not complete the wider synchronization, TG lifecycle or physical-acceptance requirements.
+See the [original sync design](R2_SYNC_DESIGN.md)
 and [current integration evidence](REALITY2_INTEGRATION.md).
 
 Use the [release evidence and remaining gates](RELEASE_CHECKLIST.md) to audit each
