@@ -160,3 +160,12 @@ architecture for direct provider access and authorised device use. Identify actu
 runtime capabilities and application-secret handling; do not invent a TG API,
 conflate AT credentials with group-management keys, or claim implemented security
 before verification.
+
+## Approved implementation scope: browser TG capability
+
+The user explicitly chose to develop the missing Reality2 TG capability as part
+of this project. Implement and verify durable browser identity/membership and
+application-secret handling needed by Along, including enrollment, authorized
+device access, revocation and credential rotation. Keep the server-independent
+architecture and offline planning requirements. Persistence alone is not proof
+of complete TG security. No further scope approval is needed for this work.

@@ -212,3 +212,13 @@ Rust Storage trait. Real-browser checks verify restart/offline behavior and
 concurrent tabs using synthetic records and a generated test key. No real AT key
 is stored or published. The runtime verification gate and full integration remain
 in progress; Along's public live connection remains disabled.
+
+The browser branch now also provides explicit Ed25519 device provisioning and
+loading. A committed public/private pair survives browser restart; concurrent
+tabs return one committed identity. Ordinary loading never silently replaces a
+missing identity. Forgotten identities reject stale signing handles, failed
+commits expose no identity, and mismatched custody fails closed. These behaviors
+pass real Chromium checks with synthetic material, including offline signature
+verification. This remains a platform primitive awaiting the Rust membership and
+protocol boundary. Non-extractable Web Crypto keys do not establish a hardware
+root, and no L5-derived group keys are persisted.
