@@ -1,6 +1,6 @@
 # Release evidence and remaining gates
 
-Current release candidate: **version 31**, reviewed 23 September 2026. The static ZIP
+Current deployed app: **version 31**, reviewed 23 September 2026. The static ZIP
 is prepared and the private server is retired. GitHub Pages is published at `reality2.ai/along/`; no AWS deployment has been made.
 This register separates automated evidence, user observations and remaining checks.
 
@@ -19,11 +19,11 @@ this audit. Later public-hosting work supplements that brief.
 | 6. Distribution | About 38 MiB ZIP/checksum, four data bundles, import scripts, MIT/data/Leaflet notices, AWS/Pages hosting instructions | Public Pages deployment is live; authenticated feeds now verified; public live proxy remains undeployed |
 | 7. GitHub documentation | README, architecture, data, hosting, privacy, limits and contribution guidance; v21 course notice and current design-driver/goal summaries | Public source repository: [reality2-ai/along](https://github.com/reality2-ai/along); app hosted at [reality2.ai/along](https://reality2.ai/along/) |
 | 8. Course material | Thematic analysis, six lessons, exercises, assessment rubric and negative-case/contextual-map refinements | Course effectiveness has not been studied |
-| 9. Release checks and handover | Version 30: 30 JavaScript and 4 Python tests; 16 browser scenarios; static/update suites; source/archive/live asset comparison | Remaining physical and spoken screen-reader checks prevent claiming full goal completion |
+| 9. Release checks and handover | Version 31: 33 JavaScript and 4 Python tests; 11 active browser scenarios; static/update suites; source/archive/live asset comparison | Remaining physical and spoken screen-reader checks prevent claiming full goal completion |
 
 | 10. English / Te reo Māori | Deferred by user instruction; version 31 removes the selector and ignores earlier saved Māori choices | Re-enable only with renewed direction; draft review remains incomplete |
 
-| 11. Contextual repository feedback | [Local draft/handoff/receipt foundation](FEEDBACK.md); three fixture-based unit checks pass; English contextual dialog included in v31 candidate | Interactive GitHub sign-in/submission check, physical device checks, versioned deployment and next-round outcome tracking |
+| 11. Contextual repository feedback | [Local draft/handoff/receipt foundation](FEEDBACK.md); three fixture-based unit checks pass; English contextual dialog deployed in v31 | Interactive GitHub sign-in/submission check, physical device checks and next-round outcome tracking |
 
 ## Evidence and reproduction
 
@@ -569,3 +569,11 @@ The earlier 10 bilingual browser cases are deferred, not counted as current
 release coverage. The core suite passed 33 JavaScript and four Python tests;
 update/recovery and local deployment smoke checks passed. The downloadable guide
 is English-only and archive contents/checksum were verified.
+
+Version 31 is published. [Public smoke evidence](evidence/public-site-v31.json)
+confirms the English-only interface despite a saved Māori preference, offline
+new-address planning, installation guidance and feedback draft recovery. The
+[static subpath checks](evidence/feedback-v31-static.json) passed.
+[Pages deployment](https://github.com/reality2-ai/along/actions/runs/35820916394)
+succeeded, and the [downloadable prerelease](https://github.com/reality2-ai/along/releases/tag/v0.31.0)
+assets have [verified digests](evidence/release-v31.json).

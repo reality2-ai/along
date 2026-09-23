@@ -1,0 +1,18 @@
+{
+  "url": "https://github.com/reality2-ai/along/releases/tag/v0.31.0",
+  "prerelease": true,
+  "draft": false,
+  "assets": [
+    {
+      "name": "along-web.zip",
+      "size": 39892314,
+      "digest": "sha256:00433832d5df22d89dced685ab2d9c56dd667eb5eba46035c9079bcd11a46d6d"
+    },
+    {
+      "name": "along-web.zip.sha256",
+      "size": 80,
+      "digest": "sha256:a784f7043b0947abf10dc59c579b8d6a8a95a36903b5c452906ed8f9f906b04f"
+    }
+  ],
+  "localDigestsMatch": true
+}
