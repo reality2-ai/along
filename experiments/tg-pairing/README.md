@@ -460,3 +460,28 @@ This closes initial recipient group-material persistence for the chosen software
 profile. It does not establish hardware protection, full-profile rollback
 resistance, epoch rotation/catch-up, practical discovery or physical-device use.
 All of this remains excluded from public Along.
+
+
+### Browser software invitation lifecycle
+
+`software-invitation.mjs` adds a bounded, versioned public descriptor and a local
+issuer handle for the selected software subset. The descriptor is not a secret,
+trust decision or standard R2 wire format. It permits ordinary-member invitations
+only and rejects invalid field shapes and out-of-range validity values. The
+protocol validity field is distinct from the local invitation lifetime.
+
+The local handle expires within 60 seconds, checks its monotonic deadline again
+on use, closes on cancellation or failed operations, answers one fresh candidate
+challenge and issues at most one enrollment bundle. The trusted enrollment
+controller must still gate bundle issuance on the compared and confirmed session.
+A descriptor remains copyable after closure but cannot reactivate its issuer.
+There is no durable invitation resume or user-facing invitation exchange yet.
+
+The software enrollment test now serializes and decodes this actual descriptor,
+uses the installed member's challenge proof and completes real core installation.
+It checks malformed descriptors, caller-copy isolation, pre-aborted creation,
+cancellation, duplicate challenge refusal, bundle refusal before a challenge, and
+expiry while the cleanup timer is blocked. The interrupted-install variant still
+checks atomic rollback. This is same-host browser automation; reviewed initial
+trust, comparison decisions and signaling remain harness inputs. Nothing here
+establishes physical-device usability or hardware-backed protection.

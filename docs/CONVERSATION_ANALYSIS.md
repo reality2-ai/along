@@ -886,7 +886,8 @@ This resolves the previously recorded architecture question without changing the
 requirements for local data, offline journeys or no human coding. The subsequent
 implementation stores an encrypted software issuer and verifies restoration with
 actual signing; it does not establish hardware protection. The peer test now
-uses that issuer, while recipient bootstrap remains a fixture. This illustrates
+uses that issuer and actual acknowledged recipient enrollment. The harness still
+supplies initial trust review, comparison decisions and connection signaling. This illustrates
 requirements negotiation: an explicit user choice narrows framework conformance,
 not the intended usable cross-device experience. It is not evidence of independent
 security review or physical-device acceptance.

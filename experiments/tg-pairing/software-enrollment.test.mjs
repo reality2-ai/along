@@ -7,7 +7,7 @@ const {chromium} = await import(process.env.PLAYWRIGHT_MODULE || '@playwright/te
 if (!process.env.R2_BROWSER_DIR) throw new Error('Set R2_BROWSER_DIR to the experimental Reality2 browser module directory');
 if (!process.env.R2_WASM_DIR) throw new Error('Set R2_WASM_DIR');
 const sources = new Map(await Promise.all(['peer-session', 'challenge', 'session-statement', 'membership', 'certificate', 'enrollment-session', 'storage', 'invitation-journal', 'enrollment-link', 'enrollment-exchange', 'enrollment-protection', 'peer-link', 'invitation'].map(async name => ['/' + name + '.mjs', await readFile(join(process.env.R2_BROWSER_DIR, name + '.mjs'))])));
-for (const name of ['enrollment-profile.mjs', 'enrollment-payloads.mjs', 'core-candidate-session.mjs', 'software-traffic.mjs', 'initial-persona.mjs', 'software-persona.mjs', 'stored-claim.mjs', 'installation-receipt.mjs', 'local-persona.mjs', 'local-persona-session.mjs', 'receipt-recovery.mjs']) sources.set('/' + name, await readFile(new URL('./' + name, import.meta.url)));
+for (const name of ['enrollment-profile.mjs', 'enrollment-payloads.mjs', 'core-candidate-session.mjs', 'software-traffic.mjs', 'initial-persona.mjs', 'software-persona.mjs', 'software-invitation.mjs', 'stored-claim.mjs', 'installation-receipt.mjs', 'local-persona.mjs', 'local-persona-session.mjs', 'receipt-recovery.mjs']) sources.set('/' + name, await readFile(new URL('./' + name, import.meta.url)));
 if (process.env.RECOVERY_MODULE) sources.set('/receipt-recovery.mjs', await readFile(process.env.RECOVERY_MODULE));
 for (const name of ['hive_wasm.js', 'hive_wasm_bg.wasm']) sources.set('/' + name, await readFile(join(process.env.R2_WASM_DIR, name)));
 const server = createServer((req, res) => {
@@ -39,23 +39,62 @@ try {
       }
     }, index);
   }));
+  assert.equal(await pages[1].evaluate(async () => {
+    const {createSoftwareInvitation, decodeSoftwareInvitation, encodeSoftwareInvitation} = await import('./software-invitation.mjs');
+    const denied = async fn => { try { await fn(); return false; } catch { return true; } };
+    const start = options => createSoftwareInvitation({wasm, store, expectedGroup: group, ...options});
+    const challenge = crypto.getRandomValues(new Uint8Array(16));
+    const cancelled = new AbortController(); cancelled.abort();
+    if (!await denied(() => start({signal: cancelled.signal}))) return false;
+    const early = await start();
+    if (!await denied(() => early.enrollmentMaterial(group)) || !early.signal.aborted) return false;
+    const duplicate = await start();
+    await duplicate.respondChallenge(challenge);
+    if (!await denied(() => duplicate.respondChallenge(challenge)) || !duplicate.signal.aborted) return false;
+    const closed = await start(); closed.close();
+    if (!await denied(() => closed.respondChallenge(challenge))) return false;
+    const controller = new AbortController(), aborted = await start({signal: controller.signal});
+    controller.abort();
+    if (!aborted.signal.aborted || !await denied(() => aborted.respondChallenge(challenge))) return false;
+    const expiring = await start({lifetimeMs: 1000});
+    // Suspend timers as a backgrounded tab might: the use-time deadline must
+    // refuse the operation even before its cleanup timer gets a turn.
+    const until = performance.now() + 1001;
+    while (performance.now() < until) { /* deliberately block this test page */ }
+    if (!await denied(() => expiring.respondChallenge(challenge)) || !expiring.signal.aborted) return false;
+    const sample = await start();
+    try {
+      const descriptor = JSON.parse(sample.descriptor);
+      for (const text of ['{}', '[]', 'x'.repeat(1025),
+        JSON.stringify({...descriptor, secret: 'unexpected'}),
+        JSON.stringify({...descriptor, validity: '18446744073709551616'}),
+        JSON.stringify({...descriptor, validity: '08'}),
+        JSON.stringify({...descriptor, group: 'z'.repeat(64)}),
+        JSON.stringify({...descriptor, profile: 'another-profile'})]) {
+        if (!await denied(() => decodeSoftwareInvitation(text))) return false;
+      }
+      const first = sample.invitation(); first.group.fill(0);
+      if (sample.invitation().group.every(value => value === 0)) return false;
+      if (!await denied(() => encodeSoftwareInvitation({...sample.invitation(), validity: 8}))) return false;
+      return encodeSoftwareInvitation(sample.invitation()) === sample.descriptor;
+    } finally { sample.close(); }
+  }), true);
+  console.log('PASS: invitation descriptor validation, snapshot isolation, cancellation, single challenge and use-time expiry.');
   const nonce = await pages[0].evaluate(() => [...window.nonce]);
   const invitation = await pages[1].evaluate(async nonce => {
-    const persona = await restore.loadLocalPersona({wasm, store, expectedGroup: group});
-    const record = (await store.read('candidate-persona', 'active')).value.record;
-    window.invitation = {group, issuer: record.subject, code: crypto.getRandomValues(new Uint8Array(16)), validity: 8n, role: 'member'};
-    const statement = wasm.tg_invitation_statement(group, record.subject, 1, invitation.code, 8n);
-    const proof = await persona.sign(wasm.tg_nonce_signing_bytes(statement, new Uint8Array(nonce)));
+    window.invite = await (await import('./software-invitation.mjs')).createSoftwareInvitation({wasm, store, expectedGroup: group});
+    window.invitation = invite.invitation();
+    const evidence = await invite.respondChallenge(new Uint8Array(nonce));
     window.session = await (await import('./enrollment-session.mjs')).createEnrollmentSession({wasm, invitation, role: 'provisioner', store});
     window.payloads = (await import('./enrollment-payloads.mjs')).enrollmentPayloads({wasm, invitation, epoch: 0n, role: 'provisioner', session});
-    return {group: [...group], issuer: [...record.subject], code: [...invitation.code], certificate: [...record.certificate], proof: [...proof]};
+    return {descriptor: invite.descriptor, certificate: [...evidence.certificate], proof: [...evidence.proof]};
   }, nonce);
   await pages[0].evaluate(async input => {
     // A reviewed QR/invitation must establish this group in the real UI. Here
     // the harness supplies that trust decision and the session descriptions.
-    window.invitation = {group: new Uint8Array(input.group), issuer: new Uint8Array(input.issuer), code: new Uint8Array(input.code), validity: 8n, role: 'member'};
+    window.invitation = (await import('./software-invitation.mjs')).decodeSoftwareInvitation(input.descriptor);
     const membership = wasm.BrowserMembership.establish(invitation.group, 0n, 0n);
-    const statement = wasm.tg_invitation_statement(invitation.group, invitation.issuer, 1, invitation.code, 8n);
+    const statement = wasm.tg_invitation_statement(invitation.group, invitation.issuer, 1, invitation.code, invitation.validity);
     const authorized = membership.authorise_invitation(statement, new Uint8Array(input.certificate), nonce, new Uint8Array(input.proof));
     membership.free(); if (!authorized) throw new Error('Actual invitation proof refused');
     window.session = await (await import('./core-candidate-session.mjs')).createCoreCandidateSession({wasm, store, invitation, authorized,
@@ -64,13 +103,14 @@ try {
   const offer = await pages[0].evaluate(() => session.offer());
   const answer = await pages[1].evaluate(offer => session.accept(offer), offer);
   await pages[0].evaluate(answer => session.accept(answer), answer);
+  const targetGroup = await pages[0].evaluate(() => [...invitation.group]);
   const comparisons = await Promise.all(pages.map(page => page.evaluate(async () => [...await session.comparison()])));
   assert.deepEqual(comparisons[0], comparisons[1]);
   await Promise.all(pages.map(page => page.evaluate(() => session.decide(true))));
   await pages[0].evaluate(() => session.sendClaim());
   const expectedKeys = await pages[1].evaluate(async () => {
     const subject = await payloads.claim();
-    const material = await issuer.enrollmentMaterial(subject);
+    const material = await invite.enrollmentMaterial(subject);
     const digests = await Promise.all([material.payloadKey, material.integrityKey].map(async key => [...new Uint8Array(await crypto.subtle.digest('SHA-256', key))]));
     try { await payloads.sendBundle(material); }
     finally { material.destroy(); }
@@ -97,7 +137,7 @@ try {
   const receipt = await pages[0].evaluate(() => session.installLocal());
   assert.equal(receipt.status, 'installed-local');
   await pages[0].evaluate(async () => { await session.dispose(); store.close(); });
-  await pages[1].evaluate(async () => { issuer.close(); await session.cancel(); store.close(); });
+  await pages[1].evaluate(async () => { invite.close(); issuer.close(); await session.cancel(); store.close(); });
   await pages[0].close();
   const reopened = await contexts[0].newPage(); await reopened.goto(url);
   assert.equal(await reopened.evaluate(async ({group, expectedKeys}) => {
@@ -127,7 +167,7 @@ try {
       if (!await denied(() => module.loadSoftwareTraffic({wasm, store, expectedGroup: new Uint8Array(group), signal: aborted.signal}))) throw new Error('Cancelled traffic read accepted');
       return restored.origin === 'enrolled' && restored.claim === 'owner' && (await restored.sign(new Uint8Array(32))).length === 64;
     } finally { store.close(); }
-  }, {group: invitation.group, expectedKeys}), true);
+  }, {group: targetGroup, expectedKeys}), true);
   console.log('PASS: actual restored software issuer derives enrollment material, signs the candidate certificate, and completes core browser installation over WebRTC; fresh-document member restore/sign succeeds. Harness supplies trust review, comparison decision and signaling; encrypted traffic-key restore verified; no hardware custody or physical-device claim.');
   }
 } finally { await browser?.close(); await new Promise(resolve => server.close(resolve)); }
