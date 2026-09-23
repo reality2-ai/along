@@ -328,3 +328,15 @@ This is the transaction primitive for atomic enrollment, not a completed L5B
 ceremony or a claim of power-loss qualification. The complete runtime gate is
 still running and has progressed from host tests into platform builds. The
 public Along app remains unchanged while the integration is unfinished.
+
+A durable invitation journal now reserves each group/code pair once. Consumption
+shares the installation transaction; decline is terminal; interrupted or ambiguous
+failed attempts cannot reopen the same code after browser restart. Browser tests
+verify those cases, repeated-install refusal and rollback when the second write
+fails. This is persistence bookkeeping only: signed invitation authorization,
+validity, comparison, person confirmation and the validated OPEN-to-OWNER write
+set must still be supplied by the enrollment controller. It is not connected to
+incoming messages or the public app.
+
+The full runtime gate has reached its explicit WASM build and Android-native
+checks. It has not yet returned a complete verification result.
