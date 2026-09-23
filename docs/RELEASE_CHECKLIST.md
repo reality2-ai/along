@@ -734,3 +734,24 @@ are absent. This rebuilt archive has not replaced the published release, whose
 original hashes remain authoritative. No public app version changed, no provider
 was contacted, and the full 20-scenario browser suite was not rerun in this pass.
 Physical-device, spoken screen-reader and R2 end-to-end gates remain open.
+
+## Device preview candidate: separate storage and coexistence
+
+The experimental builder now has a `--preview` candidate mode using the verified
+R2 runtime bundle. Candidate version 3801 has a distinct manifest name and separate
+preferences, feedback, course acknowledgement, device/timetable databases and shell
+cache names. It remains local generated output with a do-not-publish marker.
+
+`PREVIEW=1 node experiments/journey-sync/app-integration.test.mjs` passed the actual
+two-profile device enrollment, journey sharing, offline save/removal convergence,
+permission management and focus-preservation checks with the separate names.
+`node experiments/journey-sync/preview-coexistence.test.mjs` then served the regular
+app and preview on one origin. Preview identity setup, update/reopen and offline
+reopening preserved the regular preferences, feedback draft and pairing sentinel,
+and every regular shell-cache response matched its earlier SHA-256 hash.
+
+These checks establish coexistence, not same-origin security isolation or physical
+installation acceptance. Before publishing this candidate, finish the preview's
+privacy/live-information/install wording, qualify its AT flows and update lifecycle,
+and provide a specific physical-device guide. Public version 37 and the standalone
+pairing lab remain the deployed builds; this candidate has not replaced either.

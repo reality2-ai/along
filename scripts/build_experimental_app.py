@@ -16,9 +16,12 @@ PROFILE = 'along-experimental-app-v1'
 IMPORT = re.compile(r'''(?:from\s*|import\s*\(\s*|import\s+)['"](\.{1,2}/[^'"]+)['"]''')
 
 
-def build(browser, wasm, notices=None, runtime=None):
+def build(browser, wasm, notices=None, runtime=None, preview=False):
+    if preview and runtime is None:
+        raise ValueError('Preview candidate requires a verified runtime bundle')
     browser, wasm = browser.resolve(), wasm.resolve()
-    output = ROOT / 'releases/along-experimental-app'
+    profile = 'along-device-preview-v1' if preview else PROFILE
+    output = ROOT / ('releases/along-device-preview' if preview else 'releases/along-experimental-app')
     output.parent.mkdir(exist_ok=True)
     with tempfile.TemporaryDirectory(dir=output.parent) as scratch:
         stage = Path(scratch)
@@ -108,13 +111,49 @@ window.addEventListener('along-saved-journeys-applied', () => {
         extra.append('./at-client.js')
         text = text.replace("self.addEventListener('install'", 'SHELL.push(...' + json.dumps(extra) + ");\nself.addEventListener('install'", 1)
         worker.write_text(text)
+        namespaces = None
+        if preview:
+            # Same-origin coexistence only, not protection from other scripts on
+            # the origin. Never transform runtime or third-party vendor assets.
+            replacements = {
+                'along-journeys-v1': 'along-device-preview-journeys-v1',
+                'along-pairing-lab-v1': 'along-device-preview-devices-v1',
+                'along-offline': 'along-device-preview-offline',
+                'along-feedback-v1': 'along-device-preview-feedback-v1',
+                'along-language-v1': 'along-device-preview-language-v1',
+                'along-course-notice-v1': 'along-device-preview-course-notice-v1',
+                'along-experimental-shell-': 'along-device-preview-shell-',
+                'along-journey-import:': 'along-device-preview-journey-import:',
+            }
+            owned = {stage / name for name in copied if (ROOT / name).is_file()}
+            owned.update((stage / 'public').glob('*.js'))
+            for path in owned:
+                text = path.read_text()
+                for old, new in replacements.items():
+                    text = text.replace(old, new)
+                path.write_text(text)
+            namespaces = {'preferences': replacements['along-journeys-v1'],
+                          'devices': replacements['along-pairing-lab-v1'],
+                          'offline': replacements['along-offline'],
+                          'cachePrefix': replacements['along-experimental-shell-']}
+            index.write_text(re.sub(r'App version \d+', 'App version 3801 · Device preview', index.read_text())
+                             .replace('Local integration experiment — use dummy AT keys only. Do not publish this build. Device and AT-key setup is in Settings.',
+                                      'Device preview — use dummy AT keys for testing. Saved places and device setup are separate from the regular Along app.'))
+            worker.write_text(re.sub(r"(const CACHE = 'along-device-preview-shell-v)\d+", r'\g<1>3801', worker.read_text()))
+            update = stage / 'public/update.html'
+            update.write_text(re.sub(r'(recovery=|Recovery page )\d+', r'\g<1>3801', update.read_text()))
+            manifest['name'] = 'Along Device Preview'
+            manifest['short_name'] = 'Along Preview'
+            (stage / 'public/manifest.webmanifest').write_text(json.dumps(manifest, indent=2) + '\n')
+            (stage / '.nojekyll').touch()
         (stage / 'DO-NOT-PUBLISH.txt').write_text('Local experimental build only. Experimental release checks remain pending. Use synthetic credentials.\n'
             + ('Runtime provenance is included; see runtime-provenance.json.\n' if runtime else 'Runtime source/compiler provenance is not verified by this build.\n'))
         files = {str(p.relative_to(stage)): hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(stage.rglob('*')) if p.is_file()}
-        (stage / 'build-info.json').write_text(json.dumps({'profile': PROFILE, 'files': files}, indent=2) + '\n')
+        (stage / 'build-info.json').write_text(json.dumps({'profile': profile, 'files': files,
+            **({'namespaces': namespaces, 'appVersion': '3801'} if preview else {})}, indent=2) + '\n')
         if output.exists():
             marker = output / 'build-info.json'
-            if not marker.is_file() or json.loads(marker.read_text()).get('profile') != PROFILE:
+            if not marker.is_file() or json.loads(marker.read_text()).get('profile') != profile:
                 raise ValueError('Refusing to replace unrecognised output')
             shutil.rmtree(output)
         shutil.copytree(stage, output)
@@ -123,5 +162,6 @@ window.addEventListener('along-saved-journeys-applied', () => {
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--preview', action='store_true', help='Prepare a separately stored preview candidate; release checks still required')
     args = runtime_arguments(parser)
-    build(args.browser, args.wasm, args.notices, args.runtime)
+    build(args.browser, args.wasm, args.notices, args.runtime, args.preview)

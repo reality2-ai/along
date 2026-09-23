@@ -228,3 +228,31 @@ DOM node. It also removes a focused shortcut remotely, checks that focus and the
 button survive, then checks the list refresh when the user leaves the group.
 The harness copies public connection messages; this is one-host browser evidence,
 not S23/TalkBack acceptance, remote reachability or a public release.
+
+## Preview candidate with separate storage
+
+`build_experimental_app.py --preview --runtime …` prepares
+`releases/along-device-preview/`, app version 3801. It requires the recorded runtime
+bundle and uses separate localStorage names, a separate device database and
+timetable database, and a separate shell-cache prefix. Its manifest identifies
+**Along Device Preview**. This candidate is not yet published or a replacement
+for the regular installed app; its `DO-NOT-PUBLISH.txt` gate remains in place.
+
+Separate names prevent accidental mixing during ordinary app operation. They are
+not a security boundary: scripts on the same origin can still access each other's
+storage, and browser storage clearing can affect both apps. The preview starts
+with its own saved places and device setup; it does not copy existing credentials.
+
+```sh
+python3 scripts/build_experimental_app.py --preview --runtime releases/along-r2-runtime-1b9229ad
+PREVIEW=1 CHROMIUM_PATH=/path/to/chromium node experiments/journey-sync/app-integration.test.mjs
+CHROMIUM_PATH=/path/to/chromium node experiments/journey-sync/preview-coexistence.test.mjs
+```
+
+The coexistence check also needs the regular app in `dist/`. It serves that app
+and the preview on one origin, sets up a preview identity, updates/reopens the
+preview, then reopens both offline. It checks the original app's preferences,
+feedback draft, pairing record and every cached shell response remain unchanged.
+Window storage-access observation also verifies preview use of the separate names.
+The regular and preview timetable databases coexist. Physical install/update
+acceptance and preview-specific release wording remain outstanding.

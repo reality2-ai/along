@@ -764,6 +764,12 @@ or reconnect, complete TG lifecycle management or public release qualification.
 The journey-sharing screen now includes saved-permission review and removal,
 including while offline; journey permission remains separate from AT-key access.
 
+The builder's `--preview` option prepares a separately named candidate with its
+own preferences, device/timetable databases and shell cache. See the
+[coexistence procedure](../journey-sync/README.md#preview-candidate-with-separate-storage).
+This prepares for device testing without mixing ordinary storage with the regular
+app. It does not publish the candidate or create a same-origin security boundary.
+
 
 ### Optional restoration does not delay the planner
 

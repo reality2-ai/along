@@ -8,9 +8,11 @@ import {readFile} from 'node:fs/promises';
 import {join, extname} from 'node:path';
 const {chromium, expect} = await import(process.env.PLAYWRIGHT_MODULE || '@playwright/test');
 const mainSetup = true;
-const root = new URL('../../releases/along-experimental-app/', import.meta.url).pathname;
+const preview = process.env.PREVIEW === '1';
+const root = new URL(preview ? '../../releases/along-device-preview/' : '../../releases/along-experimental-app/', import.meta.url).pathname;
 const manifest = JSON.parse(await readFile(join(root, 'build-info.json'), 'utf8'));
-assert.equal(manifest.profile, 'along-experimental-app-v1');
+assert.equal(manifest.profile, preview ? 'along-device-preview-v1' : 'along-experimental-app-v1');
+const namespaces = manifest.namespaces ?? {preferences: 'along-journeys-v1', devices: 'along-pairing-lab-v1'};
 assert.equal(Object.keys(manifest.files).some(name => /APIKey|\.test\./.test(name)), false);
 const sources = new Map(await Promise.all(Object.entries(manifest.files).map(async ([name, hash]) => {
   const bytes = await readFile(join(root, name));
@@ -85,7 +87,7 @@ try {
   await owner.getByRole('heading', {name: 'Other device installed', exact: true}).waitFor();
 
   await Promise.all(pages.map(page => page.reload()));
-  const preferences = page => page.evaluate(() => JSON.parse(localStorage.getItem('along-journeys-v1')));
+  const preferences = page => page.evaluate(key => JSON.parse(localStorage.getItem(key)), namespaces.preferences);
   const saved = async page => (await preferences(page)).journeys.filter(j => j.saved);
   const choose = async (page, field, query) => {
     await expect(page.locator('#address-status')).toContainText('ready offline', {timeout: 60000});
@@ -199,8 +201,8 @@ try {
   await expect.poll(async () => (await saved(owner)).length).toBe(1);
   await expect(owner.locator('[data-usual]').first()).toBeVisible();
   await expect(owner.locator('#destination')).toBeFocused();
-  const stored = page => page.evaluate(async () => {
-    const store = await (await import('../experiments/tg-pairing/storage.mjs')).openBrowserStorage('along-pairing-lab-v1');
+  const stored = page => page.evaluate(async database => {
+    const store = await (await import('../experiments/tg-pairing/storage.mjs')).openBrowserStorage(database);
     try {
       const persona = await store.read('candidate-persona', 'active');
       const hex = bytes => Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
@@ -208,7 +210,7 @@ try {
       return {personaRevision: persona.revision, permission: await store.read('along-journey-sharing-v1', group),
         journeys: await store.read('along-saved-journeys-v1', group), at: await store.read('along-at-owners', group)};
     } finally { store.close(); }
-  });
+  }, namespaces.devices);
   const beforeRemoval = await Promise.all(pages.map(stored));
   const manage = async page => {
     await page.getByRole('button', {name: 'Manage journey-sharing devices', exact: true}).click();

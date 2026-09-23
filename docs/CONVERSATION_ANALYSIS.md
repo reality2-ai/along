@@ -1105,3 +1105,12 @@ replacing the route steps. The app test checks focus and DOM identity as well as
 the new data. This gives the course a concrete calm-computing example: “the screen
 still looks the same” is weaker evidence than proving that the user's current
 control and journey survived a background change.
+
+Release preparation uncovered another integration boundary: serving a preview at
+a different URL does not by itself separate browser storage. The candidate now has
+its own preference, device, timetable and cache names. A same-origin test opens the
+regular app and preview together, updates the preview and reopens both offline,
+then compares the original app's saved records and cache bytes. The distinction
+between preventing accidental data mixing and providing a security boundary is
+kept explicit. This extends the evidence theme from “works in a fresh profile” to
+“coexists with what the commuter already installed.”
