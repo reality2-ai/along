@@ -51,8 +51,9 @@ Reality2 remains a [proposal](R2_SYNC_DESIGN.md), not an implemented feature.
 Use the [release evidence and remaining gates](RELEASE_CHECKLIST.md) to audit each
 numbered requirement against implementation, automated checks and user device
 observations. The goal is not yet fully verified: spoken screen-reader checks and
-physical checks of the latest contextual details remain outstanding. An AT key
-is needed to verify the optional authenticated live-data integration. Documented
+physical checks of the latest contextual details remain outstanding. The supplied AT key
+has verified authenticated feeds; the optional public live-data connection remains
+undeployed. Documented
 limits and an educational disclaimer do not count as passing these checks.
 
 

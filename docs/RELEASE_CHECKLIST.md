@@ -1,6 +1,6 @@
 # Release evidence and remaining gates
 
-Current release candidate: **version 29**, reviewed 23 September 2026. The static ZIP
+Current deployed app: **version 29**, reviewed 23 September 2026. The static ZIP
 is prepared and the private server is retired. GitHub Pages is published at `reality2.ai/along/`; no AWS deployment has been made.
 This register separates automated evidence, user observations and remaining checks.
 
@@ -451,3 +451,9 @@ All 14 browser scenarios passed for this candidate, including the eight language
 scenarios. The local deployment smoke check also passed the version marker,
 installation eligibility, offline planning/guide and persistent Māori selection.
 Physical Android, TalkBack and fluent-speaker review are not covered by these tests.
+
+Version 29 is deployed. The [public smoke check](evidence/public-site-v29.json)
+passed on `https://reality2.ai/along/`: version and scope, installation eligibility,
+offline new address routing, installation guidance, language switching and
+persistent Māori selection after offline reopening. Pages deployment
+[35818573316](https://github.com/reality2-ai/along/actions/runs/35818573316) succeeded.
