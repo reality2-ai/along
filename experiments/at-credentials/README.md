@@ -254,5 +254,30 @@ checks for binding, tampering, missing grants, floors, malformed lengths, maximu
 sizes and asynchronous input mutation, using synthetic credentials. This codec
 does not consume a nonce, establish owner trust, check fresh peer possession or
 install a credential. A matching packet can still be verified twice: the pending
-request must be consumed atomically with receiver installation. That installer,
-the channel adapter and end-user device-sharing flow remain unfinished.
+request must be consumed atomically with receiver installation. The local
+installer below handles that storage boundary; the channel adapter and
+end-user device-sharing flow remain unfinished.
+
+## Atomic receiver installation (experimental)
+
+The vault now supplies `prepareDelivery` for an already pinned owner and locally
+accepted granting policy. It verifies the owner's certificate against held
+membership, creates a fresh request nonce and saves its pending journal with
+evidence revision guards. The returned handle expires after a bounded local
+interval, supports cancellation, and is superseded by a newer request. It does
+not resume a pending request automatically after a browser restart.
+
+Installation verifies the signed message for that exact request, local member and
+accepted policy. It rechecks owner membership, encrypts under a fresh local
+wrapping key and atomically writes ciphertext plus the consumed request record.
+Changed authority/policy, a superseded nonce or an existing same/newer credential
+generation refuses. The actual completed commit wins over late cancellation.
+
+`receiver-install.test.mjs` passes signed-message installation, encrypted reopening
+in a fresh document, consumed-journal persistence, invalid owner evidence, replay,
+competing installs, interruption between writes, cancellation before/after commit,
+supersession and changed policy revisions. Existing vault/settings/owner checks
+also pass after sharing the encryption helper. Tests use a self-recipient fixture
+and synthetic keys: they do not prove distinct-device transport or owner-consent
+bootstrap. Channel integration, receiver owner consent,
+policy delivery/freshness and the full device-sharing flow remain unfinished.

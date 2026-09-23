@@ -2,6 +2,9 @@
 // hardware sealing, TG issuer custody, or protection against same-origin script.
 import {loadLocalPersona} from '../tg-pairing/local-persona.mjs';
 import {openCredentialPolicyStore} from './policy-store.mjs';
+import {openMembership} from '../tg-pairing/membership.mjs';
+import {credentialPolicyBytes} from './policy.mjs';
+import {verifyCredentialDelivery} from './delivery-message.mjs';
 const fail = () => new Error('Local AT credential unavailable');
 const hex = value => Array.from(value, b => b.toString(16).padStart(2, '0')).join('');
 const token = value => typeof value === 'string' && /^[\x21-\x7e]{1,512}$/.test(value);
@@ -55,6 +58,17 @@ export function openLocalATVault({wasm, store, group, owner, credential}) {
     && value.wrappingKey instanceof CryptoKey && value.wrappingKey.type === 'secret' && !value.wrappingKey.extractable
     && value.wrappingKey.algorithm.name === 'AES-GCM' && value.wrappingKey.algorithm.length === 256
     && value.wrappingKey.usages.length === 2 && ['encrypt', 'decrypt'].every(use => value.wrappingKey.usages.includes(use));
+  const encryptRecord = async (plaintext, context, signal) => {
+    const wrappingKey = await crypto.subtle.generateKey({name: 'AES-GCM', length: 256}, false, ['encrypt', 'decrypt']);
+    checkSignal(signal);
+    const record = {format: 1, member: context.member, generation: context.policy.generation,
+      policyRevision: context.policy.revision, wrappingKey, iv: crypto.getRandomValues(new Uint8Array(12))};
+    record.ciphertext = new Uint8Array(await crypto.subtle.encrypt({name: 'AES-GCM', iv: record.iv,
+      additionalData: aad(record)}, wrappingKey, plaintext));
+    checkSignal(signal);
+    if (!validStored(record)) throw fail();
+    return record;
+  };
   const readKey = async signal => {
     let plaintext;
     try {
@@ -72,6 +86,68 @@ export function openLocalATVault({wasm, store, group, owner, credential}) {
     } catch { throw fail(); } finally { plaintext?.fill(0); }
   };
   return Object.freeze({
+    // Caller must first establish owner trust, accept the granting policy and
+    // authenticate the owner channel. This only supplies local installation.
+    prepareDelivery: async ({ownerCertificate, signal} = {}) => {
+      const lifetime = new AbortController(), started = performance.now();
+      const cancel = () => lifetime.abort();
+      signal?.addEventListener('abort', cancel, {once: true});
+      let consumed = false;
+      const close = () => { cancel(); signal?.removeEventListener('abort', cancel); };
+      const current = () => {
+        const elapsed = performance.now() - started;
+        if (signal?.aborted || lifetime.signal.aborted || consumed || !Number.isFinite(elapsed) || elapsed < 0 || elapsed >= 60000) throw fail();
+      };
+      try {
+        current();
+        if (!bytes(ownerCertificate, 136)) throw fail();
+        const proof = ownerCertificate.slice(), context = await access(lifetime.signal);
+        const subject = Uint8Array.from(context.member.match(/../g), v => parseInt(v, 16));
+        const ownerBytes = Uint8Array.from(owner.match(/../g), v => parseInt(v, 16));
+        const verifyOwner = async () => {
+          current(); const held = openMembership(store, wasm, groupBytes, subject);
+          try { if (await held.peerStatus(proof, ownerBytes) !== 'current') throw fail(); }
+          finally { held.close(); }
+          current();
+        };
+        await verifyOwner();
+        const requestScope = 'along-at-request:' + owner;
+        const previous = await store.read(requestScope, key);
+        const nonce = crypto.getRandomValues(new Uint8Array(16));
+        const request = {format: 1, state: 'pending', nonce, member: context.member,
+          policyRevision: context.policy.revision, generation: context.policy.generation};
+        current();
+        const begun = await store.compareAndSwapMany([{scope: requestScope, key,
+          expectedRevision: previous?.revision ?? 0, value: request}], {signal: lifetime.signal, checks: context.checks});
+        if (!begun.applied) throw fail();
+        current();
+        return Object.freeze({nonce: nonce.slice(), close,
+          install: async packet => {
+            let plaintext, snapshot;
+            try {
+              if (!(packet instanceof Uint8Array) || packet.length > 2048) throw fail();
+              snapshot = packet.slice();
+              current(); await verifyOwner();
+              const delivered = await verifyCredentialDelivery(snapshot, {group, owner, credential, recipient: subject, nonce,
+                afterRevision: context.policy.revision - 1n, minimumGeneration: context.policy.generation});
+              const expected = credentialPolicyBytes(context.policy);
+              if (delivered.policyBytes.length !== expected.length || !expected.every((v, i) => v === delivered.policyBytes[i])) throw fail();
+              plaintext = new TextEncoder().encode(delivered.key); delivered.key = undefined;
+              const previousKey = await store.read(scope, key); current();
+              if (previousKey && (!validStored(previousKey.value) || previousKey.value.generation >= context.policy.generation)) throw fail();
+              const record = await encryptRecord(plaintext, context, lifetime.signal); current();
+              const result = await store.compareAndSwapMany([
+                {scope, key, expectedRevision: previousKey?.revision ?? 0, value: record},
+                {scope: requestScope, key, expectedRevision: begun.revisions[0], value: {...request, state: 'consumed'}},
+              ], {signal: lifetime.signal, checks: context.checks});
+              if (!result.applied) throw fail();
+              consumed = true; close();
+              return Object.freeze({status: 'credential-saved', generation: record.generation, storageRevision: result.revisions[0]});
+            } catch { throw fail(); } finally { plaintext?.fill(0); snapshot?.fill(0); }
+          },
+        });
+      } catch { close(); throw fail(); }
+    },
     saveOwnerKey: async (value, {signal} = {}) => {
       let plaintext;
       try {
@@ -81,14 +157,7 @@ export function openLocalATVault({wasm, store, group, owner, credential}) {
         if (context.member !== owner) throw fail();
         const previous = await store.read(scope, key); checkSignal(signal);
         if (previous && (!validStored(previous.value) || previous.value.generation >= context.policy.generation)) throw fail();
-        const wrappingKey = await crypto.subtle.generateKey({name: 'AES-GCM', length: 256}, false, ['encrypt', 'decrypt']);
-        checkSignal(signal);
-        const record = {format: 1, member: context.member, generation: context.policy.generation,
-          policyRevision: context.policy.revision, wrappingKey, iv: crypto.getRandomValues(new Uint8Array(12))};
-        record.ciphertext = new Uint8Array(await crypto.subtle.encrypt({name: 'AES-GCM', iv: record.iv,
-          additionalData: aad(record)}, wrappingKey, plaintext));
-        checkSignal(signal);
-        if (!validStored(record)) throw fail();
+        const record = await encryptRecord(plaintext, context, signal);
         const result = await store.compareAndSwapMany([{scope, key, expectedRevision: previous?.revision ?? 0, value: record}],
           {signal, checks: context.checks});
         if (!result.applied) throw fail();
