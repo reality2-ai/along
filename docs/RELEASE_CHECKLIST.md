@@ -187,3 +187,14 @@ shell cache and leaves the old app, saved journeys and datasets available. The
 regression covers HTTP-cached old assets, held-open windows, saved data, quiet
 offline refresh and a mismatched deployment retaining the working offline app.
 An Android confirmation is still needed after deployment.
+
+
+Version 23 is deployed to both the existing private site and GitHub Pages. Core
+CI and the HTTP-cache/mismatched-deployment update regressions passed. The
+[static subpath run](evidence/static-v23-metrics.json) passed installation,
+keyboard/axe, zoom/reflow, data refresh, offline routing and saved-journey checks.
+The [public-site check](evidence/public-site-v23.json) confirms version 23,
+installation eligibility and offline new-address routing without page errors.
+To recover an older installed copy, use its Settings → Check for an app update →
+Check for updates → Open Along. No uninstall or site-data deletion is required.
+The phone's successful update still needs a user observation.
