@@ -6,6 +6,6 @@ Serve this whole directory over HTTPS and open `public/`. No Along backend is ne
 
 Saved places and device setup use separate browser storage from regular Along; same-origin scripts are not isolated. See PREVIEW_INSTALL.md and DEVICE_CHECK.md.
 
-Application source: https://github.com/reality2-ai/along/tree/e0bd07accee60e0c15fa02d87b3f5fa8a2837589
+Application source: https://github.com/reality2-ai/along/tree/5134680bcadc9a11b53dc54c1bd106ca5270d194
 
 This release does not establish full R2 conformance, automatic device discovery, physical installation/TalkBack acceptance or completion of the wider project goal. Runtime provenance, scoped MIT grants and third-party notices are included.
