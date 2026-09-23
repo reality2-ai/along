@@ -1,6 +1,6 @@
 # Release evidence and remaining gates
 
-Current deployed app: **version 33**, reviewed 23 September 2026. The static ZIP
+Current deployed app: **version 34**, reviewed 23 September 2026. The static ZIP
 is prepared and the private server is retired. GitHub Pages is published at `reality2.ai/along/`; no AWS deployment has been made.
 This register separates automated evidence, user observations and remaining checks.
 
@@ -19,7 +19,7 @@ this audit. Later public-hosting work supplements that brief.
 | 6. Distribution | About 38 MiB ZIP/checksum, four data bundles, import scripts, MIT/data/Leaflet notices, AWS/Pages hosting instructions | Public Pages deployment is live; authenticated feeds now verified; public live proxy remains undeployed |
 | 7. GitHub documentation | README, architecture, data, hosting, privacy, limits and contribution guidance; v21 course notice and current design-driver/goal summaries | Public source repository: [reality2-ai/along](https://github.com/reality2-ai/along); app hosted at [reality2.ai/along](https://reality2.ai/along/) |
 | 8. Course material | Thematic analysis, six lessons, exercises, assessment rubric and negative-case/contextual-map refinements | Course effectiveness has not been studied |
-| 9. Release checks and handover | Version 33: 49 JavaScript and 11 Python tests; 15 active browser scenarios; static/update suites; source/archive/live asset comparison | Remaining physical and spoken screen-reader checks prevent claiming full goal completion |
+| 9. Release checks and handover | Version 34: 50 JavaScript and 11 Python tests; 16 active browser scenarios; static/update suites; source/archive/live asset comparison | Remaining physical and spoken screen-reader checks prevent claiming full goal completion |
 
 | 10. English / Te reo Māori | Deferred by user instruction; version 31 removes the selector and ignores earlier saved Māori choices | Re-enable only with renewed direction; draft review remains incomplete |
 
@@ -655,3 +655,6 @@ scenarios, static subpath/accessibility/offline checks and installed-app update
 checks. The final removal of the home progress label is additionally checked by
 the release smoke and focused journey-navigation checks. Geolocation is emulated
 in browser tests, including permission denial; actual device GPS remains untested.
+
+Version 34 deployment [35823924808](https://github.com/reality2-ai/along/actions/runs/35823924808) is recorded with
+[release hashes](evidence/release-v34.json) and [public smoke evidence](evidence/public-site-v34.json).
