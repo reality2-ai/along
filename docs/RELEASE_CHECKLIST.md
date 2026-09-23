@@ -1,6 +1,6 @@
 # Release evidence and remaining gates
 
-Current candidate: **version 24**, reviewed 23 September 2026. The private site and
+Current candidate: **version 25**, reviewed 23 September 2026. The private site and
 static ZIP are prepared. GitHub Pages is published at `reality2.ai/along/`; no AWS deployment has been made.
 This register separates automated evidence, user observations and remaining checks.
 
@@ -234,3 +234,14 @@ of the origin title, selected-destination context and Back preserving the choice
 Public HTML, app code and service worker match the built version 24 files after
 successful Pages deployment. This copy clarification does not establish spoken
 screen-reader validation.
+
+
+## Version 25: street background action inside the map
+
+The “Show street map” button is centred over the route/stop map, with “Needs
+internet · OpenStreetMap” directly beneath its label. It disappears when selected,
+leaving map controls available. Downloaded AT geometry remains visible before
+selection and offline; street tiles are still requested only by explicit action.
+The route exploration, nested Back, fixture tile rendering and offline regression
+passed. A mobile layout check confirms the button is centred; axe checks cover
+the route dialog with the button visible.

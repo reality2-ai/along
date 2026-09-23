@@ -153,7 +153,7 @@ stop name may still be on the path; this is not a street-intersection search.
 
 Tap a stop name or map marker for its location and scheduled departures. Back or
 Escape returns through the detail layers without changing your planned journey.
-Downloaded paths and stop locations work offline. **Show street map (online)**
+Downloaded paths and stop locations work offline. **Show street map** in the centre of the map
 adds an OpenStreetMap background on request; those tiles are not in the offline
 bundle. Maps supplement the keyboard-accessible stop list.
 

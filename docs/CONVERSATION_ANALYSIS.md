@@ -505,3 +505,14 @@ an intermediate interpretation as a settled requirement.
 remains useful design evidence after the ordering is understood. The response is
 to improve the interface's explanation, not dismiss the observation. One person's
 experience identifies a plausible issue; broader prevalence still needs testing.
+
+
+## Refinement: place the explanation where the absence is noticed
+
+The user could not tell why the street background was absent and found its button
+underneath easy to miss. Moving the action into the centre of the map connects
+the missing visual layer to an explicit next action. The short internet note
+explains the condition without adding another panel. The privacy/offline choice
+remains intact: the app still waits for a request before contacting OpenStreetMap.
+This extends contextual affordance from choosing a task to explaining an optional
+part of the current view.
