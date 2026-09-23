@@ -392,3 +392,18 @@ network binding, human confirmation and core ceremony installation remain work.
 Byte arrays are cleared without claiming guaranteed erasure of browser/WASM copies.
 The full clone run passed the canon-table self-test that failed under the linked
 worktree; full latest-snapshot verification remains outstanding.
+
+The ordinary-member comparison exchange now runs over the actual direct browser
+channel. Both the commitment and an HKDF-derived comparison session bind its
+transcript. With the asset server stopped, isolated browser contexts produce
+matching core comparison strings; a substituted invitation closes both ends,
+closure invalidates comparison, and key-holder invitations refuse this flow.
+This is not yet person confirmation, invitation authorization integration,
+protected bundle delivery or membership installation. Signaling still uses the
+test harness, not an end-user pairing UI.
+
+The full clone's complete `cargo xtask verify` run finished successfully, including
+check, layering, conformance and documentation. Rust source changed during that
+run, so it is not being claimed as complete verification of the latest snapshot.
+A fresh full pass has started against a recorded source snapshot; runtime source
+is being held steady while that pass runs. The latest focused browser tests pass.
