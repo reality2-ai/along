@@ -96,6 +96,11 @@ online OpenStreetMap background, not live vehicle tracking. Tap a screenshot to 
 <td width="50%"><a href="docs/screenshots/03-follow.png"><img src="docs/screenshots/03-follow.png" width="100%" alt="The journey view shows the current walking step and Next step action."></a></td>
 <td width="50%"><a href="docs/screenshots/04-route-map.png"><img src="docs/screenshots/04-route-map.png" width="100%" alt="Route 70's published path and stop markers over a street-map background, with scheduled-service choices below."></a></td>
 </tr>
+<tr><th>Save places before choosing a route</th><th>Read scheduled stop departures</th></tr>
+<tr>
+<td width="50%"><a href="docs/screenshots/05-save-places.png"><img src="docs/screenshots/05-save-places.png" width="100%" alt="The review screen offers Save these places before finding a route, without saving a departure time."></a></td>
+<td width="50%"><a href="docs/screenshots/06-departures.png"><img src="docs/screenshots/06-departures.png" width="100%" alt="A departure board labels times as scheduled, not live, with linked route numbers and destinations."></a></td>
+</tr>
 </table>
 
 Screenshots are reproducible with `node scripts/capture_ux.mjs` against a running

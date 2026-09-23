@@ -11,6 +11,7 @@ try{
  async function choose(field,text){await page.locator('#'+field).fill(text);await page.locator('#'+field+'-options [data-index]').first().click();}
  await capture('01-start');
  await choose('destination','10 Victoria Road Devonport');await page.locator('#destination-next').click();await choose('origin','277 Broadway Newmarket');await page.locator('#origin-next').click();
+ await capture('05-save-places');
  await page.locator('#journey-preferences > summary').click();await page.locator('#date').fill('2026-09-23');await page.locator('#time').fill('09:00');await page.locator('#find').click();await expect(page.locator('.journey-card').first()).toBeVisible({timeout:30000});
  await capture('02-journey');await page.locator('[data-follow]').first().click();await expect(page.locator('#current-step')).toContainText('Broadway');await capture('03-follow');
  await page.locator('#new-journey').click();await page.locator('#browse-routes').click();await page.locator('#route-search').fill('70');await page.locator('#route-search-results button').first().click();await page.locator('#detail-body > .route-variant').first().click();await expect(page.locator('#context-map .leaflet-overlay-pane path').first()).toBeVisible();
@@ -21,6 +22,9 @@ try{
   await expect.poll(()=>page.locator('#context-map img.leaflet-tile').evaluateAll(images=>images.length>0&&images.every(i=>i.complete&&i.naturalWidth>0)),{timeout:30000}).toBe(true);
  }
  await capture('04-route-map');
- expect(errors).toEqual([]);console.log(`Captured four equal-size UI states; street background: ${process.env.CAPTURE_STREET_MAP==='1'?'requested for map screenshot':'off'}.`);
+ await page.locator('.route-stop-list [data-detail]').first().click();await expect(page.locator('.departure-board')).toBeVisible();
+ await page.locator('.departure-board').evaluate(el=>{el.scrollIntoView({block:'start'});document.getElementById('information').scrollTop-=150;});
+ await capture('06-departures');
+ expect(errors).toEqual([]);console.log(`Captured six equal-size UI states; street background: ${process.env.CAPTURE_STREET_MAP==='1'?'requested for map screenshot':'off'}.`);
  await context.close();
 }finally{await browser.close();}
