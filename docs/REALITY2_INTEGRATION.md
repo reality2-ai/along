@@ -124,7 +124,17 @@ use as described above. Public deployment, additional interruption/lifecycle che
 verification remain outstanding. See the [experimental build instructions](../experiments/at-credentials/README.md#actual-journey-app-integration-build-local-only).
 Manual transfer is currently cumbersome, and the one-minute invitation lifetime
 needs real usability assessment. Public deployment, simpler transfer, group epoch
-updates/removal, saved-journey sync and physical-device validation remain work.
+updates/removal, completion of saved-journey sync and physical-device validation remain work.
+
+The local generated app now connects saved journeys through Settings independently
+of AT-key setup. Its two-profile test uses real enrollment, address saves and service
+preferences, checks connected edits and offline deletion/save convergence after
+reconnection, and preserves the current journey and local learning history. A local
+journal and atomic import receipt prevent losing an outbound edit between preference
+storage and IndexedDB. See the [implementation and limits](../experiments/journey-sync/README.md#actual-app-saved-places-local-experimental-build).
+Manual connection messages remain required. Permission-management UI, broader
+preference sync, capacity recovery, automatic reconnect and physical-device checks
+are unfinished; neither public app nor published pairing lab includes this change.
 
 
 The user has approved developing the missing browser TG capability. The public

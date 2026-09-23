@@ -1074,3 +1074,15 @@ only the explicit final action hands the channel to journey synchronization.
 The browser harness still copies messages between panels on one host. This advances
 the progressive-disclosure theme while leaving automatic discovery, commuter Settings
 integration and physical-device acceptance as distinct, unfinished requirements.
+
+The generated commuter app then gained the connection flow in Settings. This exposed
+a boundary the component tests could not cover: the app saves learning history and
+saved places together, while synchronization must exchange only deliberate saved
+choices. A separate projection and durable local change journal bridge that boundary.
+Crash-replay and edits-during-commit checks protect offline intent; the two-profile
+app test then checks actual address saves, route preferences, local-history separation,
+and removal/save convergence after offline reopening. A receipt updates saved choices
+without moving the current journey step. For the course, this illustrates why passing
+transport tests does not establish integration: data ownership, durability and the
+ongoing user task each need their own evidence. Manual signaling and physical-device
+acceptance remain explicit limitations.

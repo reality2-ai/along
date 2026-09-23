@@ -6,8 +6,11 @@ export function journeyRoutes(journey){return journey.legs.filter(l=>l.mode!=='w
 export function sameRoutes(a,b){return Array.isArray(a)&&Array.isArray(b)&&a.length===b.length&&a.every((r,i)=>r.mode===b[i].mode&&r.route===b[i].route);}
 export function routePreferenceLabel(routes){return routes.length?routes.map(r=>`${r.mode[0].toUpperCase()+r.mode.slice(1)} ${r.route}`).join(' → '):'Walk or roll';}
 const KEY='along-journeys-v1';
+// Keep saved places while bounding learned history separately. A new search
+// must not silently remove a saved place received from another device.
+const retained=journeys=>[...journeys.filter(j=>j.saved),...journeys.filter(j=>!j.saved).slice(0,30)];
 export function readPreferences(storage=globalThis.localStorage){
-  try{const data=JSON.parse(storage.getItem(KEY));if(data&&Array.isArray(data.journeys))return {learning:data.learning!==false,mobility:data.mobility&&typeof data.mobility==='object'?data.mobility:{},journeys:data.journeys.filter(j=>j.from?.id&&j.to?.id&&Number.isFinite(j.count)&&Array.isArray(j.hours)&&Array.isArray(j.days)).slice(0,30).map(j=>({...j,savedRoutes:normaliseRoutes(j.savedRoutes)}))};}catch{}
+  try{const data=JSON.parse(storage.getItem(KEY));if(data&&Array.isArray(data.journeys))return {learning:data.learning!==false,mobility:data.mobility&&typeof data.mobility==='object'?data.mobility:{},journeys:retained(data.journeys.filter(j=>j.from?.id&&j.to?.id&&Number.isFinite(j.count)&&Array.isArray(j.hours)&&Array.isArray(j.days))).map(j=>({...j,savedRoutes:normaliseRoutes(j.savedRoutes)}))};}catch{}
   return {learning:true,journeys:[]};
 }
 export function writePreferences(data,storage=globalThis.localStorage){try{storage.setItem(KEY,JSON.stringify(data));return true;}catch{return false;}}
@@ -17,7 +20,7 @@ export function recordJourney(data,from,to,context){
   let journey=journeys.find(j=>j.from.id===from.id&&j.to.id===to.id);
   if(!journey){journey={from,to,count:0,hours:Array(24).fill(0),days:Array(7).fill(0),last:0,saved:false};journeys.push(journey);}
   journey.count++;journey.hours[context.hour]++;journey.days[context.day]++;journey.last=context.timestamp;
-  return {...data,journeys:journeys.sort((a,b)=>Number(b.saved)-Number(a.saved)||b.last-a.last).slice(0,30)};
+  return {...data,journeys:retained(journeys.sort((a,b)=>Number(b.saved)-Number(a.saved)||b.last-a.last))};
 }
 export function suggestions(data,{hour,day}){
   const weekend=d=>d===0||d===6;

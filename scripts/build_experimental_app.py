@@ -36,7 +36,7 @@ def build(browser, wasm, notices=None, runtime=None):
                 continue
             relative = Path(name)
             if (relative.is_absolute() or '..' in relative.parts or relative.suffix not in ('.mjs', '.js')
-                    or not name.startswith(('experiments/tg-pairing/', 'experiments/at-credentials/', 'public/'))):
+                    or not name.startswith(('experiments/tg-pairing/', 'experiments/at-credentials/', 'experiments/journey-sync/', 'public/'))):
                 raise ValueError('Unexpected module path')
             source = ROOT / relative
             if name == 'experiments/tg-pairing/hive_wasm.js':
@@ -65,6 +65,7 @@ def build(browser, wasm, notices=None, runtime=None):
         if text.count(old) != 1:
             raise ValueError('App integration point changed')
         text = text.replace(old, "import '../experiments/at-credentials/app-bootstrap.mjs';\nimport {createLiveClient} from '../experiments/at-credentials/app-live-bridge.mjs';")
+        text = text.replace("from './preferences.js';", "from '../experiments/journey-sync/app-preferences.mjs';")
         text = text.replace('the server receives your IP address.', 'Auckland Transport receives your IP address and personal key.')
         text += """
 // Experimental connection changes update affordances without changing the journey.
@@ -79,6 +80,12 @@ window.addEventListener('along-live-connection-changed', () => {
   }
   // Existing dated detail results keep their normal expiry; preserve map/scroll.
   for (const id of ['stop-live', 'route-vehicle']) if ($(id)) $(id).hidden = !liveClient.configured;
+});
+window.addEventListener('along-saved-journeys-applied', () => {
+  state.preferences = readPreferences();
+  renderUsual(); renderSavedPlaces();
+  // A peer's changes update saved choices for next time. Do not replace the
+  // current route, current leg, screen, focused control or route-detail map.
 });
 """
         app.write_text(text)

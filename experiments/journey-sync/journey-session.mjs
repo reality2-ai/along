@@ -5,7 +5,7 @@ const hex = bytes => Array.from(bytes, value => value.toString(16).padStart(2, '
 
 // A dedicated journey channel: no AT-key permission or provider request involved.
 // Signaling and deliberate application consent are supplied by the enclosing UI.
-export async function openJourneySession({wasm, store, expectedGroup, peer, role, signal, timeoutMs}) {
+export async function openJourneySession({wasm, store, expectedGroup, peer, role, signal, timeoutMs, onSaved = () => {}}) {
   const group = expectedGroup.slice(), selectedPeer = peer.slice(), lifetime = new AbortController();
   let session, exchange, closed = false, queue = Promise.resolve();
   const close = () => {
@@ -28,7 +28,12 @@ export async function openJourneySession({wasm, store, expectedGroup, peer, role
     current();
     exchange = createJourneyExchange({group: hex(group), timeoutMs, signal: lifetime.signal, onClose: close,
       send: async packet => { await journeys.check(); current(); await session.send(packet); },
-      commit: (snapshot, options) => journeys.merge(snapshot, options)});
+      commit: async (snapshot, options) => {
+        const receipt = await journeys.merge(snapshot, options);
+        // UI notification is not part of the durable peer receipt.
+        try { onSaved(); } catch { /* The committed state remains available. */ }
+        return receipt;
+      }});
     return Object.freeze({
       offer: () => { current(); return session.offer(); },
       accept: description => { current(); return session.accept(description); },

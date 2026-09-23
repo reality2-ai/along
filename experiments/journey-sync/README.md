@@ -1,6 +1,6 @@
 # Saved-journey synchronization data layer
 
-Experimental storage and authenticated peer controller, not an enabled app feature.
+Experimental storage, authenticated peer controller and local app integration.
 The public app and published pairing lab do not import these modules. The model
 and store send no data; the explicitly opened controller can transfer snapshots
 to an authorized enrolled peer.
@@ -39,8 +39,8 @@ do not authorize discarding an earlier saved copy. No read silently replaces an
 unknown existing schema. The snapshot is sufficient for later retransmission;
 there is no volatile-only outbound queue.
 
-The constructor's group and actor are caller-supplied context. The future adapter
-must derive them from the verified local persona and bind each incoming snapshot
+The storage constructor's group and actor are caller-supplied context. The app adapter
+derives them from the verified local persona and binds each incoming snapshot
 to an authenticated, authorized group session. `merge` does **not** authenticate
 its caller. Do not expose it directly to network messages. At-rest records use the
 same browser-origin boundary as the current personal preferences; this module
@@ -58,8 +58,8 @@ The browser check uses the recorded runtime bundle described in
 It exercises actual IndexedDB transactions through two simultaneous handles,
 deletion/replay, a fresh-document reopen, and cancelled/failed/invalid changes.
 Model checks cover reordered three-replica convergence and privacy projection.
-This does not yet establish authenticated peer delivery, receipt exchange,
-automatic reconciliation, preference migration, public UI or physical-device use.
+These storage checks alone do not establish authenticated delivery or app behavior;
+the separate controller and app checks below cover those boundaries.
 
 ## Application permission boundary
 
@@ -83,7 +83,7 @@ review, authorized merge, and removal during commit with saved journeys retained
 It uses real WASM identities, membership evidence and IndexedDB. Consent grants
 now use the visible permission component; race/stale-state setup still uses
 harness calls. The controller binds packets to the selected authenticated peer.
-Settings integration remains unfinished. The connection component below reviews
+The local-only Settings integration below uses this boundary. The connection component reviews
 the peer identity from a transferred public device message.
 
 ## Authenticated snapshot exchange
@@ -91,8 +91,8 @@ the peer identity from a transferred public device message.
 `journey-session.mjs` composes the actual local-persona runtime with the permitted
 state adapter. No AT owner or subscription key is required. `synchronize()` sends
 one durable snapshot to the selected peer; both devices must send to reconcile
-both sides. Local calls are serialized. This is not automatic discovery or
-background reconciliation yet.
+both sides. Local calls are serialized. The app adapter sends on connection and
+local edits; automatic discovery and reconnect remain unfinished.
 
 `exchange.mjs` transfers at most 2 MiB in 1,024-byte chunks below R2's 2,048-byte
 message limit. One incoming and one outgoing transfer can coexist. A random
@@ -119,8 +119,8 @@ AT settings exist. It checks multi-chunk transfer, bidirectional convergence,
 offline save/deletion and reconnect, then removal on an open channel. Consent and
 removal use visible controls; the connection component reviews peer messages and
 manages signaling while the harness copies public text between panels on one
-host. App preference migration, Settings integration,
-automatic reconciliation and physical-device acceptance remain unfinished.
+host. The separate generated-app check below exercises actual saved preferences
+and Settings. Physical-device acceptance remains unfinished.
 
 ## Journey-sharing review component
 
@@ -134,8 +134,9 @@ Removal explains that already shared copies remain on the other device.
 The real-enrollment browser fixture checks synthetic-click refusal, keyboard
 confirmation/focus return, Escape, stale-review refusal, 320px/200% reflow and axe.
 It uses this component to grant both sides before the real journey exchange and
-remove permission while that channel is open. This is a component in a test page,
-not yet the commuter Settings flow, TalkBack acceptance or public deployment.
+remove permission while that channel is open. Removal is still a component check;
+management of saved permissions in commuter Settings, TalkBack acceptance and
+public deployment remain unfinished.
 
 ## Journey connection component
 
@@ -155,4 +156,52 @@ The enrollment fixture drives the controls and copies the public messages betwee
 panels. It checks wrong-group/self messages and cancellation without permission
 changes, keyboard review, narrow layout and automated accessibility, then exchanges
 durable journeys over the handed-off channel. This is still a component test,
-not automatic device discovery, app Settings integration or physical-device proof.
+not automatic device discovery or physical-device proof. The generated-app test
+below separately covers Settings integration.
+
+## Actual app saved places (local experimental build)
+
+Settings now offers **Share saved journeys with my devices** after identity setup,
+independently of AT credentials. The Start/Join flow uses the connection component.
+Once both devices confirm, each sends its durable snapshot. Subsequent local saved
+place/service-preference edits send while connected; received changes update saved
+choices without changing the selected route, current leg or learning settings.
+Closing Settings retains the channel; explicit disconnect or pagehide closes it.
+Reconnection still requires manual message transfer, not automatic discovery.
+
+`app-preferences.mjs` adds a local outbound journal to the same localStorage value
+as the existing preferences. A save/removal and its queued change are one write.
+Tracking begins only when the user starts or joins sharing. Existing saved places
+are projected on first opt-in; unsaved history, counts and mobility settings stay
+local. The public build continues to use the ordinary preferences module.
+
+`app-store.mjs` consumes that journal under a same-origin Web Lock. Each IndexedDB
+transaction commits the projected state and an operation receipt together. If the
+browser stops before consuming the local journal, replay recognizes the committed
+operation. New local edits during an asynchronous read/commit remain queued and
+are applied before incoming state is rendered. Failed writes retain pending data;
+an unknown/different saved sharing group is not silently replaced. This does not
+make the app's existing localStorage preferences a general multi-tab transactional
+database or provide rollback resistance. Web Locks are required for sharing.
+
+Saved places are retained separately from the thirty-item learned-history bound.
+The replication model's 256-pair bound also includes retained tombstones; reaching
+it can prevent further sharing changes without discarding local saves. The journal is bounded
+at 256 pending operations. Compaction, a user-facing capacity recovery path, broader
+preference sync and saved-permission management are still required before release.
+
+Verification:
+
+```sh
+node --test experiments/journey-sync/app-store.test.mjs
+python3 scripts/build_experimental_app.py --runtime releases/along-r2-runtime-1b9229ad
+CHROMIUM_PATH=/path/to/chromium node experiments/journey-sync/app-integration.test.mjs
+```
+
+The generated-app test enrolls two isolated browser profiles through actual Settings,
+saves real address pairs and a service preference, connects through the visible
+flow, checks local-history separation and current-step preservation, then tests a
+connected removal and offline reopening/edit/reconnect convergence. It also checks
+320px/200% layout and axe in the sharing screen, with zero AT provider requests.
+The harness copies public connection messages; this is one-host browser evidence,
+not S23/TalkBack acceptance, remote reachability or a public release.

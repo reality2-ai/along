@@ -719,25 +719,27 @@ public route screen still needs this experimental controller/view wired in.
 
 `scripts/build_experimental_app.py` creates a separate generated tree under
 `releases/along-experimental-app/`. It follows the required runtime/module imports,
-copies the existing journey app and public datasets, and changes only that copy’s
-live-client import to `app-live-bridge.mjs`. The normal public build is untouched.
+copies the existing journey app and public datasets, and changes that copy’s
+live-client and preferences imports to the experimental bridges. The normal public
+build does not import the device/synchronization runtime.
 The experimental worker uses a separate cache prefix and includes the runtime
 modules for offline reopening. It does not delete the public app’s shell cache.
 Every generated payload is hashed in `build-info.json`; no test or credential file
-is copied. **Do not publish this build yet:** matching runtime source/compiler provenance
-to the collected notices remains pending. The owner has selected MIT for the
-included R2 subset. The builder now requires the notice collection described in
+is copied. **Do not publish this build yet:** full app release and physical-device
+checks remain pending. The recorded runtime build now supplies matching source,
+compiler provenance and notices. The owner has selected MIT for the
+included R2 subset. The builder requires the notice collection described in
 [the audit](../../docs/PAIRING_LICENSE_AUDIT.md) and includes it in the output.
 
 ```sh
-python3 scripts/build_experimental_app.py --browser "$R2_BROWSER_DIR" --wasm "$R2_WASM_DIR"
+python3 scripts/build_experimental_app.py --runtime releases/along-r2-runtime-1b9229ad
 node experiments/at-credentials/app-integration.test.mjs
 node --test experiments/at-credentials/app-live-bridge.test.mjs
 ```
 
-Serve the generated root locally and visit its `public/` URL. The entry links to
-its `experiments/` device/key setup. Use dummy text only. Bootstrap restores that
-lab’s accepted local identity and AT binding without creating an identity,
+Serve the generated root locally and visit its `public/` URL. Device/key setup is
+available in Settings. Use dummy text only. Bootstrap restores the
+accepted local identity and optional AT binding without creating an identity,
 decrypting a key or requesting provider data. Each app screen owns a cancellable
 client. Missing or unreadable state leaves scheduled planning enabled.
 
@@ -754,6 +756,11 @@ attempts under every kind of network loss. Bridge checks cover late responses af
 screen cancellation. This test uses a local-owner key; the Settings reconnect
 interface is now mounted; the separate two-app test below covers shared-key use. Physical devices, real provider feeds
 and installed-app update behavior are not established by this build/test.
+
+Saved journeys have a separate [Settings integration and two-profile app test](../journey-sync/README.md#actual-app-saved-places-local-experimental-build).
+It works without an AT key, with local journalling of offline saves/removals and
+manual connection-message transfer. It does not yet provide automatic discovery
+or reconnect, complete permission management or public release qualification.
 
 
 ### Optional restoration does not delay the planner

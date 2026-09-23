@@ -290,6 +290,11 @@ For Samsung S23/desktop testing, the separate
 dummy key text only. No coding is needed. This experiment does not enable live
 information or journey synchronization in the installed app.
 
+The local experimental build also has [saved-journey sharing through Settings](experiments/journey-sync/README.md#actual-app-saved-places-local-experimental-build).
+Two-browser tests cover saved places, service preferences and offline changes after
+reconnection. Connecting still requires transferring messages between devices;
+automatic reconnection and public release remain unfinished.
+
 The repository also contains tested experimental live matching and proxy code; that proxy is not the
 planned public architecture. See [hosting and live-data status](docs/HOSTING.md).
 

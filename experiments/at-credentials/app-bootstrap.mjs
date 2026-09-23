@@ -1,17 +1,18 @@
 import {configureAppLiveConnection} from './app-live-bridge.mjs';
 import {mountAppDeviceSettings} from './app-device-settings.mjs';
 import {mountAppConnectionSettings} from './app-connection-settings.mjs';
+import {mountAppJourneySettings} from '../journey-sync/app-settings.mjs';
 // Restore optional lab settings only. A stalled runtime/storage operation cannot
 // delay the scheduled planner or enable live access after timeout.
 let stopActive;
 export let restoration;
 async function start() {
-  let store, timer, settings, configuredContext, releaseDeadline, manual = false, closed = false;
+  let store, timer, settings, journeySettings, configuredContext, releaseDeadline, manual = false, closed = false;
   const hex = bytes => Array.from(bytes, value => value.toString(16).padStart(2, '0')).join('');
   const contextKey = ({group, member, binding}) => JSON.stringify([hex(group), member, binding?.role, binding?.binding.owner, binding?.binding.credential]);
   const lifetime = new AbortController();
   const current = () => { if (lifetime.signal.aborted) throw new Error('Optional restore ended'); };
-  const stop = () => { lifetime.abort(); if (!manual) { settings?.dispose(); configureAppLiveConnection(undefined); store?.close(); } };
+  const stop = () => { lifetime.abort(); if (!manual) { settings?.dispose(); journeySettings?.dispose(); configureAppLiveConnection(undefined); store?.close(); } };
   const deviceSettings = mountAppDeviceSettings({onChanged: context => {
     if (closed) return;
     const key = contextKey(context);
@@ -19,9 +20,11 @@ async function start() {
     configuredContext = key;
     lifetime.abort(); manual = true;
     settings?.dispose(); settings = undefined;
+    journeySettings?.dispose(); journeySettings = undefined;
     if (store !== context.store) store?.close();
     store = context.store;
     configureAppLiveConnection(undefined);
+    journeySettings = mountAppJourneySettings({wasm: context.wasm, store, expectedGroup: context.group, member: context.member});
     if (context.binding) settings = mountAppConnectionSettings({wasm: context.wasm, store,
       expectedGroup: context.group, role: context.binding.role});
   }});
@@ -43,10 +46,13 @@ async function start() {
       await wasm.default(); current();
       const {loadATBinding} = await import('./local-owner.mjs'); current();
       const binding = await loadATBinding({wasm, store, expectedGroup: group, signal: lifetime.signal}); current();
-      if (!binding) { store.close(); return; }
+      const {loadLocalPersona} = await import('../tg-pairing/local-persona.mjs'); current();
+      const identity = await loadLocalPersona({wasm, store, expectedGroup: group}); current();
+      if (!identity) { store.close(); return; }
       current();
       configuredContext = contextKey({group, member: hex(saved.value.record.subject), binding});
-      settings = mountAppConnectionSettings({wasm, store, expectedGroup: group, role: binding.role});
+      journeySettings = mountAppJourneySettings({wasm, store, expectedGroup: group, member: identity.member});
+      if (binding) settings = mountAppConnectionSettings({wasm, store, expectedGroup: group, role: binding.role});
     } catch { if (!closed) stop(); }
   })();
   await Promise.race([restoration, new Promise(resolve => {

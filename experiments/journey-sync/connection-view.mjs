@@ -12,7 +12,7 @@ const unhex = value => {
 };
 const fields = (value, names) => value && Object.keys(value).sort().join(',') === names.sort().join(',');
 export function showJourneyConnection(container, {wasm, store, expectedGroup, role, focus = false,
-  signal, onBack = () => {}, onConnected}) {
+  signal, onBack = () => {}, onConnected, onSaved}) {
   if (!['start', 'join'].includes(role) || typeof onConnected !== 'function'
       || !(expectedGroup instanceof Uint8Array) || expectedGroup.length !== 32) throw Error('Journey connection unavailable');
   mounted.get(container)?.();
@@ -74,7 +74,7 @@ export function showJourneyConnection(container, {wasm, store, expectedGroup, ro
     current(); return peer;
   };
   const open = async (peer, sessionRole) => {
-    session = await openJourneySession({wasm, store, expectedGroup: group, peer, role: sessionRole, signal: lifetime.signal});
+    session = await openJourneySession({wasm, store, expectedGroup: group, peer, role: sessionRole, signal: lifetime.signal, onSaved});
     if (disposed || failed) { session.close(); current(); }
     session.signal.addEventListener('abort', fail, {once: true});
     if (session.signal.aborted) throw Error('Connection ended');
