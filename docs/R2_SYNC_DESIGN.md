@@ -7,15 +7,18 @@ release has cross-device sync.
 A [saved-journey data layer](../experiments/journey-sync/README.md) now implements
 strict endpoint/route projection, deterministic logical ordering, retained deletion
 tombstones and atomic snapshot persistence. Model and real IndexedDB checks cover
-concurrent saves, replay, deletion and restart. It is not yet wired to an
-authenticated peer session or the app's preferences; public sync remains absent.
+concurrent saves, replay, deletion and restart. It now connects to an authenticated
+peer controller, but not the app's preferences; public sync remains absent.
 Its documented limits include whole-journey conflict resolution and a bounded
 tombstone set without garbage collection.
 The next increment adds independent per-peer application permission, verified
 against actual enrollment evidence, and transaction guards that prevent a merge
 when permission is removed during its commit. These checks use real browser
-storage but harness consent actions. An authenticated journey exchange protocol
-and its public consent interface remain unfinished.
+storage but harness consent actions. The authenticated journey exchange now moves
+bounded snapshots in acknowledged chunks and confirms only committed merges.
+The real-enrollment browser fixture checks offline changes, reconnect/convergence
+and permission removal on an open channel, independently of AT keys. Consent UI,
+automatic reconciliation, discovery and physical-device tests remain unfinished.
 
 The earlier implementation references below are historical: those projects are
 now archived. The [current runtime investigation](REALITY2_INTEGRATION.md) pins

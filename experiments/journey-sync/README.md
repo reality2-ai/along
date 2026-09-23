@@ -1,8 +1,9 @@
 # Saved-journey synchronization data layer
 
-Experimental local data model and durable storage, not an enabled sync feature.
-The public app and published pairing lab do not import these modules. No data is
-sent to a peer, provider or server by this layer.
+Experimental storage and authenticated peer controller, not an enabled app feature.
+The public app and published pairing lab do not import these modules. The model
+and store send no data; the explicitly opened controller can transfer snapshots
+to an authorized enrolled peer.
 
 `state.mjs` stores one register per ordered endpoint pair. Each register contains
 the endpoint records and chosen service preferences, or a deletion tombstone.
@@ -80,8 +81,39 @@ runs `permission-check.test.mjs` before creating AT settings. It checks refusal
 without consent, mismatched membership proof, independent directions, stale
 review, authorized merge, and removal during commit with saved journeys retained.
 It uses real WASM identities, membership evidence and IndexedDB, but the permission
-actions are harness calls. There is no consent UI or journey network transfer yet.
-An authenticated session controller must still bind incoming packets to the peer
-selected by this adapter and recheck authority while sending. The runtime limits
-application messages to 2,048 bytes, so complete snapshots also need a bounded
-transfer protocol and receipts after durable commit.
+actions are harness calls. The controller now binds incoming packets to the
+selected authenticated peer; the consent UI remains unfinished.
+
+## Authenticated snapshot exchange
+
+`journey-session.mjs` composes the actual local-persona runtime with the permitted
+state adapter. No AT owner or subscription key is required. `synchronize()` sends
+one durable snapshot to the selected peer; both devices must send to reconcile
+both sides. Local calls are serialized. This is not automatic discovery or
+background reconciliation yet.
+
+`exchange.mjs` transfers at most 2 MiB in 1,024-byte chunks below R2's 2,048-byte
+message limit. One incoming and one outgoing transfer can coexist. A random
+transfer ID, byte count, contiguous offsets and SHA-256 digest bind the snapshot.
+These are framing checks; the authenticated direct WebRTC session supplies
+confidentiality and peer identity. The framing is Along-specific, not a general
+R2 application interoperability claim.
+
+Each chunk waits for acknowledgment. Final confirmation follows a committed merge
+and names the exact snapshot digest; it does not prove delivery of later edits or
+bidirectional convergence. Idle timeout closes the channel and drops partial receive
+bytes. A lost receipt leaves saved data intact; retransmission on a new connection
+merges idempotently. Closure during commit never produces a false confirmation.
+
+Permission is checked before each application send/receive and guarded atomically
+at incoming commit. It cannot recall bytes already released or erase a peer's copy.
+Group freshness remains limited by the runtime's held membership evidence.
+
+Run `node --test experiments/journey-sync/exchange.test.mjs` for chunking, duplex
+transfer, commit ordering, lost receipts, retry, malformed/tampered packets,
+oversize headers and closure checks. The real-enrollment fixture additionally runs
+`session-check.test.mjs` over authenticated WebRTC and actual IndexedDB before any
+AT settings exist. It checks multi-chunk transfer, bidirectional convergence,
+offline save/deletion and reconnect, then removal on an open channel. Consent and
+signaling are harness actions on one host. App preference migration, consent UI,
+automatic reconciliation and physical-device acceptance remain unfinished.

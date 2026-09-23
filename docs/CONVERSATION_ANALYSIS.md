@@ -1047,3 +1047,12 @@ removal racing with an incoming save prevents the save. The consent actions are
 still supplied by the harness, so this is authorization-boundary evidence rather
 than a verified consent experience. It extends the privacy theme while preserving
 the distinction between authenticated identity, application permission and delivery.
+
+The journey controller subsequently exchanged snapshots over the actual enrolled
+device channel. Chunking respects the runtime's message limit, and a receipt is
+sent only after the guarded merge commits. Tests distinguish losing confirmation
+from losing saved data, then check offline saves/deletions and convergence after
+reconnection. This extends the evidence-based reporting theme: a successful send
+is not a saved receipt, and a one-way receipt is not proof of complete two-way sync.
+The real-channel check still supplies consent and signaling through the harness;
+it is not a completed commuter interface or physical-device acceptance.

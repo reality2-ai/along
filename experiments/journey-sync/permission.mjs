@@ -77,6 +77,7 @@ export async function openPermittedJourneys({wasm, store, expectedGroup, peer}) 
   };
   await evidence();
   return Object.freeze({
+    async check() { await evidence(); },
     async snapshot() {
       const before = await evidence();
       const result = await openJourneyStore({store, group: ctx.key, actor: identity.member}).read();
