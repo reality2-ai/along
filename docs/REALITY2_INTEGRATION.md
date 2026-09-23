@@ -377,3 +377,18 @@ This helper requires an established local membership; it is not the initial trus
 bootstrap for an OPEN candidate. Session comparison, person consent and the
 remaining ceremony/install integration are still outstanding. The full runtime
 run remains active through its board checks, with a latest-snapshot rerun owed.
+
+An ephemeral browser enrollment exchange now implements candidate commitment
+before provisioner reveal, checks the candidate's revealed contribution, and uses
+real X25519 plus the existing core L5B comparison-string derivation. Browser tests
+confirm matching strings and refusal of premature reveal, altered commitment,
+degenerate contribution, substituted invitation and replay. The rebuilt WASM and
+focused Rust tests pass. The API follows the
+[W3C Web Cryptography X25519 definition](https://www.w3.org/TR/webcrypto-2/#x25519).
+
+No storage or membership installation is connected to this prototype. It currently
+discards the shared secret after comparison derivation; protected bundle delivery,
+network binding, human confirmation and core ceremony installation remain work.
+Byte arrays are cleared without claiming guaranteed erasure of browser/WASM copies.
+The full clone run passed the canon-table self-test that failed under the linked
+worktree; full latest-snapshot verification remains outstanding.
