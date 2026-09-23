@@ -4,7 +4,8 @@ import {aucklandNow} from './planner.js';
 import {readPreferences,writePreferences,recordJourney,suggestions,journeyRoutes,sameRoutes,routePreferenceLabel} from './preferences.js';
 const $=id=>document.getElementById(id);
 const language=createLocalizer();
-const translated=(id,key,values)=>setLocalizedText($(id),language,key,values);
+const textBindings=new Map();
+const translated=(id,key,values)=>{textBindings.set(id,{key,values});return setLocalizedText($(id),language,key,values);};
 // Acknowledgement is local to this browser, separate from journey learning.
 function collapseCourseNotice(focus=false){
   const notice=$('course-notice');notice.open=false;
@@ -18,6 +19,9 @@ $('course-understood').onclick=()=>{
 };
 
 const escape=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+// Dynamic leaf phrases retain their binding so a language change does not rebuild
+// cards, close disclosures, replace focused controls or disturb route detail IDs.
+const message=(key,values={})=>{const phrase=language.phrase(key,values);return `<span data-i18n="${escape(key)}" data-i18n-values="${escape(JSON.stringify(values))}" lang="${phrase.lang}">${escape(phrase.text)}</span>`;};
 const clock=seconds=>{const s=((seconds%86400)+86400)%86400;return `${String(Math.floor(s/3600)).padStart(2,'0')}:${String(Math.floor(s%3600/60)).padStart(2,'0')}${seconds>=86400?' +1 day':''}`;};
 const minutes=seconds=>Math.ceil(seconds/60);
 const state={from:null,to:null,location:null,locationLabel:'',journeys:[],preferences:readPreferences(),ready:false,stored:false,shellReady:false,streetsReady:false,streetsStored:false,showAllStops:false,nearbySequence:0,searchSequence:0,lastSearch:null,screen:'destination',intent:'plan',selectedJourney:null,legIndex:0,savedPreference:null};
@@ -78,7 +82,7 @@ function applyLanguage(){
   document.documentElement.lang=language.tag;
   // Unmigrated content remains explicitly English during catalogue expansion.
   document.body.lang='en-NZ';
-  for(const element of document.querySelectorAll('[data-i18n]'))setLocalizedText(element,language,element.dataset.i18n);
+  for(const element of document.querySelectorAll('[data-i18n]'))setLocalizedText(element,language,element.dataset.i18n,element.dataset.i18nValues?JSON.parse(element.dataset.i18nValues):{});
   for(const element of document.querySelectorAll('[data-i18n-aria]')){
     const phrase=language.phrase(element.dataset.i18nAria);element.setAttribute('aria-label',phrase.text);element.lang=phrase.lang;
   }
@@ -88,7 +92,8 @@ function applyLanguage(){
   $('language-choice').value=language.language;
   $('language-draft').hidden=language.language!=='mi';
   $('language-notice').hidden=language.language!=='mi';
-  renderFlowLanguage();updatePreferenceSummary();
+  for(const [id,binding] of textBindings)if($(id))setLocalizedText($(id),language,binding.key,binding.values);
+  renderFlowLanguage();updatePreferenceSummary();renderSavedPlaces();
 }
 $('language-choice').onchange=()=>{
   const result=language.setLanguage($('language-choice').value);
@@ -172,11 +177,11 @@ async function searchJourney(){
   state.lastSearch={from,to,date:$('date').value,time:$('time').value};
   showScreen('options');
   const date=$('date').value,time=$('time').value,sequence=++state.searchSequence;
- $('find').disabled=true;$('journeys').innerHTML='<div class="loading">Finding your way through Auckland…</div>';
+ $('find').disabled=true;$('journeys').innerHTML=`<div class="loading">${message('journey.loading')}</div>`;
   try{
     const journeys=await ask('plan',{from,to,date,time,modes,maxWalk:Number($('max-walk').value),profile:accessProfile(),preferredRoutes:state.savedPreference?.routes});if(sequence!==state.searchSequence)return;
-    state.journeys=journeys;state.lastSearch={from,to,date,time};$('journey-title').textContent=journeys.length?`${journeys.length} way${journeys.length===1?'':'s'} to get there`:'No journey found in this window';
-    if(journeys.length){state.preferences=recordJourney(state.preferences,from,to,{hour:Number(time.slice(0,2)),day:new Date(date+'T12:00:00Z').getUTCDay(),timestamp:Date.now()});persist();}renderJourneys();$('announcement').textContent=journeys.length?`${journeys.length} journey options. Earliest arrival ${clock(journeys[0].arrival)}.`:'No journey found with these preferences.';$('journey-title').focus();
+    state.journeys=journeys;state.lastSearch={from,to,date,time};translated('journey-title',journeys.length?(journeys.length===1?'journey.oneWay':'journey.ways'):'journey.noneWindow',{count:journeys.length});
+    if(journeys.length){state.preferences=recordJourney(state.preferences,from,to,{hour:Number(time.slice(0,2)),day:new Date(date+'T12:00:00Z').getUTCDay(),timestamp:Date.now()});persist();}renderJourneys();translated('announcement',journeys.length?'journey.announced':'journey.noneAnnounced',{count:journeys.length,time:journeys.length?clock(journeys[0].arrival):''});$('journey-title').focus();
   }catch(error){if(sequence===state.searchSequence){showScreen('review');$('form-error').textContent=error.message;$('form-error').focus();}}
   finally{if(sequence===state.searchSequence)$('find').disabled=false;}
 }
@@ -257,35 +262,35 @@ $('browse-routes').onclick=()=>{
 };
 
 function legMarkup(l){
-  return `<div class="leg"><strong>${clock(l.departure)}</strong><div>${l.mode==='walk'?`Walk to ${escape(l.to.name)}`:` ${routeLink(`${l.mode} ${escape(l.route)}`,{routeId:l.routeId,tripId:l.trip},`route-badge detail-link ${l.mode}`)} ${escape(l.headsign||l.to.name)}`}<p>From ${placeDetail(l.from)}${l.from.code?' · '+escape(l.from.code):''}</p><p>To ${placeDetail(l.to)} · ${clock(l.arrival)} · ${minutes(l.arrival-l.departure)} min</p>${l.mode==='walk'?walkingDirections(l):''}</div></div>`;
+  return `<div class="leg"><strong>${clock(l.departure)}</strong><div>${l.mode==='walk'?message('journey.walkTo',{place:l.to.name}):` ${routeLink(`${message('mode.'+l.mode+'Word')} ${escape(l.route)}`,{routeId:l.routeId,tripId:l.trip},`route-badge detail-link ${l.mode}`)} ${escape(l.headsign||l.to.name)}`}<p>${message('place.from')} ${placeDetail(l.from)}${l.from.code?' · '+escape(l.from.code):''}</p><p>${message('place.to')} ${placeDetail(l.to)} · ${clock(l.arrival)} · ${minutes(l.arrival-l.departure)} min</p>${l.mode==='walk'?walkingDirections(l):''}</div></div>`;
 }
 function renderJourneys(){
   const sort=$('sort').value,journeys=[...state.journeys].sort((a,b)=>Number(!!b.preferred)-Number(!!a.preferred)||a[sort]-b[sort]||a.arrival-b.arrival);state.displayJourneys=journeys;
   $('sort').hidden=journeys.length<2;
   $('saved-route-context').hidden=!state.savedPreference;$('use-any-route').hidden=!state.savedPreference;
   if(state.savedPreference)$('saved-route-context').textContent=`Saved preference: ${routePreferenceLabel(state.savedPreference.routes)}. ${journeys.some(j=>j.preferred)?'Matching services shown first, using the timetable for this search.':'No match found in the next four hours with these travel preferences. Other options are shown when available.'}`;
-  if(!journeys.length){$('journeys').innerHTML='<div class="empty-state"><h3>Let’s try another option.</h3><p>No route was found within these preferences.</p><button class="primary-button" id="adjust-journey">Adjust journey preferences →</button></div>';$('adjust-journey').onclick=()=>{review();$('journey-preferences').open=true;$('journey-preferences').querySelector('summary').focus();};return;}
-  const card=(j,i)=>`<article class="journey-card"><div class="journey-summary"><span class="context-tag">${j.preferred?'Your saved route':i===0?(sort==='arrival'?'Earliest arrival':sort==='transfers'?'Fewest changes':'Least walking'):'Another option'}</span><div class="journey-top"><div class="journey-times">${clock(j.departure)} → ${clock(j.arrival)}</div><div class="journey-duration">${minutes(j.duration)} <small>min</small></div></div><p class="journey-meta">${j.walkOnly?'Walk or roll':j.transfers===0?'No changes':`${j.transfers} change${j.transfers>1?'s':''}`} · ${minutes(j.walking)} min walking / rolling</p><div class="journey-path">${j.legs.map(l=>legDetail(l,l.mode==='walk'?'Walk':`${l.mode==='bus'?'Bus':l.mode==='train'?'Train':'Ferry'} ${escape(l.route)}`,l.mode==='walk'?'detail-link':`route-badge detail-link ${l.mode}`)).join('<span class="path-arrow">›</span>')}</div><button class="${i===0?'primary-button':'secondary-button'}" data-follow="${i}">Use this journey →</button></div></article>`;
-  $('journeys').innerHTML=card(journeys[0],0)+(journeys.length>1?`<details class="alternatives"><summary>See ${journeys.length-1} other option${journeys.length>2?'s':''}</summary>${journeys.slice(1).map((j,i)=>card(j,i+1)).join('')}</details>`:'');
+  if(!journeys.length){$('journeys').innerHTML=`<div class="empty-state"><h3>${message('journey.tryAnother')}</h3><p>${message('journey.nonePreferences')}</p><button class="primary-button" id="adjust-journey">${message('journey.adjust')}</button></div>`;$('adjust-journey').onclick=()=>{review();$('journey-preferences').open=true;$('journey-preferences').querySelector('summary').focus();};return;}
+  const card=(j,i)=>`<article class="journey-card"><div class="journey-summary"><span class="context-tag">${message(j.preferred?'journey.savedRoute':i===0?'sort.'+sort:'journey.another')}</span><div class="journey-top"><div class="journey-times">${clock(j.departure)} → ${clock(j.arrival)}</div><div class="journey-duration">${minutes(j.duration)} <small>${message('journey.minuteUnit')}</small></div></div><p class="journey-meta">${message(j.walkOnly?'journey.walkRoll':j.transfers===0?'journey.noChanges':j.transfers===1?'journey.oneChange':'journey.changes',{count:j.transfers})} · ${message('journey.walkMinutes',{minutes:minutes(j.walking)})}</p><div class="journey-path">${j.legs.map(l=>legDetail(l,l.mode==='walk'?message('journey.walk'):`${message('mode.'+l.mode+'Title')} ${escape(l.route)}`,l.mode==='walk'?'detail-link':`route-badge detail-link ${l.mode}`)).join('<span class="path-arrow">›</span>')}</div><button class="${i===0?'primary-button':'secondary-button'}" data-follow="${i}">${message('journey.use')}</button></div></article>`;
+  $('journeys').innerHTML=card(journeys[0],0)+(journeys.length>1?`<details class="alternatives"><summary>${message(journeys.length>2?'journey.otherMany':'journey.otherOne',{count:journeys.length-1})}</summary>${journeys.slice(1).map((j,i)=>card(j,i+1)).join('')}</details>`:'');
   document.querySelectorAll('[data-follow]').forEach(button=>button.onclick=()=>{state.selectedJourney=journeys[Number(button.dataset.follow)];state.legIndex=0;$('full-itinerary').open=false;renderFollow();showScreen('follow');});
 }
 function renderFollow(){
   const journey=state.selectedJourney,leg=journey.legs[state.legIndex];
-  $('step-count').textContent=`Step ${state.legIndex+1} of ${journey.legs.length}`;
+  translated('step-count','follow.step',{step:state.legIndex+1,total:journey.legs.length});
   $('current-step').innerHTML=legMarkup(leg);
   $('itinerary-legs').innerHTML=journey.legs.map(legMarkup).join('');
   $('previous-leg').hidden=state.legIndex===0;
-  $('next-leg').textContent=state.legIndex===journey.legs.length-1?'I’ve arrived':'Next step →';
+  translated('next-leg',state.legIndex===journey.legs.length-1?'follow.arrived':'action.nextStep');
   const previousSave=state.preferences.journeys.find(j=>j.saved&&j.from.id===state.lastSearch.from.id&&j.to.id===state.lastSearch.to.id);
   const saved=!!previousSave&&sameRoutes(previousSave.savedRoutes,journeyRoutes(journey));
-  $('prefer-services').textContent=saved?'★ Preferred services':previousSave?.savedRoutes?'☆ Prefer these services instead':'☆ Prefer these services';$('prefer-services').setAttribute('aria-pressed',String(saved));
+  translated('prefer-services',saved?'service.preferred':previousSave?.savedRoutes?'service.instead':'service.prefer');$('prefer-services').setAttribute('aria-pressed',String(saved));
 }
 $('next-leg').onclick=()=>{if(state.legIndex===state.selectedJourney.legs.length-1){showScreen('arrived');return;}state.legIndex++;renderFollow();$('flow-title').focus();};
 $('previous-leg').onclick=()=>{if(state.legIndex>0)state.legIndex--;renderFollow();$('flow-title').focus();};
 function renderSavedPlaces(){
   const saved=state.preferences.journeys.some(j=>j.saved&&j.from.id===state.from?.id&&j.to.id===state.to?.id);
   $('save-places').hidden=state.intent==='nearby';$('save-places-help').hidden=state.intent==='nearby';
-  $('save-places').textContent=saved?'★ Saved places':'☆ Save these places';$('save-places').setAttribute('aria-pressed',String(saved));
+  translated('save-places',saved?'save.saved':'save.places');$('save-places').setAttribute('aria-pressed',String(saved));
 }
 $('save-places').onclick=()=>{
   const {from,to}=state;if(!from||!to)return;
@@ -293,7 +298,7 @@ $('save-places').onclick=()=>{
   if(!journey){journey={from,to,count:0,hours:Array(24).fill(0),days:Array(7).fill(0),last:Date.now(),saved:false};state.preferences.journeys.push(journey);}
   journey.saved=!journey.saved;
   if(!journey.saved){journey.savedRoutes=null;state.savedPreference=null;}
-  persist();renderSavedPlaces();$('announcement').textContent=journey.saved?'Starting place and destination saved. No departure time is saved.':'Saved places and any service preference removed.';
+  persist();renderSavedPlaces();translated('announcement',journey.saved?'save.done':'save.removed');
 };
 $('prefer-services').onclick=()=>{
   const {from,to}=state.lastSearch;let journey=state.preferences.journeys.find(j=>j.from.id===from.id&&j.to.id===to.id);
@@ -302,7 +307,7 @@ $('prefer-services').onclick=()=>{
   const wasSaved=journey.saved&&sameRoutes(journey.savedRoutes,routes);
   journey.saved=true;journey.savedRoutes=wasSaved?null:routes;
   state.savedPreference=null;for(const option of state.journeys)delete option.preferred;
-  renderJourneys();persist();renderFollow();$('announcement').textContent=wasSaved?'Service preference removed. Saved places are kept.':`Places saved with preferred services: ${routePreferenceLabel(routes)}. Times will be checked when you reopen it.`;
+  renderJourneys();persist();renderFollow();translated('announcement',wasSaved?'service.removed':'service.saved',{services:routePreferenceLabel(routes)});
 };
 $('sort').onchange=renderJourneys;
 $('use-any-route').onclick=()=>{state.savedPreference=null;searchJourney();};
@@ -327,7 +332,7 @@ function renderDepartures(data){
   state.departureData=data;$('more-stops').hidden=data.stops.length<=3;$('more-stops').textContent=state.showAllStops?'Show fewer stops':'Show more nearby stops';
   $('nearby-note').textContent=`Checked at ${clock(aucklandNow().seconds)}. ${data.message} Refresh when you need updated departure estimates. ${data.directOnly?'Showing direct services to your selected destination. ':''}${data.walkingSource==='mapped'?'Walking times follow mapped paths at your selected pace, with estimated access links.':'Walking times use distance estimates at your selected pace, not walking directions.'} Check crossings and station access. “Tight” allows a two-minute boarding buffer.`;
   if(!data.stops.length){$('departures').innerHTML=`<div class="empty-state"><h3>No upcoming ${data.directOnly?'direct ':''}services found.</h3><p>Try another stop, a different transport mode${data.directOnly?' or switch off the direct-service filter':''}.<br>We look up to two hours ahead within 800 metres, and up to 20 minutes along mapped walking paths when downloaded.</p></div>`;return;}
-  $('departures').innerHTML=data.stops.slice(0,state.showAllStops?8:3).map((s,i)=>`<article class="stop-card"><div class="stop-header"><div>${i===0?'<span class="context-tag">First stop to consider</span>':''}<h3>${placeDetail(s.stop)}</h3><p>Stop ${escape(s.stop.code||s.stop.id)} · ${s.distance} m away</p></div><span class="walk-time">↗ ${s.walk} min walk est.</span></div>${s.departures.slice(0,3).map(d=>`<div class="departure-row ${d.tight?'tight':''}">${routeLink(escape(d.route),{tripId:d.trip},`route-badge detail-link ${d.mode}`)}<div class="departure-info"><strong>${escape(d.headsign||'See route destination')}</strong><small>${d.mode[0].toUpperCase()+d.mode.slice(1)}${d.tight?' · Tight on estimated walking time':''}</small></div><div class="departure-time"><strong>${d.minutes} <small>min</small></strong><small>${d.live?'● Live prediction':'Scheduled'}</small></div></div>`).join('')}</article>`).join('');
+  $('departures').innerHTML=data.stops.slice(0,state.showAllStops?8:3).map((s,i)=>`<article class="stop-card"><div class="stop-header"><div>${i===0?'<span class="context-tag">First stop to consider</span>':''}<h3>${placeDetail(s.stop)}</h3><p>Stop ${escape(s.stop.code||s.stop.id)} · ${s.distance} m away</p></div><span class="walk-time">↗ ${s.walk} min walk est.</span></div>${s.departures.slice(0,3).map(d=>`<div class="departure-row ${d.tight?'tight':''}">${routeLink(escape(d.route),{tripId:d.trip},`route-badge detail-link ${d.mode}`)}<div class="departure-info"><strong>${escape(d.headsign||'See route destination')}</strong><small>${d.mode[0].toUpperCase()+d.mode.slice(1)}${d.tight?' · Tight on estimated walking time':''}</small></div><div class="departure-time"><strong>${d.minutes} <small>${message('journey.minuteUnit')}</small></strong><small>${d.live?'● Live prediction':'Scheduled'}</small></div></div>`).join('')}</article>`).join('');
 }
 $('refresh').onclick=()=>{predictionsAt=0;refreshNearby();};$('nearby-mode').onchange=refreshNearby;$('direct-only').onchange=refreshNearby;
 $('location').onclick=()=>{if(!navigator.geolocation){$('form-error').textContent='Location is unavailable in this browser. Choose a stop instead.';return;}$('location').disabled=true;$('location').textContent='Finding your location…';navigator.geolocation.getCurrentPosition(position=>{setPlace('origin',{id:`location:${position.coords.latitude.toFixed(5)},${position.coords.longitude.toFixed(5)}`,name:'Current location',lat:position.coords.latitude,lon:position.coords.longitude,placeType:'address'});state.locationLabel='your location';$('location').disabled=false;$('location').textContent='Use my current location';$('announcement').textContent='Current location selected. Continue when ready.';},()=>{$('location').disabled=false;$('location').textContent='Use my current location';$('form-error').textContent='Could not get your location. You can choose a stop or station instead.';},{enableHighAccuracy:false,timeout:12000,maximumAge:60000});};

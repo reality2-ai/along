@@ -21,7 +21,7 @@ this audit. Later public-hosting work supplements that brief.
 | 8. Course material | Thematic analysis, six lessons, exercises, assessment rubric and negative-case/contextual-map refinements | Course effectiveness has not been studied |
 | 9. Release checks and handover | 24 JavaScript and 4 Python tests; four real-data browser scenarios; static/update suites; source/archive/live asset comparison | Remaining physical and spoken screen-reader checks prevent claiming full goal completion |
 
-| 10. English / Te reo Māori | Device-local language module, 93-phrase draft catalogue and review sheet; flow selector connected in development; five foundation and two language-browser tests pass | Remaining screen text and full catalogue/guides, subpath/update checks, broader language/accessibility tests and fluent-speaker review |
+| 10. English / Te reo Māori | Device-local language module, 132-phrase draft catalogue and review sheet; flow selector connected in development; five foundation and two language-browser tests pass | Remaining screen text and full catalogue/guides, subpath/update checks, broader language/accessibility tests and fluent-speaker review |
 
 ## Evidence and reproduction
 
@@ -351,3 +351,10 @@ passed after this expansion, including the English nearby flow and a 360-pixel
 Māori review screen with expanded preferences. Visual inspection caught and fixed
 extra nesting that styled the travel legend as a transport button. AI provenance
 and possible mistakes remain disclosed. This work is not yet publicly deployed.
+
+Journey result cards, saved-place/service controls, their announcements and step
+counts now use the draft catalogue. The English guided journey and both language
+browser scenarios passed, including offline planning, unchanged saved services
+and keeping the whole-journey disclosure open through a language switch. Dynamic
+text is updated in place rather than regenerating route-detail links. Full text
+coverage and the public bilingual release remain outstanding.

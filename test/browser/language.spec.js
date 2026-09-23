@@ -68,6 +68,19 @@ test('draft language switch preserves current task, saved places, Back and offli
   await switchTo(page,'en');
   await expect(page.locator('.journey-card').first()).toBeVisible();
   await expect(page.locator('#flow-title')).toHaveText('Choose your journey');
+  await page.locator('[data-follow]').first().click();
+  await page.locator('#prefer-services').click();
+  const savedServices=await page.evaluate(()=>localStorage.getItem('along-journeys-v1'));
+  await page.locator('#full-itinerary > summary').click();
+  const step=await page.locator('#step-count').textContent();
+  await switchTo(page,'mi');
+  await expect(page.locator('#step-count')).toContainText('Hipanga');
+  await expect(page.locator('#prefer-services')).toContainText('Ngā ratonga e manakohia ana');
+  await expect(page.locator('#full-itinerary')).toHaveAttribute('open','');
+  expect(await page.evaluate(()=>localStorage.getItem('along-journeys-v1'))).toBe(savedServices);
+  await switchTo(page,'en');
+  await expect(page.locator('#step-count')).toHaveText(step);
+  await expect(page.locator('#full-itinerary')).toHaveAttribute('open','');
   expect(errors).toEqual([]);
 });
 

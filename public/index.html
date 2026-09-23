@@ -51,7 +51,7 @@
           <p class="field-help" id="access-help">AT’s current feed does not confirm wheelchair access. The second option may return no journeys. Avoiding mapped barriers does not verify kerbs, lifts, surfaces or the whole route. <a href="https://at.govt.nz/bus-train-ferry/accessible-travel" target="_blank" rel="noreferrer">AT accessible travel information</a>.</p>
           </details>
 
-        <button class="secondary-button" type="button" id="save-places" aria-pressed="false">☆ Save these places</button><p id="save-places-help" class="field-help">Remember this start and destination, without a route or departure time.</p>
+        <button class="secondary-button" type="button" id="save-places" aria-pressed="false">☆ Save these places</button><p id="save-places-help" data-i18n="save.help" class="field-help">Remember this start and destination, without a route or departure time.</p>
         <button class="primary-button" type="submit" id="find">Find my way →</button>
         <p class="field-help"><span data-i18n="journey.scheduled">Transit times are scheduled. Walking and access links are estimates.</span></p>
       </section>
@@ -59,12 +59,12 @@
     <section data-screen="options" id="journey-panel" aria-label="Journey options" hidden>
       <div class="results-heading"><h2 id="journey-title" tabindex="-1">Finding your way…</h2><select id="sort" data-i18n-aria="sort.label" aria-label="Sort journeys"><option value="arrival" data-i18n="sort.arrival">Earliest arrival</option><option value="transfers" data-i18n="sort.transfers">Fewest changes</option><option value="walking" data-i18n="sort.walking">Least walking</option></select></div>
       <p class="field-help" id="active-preferences"></p>
-      <p id="saved-route-context" class="field-help" hidden></p><button id="use-any-route" class="text-button" type="button" hidden>Compare without saved route preference</button><div id="journeys"></div>
+      <p id="saved-route-context" class="field-help" hidden></p><button id="use-any-route" data-i18n="service.compare" class="text-button" type="button" hidden>Compare without saved route preference</button><div id="journeys"></div>
       <button class="text-button" id="change-search" data-i18n="action.changeSearch">Change time or travel preferences</button>
       <button class="text-button alternate-action" id="nearby-from-options" data-i18n="action.compareNearby">Compare nearby departures instead</button>
     </section>
     <section data-screen="follow" id="follow-panel" aria-label="Follow your journey" hidden>
-      <div class="follow-heading"><p id="step-count" class="field-help"></p><button class="save-button" id="prefer-services" aria-pressed="false">☆ Prefer these services</button></div><p class="field-help" id="service-preference-help">Optionally remember these service numbers for next time. This also saves the places; departure times are checked again.</p><div id="current-step"></div>
+      <div class="follow-heading"><p id="step-count" class="field-help"></p><button class="save-button" id="prefer-services" aria-pressed="false">☆ Prefer these services</button></div><p class="field-help" id="service-preference-help" data-i18n="service.help">Optionally remember these service numbers for next time. This also saves the places; departure times are checked again.</p><div id="current-step"></div>
       <button class="primary-button" id="next-leg">Next step →</button><button class="text-button" id="previous-leg" data-i18n="action.previousStep" hidden>← Previous step</button>
       <p class="field-help"><span data-i18n="journey.advance">Advance when you are ready. Along is not tracking your progress. Times are scheduled.</span></p>
       <details id="full-itinerary" class="journey-steps"><summary><span data-i18n="journey.whole">Whole journey</span></summary><div id="itinerary-legs"></div></details>

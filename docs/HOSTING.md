@@ -124,3 +124,22 @@ Service-worker scope stays under `/along/`. Browser storage permissions are
 origin-based, so host only mutually trusted applications on the same domain;
 subdirectories are not separate security origins. Saved data from a private host
 will not automatically move to the public origin.
+
+
+## AT subscription credentials
+
+The adapter accepts one subscription credential in `AT_API_KEY`, held on the
+backend. Its request uses the `Ocp-Apim-Subscription-Key` header documented by
+[AT's developer portal](https://dev-portal.at.govt.nz/), keeping credentials out of
+request URLs. A public GitHub Pages build cannot hold this secret: connecting live
+data requires a separately hosted proxy and client endpoint configuration. That
+public proxy is not currently deployed.
+
+The user has obtained keys, but authenticated verification remains pending until
+the credential location and subscribed product are available to the implementation
+agent. Existing fixture tests do not prove that a real subscription works.
+
+AT documents English-only text for realtime alert descriptions and headings in
+[its realtime guide](https://dev-portal.at.govt.nz/realtime-api). Preserve the
+source language and label it explicitly in a Māori interface; translating the
+interface does not establish a reviewed translation of changing service alerts.

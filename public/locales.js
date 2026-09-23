@@ -283,3 +283,162 @@ Object.assign(messages, {
     "mi": "20 meneti"
   }
 });
+
+Object.assign(messages, {
+  "save.places": {
+    "en": "☆ Save these places",
+    "mi": "☆ Tiakina ēnei wāhi"
+  },
+  "save.saved": {
+    "en": "★ Saved places",
+    "mi": "★ Ngā wāhi kua tiakina"
+  },
+  "save.help": {
+    "en": "Remember this start and destination, without a route or departure time.",
+    "mi": "Puritia tēnei wāhi tīmatanga me tēnei ūnga, kāore he ara, he wā wehe rānei."
+  },
+  "save.done": {
+    "en": "Starting place and destination saved. No departure time is saved.",
+    "mi": "Kua tiakina te wāhi tīmatanga me te ūnga. Kāore he wā wehe i tiakina."
+  },
+  "save.removed": {
+    "en": "Saved places and any service preference removed.",
+    "mi": "Kua tangohia ngā wāhi kua tiakina me ngā manakohanga ratonga."
+  },
+  "service.prefer": {
+    "en": "☆ Prefer these services",
+    "mi": "☆ Kōwhiria ēnei ratonga hei manakohanga"
+  },
+  "service.preferred": {
+    "en": "★ Preferred services",
+    "mi": "★ Ngā ratonga e manakohia ana"
+  },
+  "service.instead": {
+    "en": "☆ Prefer these services instead",
+    "mi": "☆ Kōwhiria ēnei ratonga kē hei manakohanga"
+  },
+  "service.help": {
+    "en": "Optionally remember these service numbers for next time. This also saves the places; departure times are checked again.",
+    "mi": "Ki te hiahia koe, puritia ēnei tau ratonga mō muri ake. Ka tiakina hoki ngā wāhi; ka tirohia anō ngā wā wehe."
+  },
+  "service.removed": {
+    "en": "Service preference removed. Saved places are kept.",
+    "mi": "Kua tangohia te manakohanga ratonga. Ka puritia ngā wāhi kua tiakina."
+  },
+  "service.saved": {
+    "en": "Places saved with preferred services: {services}. Times will be checked when you reopen it.",
+    "mi": "Kua tiakina ngā wāhi me ngā ratonga e manakohia ana: {services}. Ka tirohia ngā wā ina huaki anō koe."
+  },
+  "service.compare": {
+    "en": "Compare without saved route preference",
+    "mi": "Whakatauritea me te kore manakohanga ara kua tiakina"
+  },
+  "follow.step": {
+    "en": "Step {step} of {total}",
+    "mi": "Hipanga {step} o te {total}"
+  },
+  "follow.arrived": {
+    "en": "I’ve arrived",
+    "mi": "Kua tae ahau"
+  },
+  "journey.walkTo": {
+    "en": "Walk to {place}",
+    "mi": "Hīkoi ki {place}"
+  },
+  "journey.use": {
+    "en": "Use this journey →",
+    "mi": "Whakamahia tēnei haerenga →"
+  },
+  "journey.savedRoute": {
+    "en": "Your saved route",
+    "mi": "Tō ara kua tiakina"
+  },
+  "journey.another": {
+    "en": "Another option",
+    "mi": "He kōwhiringa anō"
+  },
+  "journey.walkRoll": {
+    "en": "Walk or roll",
+    "mi": "Hīkoi, neke rānei mā runga tūru wīra"
+  },
+  "journey.noChanges": {
+    "en": "No changes",
+    "mi": "Kāore he whakawhitinga"
+  },
+  "journey.oneChange": {
+    "en": "{count} change",
+    "mi": "{count} whakawhitinga"
+  },
+  "journey.changes": {
+    "en": "{count} changes",
+    "mi": "{count} whakawhitinga"
+  },
+  "journey.walkMinutes": {
+    "en": "{minutes} min walking / rolling",
+    "mi": "{minutes} meneti hīkoi / neke mā runga tūru wīra"
+  },
+  "journey.minuteUnit": {
+    "en": "min",
+    "mi": "meneti"
+  },
+  "journey.walk": {
+    "en": "Walk",
+    "mi": "Hīkoi"
+  },
+  "journey.otherOne": {
+    "en": "See {count} other option",
+    "mi": "Tirohia tētahi atu kōwhiringa ({count})"
+  },
+  "journey.otherMany": {
+    "en": "See {count} other options",
+    "mi": "Tirohia ētahi atu kōwhiringa ({count})"
+  },
+  "journey.tryAnother": {
+    "en": "Let’s try another option.",
+    "mi": "Me whakamātau he kōwhiringa anō."
+  },
+  "journey.nonePreferences": {
+    "en": "No route was found within these preferences.",
+    "mi": "Kāore i kitea he ara e hāngai ana ki ēnei manakohanga."
+  },
+  "journey.adjust": {
+    "en": "Adjust journey preferences →",
+    "mi": "Whakatikaina ngā manakohanga haerenga →"
+  },
+  "journey.loading": {
+    "en": "Finding your way through Auckland…",
+    "mi": "Kei te kimi i tō ara mā Tāmaki Makaurau…"
+  },
+  "journey.oneWay": {
+    "en": "{count} way to get there",
+    "mi": "{count} ara kia tae atu"
+  },
+  "journey.ways": {
+    "en": "{count} ways to get there",
+    "mi": "{count} ara kia tae atu"
+  },
+  "journey.noneWindow": {
+    "en": "No journey found in this window",
+    "mi": "Kāore i kitea he haerenga i tēnei wā"
+  },
+  "journey.announced": {
+    "en": "{count} journey options. Earliest arrival {time}.",
+    "mi": "E {count} ngā kōwhiringa haerenga. Ko te taenga wawe rawa ko te {time}."
+  },
+  "journey.noneAnnounced": {
+    "en": "No journey found with these preferences.",
+    "mi": "Kāore i kitea he haerenga e hāngai ana ki ēnei manakohanga."
+  },
+  "mode.busTitle": {
+    "en": "Bus",
+    "mi": "Pahi"
+  },
+  "mode.trainTitle": {
+    "en": "Train",
+    "mi": "Tereina"
+  },
+  "mode.ferryTitle": {
+    "en": "Ferry",
+    "mi": "Waka kōpiko"
+  }
+});
