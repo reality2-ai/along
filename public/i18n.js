@@ -71,3 +71,11 @@ export function setLocalizedText(element, localizer, id, values) {
   element.setAttribute('lang', phrase.lang);
   return phrase;
 }
+
+// Worker errors retain their established English protocol for compatibility with
+// cached workers. Translate only exact recognised messages; never guess at an
+// unexpected browser/server error's meaning.
+export function errorPhraseKey(error, catalogue=messages){
+  const source=error?.message;
+  return Object.keys(catalogue).find(key=>key.startsWith('engine.')&&catalogue[key].en===source)||null;
+}

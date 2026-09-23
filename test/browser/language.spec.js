@@ -198,3 +198,20 @@ test('offline readiness and failed manual refresh keep their actual language',as
   await choose(page,'destination','Waitemata Train');await page.locator('#destination-next').click();
   await expect(page.locator('#origin')).toBeVisible();
 });
+
+
+test('worker validation translates across language switches and a corrected search succeeds',async({page})=>{
+  await page.goto('/');await expect(page.locator('#data-status')).toContainText('offline ready',{timeout:90000});
+  await switchTo(page,'mi');
+  await choose(page,'destination','Waitemata Train');await page.locator('#destination-next').click();
+  await choose(page,'origin','Newmarket Train');await page.locator('#origin-next').click();
+  await page.locator('#journey-preferences > summary').click();
+  await page.locator('#date').fill('2030-01-01');await page.locator('#time').fill('09:00');
+  await page.locator('#find').click();
+  await expect(page.locator('#form-error')).toContainText('Kei waho tēnei rā');
+  await expect(page.locator('#form-error')).toHaveAttribute('lang','mi-NZ');
+  await switchTo(page,'en');await expect(page.locator('#form-error')).toContainText('outside the downloaded timetable');
+  await page.locator('#date').fill('2026-09-23');await page.locator('#find').click();
+  await expect(page.locator('.journey-card').first()).toBeVisible({timeout:30000});
+  await expect(page.locator('#form-error')).toBeEmpty();
+});

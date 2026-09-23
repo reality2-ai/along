@@ -1,11 +1,11 @@
-import {createLocalizer, setLocalizedText} from './i18n.js';
+import {createLocalizer, setLocalizedText, errorPhraseKey} from './i18n.js';
 import {setupUpdates} from './updates.js';
 import {aucklandNow} from './planner.js';
 import {readPreferences,writePreferences,recordJourney,suggestions,journeyRoutes,sameRoutes,routePreferenceLabel} from './preferences.js';
 const $=id=>document.getElementById(id);
 const language=createLocalizer();
 const textBindings=new Map();
-function showEnglishError(id,error){textBindings.delete(id);$(id).lang='en-NZ';$(id).textContent=error.message;}
+function showError(id,error){const key=errorPhraseKey(error);if(key){translated(id,key);return;}textBindings.delete(id);$(id).lang='en-NZ';$(id).textContent=error.message;}
 const translated=(id,key,values)=>{const phrase=setLocalizedText($(id),language,key,values);textBindings.set(id,{key,values,text:phrase.text});return phrase;};
 // Acknowledgement is local to this browser, separate from journey learning.
 function collapseCourseNotice(focus=false){
@@ -48,7 +48,7 @@ function walkingDirections(leg){
 async function loadStreets(refresh=false){
   $('address-status').hidden=false;translated('address-status','status.streetsPreparing');
   try{const result=await ask('streets',{refresh});state.streetsReady=true;state.streetsStored=result.stored;updateStatus();translated('address-status',result.stored?'status.streetsReady':'status.streetsSession');$('preparation-hint').hidden=true;$('offline-info').insertAdjacentHTML('beforeend',' '+message(result.stored?'status.addressesStored':'status.addressesSession',{count:result.addresses.toLocaleString()}));}
-  catch(error){showEnglishError('address-status',error);translated('preparation-hint','status.noAddresses');updateStatus();}
+  catch(error){showError('address-status',error);translated('preparation-hint','status.noAddresses');updateStatus();}
 }
 const mobility=state.preferences.mobility||{};
 if([300,600,900,1200].includes(mobility.maxWalk))$('max-walk').value=mobility.maxWalk;
@@ -155,7 +155,7 @@ for(const field of ['origin','destination']){
       list.innerHTML=items.length?items.map((s,i)=>`<li role="option" aria-selected="false" id="${field}-option-${i}" data-index="${i}">${escape(s.name)}<small>${message(s.placeType==='address'?'place.addressType':s.kind===1?'place.stationType':'place.stopType',{code:s.code||s.id})}</small></li>`).join(''):`<li role="option" aria-disabled="true">${message('place.noMatch')}</li>`;
       list.hidden=false;input.setAttribute('aria-expanded','true');
       list.querySelectorAll('[data-index]').forEach(item=>{item.addEventListener('pointerdown',event=>event.preventDefault());item.addEventListener('click',()=>choose(Number(item.dataset.index)));});
-    }catch(error){showEnglishError('form-error',error);}
+    }catch(error){showError('form-error',error);}
   },170);});
   input.addEventListener('keydown',event=>{if(event.key==='Escape'){close();return;}if(list.hidden)return;
     if(event.key==='ArrowDown'||event.key==='ArrowUp'){event.preventDefault();active=Math.max(0,Math.min(items.length-1,active+(event.key==='ArrowDown'?1:-1)));list.querySelectorAll('[data-index]').forEach((el,i)=>el.setAttribute('aria-selected',String(i===active)));if(active>=0){input.setAttribute('aria-activedescendant',`${field}-option-${active}`);$(field+'-option-'+active)?.scrollIntoView({block:'nearest'});}}
@@ -189,7 +189,7 @@ async function searchJourney(){
     const journeys=await ask('plan',{from,to,date,time,modes,maxWalk:Number($('max-walk').value),profile:accessProfile(),preferredRoutes:state.savedPreference?.routes});if(sequence!==state.searchSequence)return;
     state.journeys=journeys;state.lastSearch={from,to,date,time};translated('journey-title',journeys.length?(journeys.length===1?'journey.oneWay':'journey.ways'):'journey.noneWindow',{count:journeys.length});
     if(journeys.length){state.preferences=recordJourney(state.preferences,from,to,{hour:Number(time.slice(0,2)),day:new Date(date+'T12:00:00Z').getUTCDay(),timestamp:Date.now()});persist();}renderJourneys();translated('announcement',journeys.length?'journey.announced':'journey.noneAnnounced',{count:journeys.length,time:journeys.length?clock(journeys[0].arrival):''});$('journey-title').focus();
-  }catch(error){if(sequence===state.searchSequence){showScreen('review');showEnglishError('form-error',error);$('form-error').focus();}}
+  }catch(error){if(sequence===state.searchSequence){showScreen('review');showError('form-error',error);$('form-error').focus();}}
   finally{if(sequence===state.searchSequence)$('find').disabled=false;}
 }
 // Detail layers keep the underlying task, scroll position and explicit journey progress.
@@ -216,7 +216,7 @@ async function displayDetail(id){
   if(!$('information').open)$('information').showModal();
   $('information').scrollTop=0;$('detail-title').focus();
   try{const markup=view.markup??await view.body();view.markup=markup;if(activeDetail!==id||!$('information').open)return;$('detail-body').innerHTML=markup;view.mount?.();mountVariant(view);applyBindings($('detail-body'));$('detail-body').querySelectorAll('details').forEach((d,i)=>{if(view.openDetails)d.open=!!view.openDetails[i];});if(view.restoreDetail)$('detail-body').querySelector(`[data-detail="${view.restoreDetail}"]`)?.focus();$('information').scrollTop=view.scroll||0;}
-  catch(error){if(activeDetail===id)showEnglishError('detail-body',error);}
+  catch(error){if(activeDetail===id)showError('detail-body',error);}
 }
 function openInformation(button){
   if(!button)return;
@@ -335,7 +335,7 @@ async function refreshNearby(){
     const data=await ask('nearby',args);if(sequence!==state.nearbySequence)return;renderDepartures(data);
     const fresh=await getPredictions();if(sequence!==state.nearbySequence)return;
     if(fresh.available){const updated=await ask('nearby',{...args,feed:fresh,now:aucklandNow()});if(sequence===state.nearbySequence)renderDepartures(updated);}
-  }catch(error){if(sequence===state.nearbySequence)$('departures').innerHTML=`<div class="error-state">${escape(error.message)}</div>`;}
+  }catch(error){if(sequence===state.nearbySequence)$('departures').innerHTML=`<div class="error-state">${errorPhraseKey(error)?message(errorPhraseKey(error)):`<span lang="en-NZ">${escape(error.message)}</span>`}</div>`;}
   finally{if(sequence===state.nearbySequence)$('refresh').disabled=false;}
 }
 function renderDepartures(data){
@@ -346,7 +346,7 @@ function renderDepartures(data){
 }
 $('refresh').onclick=()=>{predictionsAt=0;refreshNearby();};$('nearby-mode').onchange=refreshNearby;$('direct-only').onchange=refreshNearby;
 $('location').onclick=()=>{if(!navigator.geolocation){translated('form-error','location.unavailable');return;}$('location').disabled=true;translated('location','location.finding');navigator.geolocation.getCurrentPosition(position=>{setPlace('origin',{id:`location:${position.coords.latitude.toFixed(5)},${position.coords.longitude.toFixed(5)}`,name:'Current location',lat:position.coords.latitude,lon:position.coords.longitude,placeType:'address'});state.locationLabel='your location';$('location').disabled=false;translated('location','location.use');translated('announcement','location.selected');},()=>{$('location').disabled=false;translated('location','location.use');translated('form-error','location.failed');},{enableHighAccuracy:false,timeout:12000,maximumAge:60000});};
-$('try-britomart').onclick=async()=>{try{const matches=await ask('search',{query:'Waitemata'});const alternatives=matches.length?matches:await ask('search',{query:'Britomart'});const stop=alternatives.find(s=>s.kind===1)||alternatives[0];if(!stop)throw new Error('Try searching for Waitematā or Britomart in the origin field.');setPlace('origin',stop);review();}catch(error){showEnglishError('form-error',error);}};
+$('try-britomart').onclick=async()=>{try{const matches=await ask('search',{query:'Waitemata'});const alternatives=matches.length?matches:await ask('search',{query:'Britomart'});const stop=alternatives.find(s=>s.kind===1)||alternatives[0];if(!stop)throw new Error('Try searching for Waitematā or Britomart in the origin field.');setPlace('origin',stop);review();}catch(error){showError('form-error',error);}};
 $('settings-open').onclick=()=>$('settings').showModal();document.querySelectorAll('.close-dialog').forEach(b=>b.onclick=()=>b.closest('dialog').close());
 $('learning-enabled').onchange=()=>{state.preferences.learning=$('learning-enabled').checked;persist();};
 $('clear-history').onclick=()=>{state.preferences.journeys=[];persist();translated('storage-message','learning.cleared');if(state.lastSearch)renderJourneys();if(state.selectedJourney)renderFollow();};
@@ -358,10 +358,10 @@ function updateStatus(){
   translated('data-status',state.ready?(state.stored&&state.shellReady&&state.streetsStored?(navigator.onLine?'status.ready':'status.offline'):state.streetsReady?'status.session':'status.streetSearch'):'status.loading');
 }
 function ready(result){state.ready=true;state.stored=result.stored;state.metadata=result.metadata;updateStatus();const end=result.metadata.feed_end_date||'';const expiry=end?`${end.slice(6,8)}/${end.slice(4,6)}/${end.slice(0,4)}`:'not specified';$('offline-info').innerHTML=[message(end?'status.overview':'status.unknownExpiry',{stops:result.stops.toLocaleString(),expiry}),message(result.stored?'status.stored':'status.notStored'),message('status.localRouting')].join(' ');}
-$('update-timetable').onclick=async()=>{$('update-timetable').disabled=true;translated('offline-info','status.refresh');try{ready(await ask('update'));await loadStreets(true);}catch(error){showEnglishError('offline-info',error);}finally{$('update-timetable').disabled=false;}};
+$('update-timetable').onclick=async()=>{$('update-timetable').disabled=true;translated('offline-info','status.refresh');try{ready(await ask('update'));await loadStreets(true);}catch(error){showError('offline-info',error);}finally{$('update-timetable').disabled=false;}};
 window.addEventListener('online',()=>{updateStatus();if(state.location)refreshNearby();});window.addEventListener('offline',()=>{predictions={available:false};updateStatus();if(state.location)refreshNearby();});
 // Departure updates are requested explicitly; avoid moving lists while people read.
 history.replaceState({alongScreen:'destination',depth:0,intent:'plan'},'');showScreen('destination',{focus:false,historyEntry:false});
 translated('location','location.use');translated('preparation-hint','status.preparing');applyLanguage();renderUsual();setNow();$('today').textContent=new Intl.DateTimeFormat('en-NZ',{timeZone:'Pacific/Auckland',weekday:'long',day:'numeric',month:'short'}).format(new Date());
 if('serviceWorker' in navigator){navigator.serviceWorker.register(new URL('./sw.js',import.meta.url),{type:'module',updateViaCache:'none'}).then(registration=>{setupUpdates(registration,language);return navigator.serviceWorker.ready;}).then(()=>{state.shellReady=true;updateStatus();}).catch(()=>{});}
-ask('init').then(async result=>{ready(result);navigator.storage?.persist?.().catch(()=>{});await loadStreets();}).catch(error=>{translated('data-status','status.unavailable');showEnglishError('form-error',error);showEnglishError('offline-info',error);});
+ask('init').then(async result=>{ready(result);navigator.storage?.persist?.().catch(()=>{});await loadStreets();}).catch(error=>{translated('data-status','status.unavailable');showError('form-error',error);showError('offline-info',error);});

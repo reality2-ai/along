@@ -1113,3 +1113,98 @@ Object.assign(messages, {
     "mi": "Whakahou, ka huaki anō"
   }
 });
+
+Object.assign(messages, {
+  "engine.route": {
+    "en": "This route is not in the downloaded timetable.",
+    "mi": "Kāore tēnei ara i te wātaka kua tikiakehia."
+  },
+  "engine.timetableVersion": {
+    "en": "Please update Along to read this timetable.",
+    "mi": "Whakahoutia a Along kia pānui i tēnei wātaka."
+  },
+  "engine.barriers": {
+    "en": "Download the latest street map to avoid mapped steps and barriers.",
+    "mi": "Tikina te mahere tiriti hou hei karo i ngā arawhata me ngā tauārai kua maherehia."
+  },
+  "engine.accessData": {
+    "en": "Update the timetable to check vehicle and stop accessibility.",
+    "mi": "Whakahoutia te wātaka hei tirotiro i te āhei ki te uru ki ngā waka me ngā tūnga."
+  },
+  "engine.place": {
+    "en": "Choose an address or stop from the suggestions.",
+    "mi": "Kōwhiria he wāhitau, he tūnga rānei mai i ngā huatau."
+  },
+  "engine.streetsLoading": {
+    "en": "Street data is still loading. Stop-to-stop journeys are available now.",
+    "mi": "Kei te uta tonu ngā raraunga tiriti. Kei te wātea ngā haerenga tūnga-ki-te-tūnga ināianei."
+  },
+  "engine.stop": {
+    "en": "Choose a stop from the suggestions.",
+    "mi": "Kōwhiria he tūnga mai i ngā huatau."
+  },
+  "engine.date": {
+    "en": "Choose a valid date.",
+    "mi": "Kōwhiria he rā whaimana."
+  },
+  "engine.dateRange": {
+    "en": "This date is outside the downloaded timetable. Update your timetable in settings.",
+    "mi": "Kei waho tēnei rā i te wātaka kua tikiakehia. Whakahoutia tō wātaka i ngā tautuhinga."
+  },
+  "engine.different": {
+    "en": "Choose two different stops or addresses.",
+    "mi": "Kōwhiria kia rua ngā tūnga, ngā wāhitau rānei e rerekē ana."
+  },
+  "engine.time": {
+    "en": "Choose a valid departure time.",
+    "mi": "Kōwhiria he wā wehe whaimana."
+  },
+  "engine.mode": {
+    "en": "Select at least one transport mode.",
+    "mi": "Kōwhiria kia kotahi neke atu te momo waka."
+  },
+  "engine.walk": {
+    "en": "Choose a walking preference between 5 and 20 minutes.",
+    "mi": "Kōwhiria he manakohanga hīkoi i waenga i te 5 me te 20 meneti."
+  },
+  "engine.sameStation": {
+    "en": "These stops belong to the same station.",
+    "mi": "Nō te teihana kotahi ēnei tūnga."
+  },
+  "engine.accessUnknown": {
+    "en": "AT’s timetable does not confirm accessibility for the required stops. We cannot verify a wheelchair-accessible journey.",
+    "mi": "Kāore te wātaka AT e whakaū i te āhei ki te uru ki ngā tūnga e hiahiatia ana. Kāore e taea te whakaū he haerenga e āhei ana mō te tūru wīra."
+  },
+  "engine.disconnected": {
+    "en": "No connected stops within your walking preference. Try a longer walk or choose a nearby stop.",
+    "mi": "Kāore he tūnga tūhono i roto i tō manakohanga hīkoi. Whakamātauria he hīkoi roa ake, kōwhiria rānei he tūnga e tata ana."
+  },
+  "engine.origin": {
+    "en": "Choose a starting stop or use your location.",
+    "mi": "Kōwhiria he tūnga tīmatanga, whakamahia rānei tō tauwāhi."
+  },
+  "engine.download": {
+    "en": "Offline data could not be downloaded. Connect and try again.",
+    "mi": "Kāore i taea te tikiake i ngā raraunga tuimotu. Hono atu, ka whakamātau anō."
+  },
+  "engine.compression": {
+    "en": "Please use a current browser with offline compression support.",
+    "mi": "Whakamahia he pūtirotiro hou e tautoko ana i te kōpeketanga tuimotu."
+  },
+  "engine.loading": {
+    "en": "The timetable is still loading. Please try again in a moment.",
+    "mi": "Kei te uta tonu te wātaka. Whakamātau anō ākuanei."
+  },
+  "engine.unknown": {
+    "en": "Unknown request.",
+    "mi": "He tono kāore i mōhiotia."
+  },
+  "engine.walkingVersion": {
+    "en": "Please update the walking map.",
+    "mi": "Whakahoutia te mahere hīkoi."
+  },
+  "engine.worker": {
+    "en": "The route engine could not start. Reload Along to try again.",
+    "mi": "Kāore i taea te tīmata te pūnaha rapu ara. Utaina anō a Along hei whakamātau anō."
+  }
+});

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createLocalizer, setLocalizedText, validateCatalogue} from '../public/i18n.js';
+import {createLocalizer, setLocalizedText, validateCatalogue, errorPhraseKey} from '../public/i18n.js';
 import {languageKey} from '../public/locales.js';
 
 test('language persists separately from journey data and restores without a network', () => {
@@ -56,4 +56,14 @@ test('catalogue validates placeholders and rejects empty translations', () => {
   assert.deepEqual(validateCatalogue(), []);
   assert.deepEqual(validateCatalogue({bad: {en: 'From {place}', mi: 'Mai i {stop}'}}), ['bad: placeholders differ']);
   assert.deepEqual(validateCatalogue({bad: {en: 'From', mi: ''}}), ['bad: Māori must be non-empty text or null']);
+});
+
+
+test('known worker messages translate without guessing at unexpected errors',()=>{
+  const language=createLocalizer({storage:null});language.setLanguage('mi');
+  const key=errorPhraseKey(new Error('Choose a valid date.'));
+  assert.equal(key,'engine.date');assert.equal(language.text(key),'Kōwhiria he rā whaimana.');
+  assert.equal(errorPhraseKey(new Error('Choose a valid date. Extra server text')),null);
+  assert.equal(errorPhraseKey(new Error('<script>unexpected</script>')),null);
+  assert.equal(errorPhraseKey(null),null);
 });

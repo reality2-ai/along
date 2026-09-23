@@ -28,15 +28,16 @@ translation quality.
 1. Complete the phrase catalogue for static markup, generated journey and stop
    details, walking instructions, saved-service labels, accessibility information,
    loading and failure states, updates and recovery, installation guidance and
-   screen-reader announcements. The current 296-phrase catalogue covers flow headings, common actions, place
+   screen-reader announcements. The current 319-phrase catalogue covers flow headings, common actions, place
    entry help, travel preferences, journey result cards, saved-place/service
    controls and step counts. Walking guidance, place-selection validation and location failures are now
    connected too. Route/stop exploration, map controls and scheduled departure-board labels are
    also connected. Settings privacy/course explanations and learning controls are now connected.
    Nearby comparisons, their filters and scheduled/live labels are now connected.
    Loading, offline readiness and storage summaries are now connected. App-update and recovery messages are now connected, with an independent English
-   fallback if language assets cannot load. Untranslated worker errors, remaining
-   static text and guides are incomplete. Raw errors retain explicit English metadata until migrated.
+   fallback if language assets cannot load. Known worker errors are now translated through exact source-message matching,
+   preserving compatibility with cached workers. Unexpected technical errors retain
+   explicit English metadata. Remaining static text and guides are incomplete.
 2. Extend the connected English / Te reo Māori selector to all dynamic content
    and open detail views. Flow headings, result cards, saved-place/service controls and step counts already
    update without navigation or a reload. Dynamic leaf text keeps its phrase ID
