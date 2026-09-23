@@ -92,9 +92,14 @@ with synthetic feeds. These panels are not mounted in the public app yet. A sepa
 now connects the actual journey app’s existing contextual UI to saved local-owner
 AT settings. Its generated-app test covers visible setup, address-to-address
 bus/ferry routing, explicit mocked AT requests and offline reopening/routing.
-Optional runtime restoration now has a bounded startup wait; stalled WASM and a
+Optional runtime restoration runs in the background with a deadline; stalled WASM and a
 newer unreadable IndexedDB schema are tested without blocking the scheduled
-planner or replacing saved lab records. The public build is untouched;
+planner or replacing saved lab records. Settings handlers are ready at DOMContentLoaded
+even with stalled WASM. A persisted browser history-cache return remounts the optional device context
+after pagehide disposal. A real Chromium navigation-away/Back test verifies the
+same document, usable Settings and unchanged journey step without provider I/O;
+simulated repeat events check duplicate-control avoidance. This does not establish
+physical-browser acceptance or shared-peer automatic reconnection. The public build is untouched;
 the two-profile generated-app test now covers shared-key reconnection and journey
 use as described above. Public deployment, additional interruption/lifecycle checks and physical
 verification remain outstanding. See the [experimental build instructions](../experiments/at-credentials/README.md#actual-journey-app-integration-build-local-only).

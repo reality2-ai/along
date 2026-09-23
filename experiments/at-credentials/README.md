@@ -756,16 +756,18 @@ interface is now mounted; the separate two-app test below covers shared-key use.
 and installed-app update behavior are not established by this build/test.
 
 
-### Optional startup cannot hold the planner indefinitely
+### Optional restoration does not delay the planner
 
 The experimental bootstrap checks for a saved local identity before compiling
-WASM and bounds restoration to three seconds. Missing/unreadable settings or an
-expired deadline leave live access unconfigured while scheduled planning starts.
+WASM and bounds restoration to three seconds. It runs in the background, without
+holding the importing journey module or its event handlers. Missing/unreadable
+settings or an expired deadline leave live access unconfigured.
 A late storage handle is closed, and every later restore step checks cancellation
 before it can configure a client. Fetch/compilation may still finish internally;
 a timeout is not a claim that the browser cancelled those operations.
 
-The generated-app test holds the optional WASM response indefinitely, completes
+The generated-app test holds the optional WASM response indefinitely, checks that
+Settings handlers are ready at DOMContentLoaded, completes
 an actual bus/ferry search without it, then releases it and confirms live access
 stays disabled. It also advances the actual test IndexedDB schema beyond the
 runtime’s supported version: the planner starts, no lab record write is attempted,
@@ -1014,7 +1016,8 @@ clearing entered addresses. Returning quickly while the overview is reading
 storage still discovers a committed key in the background. Reopening an unchanged
 setup does not tear down an existing shared-device connection. A changed member,
 group or owner binding closes the previous context. Pagehide disposes setup and
-its store; browser back/forward-cache restoration still needs separate validation.
+its store. Browser back/forward-cache restoration now starts a fresh optional
+runtime context; the lifecycle check below verifies a real Chromium cache return.
 
 The generated-app test now creates its owner identity and key through Settings,
 returns with a partially entered destination intact, and proceeds to bus/ferry
@@ -1028,3 +1031,33 @@ physical-device and public-release acceptance remain outstanding.
 MAIN_APP_SETUP=1 CHROMIUM_PATH=/path/to/chromium node experiments/at-credentials/two-app-integration.test.mjs
 MAIN_APP_SETUP=1 LOSE_KEY_CONFIRMATION=1 CHROMIUM_PATH=/path/to/chromium node experiments/at-credentials/two-app-integration.test.mjs
 ```
+
+
+### Returning to a cached app document
+
+The bootstrap disposes its optional device/store/session context on `pagehide`
+and starts a new context on a persisted `pageshow`. Each context retains the
+background restoration deadline and late-result cancellation. Repeated show events do not
+mount duplicate Settings controls. An old context's completion cannot clear the
+new context's configuration. Returning restores local owner access; a shared-key
+recipient must reconnect explicitly rather than reusing a closed peer session.
+The scheduled journey remains in the cached document.
+
+The app test runs two explicitly simulated hide/show cycles and checks disabled
+access while hidden, single instances of both Settings entries after restoration,
+the same journey step and no extra provider requests. `CHECK_BFCACHE=1` additionally
+removes Playwright's default cache-disabling launch argument, navigates to the
+installation page and uses browser Back. It requires both the original document
+token and a genuine `pageshow.persisted` event before checking revived Settings
+and the unchanged journey. The observed run passed; a fresh document cannot pass
+those assertions. Back navigation waits for navigation commit rather than a new
+load event, which a cached return does not supply in this run.
+
+```sh
+CHECK_BFCACHE=1 CHROMIUM_PATH=/path/to/chromium node experiments/at-credentials/app-integration.test.mjs
+```
+
+This is Chromium automation for the local-owner path, not physical Android/Safari
+acceptance or a promise that browsers always retain pages in their history cache.
+Cold loads continue to use the ordinary background restoration path. Offline reopen,
+stalled optional runtime and unreadable future storage-schema checks also pass.

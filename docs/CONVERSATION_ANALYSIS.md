@@ -964,3 +964,17 @@ advanced enrollment/recovery choices behind a disclosure and retains a way back
 while optional storage/runtime work is pending. This advances progressive
 disclosure and task continuity without establishing physical-device acceptance
 or changing the still-scheduled public release.
+
+Browser-history testing exposed another task-continuity requirement: disposing
+optional device resources when leaving a page must allow them to be restored
+when Back revives the same document. The experimental app now preserves the
+selected journey and remounts Settings in that case. A real Chromium cache return
+is checked separately from simulated lifecycle events. The shared-device reload
+test also exposed a click arriving before the journey handlers were installed;
+optional credential restoration now runs in the background instead of delaying
+those handlers. A stalled-WASM check verifies readiness at DOMContentLoaded.
+
+For the course, this illustrates why a test must distinguish a cached document
+from a fresh reload, and why optional services should not delay basic navigation.
+It is implementation evidence extending the offline-autonomy and contextual-task
+themes, not a new participant observation or physical-device acceptance report.

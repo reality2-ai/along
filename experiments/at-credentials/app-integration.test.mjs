@@ -27,7 +27,8 @@ const server = createServer((req, res) => {
 await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
 let browser;
 try {
-  browser = await chromium.launch({headless: true, executablePath: process.env.CHROMIUM_PATH});
+  browser = await chromium.launch({headless: true, executablePath: process.env.CHROMIUM_PATH,
+    ...(process.env.CHECK_BFCACHE === '1' ? {ignoreDefaultArgs: ['--disable-back-forward-cache']} : {})});
   const context = await browser.newContext({viewport: {width: 1280, height: 900}});
   const origin = `http://127.0.0.1:${server.address().port}${prefix}`;
   const page = await context.newPage(), errors = [], requests = [];
@@ -120,6 +121,46 @@ try {
   assert.deepEqual(requests.sort(), ['/realtime/legacy/servicealerts', '/realtime/legacy/tripupdates']);
   assert.equal((await page.locator('body').textContent()).includes('synthetic-full-app-key'), false);
   await page.evaluate(() => { window.testLiveStore.close(); delete window.testLiveStore; });
+  const selectedStep = await page.locator('#current-step').textContent();
+  // Deterministic lifecycle checks, explicitly distinct from a real cache restore.
+  for (let cycle = 0; cycle < 2; cycle++) {
+    await page.evaluate(() => window.dispatchEvent(new PageTransitionEvent('pagehide', {persisted: true})));
+    assert.equal(await page.evaluate(async () => (await import('../experiments/at-credentials/app-live-bridge.mjs')).createLiveClient().configured), false);
+    assert.equal(await page.getByRole('button', {name: 'Device and AT-key setup', exact: true, includeHidden: true}).count(), 0);
+    await page.evaluate(async () => {
+      window.dispatchEvent(new PageTransitionEvent('pageshow', {persisted: true}));
+      await (await import('../experiments/at-credentials/app-bootstrap.mjs')).restoration;
+      window.dispatchEvent(new PageTransitionEvent('pageshow', {persisted: true}));
+    });
+    assert.equal(await page.getByRole('button', {name: 'Device and AT-key setup', exact: true, includeHidden: true}).count(), 1);
+    assert.equal(await page.getByRole('button', {name: 'Connect an existing AT-key device', exact: true, includeHidden: true}).count(), 1);
+    await expect(page.locator('#journey-live')).toBeVisible();
+    assert.equal(await page.locator('#current-step').textContent(), selectedStep);
+  }
+  if (process.env.CHECK_BFCACHE === '1') {
+    const token = await page.evaluate(() => {
+      window.returnToken = crypto.randomUUID(); window.cachedReturn = false;
+      window.addEventListener('pageshow', event => { window.cachedReturn = event.persisted; });
+      return window.returnToken;
+    });
+    await page.goto(origin + 'public/install.html');
+    await page.goBack({waitUntil: 'commit'});
+    await page.waitForFunction(() => window.cachedReturn === true || !window.returnToken);
+    const returned = await page.evaluate(() => ({token: window.returnToken, persisted: window.cachedReturn,
+      reasons: performance.getEntriesByType('navigation')[0]?.notRestoredReasons?.toJSON()}));
+    assert.equal(returned.token, token, JSON.stringify(returned));
+    assert.equal(returned.persisted, true, JSON.stringify(returned));
+    await page.evaluate(async () => { await (await import('../experiments/at-credentials/app-bootstrap.mjs')).restoration; });
+    await expect(page.locator('#journey-live')).toBeVisible();
+    assert.equal(await page.locator('#current-step').textContent(), selectedStep);
+    await page.locator('#settings-open').click();
+    await page.getByRole('button', {name: 'Device and AT-key setup', exact: true}).click();
+    await page.getByRole('button', {name: 'Manage my AT key', exact: true}).waitFor();
+    await page.getByRole('button', {name: 'Back to settings', exact: true}).click();
+    await page.getByRole('button', {name: 'Close settings', exact: true}).click();
+    console.log('PASS: actual browser Back restored the same cached document and revived Settings without losing the selected step.');
+  }
+  assert.equal(requests.length, 2);
   // A normal installed-shell reopen must retain the runtime modules offline.
   await page.evaluate(async () => { await navigator.serviceWorker.ready; });
   await page.waitForFunction(() => navigator.serviceWorker.controller !== null);
@@ -140,6 +181,9 @@ try {
   // and a late runtime result must not silently enable live access afterwards.
   await context.setOffline(false); offlineMode = false;
   await page.addInitScript(() => {
+    document.addEventListener('DOMContentLoaded', () => {
+      window.settingsReadyAtDOMContentLoaded = typeof document.querySelector('#settings-open')?.onclick === 'function';
+    }, {once: true});
     const original = window.fetch;
     window.fetch = (input, options) => {
       const url = typeof input === 'string' ? input : input.url || String(input);
@@ -150,6 +194,8 @@ try {
     };
   });
   await page.reload({waitUntil: 'domcontentloaded', timeout: 15000});
+  assert.equal(await page.evaluate(() => settingsReadyAtDOMContentLoaded), true,
+    'Settings handlers must be ready without waiting for optional WASM');
   await expect(page.locator('#data-status')).toContainText('offline ready', {timeout: 15000});
   assert.equal(await page.evaluate(() => typeof releaseOptionalRuntime), 'function');
   assert.equal(await page.evaluate(async () => (await import('../experiments/at-credentials/app-live-bridge.mjs')).createLiveClient().configured), false);
