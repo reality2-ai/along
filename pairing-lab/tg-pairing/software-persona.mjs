@@ -1,0 +1,108 @@
+// Along's explicitly selected browser-only R2 subset. Encrypted software custody
+// does NOT satisfy R2 L5 hardware-rooted sealing or resist same-origin code.
+import {certificateCodec} from './certificate.mjs';
+import {loadLocalPersona} from './local-persona.mjs';
+const scope = 'along-browser-issuer';
+const bytes = (value, length) => value instanceof Uint8Array && value.length === length;
+const hex = value => Array.from(value, b => b.toString(16).padStart(2, '0')).join('');
+const fail = () => new Error('Browser group custody unavailable');
+const aad = (group, member) => new TextEncoder().encode(JSON.stringify(['along/software-issuer/v1', group, member]));
+const current = signal => { if (signal?.aborted) throw fail(); };
+
+// Explicit first use only; never a restore failure fallback or identity migration.
+export async function initializeSoftwarePersona({wasm, store, signal}) {
+  let secret;
+  try {
+    if (store.capabilities?.transactionChecks !== true) throw fail();
+    current(signal);
+    if (await store.read('candidate-persona', 'active') || await store.read('persona-bootstrap', 'initial')) throw fail();
+    const issuer = await crypto.subtle.generateKey('Ed25519', true, ['sign', 'verify']);
+    const member = await crypto.subtle.generateKey('Ed25519', false, ['sign', 'verify']);
+    const group = new Uint8Array(await crypto.subtle.exportKey('raw', issuer.publicKey));
+    const subject = new Uint8Array(await crypto.subtle.exportKey('raw', member.publicKey));
+    const groupId = hex(group), memberId = hex(subject), codec = certificateCodec(wasm);
+    const signature = new Uint8Array(await crypto.subtle.sign('Ed25519', issuer.privateKey, codec.signingBytes(subject, group, 0n)));
+    const certificate = codec.encode(subject, group, 0n, signature);
+    const wrappingKey = await crypto.subtle.generateKey({name: 'AES-GCM', length: 256}, false, ['encrypt', 'decrypt']);
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    secret = new Uint8Array(await crypto.subtle.exportKey('pkcs8', issuer.privateKey));
+    const ciphertext = new Uint8Array(await crypto.subtle.encrypt({name: 'AES-GCM', iv, additionalData: aad(groupId, memberId)}, wrappingKey, secret));
+    secret.fill(0); secret = undefined; current(signal);
+    const result = await store.compareAndSwapMany([
+      {scope: 'candidate-persona', key: 'active', expectedRevision: 0, value: {format: 1, origin: 'initial', claim: 'open', epoch: 0n,
+        record: {format: 1, custody: 'browser-nonextractable-unqualified', group, subject, certificate, privateKey: member.privateKey}}},
+      {scope: 'persona-bootstrap', key: 'initial', expectedRevision: 0, value: {format: 1, group, subject, profile: 'along-browser-software-v1'}},
+      {scope: 'membership', key: groupId, expectedRevision: 0, value: {format: 1, group, subject, certificate, current: 0n, depth: 0n, revocations: []}},
+      {scope, key: groupId, expectedRevision: 0, value: {format: 1, profile: 'along-browser-software-v1', member: memberId, wrappingKey, iv, ciphertext}},
+    ], {signal});
+    if (!result.applied) throw fail();
+    return Object.freeze({status: 'created-local', group: groupId, member: memberId, custody: 'encrypted-browser-software'});
+  } catch { throw fail(); } finally { secret?.fill(0); }
+}
+
+// The trusted enrollment controller authorizes each issuance. This interface
+// supplies custody, not a human-consent decision or a qualifying platform grade.
+export async function loadSoftwareIssuer({wasm, store, expectedGroup, signal}) {
+  let plaintext, closed = false;
+  try {
+    if (!bytes(expectedGroup, 32)) throw fail();
+    const group = expectedGroup.slice(), groupId = hex(group);
+    current(signal);
+    const persona = await loadLocalPersona({wasm, store, expectedGroup: group});
+    const bootstrap = await store.read('persona-bootstrap', 'initial');
+    const saved = await store.read(scope, groupId), value = saved?.value;
+    if (!persona || persona.origin !== 'initial' || bootstrap?.value?.profile !== 'along-browser-software-v1'
+        || value?.format !== 1 || value.profile !== 'along-browser-software-v1' || value.member !== persona.member
+        || !bytes(value.iv, 12) || !(value.ciphertext instanceof Uint8Array) || value.ciphertext.length < 17 || value.ciphertext.length > 256
+        || !(value.wrappingKey instanceof CryptoKey) || value.wrappingKey.extractable || value.wrappingKey.type !== 'secret'
+        || value.wrappingKey.algorithm.name !== 'AES-GCM' || value.wrappingKey.algorithm.length !== 256
+        || value.wrappingKey.usages.length !== 2 || !['encrypt', 'decrypt'].every(u => value.wrappingKey.usages.includes(u))) throw fail();
+    plaintext = new Uint8Array(await crypto.subtle.decrypt({name: 'AES-GCM', iv: value.iv,
+      additionalData: aad(groupId, persona.member)}, value.wrappingKey, value.ciphertext));
+    let key = await crypto.subtle.importKey('pkcs8', plaintext, 'Ed25519', false, ['sign']);
+    // RFC 8410's seed-only Ed25519 PKCS#8 form emitted by this profile's
+    // WebCrypto export. Refuse other encodings rather than guessing a seed.
+    const prefix = Uint8Array.of(0x30, 0x2e, 2, 1, 0, 0x30, 5, 6, 3, 0x2b, 0x65, 0x70, 4, 0x22, 4, 0x20);
+    if (plaintext.length !== 48 || !prefix.every((v, i) => plaintext[i] === v)) throw fail();
+    let derivationKey = await crypto.subtle.importKey('raw', plaintext.subarray(16), 'HKDF', false, ['deriveBits']);
+    plaintext.fill(0); plaintext = undefined;
+    const publicKey = await crypto.subtle.importKey('raw', group, 'Ed25519', false, ['verify']);
+    const challenge = crypto.getRandomValues(new Uint8Array(32));
+    if (!await crypto.subtle.verify('Ed25519', publicKey, await crypto.subtle.sign('Ed25519', key, challenge), challenge)) throw fail();
+    const check = async () => {
+      current(signal); if (closed) throw fail();
+      if ((await store.read(scope, groupId))?.revision !== saved.revision
+          || (await store.read('persona-bootstrap', 'initial'))?.revision !== bootstrap.revision) throw fail();
+      const identity = await loadLocalPersona({wasm, store, expectedGroup: group});
+      if (identity?.member !== persona.member || identity.origin !== 'initial') throw fail();
+      current(signal); if (closed) throw fail();
+    };
+    await check();
+    const close = () => { closed = true; key = undefined; derivationKey = undefined; signal?.removeEventListener('abort', close); };
+    signal?.addEventListener('abort', close, {once: true});
+    const issueCertificate = async subject => {
+        try {
+          if (!bytes(subject, 32)) throw fail();
+          const member = subject.slice(), codec = certificateCodec(wasm);
+          await check();
+          const signature = new Uint8Array(await crypto.subtle.sign('Ed25519', key, codec.signingBytes(member, group, 0n)));
+          await check(); return codec.encode(member, group, 0n, signature);
+        } catch { throw fail(); }
+      };
+    return Object.freeze({group: groupId, member: persona.member, custody: 'encrypted-browser-software', close,
+      issueCertificate,
+      enrollmentMaterial: async subject => {
+        let payloadKey, integrityKey;
+        try {
+          const certificate = await issueCertificate(subject);
+          const derive = async purpose => new Uint8Array(await crypto.subtle.deriveBits({name: 'HKDF', hash: 'SHA-256',
+            salt: group, info: new TextEncoder().encode(purpose)}, derivationKey, 256));
+          await check(); payloadKey = await derive('r2/v0/group/payload');
+          await check(); integrityKey = await derive('r2/v0/group/integrity'); await check();
+          return Object.freeze({certificate, epoch: 0n, payloadKey, integrityKey,
+            destroy: () => { payloadKey.fill(0); integrityKey.fill(0); }});
+        } catch { payloadKey?.fill(0); integrityKey?.fill(0); throw fail(); }
+      },
+    });
+  } catch { throw fail(); } finally { plaintext?.fill(0); }
+}
