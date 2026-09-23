@@ -8,7 +8,7 @@ const sources = new Map();
 for (const name of ['storage.mjs', 'membership.mjs', 'certificate.mjs', 'peer-session.mjs', 'peer-link.mjs', 'challenge.mjs', 'session-statement.mjs', 'enrollment-session.mjs', 'invitation-journal.mjs', 'enrollment-link.mjs', 'enrollment-exchange.mjs', 'enrollment-protection.mjs', 'invitation.mjs']) sources.set('/' + name, await readFile(join(process.env.R2_BROWSER_DIR, name)));
 for (const name of ['../tg-pairing/initial-persona.mjs', '../tg-pairing/software-persona.mjs', '../tg-pairing/core-candidate-session.mjs', '../tg-pairing/software-traffic.mjs', '../tg-pairing/enrollment-payloads.mjs', '../tg-pairing/enrollment-profile.mjs', '../tg-pairing/installation-receipt.mjs', '../tg-pairing/stored-claim.mjs', '../tg-pairing/local-persona.mjs', 'local-owner.mjs', 'owner-policy.mjs', 'owner-access-view.mjs', 'owner-policy-send.mjs', 'policy-sync.mjs', 'owner-delivery.mjs', 'delivery-history.mjs', 'delivery-recovery.mjs', 'remote-owner.mjs', 'policy-update.mjs', 'policy-update-message.mjs', 'remote-owner-view.mjs', 'settings-view.mjs', 'key-replacement-view.mjs', 'credential-view.mjs', '../tg-pairing/comparison.css', '../tg-pairing/local-persona-session.mjs', 'policy.mjs', 'policy-store.mjs', 'local-vault.mjs', 'delivery-ack.mjs', 'delivery-message.mjs']) sources.set('/' + name.split('/').pop(), await readFile(new URL(name, import.meta.url)));
 for (const name of ['hive_wasm.js', 'hive_wasm_bg.wasm']) sources.set('/' + name, await readFile(join(process.env.R2_WASM_DIR, name)));
-for (const name of ['live-client.mjs', '../../public/at-client.js', '../../public/live-client.js']) sources.set('/' + name.split('/').pop(), await readFile(new URL(name, import.meta.url)));
+for (const name of ['saved-client.mjs', 'live-client.mjs', '../../public/at-client.js', '../../public/live-client.js']) sources.set('/' + name.split('/').pop(), await readFile(new URL(name, import.meta.url)));
 const server = createServer((req, res) => {
   const path = '/' + req.url.split('/').pop();
   res.setHeader('Content-Type', req.url.endsWith('.wasm') ? 'application/wasm' : req.url.endsWith('.css') ? 'text/css' : sources.has(path) ? 'text/javascript' : 'text/html');
@@ -317,11 +317,52 @@ try {
       check(await receiverVault.getKey() === 'synthetic-peer-delivery', 'explicit newer grant restores local use');
       policySync = createPolicySync({wasm, store: receiver.store, expectedGroup: group, peer: owner.subject, connection: receiving});
       let gatedFetches = 0;
-      const guardedLive = (await import('./live-client.mjs')).createVaultATClient({vault: receiverVault,
-        synchronizePolicy: options => policySync.check(options), now: () => 1001,
+      const {createSavedATClient} = await import('./saved-client.mjs');
+      let missingSyncFetches = 0;
+      const missingSync = createSavedATClient({wasm, store: receiver.store, expectedGroup: group,
+        now: () => 1001, fetcher: async () => { missingSyncFetches++; throw new Error('Must not contact provider without owner sync'); }});
+      check(!(await missingSync.read('predictions', {requested: true})).available && missingSyncFetches === 0, 'recipient without owner synchronizer refuses provider access');
+      missingSync.close();
+      let ownerFetches = 0;
+      const ownerLive = createSavedATClient({wasm, store: owner.store, expectedGroup: group, now: () => 1001,
+        fetcher: async (url, options) => {
+          ownerFetches++;
+          check(url === 'https://api.at.govt.nz/realtime/legacy/servicealerts', 'saved owner uses direct fixed endpoint');
+          check(options.headers['Ocp-Apim-Subscription-Key'] === 'synthetic-peer-delivery', 'saved owner obtains encrypted key');
+          return {ok: true, json: async () => ({header: {timestamp: 1000}, entity: []})};
+        }});
+      check(!(await ownerLive.read('alerts')).available && ownerFetches === 0, 'saved owner adapter waits for explicit request');
+      check((await ownerLive.read('alerts', {requested: true})).available && ownerFetches === 1, 'owner adapter restores binding without remote sync');
+      ownerLive.close();
+      check(!(await ownerLive.read('alerts', {requested: true})).available && ownerFetches === 1, 'closed saved adapter cannot fetch');
+      let offlineReads = 0;
+      const offlineLive = createSavedATClient({wasm, store: {...owner.store, read: async (...args) => {
+        offlineReads++; return owner.store.read(...args);
+      }}, expectedGroup: group, online: () => false});
+      check((await offlineLive.read('alerts', {requested: true})).reason === 'offline' && offlineReads === 0, 'offline adapter never opens saved credentials');
+      offlineLive.close();
+      let enteredQueue, releaseQueue, queueCalls = 0, queueFetches = 0;
+      const queueEntered = new Promise(resolve => { enteredQueue = resolve; });
+      const queueHeld = new Promise(resolve => { releaseQueue = resolve; });
+      const queueClient = createSavedATClient({wasm, store: receiver.store, expectedGroup: group,
+        synchronizeOwnerPolicy: async () => { queueCalls++; enteredQueue(); await queueHeld; },
+        fetcher: async () => { queueFetches++; throw new Error('Cancelled queue must not fetch'); }});
+      const firstQueued = queueClient.read('alerts', {requested: true}); await queueEntered;
+      const secondQueued = queueClient.read('predictions', {requested: true});
+      queueClient.close();
+      check((await Promise.all([firstQueued, secondQueued])).every(result => !result.available), 'closing cancels queued reads promptly');
+      releaseQueue(); await new Promise(resolve => setTimeout(resolve, 20));
+      check(queueCalls === 1 && queueFetches === 0, 'cancelled queued checks cannot resume provider I/O');
+      const guardedLive = createSavedATClient({wasm, store: receiver.store, expectedGroup: group,
+        synchronizeOwnerPolicy: options => {
+          check(options.binding.owner === binding.owner && options.binding.credential === binding.credential, 'sync bound to restored owner settings');
+          return policySync.check(options);
+        }, now: () => 1001,
         fetcher: async () => { gatedFetches++; return {ok: true, json: async () => ({header: {timestamp: 1000}, entity: []})}; }});
       check((await guardedLive.read('predictions', {requested: true})).available && gatedFetches === 1,
         'live request follows actual owner policy response');
+      const concurrent = await Promise.all(['predictions', 'alerts'].map(kind => guardedLive.read(kind, {requested: true})));
+      check(concurrent.every(result => result.available) && gatedFetches === 3, 'parallel feeds each perform a fresh serialized owner check');
       check(!policyCheckError, 'policy exchange completed without dispatch error');
       check(await denied(() => policySync.receive(lastPolicyResponse)), 'already consumed response refused');
       const removalView = showOwnerDeviceAccess(document.querySelector('#consent'), ownerViewOptions);
@@ -332,7 +373,7 @@ try {
       removalView.dispose();
       // Do not push removal: the recipient must discover it before provider I/O.
       check(await receiverVault.getKey() === 'synthetic-peer-delivery', 'recipient has not yet learned removal');
-      check(!(await guardedLive.read('vehicles', {requested: true})).available && gatedFetches === 1,
+      check(!(await guardedLive.read('vehicles', {requested: true})).available && gatedFetches === 3,
         'catch-up learns removal before sending another provider request');
       check(await denied(() => receiverVault.getKey()), 'catch-up saved owner removal');
       guardedLive.close();

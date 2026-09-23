@@ -39,7 +39,11 @@ The restored-device lab now exposes optional local AT-key settings. Its static
 bundle test uses an actually enrolled identity to establish the credential owner,
 save a synthetic key encrypted, reload and restore it with no external requests.
 The lab asks for dummy key text only; provider reads and peer key delivery are
-not connected to this screen.
+not connected to this screen. A restored-settings provider adapter now connects
+the accepted AT binding to the vault, requiring a fresh owner-policy callback for
+recipient use. Actual authenticated peer tests cover simultaneous feed checks and
+removal before provider I/O; provider responses remain mocked. The contextual
+public UI still needs this controller wired in.
 Manual transfer is currently cumbersome, and the one-minute invitation lifetime
 needs real usability assessment. Public deployment, simpler transfer, group epoch
 updates/removal, saved-journey sync and physical-device validation remain work.

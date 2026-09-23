@@ -607,3 +607,28 @@ restores it. The test checks encrypted storage and no external requests. This is
 local credential setup only; cross-device delivery and contextual provider reads
 are not connected to that lab screen or the public app yet. Lab testers use dummy
 text, not a real AT key.
+
+
+### Restored-settings provider adapter
+
+`saved-client.mjs` exposes `createSavedATClient` for the eventual contextual app
+integration. It restores the accepted owner/credential binding for each explicitly
+requested read, verifies it again after policy synchronization, and opens the
+existing encrypted vault. It accepts no key or owner identifier from a feed.
+No credential storage is read when the caller has not requested live data or the
+browser is offline. Closing cancels pending operations; no feed is retained.
+
+A local owner can use its own saved key. A recipient without an owner-policy
+synchronizer is refused before provider I/O. The enclosing controller must supply
+an authenticated policy-sync session for the exact binding passed to the callback;
+the callback is a trusted application dependency, not proof by itself. Parallel
+feed reads serialize their fresh checks because the policy protocol permits one
+outstanding nonce per session. They do not share a cached authorization lease.
+
+The real-peer browser test now exercises this adapter with actual saved owner and
+recipient identities, encrypted synthetic credentials and authenticated policy
+exchange. It checks local-owner use, no implicit request, offline storage silence,
+missing-synchronizer refusal without fetching, simultaneous predictions/alerts,
+queued cancellation, and learning owner removal before another provider request.
+Provider responses are mocked. These checks do not enable public live information
+or establish physical-device reachability.
