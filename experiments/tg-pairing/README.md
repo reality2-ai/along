@@ -534,3 +534,28 @@ The receiving-screen checks cover malformed input, synthetic-click refusal,
 keyboard confirmation, edit/back, cancellation/replacement, non-rendering of pasted
 markup, automated axe checks and narrow enlarged text. No camera or clipboard-read
 permission is requested. This remains outside the public app.
+
+### Invitation proof exchange controller
+
+`invitation-proof.mjs` moves the candidate challenge and inviter-proof verification
+out of the enrollment test harness. It encodes bounded public challenge/response
+messages for copying between devices, with an explicit Along profile identifier.
+These are not standard R2 wire messages. A challenge snapshots the reviewed
+invitation, generates a fresh nonce, expires locally within one minute and closes
+on review cancellation. Verification is single-use and fails closed. The inviter
+only answers a challenge naming its exact active invitation.
+
+The real R2 codec checks the member certificate and nonce signature before the
+controller returns an owned authorization token for the core candidate ceremony.
+Callers must consume/free that token and retain the review cancellation signal.
+This profile currently supports initial epoch zero only; it does not infer current
+epoch or remote hardware custody from an invitation. It proves possession of the
+named member key, not the physical source of the copied invitation, group issuer
+custody, a completed comparison, admission or AT access.
+
+The software enrollment test now uses this controller in its actual WebRTC
+installation path. Fresh signed responses are separately tested with altered
+nonce, certificate, signature and invitation, cancellation, oversized input and
+retries after refusal. Reuse after successful verification is refused too. The
+harness still carries the public messages and session descriptions between pages;
+copy/paste exchange screens and physical-device connectivity remain unfinished.

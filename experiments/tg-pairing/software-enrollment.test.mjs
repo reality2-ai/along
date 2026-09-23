@@ -7,7 +7,7 @@ const {chromium} = await import(process.env.PLAYWRIGHT_MODULE || '@playwright/te
 if (!process.env.R2_BROWSER_DIR) throw new Error('Set R2_BROWSER_DIR to the experimental Reality2 browser module directory');
 if (!process.env.R2_WASM_DIR) throw new Error('Set R2_WASM_DIR');
 const sources = new Map(await Promise.all(['peer-session', 'challenge', 'session-statement', 'membership', 'certificate', 'enrollment-session', 'storage', 'invitation-journal', 'enrollment-link', 'enrollment-exchange', 'enrollment-protection', 'peer-link', 'invitation'].map(async name => ['/' + name + '.mjs', await readFile(join(process.env.R2_BROWSER_DIR, name + '.mjs'))])));
-for (const name of ['enrollment-profile.mjs', 'enrollment-payloads.mjs', 'core-candidate-session.mjs', 'software-traffic.mjs', 'initial-persona.mjs', 'software-persona.mjs', 'software-invitation.mjs', 'receive-invitation-view.mjs', 'stored-claim.mjs', 'installation-receipt.mjs', 'local-persona.mjs', 'local-persona-session.mjs', 'receipt-recovery.mjs']) sources.set('/' + name, await readFile(new URL('./' + name, import.meta.url)));
+for (const name of ['enrollment-profile.mjs', 'enrollment-payloads.mjs', 'core-candidate-session.mjs', 'software-traffic.mjs', 'initial-persona.mjs', 'software-persona.mjs', 'software-invitation.mjs', 'invitation-proof.mjs', 'receive-invitation-view.mjs', 'stored-claim.mjs', 'installation-receipt.mjs', 'local-persona.mjs', 'local-persona-session.mjs', 'receipt-recovery.mjs']) sources.set('/' + name, await readFile(new URL('./' + name, import.meta.url)));
 if (process.env.RECOVERY_MODULE) sources.set('/receipt-recovery.mjs', await readFile(process.env.RECOVERY_MODULE));
 for (const name of ['hive_wasm.js', 'hive_wasm_bg.wasm']) sources.set('/' + name, await readFile(join(process.env.R2_WASM_DIR, name)));
 const server = createServer((req, res) => {
@@ -29,7 +29,6 @@ try {
       window.restore = await import('./local-persona.mjs');
       if (index === 0) {
         const initial = await (await import('./initial-persona.mjs')).initializeLocalPersona({wasm, store}); initial.close();
-        window.nonce = crypto.getRandomValues(new Uint8Array(16));
       } else {
         window.software = await import('./software-persona.mjs');
         const result = await software.initializeSoftwarePersona({wasm, store});
@@ -80,15 +79,13 @@ try {
     } finally { sample.close(); }
   }), true);
   console.log('PASS: invitation descriptor validation, snapshot isolation, cancellation, single challenge and use-time expiry.');
-  const nonce = await pages[0].evaluate(() => [...window.nonce]);
-  const invitation = await pages[1].evaluate(async nonce => {
+  const invitation = await pages[1].evaluate(async () => {
     window.invite = await (await import('./software-invitation.mjs')).createSoftwareInvitation({wasm, store, expectedGroup: group});
     window.invitation = invite.invitation();
-    const evidence = await invite.respondChallenge(new Uint8Array(nonce));
     window.session = await (await import('./enrollment-session.mjs')).createEnrollmentSession({wasm, invitation, role: 'provisioner', store});
     window.payloads = (await import('./enrollment-payloads.mjs')).enrollmentPayloads({wasm, invitation, epoch: 0n, role: 'provisioner', session});
-    return {descriptor: invite.descriptor, certificate: [...evidence.certificate], proof: [...evidence.proof]};
-  }, nonce);
+    return {descriptor: invite.descriptor};
+  });
   await pages[0].evaluate(async () => {
     window.review = (await import('./receive-invitation-view.mjs')).showReceiveInvitation(document.body, {focus: true});
   });
@@ -96,19 +93,51 @@ try {
   await pages[0].getByRole('button', {name: 'Review invitation', exact: true}).click();
   await pages[0].getByRole('button', {name: 'Use invitation from my other device', exact: true}).click();
   assert.equal(await pages[0].evaluate(async () => (await review.completed).descriptor), invitation.descriptor);
-  await pages[0].evaluate(async input => {
-    // The real review UI supplies the selected group; the harness performs its
-    // physical-origin confirmation and exchanges the session descriptions.
-    const reviewed = await review.completed;
-    if (reviewed.signal.aborted) throw new Error('Review closed');
-    window.invitation = (await import('./software-invitation.mjs')).decodeSoftwareInvitation(reviewed.descriptor);
-    const membership = wasm.BrowserMembership.establish(invitation.group, 0n, 0n);
-    const statement = wasm.tg_invitation_statement(invitation.group, invitation.issuer, 1, invitation.code, invitation.validity);
-    const authorized = membership.authorise_invitation(statement, new Uint8Array(input.certificate), nonce, new Uint8Array(input.proof));
-    membership.free(); if (!authorized) throw new Error('Actual invitation proof refused');
-    window.session = await (await import('./core-candidate-session.mjs')).createCoreCandidateSession({wasm, store, invitation, authorized,
-      softwareCustody: true, signal: reviewed.signal, platform: {candidateDevelopment: false, provisionerDevelopment: false, provisionerHoldsCustody: true, epoch: 0n}});
-  }, invitation);
+  const request = await pages[0].evaluate(async () => {
+    window.proofModule = await import('./invitation-proof.mjs');
+    window.reviewed = await review.completed;
+    window.proofExchange = proofModule.createInvitationProof({wasm, reviewed});
+    return proofExchange.request;
+  });
+  const response = await pages[1].evaluate(async request => (await import('./invitation-proof.mjs')).answerInvitationProof(invite, request), request);
+  // Each negative case gets a real freshly signed response for its own nonce.
+  for (const fault of ['nonce', 'certificate', 'signature', 'descriptor', 'cancel', 'oversize']) {
+    const descriptor = await pages[1].evaluate(async () => {
+      window.testInvite = await (await import('./software-invitation.mjs')).createSoftwareInvitation({wasm, store, expectedGroup: group});
+      return testInvite.descriptor;
+    });
+    const negativeRequest = await pages[0].evaluate(descriptor => {
+      window.testAbort = new AbortController();
+      window.testProof = proofModule.createInvitationProof({wasm, reviewed: {descriptor, signal: testAbort.signal}});
+      return testProof.request;
+    }, descriptor);
+    const negativeResponse = await pages[1].evaluate(async request => {
+      try { return await (await import('./invitation-proof.mjs')).answerInvitationProof(testInvite, request); }
+      finally { testInvite.close(); }
+    }, negativeRequest);
+    assert.equal(await pages[0].evaluate(({response, fault}) => {
+      const value = JSON.parse(response);
+      const flip = text => (text[0] === '0' ? '1' : '0') + text.slice(1);
+      if (fault === 'nonce') value.nonce = flip(value.nonce);
+      if (fault === 'certificate') value.certificate = flip(value.certificate);
+      if (fault === 'signature') value.proof = flip(value.proof);
+      if (fault === 'descriptor') {
+        const descriptor = JSON.parse(value.descriptor); descriptor.code = flip(descriptor.code); value.descriptor = JSON.stringify(descriptor);
+      }
+      if (fault === 'cancel') testAbort.abort();
+      const denied = input => { try { testProof.verify(input).authorized.free(); return false; } catch { return true; } };
+      return denied(fault === 'oversize' ? 'x'.repeat(2049) : JSON.stringify(value)) && denied(response);
+    }, {response: negativeResponse, fault}), true);
+  }
+  await pages[0].evaluate(async response => {
+    const verified = proofExchange.verify(response);
+    try { proofExchange.verify(response).authorized.free(); throw new Error('Duplicate proof accepted'); }
+    catch (error) { if (error.message === 'Duplicate proof accepted') throw error; }
+
+    window.invitation = verified.invitation;
+    window.session = await (await import('./core-candidate-session.mjs')).createCoreCandidateSession({wasm, store, invitation, authorized: verified.authorized,
+      softwareCustody: true, signal: verified.signal, platform: {candidateDevelopment: false, provisionerDevelopment: false, provisionerHoldsCustody: true, epoch: 0n}});
+  }, response);
   const offer = await pages[0].evaluate(() => session.offer());
   const answer = await pages[1].evaluate(offer => session.accept(offer), offer);
   await pages[0].evaluate(answer => session.accept(answer), answer);
