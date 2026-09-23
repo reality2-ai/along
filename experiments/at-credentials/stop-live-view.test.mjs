@@ -4,7 +4,7 @@ import {readFile} from 'node:fs/promises';
 import AxeBuilder from '@axe-core/playwright';
 const {chromium} = await import(process.env.PLAYWRIGHT_MODULE || '@playwright/test');
 const sources = new Map();
-for (const name of ['stop-live-view.mjs', '../../public/live-predictions.js', '../../public/live-context.js', '../../public/live-time.js', '../tg-pairing/comparison.css']) sources.set(name.split('/').pop(), await readFile(new URL(name, import.meta.url)));
+for (const name of ['journey-live-view.mjs', 'stop-live-view.mjs', '../../public/live-predictions.js', '../../public/live-context.js', '../../public/live-time.js', '../tg-pairing/comparison.css']) sources.set(name.split('/').pop(), await readFile(new URL(name, import.meta.url)));
 const server = createServer((req, res) => {
   const name = req.url.split('/').pop(), body = sources.get(name);
   res.setHeader('Content-Type', name.endsWith('.css') ? 'text/css' : body ? 'text/javascript' : 'text/html');
@@ -75,5 +75,35 @@ try {
   await page.getByRole('status').filter({hasText: 'Scheduled times remain unchanged'}).waitFor();
   assert.equal(await page.locator('#schedule').textContent(), '70 to Example: scheduled 09:00');
   await page.evaluate(() => view.dispose());
+  await page.evaluate(async () => {
+    window.journeyModule = await import('./journey-live-view.mjs');
+    const leg = (trip, route, from, departure) => ({mode: 'bus', trip, route, routeId: route, from: {id: from, name: from}, serviceDate: '20260924', stopSequence: 1, departure, arrival: departure + 600,
+      calls: [{stopId: from, arrival: departure, departure}, {stopId: 'intermediate-' + trip, arrival: departure + 300, departure: departure + 300}]});
+    window.journey = {legs: [leg('completed-trip', 'OLD', 'Completed stop', 31000), {mode: 'walk'}, leg('bus-trip', '70', 'Bus stop', 32400), {...leg('train-trip', 'WEST', 'Train station', 33600), mode: 'train'}, {...leg('ferry-trip', 'DEV', 'Wharf', 34800), mode: 'ferry'}]};
+    window.journeyBefore = JSON.stringify(journey);
+    const entity = (trip, route, relationship, stopRelationship) => ({trip_update: {trip: {trip_id: trip, route_id: route, start_date: '20260924', schedule_relationship: relationship}, stop_time_update: [{stop_sequence: 1, schedule_relationship: stopRelationship, departure: {delay: 60}}]}});
+    feeds.predictions = {available: true, updated: checkedAt, entities: [entity('completed-trip', 'OLD', 'CANCELED'), entity('bus-trip', '70', 'SCHEDULED'), entity('train-trip', 'WEST', 'CANCELED'), entity('ferry-trip', 'DEV', 'SCHEDULED', 'SKIPPED')]};
+    feeds.alerts = {available: true, updated: checkedAt, alerts: [
+      {title: 'Completed route notice', description: '', informed_entity: [{route_id: 'OLD'}], active_period: []},
+      {title: 'Remaining bus notice', description: '', informed_entity: [{route_id: '70'}], active_period: []},
+      {title: 'Intermediate station notice', description: '', informed_entity: [{stop_id: 'intermediate-train-trip'}], active_period: []},
+    ]};
+    window.view = journeyModule.showJourneyLiveUpdates(document.querySelector('#live'), {client, journey, date: '2026-09-24', currentLeg: 1, now: () => checkedAt});
+  });
+  await page.getByRole('button', {name: 'Check live times and alerts'}).click();
+  await page.getByRole('status').filter({hasText: '3 matching departure updates and 2 service updates'}).waitFor();
+  const journeyText = await page.locator('#live').textContent();
+  assert.match(journeyText, /70 from Bus stop: Expected 09:01/);
+  assert.match(journeyText, /WEST from Train station: Cancelled/);
+  assert.match(journeyText, /DEV from Wharf: Not stopping here/);
+  assert.equal(journeyText.includes('Completed'), false);
+  assert.equal(await page.evaluate(() => JSON.stringify(journey) === journeyBefore), true);
+  assert.deepEqual((await new AxeBuilder({page}).analyze()).violations.map(v => v.id), []);
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+  await page.evaluate(() => { window.view = journeyModule.showJourneyLiveUpdates(document.querySelector('#live'), {client, journey, date: '2026-09-24', currentLeg: journey.legs.length}); });
+  assert.equal(await page.getByRole('button', {name: 'Check live times and alerts'}).count(), 0);
+  await page.getByRole('status').filter({hasText: 'No remaining public-transport legs'}).waitFor();
+  await page.evaluate(() => view.dispose());
+  console.log('PASS: remaining bus/train/ferry legs only; predicted, cancelled and skipped labels; intermediate-stop alerts; completed legs excluded; itinerary preserved; no check after journey completion.');
   console.log('PASS: explicit keyboard stop check, dated-trip and alert filtering, unchanged schedule, no journey arguments sent to client, safe text, cancelled-view isolation, unavailable fallback, narrow zoom and axe. Mock client; not provider or physical-device verification.');
 } finally { await browser?.close(); await new Promise(resolve => server.close(resolve)); }

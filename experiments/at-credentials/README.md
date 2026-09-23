@@ -672,4 +672,23 @@ axe. The real-peer credential test also mounts this view with `openATPolicySessi
 and clicks its button: real saved identities, authenticated owner policy replies
 and encrypted synthetic-key access precede mocked AT predictions. This joins the
 UI and credential checks, but does not claim a real provider response or public
-app integration. Journey and vehicle screens still need equivalent wiring.
+app integration. The journey component below now shares that lifecycle; vehicle-screen wiring remains work.
+
+
+### Remaining-journey updates
+
+`journey-live-view.mjs` snapshots only the selected itinerary’s remaining legs.
+It passes verified boarding calls to the existing departure matcher and all
+remaining timed calls to the journey-alert matcher. Completed legs and walking
+connections do not become live departure requests. The panel has no live-check
+action once no public-transport legs remain. The enclosing flow must remount it
+when advancing a leg; replacing a panel cancels and suppresses late results.
+
+Stop and journey panels share the explicit-request, text rendering, cancellation
+and expiry implementation. Scheduled itinerary objects are never modified or
+reordered. `stop-live-view.test.mjs` covers a mixed bus/train/ferry journey with
+prediction, cancellation, skipped boarding stop, intermediate-stop alerts,
+completed-leg exclusion, zoom and axe checks. The real-peer test also clicks the
+journey panel through `openATPolicySession`, verifying both provider reads follow
+authenticated owner checks. Credentials and provider feeds remain synthetic;
+these components are not yet mounted in the public journey app.

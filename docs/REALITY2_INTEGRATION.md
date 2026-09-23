@@ -50,6 +50,9 @@ needs this controller wired in. An experimental contextual stop region now uses
 that controller with the existing trip/stop/alert matchers. Its browser integration
 check follows visible activation through actual authenticated policy checks to
 mocked provider data; scheduled times remain separate and old results expire.
+A remaining-journey panel now uses the same lifecycle with verified transit legs
+and timed intermediate calls. Mixed-mode UI tests and an authenticated peer
+integration test pass; neither panel is mounted in the public app yet.
 Manual transfer is currently cumbersome, and the one-minute invitation lifetime
 needs real usability assessment. Public deployment, simpler transfer, group epoch
 updates/removal, saved-journey sync and physical-device validation remain work.
