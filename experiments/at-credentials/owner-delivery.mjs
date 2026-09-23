@@ -48,7 +48,8 @@ export async function sendOwnerCredential({wasm, store, expectedGroup, peer, pee
     }
     current(); await connection.send(packet);
     // Sending is not evidence that the recipient committed or acknowledged it.
-    return Object.freeze({status: 'sent-unconfirmed'});
+    return Object.freeze({status: 'sent-unconfirmed', acknowledgmentContext: Object.freeze({...binding,
+      recipient: hex(recipient), nonce: hex(request), policyRevision: policy.policy.revision, generation: policy.policy.generation})});
   } catch { throw fail(); }
   finally { secret = undefined; packet?.fill(0); held?.close(); }
 }

@@ -386,3 +386,27 @@ This establishes behavior after a verified update is locally saved. It does not
 make an offline device aware of an unseen removal, invalidate a copied AT key,
 or implement automatic policy catch-up and freshness after reconnect. The test
 uses synthetic credentials/provider responses and fixture issuer/descriptors.
+
+## Delivery acknowledgment
+
+The owner send result remains `sent-unconfirmed` and now includes immutable public
+context for the expected acknowledgment. After its installation transaction has
+committed, the receiver handle can sign a public saved receipt. It checks the
+consumed request and matching encrypted record, signs with the current local
+member identity, and rechecks both storage revisions. A pending or failed
+installation cannot produce this receipt through the handle.
+
+`delivery-ack.mjs` binds the receipt to group, owner, credential, recipient, request
+nonce, policy revision and credential generation. The owner verifies the exact
+expected bytes and recipient signature before reporting `recipient-confirmed-saved`.
+The session controller must consume its outstanding acknowledgment context; the
+codec alone does not prevent a caller from verifying the same bytes twice.
+No secret, key digest or continuing access grant is included.
+
+The actual WebRTC test now returns and verifies this acknowledgment after receiver
+installation. `delivery-ack.test.mjs` passes wrong-context, wrong-signer, tampering
+and input-snapshot checks; receiver tests distinguish committed from interrupted,
+cancelled and superseded installations. This is a recipient's authenticated report
+of a local commit, not proof of hardware sealing or resistance to physical power
+loss. Durable owner-side receipt history, lost-acknowledgment recovery and public
+status presentation remain unfinished.

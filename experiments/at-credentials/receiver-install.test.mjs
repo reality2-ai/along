@@ -5,7 +5,7 @@ import {join} from 'node:path';
 const {chromium} = await import(process.env.PLAYWRIGHT_MODULE || '@playwright/test');
 const sources = new Map();
 for (const name of ['storage.mjs', 'membership.mjs', 'certificate.mjs']) sources.set('/' + name, await readFile(join(process.env.R2_BROWSER_DIR, name)));
-for (const name of ['../tg-pairing/initial-persona.mjs', '../tg-pairing/local-persona.mjs', 'local-owner.mjs', 'policy.mjs', 'policy-store.mjs', 'local-vault.mjs', 'delivery-message.mjs']) sources.set('/' + name.split('/').pop(), await readFile(new URL(name, import.meta.url)));
+for (const name of ['../tg-pairing/initial-persona.mjs', '../tg-pairing/local-persona.mjs', 'local-owner.mjs', 'policy.mjs', 'policy-store.mjs', 'local-vault.mjs', 'delivery-ack.mjs', 'delivery-message.mjs']) sources.set('/' + name.split('/').pop(), await readFile(new URL(name, import.meta.url)));
 for (const name of ['hive_wasm.js', 'hive_wasm_bg.wasm']) sources.set('/' + name, await readFile(join(process.env.R2_WASM_DIR, name)));
 for (const name of ['live-client.mjs', '../../public/at-client.js', '../../public/live-client.js']) sources.set('/' + name.split('/').pop(), await readFile(new URL(name, import.meta.url)));
 const server = createServer((req, res) => {
@@ -26,6 +26,7 @@ try {
     const {loadLocalPersona} = await import('./local-persona.mjs');
     const {openLocalATVault} = await import('./local-vault.mjs');
     const {encodeCredentialDelivery} = await import('./delivery-message.mjs');
+    const {verifyDeliveryAck} = await import('./delivery-ack.mjs');
     const check = (v, message) => { if (!v) throw new Error(message); };
     const denied = fn => fn().then(() => false, () => true);
     for (const variant of ['normal', 'interrupted', 'cancelled', 'policy-changed', 'concurrent', 'superseded', 'late-cancel']) {
@@ -43,6 +44,7 @@ try {
       const vault = openLocalATVault({wasm, store: guarded, ...binding});
       check(await denied(() => vault.prepareDelivery({ownerCertificate: new Uint8Array(136)})), 'invalid owner evidence refused');
       const request = await vault.prepareDelivery({ownerCertificate: persona.certificate, signal: cancellation.signal});
+      check(await denied(() => request.acknowledgment()), 'pending request cannot acknowledge storage');
       const key = binding.group + ':' + binding.credential;
       const policy = (await store.read('along-at-policy:' + binding.owner, key)).value;
       const packet = await encodeCredentialDelivery({nonce: request.nonce, recipient: persona.subject,
@@ -71,8 +73,13 @@ try {
         check(await vault.getKey() === 'synthetic-received-key', 'installed ciphertext readable');
         check(!Object.values(secret.value).includes('synthetic-received-key'), 'no plaintext storage');
         check(await denied(() => request.install(packet)), 'replay refused');
+        const ack = await request.acknowledgment();
+        check((await verifyDeliveryAck(ack, {...binding, recipient: binding.owner,
+          nonce: Array.from(request.nonce, b => b.toString(16).padStart(2, '0')).join(''),
+          policyRevision: 1n, generation: 1n})).status === 'recipient-confirmed-saved', 'committed receipt verified');
       } else {
         check(secret === null && journal.value.state === 'pending', 'no partial install');
+        check(await denied(() => request.acknowledgment()), 'failed installation cannot acknowledge');
       }
       request.close(); packet.fill(0); store.close();
       if (variant === 'normal') window.savedBinding = binding;

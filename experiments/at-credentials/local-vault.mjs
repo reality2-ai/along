@@ -5,6 +5,7 @@ import {openCredentialPolicyStore} from './policy-store.mjs';
 import {openMembership} from '../tg-pairing/membership.mjs';
 import {credentialPolicyBytes} from './policy.mjs';
 import {verifyCredentialDelivery} from './delivery-message.mjs';
+import {signDeliveryAck} from './delivery-ack.mjs';
 const fail = () => new Error('Local AT credential unavailable');
 const hex = value => Array.from(value, b => b.toString(16).padStart(2, '0')).join('');
 const token = value => typeof value === 'string' && /^[\x21-\x7e]{1,512}$/.test(value);
@@ -122,6 +123,26 @@ export function openLocalATVault({wasm, store, group, owner, credential}) {
         if (!begun.applied) throw fail();
         current();
         return Object.freeze({nonce: nonce.slice(), close,
+          acknowledgment: async ({signal: ackSignal} = {}) => {
+            try {
+              if (!consumed) throw fail();
+              checkSignal(ackSignal);
+              const journal = await store.read(requestScope, key), saved = await store.read(scope, key);
+              const value = journal?.value, record = saved?.value;
+              if (value?.state !== 'consumed' || !bytes(value.nonce, 16) || hex(value.nonce) !== hex(nonce)
+                  || value.member !== context.member || value.generation !== context.policy.generation
+                  || value.policyRevision !== context.policy.revision || !validStored(record)
+                  || record.member !== context.member || record.generation !== context.policy.generation
+                  || record.policyRevision !== context.policy.revision) throw fail();
+              const identity = await loadLocalPersona({wasm, store, expectedGroup: groupBytes});
+              if (identity?.member !== context.member) throw fail();
+              const receipt = await signDeliveryAck({group, owner, credential, recipient: context.member,
+                nonce: hex(nonce), generation: context.policy.generation, policyRevision: context.policy.revision}, identity.sign);
+              await unchanged([{scope: requestScope, key, expectedRevision: journal.revision},
+                {scope, key, expectedRevision: saved.revision}], ackSignal);
+              return receipt;
+            } catch { throw fail(); }
+          },
           install: async packet => {
             let plaintext, snapshot;
             try {

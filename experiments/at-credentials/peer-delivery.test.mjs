@@ -6,7 +6,7 @@ import {join} from 'node:path';
 const {chromium} = await import(process.env.PLAYWRIGHT_MODULE || '@playwright/test');
 const sources = new Map();
 for (const name of ['storage.mjs', 'membership.mjs', 'certificate.mjs', 'peer-session.mjs', 'peer-link.mjs', 'challenge.mjs', 'session-statement.mjs']) sources.set('/' + name, await readFile(join(process.env.R2_BROWSER_DIR, name)));
-for (const name of ['../tg-pairing/initial-persona.mjs', '../tg-pairing/local-persona.mjs', 'local-owner.mjs', 'owner-policy.mjs', 'owner-delivery.mjs', 'remote-owner.mjs', 'policy-update.mjs', 'policy-update-message.mjs', 'remote-owner-view.mjs', 'settings-view.mjs', 'credential-view.mjs', '../tg-pairing/comparison.css', '../tg-pairing/local-persona-session.mjs', 'policy.mjs', 'policy-store.mjs', 'local-vault.mjs', 'delivery-message.mjs']) sources.set('/' + name.split('/').pop(), await readFile(new URL(name, import.meta.url)));
+for (const name of ['../tg-pairing/initial-persona.mjs', '../tg-pairing/local-persona.mjs', 'local-owner.mjs', 'owner-policy.mjs', 'owner-delivery.mjs', 'remote-owner.mjs', 'policy-update.mjs', 'policy-update-message.mjs', 'remote-owner-view.mjs', 'settings-view.mjs', 'credential-view.mjs', '../tg-pairing/comparison.css', '../tg-pairing/local-persona-session.mjs', 'policy.mjs', 'policy-store.mjs', 'local-vault.mjs', 'delivery-ack.mjs', 'delivery-message.mjs']) sources.set('/' + name.split('/').pop(), await readFile(new URL(name, import.meta.url)));
 for (const name of ['hive_wasm.js', 'hive_wasm_bg.wasm']) sources.set('/' + name, await readFile(join(process.env.R2_WASM_DIR, name)));
 for (const name of ['live-client.mjs', '../../public/at-client.js', '../../public/live-client.js']) sources.set('/' + name.split('/').pop(), await readFile(new URL(name, import.meta.url)));
 const server = createServer((req, res) => {
@@ -36,6 +36,7 @@ try {
     const {openLocalATVault} = await import('./local-vault.mjs');
     const {openLocalPersonaSession} = await import('./local-persona-session.mjs');
     const {sendOwnerCredential} = await import('./owner-delivery.mjs');
+    const {verifyDeliveryAck} = await import('./delivery-ack.mjs');
     const {applyRemoteATPolicy, encodePolicyUpdate, decodePolicyUpdate} = await import('./policy-update.mjs');
     const {updateLocalATPolicy} = await import('./owner-policy.mjs');
     const codec = (await import('./certificate.mjs')).certificateCodec(wasm);
@@ -70,7 +71,9 @@ try {
     const receiverVault = openLocalATVault({wasm, store: receiver.store, ...binding});
     let sending, receiving, request, resolve, reject, messages = 0, policyReply, policyError;
     const installed = new Promise((yes, no) => { resolve = yes; reject = no; });
-    let timeout;
+    let timeout, acknowledgmentContext, confirm, rejectConfirmation;
+    const confirmed = new Promise((yes, no) => { confirm = yes; rejectConfirmation = no; });
+    void confirmed.catch(() => {});
     try {
       receiving = await openLocalPersonaSession({wasm, store: receiver.store, expectedGroup: group, peer: owner.subject,
         role: 'offer', onMessage: async packet => {
@@ -82,12 +85,24 @@ try {
             return;
           }
           messages++;
-          try { resolve(await request.install(packet)); } catch (error) { reject(error); }
+          try {
+            const receipt = await request.install(packet);
+            await receiving.send(await request.acknowledgment({signal: receiving.signal}));
+            resolve(receipt);
+          } catch (error) { reject(error); }
         }});
       sending = await openLocalPersonaSession({wasm, store: owner.store, expectedGroup: group, peer: receiver.subject,
         role: 'answer', onMessage: async nonce => {
-          try { await sendOwnerCredential({wasm, store: owner.store, expectedGroup: group, peer: receiver.subject,
-            peerCertificate: receiver.certificate, nonce, connection: sending}); } catch (error) { reject(error); }
+          try {
+            if (acknowledgmentContext) {
+              const context = acknowledgmentContext; acknowledgmentContext = undefined;
+              confirm(await verifyDeliveryAck(nonce, context)); return;
+            }
+            const sent = await sendOwnerCredential({wasm, store: owner.store, expectedGroup: group, peer: receiver.subject,
+              peerCertificate: receiver.certificate, nonce, connection: sending});
+            check(sent.status === 'sent-unconfirmed', 'send alone remains unconfirmed');
+            acknowledgmentContext = sent.acknowledgmentContext;
+          } catch (error) { reject(error); rejectConfirmation(error); }
         }});
       const offer = await receiving.offer(), answer = await sending.accept(offer); await receiving.accept(answer);
       await Promise.all([receiving.authenticated(), sending.authenticated()]);
@@ -133,6 +148,11 @@ try {
       await receiving.send(request.nonce);
       const result = await Promise.race([installed, new Promise((_, no) => { timeout = setTimeout(() => no(new Error('Delivery timeout')), 15000); })]);
       check(result.status === 'credential-saved' && messages === 1, 'one authenticated delivery installed');
+      clearTimeout(timeout);
+      const acknowledgment = await Promise.race([confirmed, new Promise((_, no) => {
+        timeout = setTimeout(() => no(new Error('Acknowledgment timeout')), 15000);
+      })]);
+      check(acknowledgment.status === 'recipient-confirmed-saved', 'owner receives recipient acknowledgment');
       check(await receiverVault.getKey() === 'synthetic-peer-delivery', 'receiver decrypts its own record');
       const receivedRecord = await receiver.store.read('along-at-secret:' + binding.owner, policyKey);
       check(receivedRecord.value.member === hex(receiver.subject), 'ciphertext bound to receiver');
