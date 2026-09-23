@@ -11,6 +11,22 @@ Along uses Auckland Transport's public data and its own bounded routing engine.
 It is **not an official AT app** and does not reproduce AT Mobile's journey planner.
 Live predictions are optional and require a separately configured backend.
 
+## See Along in use
+
+Actual app screens using public example addresses and the preserved Auckland
+transport timetable. The route map shows downloaded AT geometry, not live vehicle
+tracking. Tap a screenshot to view it at full size.
+
+| Start with your destination | Choose a mixed-mode journey |
+| --- | --- |
+| [<img src="docs/screenshots/01-start.png" width="280" alt="Along asks for a destination, with nearby departures and route exploration as alternatives.">](docs/screenshots/01-start.png) | [<img src="docs/screenshots/02-journey.png" width="280" alt="A scheduled Broadway to Devonport journey shows walking, train and ferry connections with one clear Use this journey action.">](docs/screenshots/02-journey.png) |
+| Follow one step at a time | Explore a route's path and stops |
+| [<img src="docs/screenshots/03-follow.png" width="280" alt="The journey view shows the current walking step, Next step and an expandable whole itinerary.">](docs/screenshots/03-follow.png) | [<img src="docs/screenshots/04-route-map.png" width="280" alt="Route 70 details show its published path and stop markers, with scheduled-service choices and stop-name search below.">](docs/screenshots/04-route-map.png) |
+
+Screenshots are reproducible with `node scripts/capture_ux.mjs` against a running
+copy; set `CHROMIUM_PATH` if needed. The **About Along** links in the footer and Settings open
+this repository for source, installation help and the course material.
+
 ## What you can do
 
 - Compare different lines at nearby stops, including estimated walking time at your pace.
@@ -44,8 +60,8 @@ opens one step at a time; advance explicitly when ready, or expand **Whole journ
 Back preserves your entries. Other routes, nearby departures and saved journeys
 remain available without crowding the current task. Settings shows offline readiness.
 
-There is no public production URL yet. You can host the static build below or run
-a private copy. The four data bundles total approximately **38 MiB**;
+Open [Along at reality2.ai/along](https://reality2.ai/along/), or host the static
+build below yourself. The four data bundles total approximately **38 MiB**;
 uncompressed storage and memory are considerably larger. Browser storage can be
 evicted. Do not rely on an expired timetable or mistake scheduled times for live
 predictions. See [release evidence and limits](docs/RELEASE_CHECKLIST.md).
@@ -65,8 +81,9 @@ adds an OpenStreetMap background on request; those tiles are not in the offline
 bundle. Maps supplement the keyboard-accessible stop list.
 
 Source repository: [reality2-ai/along](https://github.com/reality2-ai/along).
-The source and course material are public. A public app site has not yet been
-deployed; use the hosting instructions below to run your own copy.
+The source and course material are public. The app is hosted at
+[reality2.ai/along](https://reality2.ai/along/); the hosting instructions below
+also let you run your own copy.
 
 ## Run from source
 

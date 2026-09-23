@@ -11,8 +11,7 @@ history or background tracking is required. Along does not currently sync device
 ## Prepare once, then check the installed app
 
 1. Open the hosted Along app over HTTPS in a normal browser window, not private
-   browsing or an in-app social-media browser. The proposed portal address is
-   `https://reality2.ai/along/`; publication is not yet enabled.
+   browsing or an in-app social-media browser. Open `https://reality2.ai/along/`.
 2. Keep it open while the first download completes (about 40 MB, with more space
    needed after decompression). Open Settings and wait for **offline ready**.
 3. Follow your platform's installation steps below.

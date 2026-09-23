@@ -1,7 +1,7 @@
 # Release evidence and remaining gates
 
-Current candidate: **version 18**, reviewed 23 September 2026. The private site and
-static ZIP are prepared; no public AWS or GitHub Pages deployment has been made.
+Current candidate: **version 20**, reviewed 23 September 2026. The private site and
+static ZIP are prepared. GitHub Pages is published at `reality2.ai/along/`; no AWS deployment has been made.
 This register separates automated evidence, user observations and remaining checks.
 
 ## Goal audit
@@ -90,8 +90,17 @@ optional outbound requests and recovery after storage loss. The same guide is
 rendered as install.html, cached with the app and included as INSTALL.md in the ZIP.
 
 GitHub Pages can inherit the organisation domain at `reality2.ai/along/`; the
-static deployment branch `site-preview` is prepared. Public app hosting is not enabled.
+static deployment branch `site-preview` supplies the GitHub Pages deployment.
 
 The version 18 static run also opened the installation guide while offline,
 expanded browser instructions, and checked 320-pixel reflow and axe rules.
 [Measurements](evidence/install-guide-v18-metrics.json) accompany that run.
+
+## Version 20: public portal and visible source
+
+GitHub Pages now serves the static `site-preview` branch over enforced HTTPS at
+[reality2.ai/along](https://reality2.ai/along/). The organisation homepage and DNS
+were not changed. Source updates on main are separate from the built deployment.
+The README includes four screenshots captured from the running app using public
+example addresses. Both the footer and Settings link to the public GitHub source.
+Public-site installation/offline checks are run with `test/check_public_site.mjs`.

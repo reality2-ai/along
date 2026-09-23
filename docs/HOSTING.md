@@ -110,9 +110,10 @@ The organisation site already uses GitHub Pages with the custom domain
 `reality2.ai`. GitHub project sites inherit that domain, so enabling Pages for
 `reality2-ai/along` without its own CNAME would serve `https://reality2.ai/along/`.
 This does not require replacing the organisation homepage or changing DNS.
-The deployment bundle is prepared on the `site-preview` branch; Along Pages is
-not yet enabled. After publication approval, choose that branch and `/` as the
-Pages source in the Along repository, without adding another CNAME.
+The deployment bundle is on the `site-preview` branch, configured as the Pages
+source at `/`, without another CNAME. Publish updates by rebuilding the static
+bundle and updating this branch; a source-only change on `main` does not deploy
+the app.
 
 The portal's role is distribution and updates. Once prepared in the installed
 app, address search, scheduled journeys and local personalisation do not require

@@ -1,0 +1,17 @@
+// Explicitly requested deployment smoke check; no external map tiles are fetched.
+import {chromium,expect} from '@playwright/test';
+const base=process.env.TEST_BASE_URL;if(!base)throw new Error('Set TEST_BASE_URL to the deployed app URL, including trailing slash.');
+const browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH||undefined});
+try{
+ const context=await browser.newContext({viewport:{width:390,height:844}}),page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.goto(base);await expect(page.locator('#data-status')).toContainText('offline ready',{timeout:120000});
+ const scope=await page.evaluate(async()=> (await navigator.serviceWorker.ready).scope);expect(scope).toBe(base);
+ const cdp=await context.newCDPSession(page);await cdp.send('Page.enable');expect((await cdp.send('Page.getInstallabilityErrors')).installabilityErrors).toEqual([]);
+ await page.locator('#settings-open').click();await expect(page.locator('#settings')).toContainText('App version 20');await expect(page.locator('#settings a[href="https://github.com/reality2-ai/along"]')).toBeVisible();await page.locator('#settings .close-dialog').click();
+ await context.setOffline(true);await page.reload();await expect(page.locator('#data-status')).toContainText(/ready/,{timeout:60000});
+ async function choose(field,value){await page.locator('#'+field).fill(value);await page.locator('#'+field+'-options [data-index]').first().click();}
+ await choose('destination','1 Queen Street Auckland Central');await page.locator('#destination-next').click();await choose('origin','277 Broadway Newmarket');await page.locator('#origin-next').click();await page.locator('#journey-preferences > summary').click();await page.locator('#date').fill('2026-09-23');await page.locator('#time').fill('09:00');await page.locator('#find').click();await expect(page.locator('.journey-card').first()).toBeVisible({timeout:30000});
+ await page.goto(base+'install.html');await expect(page.locator('h1')).toContainText('offline');expect(errors).toEqual([]);
+ console.log(JSON.stringify({url:base,appVersion:20,workerScope:scope,installability:true,settingsAboutLink:true,offlineNewAddressJourney:true,offlineInstallGuide:true,pageErrors:errors},null,2));
+ await context.close();
+}finally{await browser.close();}
