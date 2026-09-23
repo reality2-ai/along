@@ -5,7 +5,7 @@ import {join} from 'node:path';
 const {chromium} = await import(process.env.PLAYWRIGHT_MODULE || '@playwright/test');
 const sources = new Map();
 for (const name of ['storage.mjs', 'membership.mjs', 'certificate.mjs']) sources.set('/' + name, await readFile(join(process.env.R2_BROWSER_DIR, name)));
-for (const name of ['software-persona.mjs', 'local-persona.mjs', 'member-removal.mjs', 'removal-message.mjs']) sources.set('/' + name, await readFile(new URL(name, import.meta.url)));
+for (const name of ['software-persona.mjs', 'local-persona.mjs', 'member-removal.mjs', 'removal-message.mjs', 'removal-set.mjs']) sources.set('/' + name, await readFile(new URL(name, import.meta.url)));
 for (const name of ['hive_wasm.js', 'hive_wasm_bg.wasm']) sources.set('/' + name, await readFile(join(process.env.R2_WASM_DIR, name)));
 const server = createServer((req, res) => {
   res.setHeader('Content-Type', req.url.endsWith('.wasm') ? 'application/wasm' : sources.has(req.url) ? 'text/javascript' : 'text/html');
@@ -146,6 +146,15 @@ try {
         const message = encodeRemoval(group, removed[0].evidence);
         const receive = (text, options = {}) => receiveRemoval({wasm, store: receivingStore, expectedGroup: group, text, ...options});
         const initial = await receivingStore.read('membership', groupHex);
+        const {exportRemovalSet, receiveRemovalSet} = await import('./removal-set.mjs');
+        const batch = await exportRemovalSet({wasm, store, expectedGroup: group});
+        const receiveBatch = text => receiveRemovalSet({wasm, store: receivingStore, expectedGroup: group, text});
+        const tamperedBatch = Uint8Array.from(atob(batch), char => char.charCodeAt(0)); tamperedBatch[tamperedBatch.length - 1] ^= 1;
+        check(await denied(() => receiveBatch(btoa(String.fromCharCode(...tamperedBatch)))), 'tampered final batch signature refuses');
+        check((await receivingStore.read('membership', groupHex)).revision === initial.revision, 'batch validation is atomic before any removal');
+        for (const invalid of [' ', '!!!!', batch + 'AAAA', btoa(atob(batch) + atob(batch))]) {
+          check(await denied(() => receiveBatch(invalid)), 'malformed or duplicate batch refuses');
+        }
         const invalid = JSON.parse(message); invalid.signature = (invalid.signature[0] === '0' ? '1' : '0') + invalid.signature.slice(1);
         check(await denied(() => receive(JSON.stringify(invalid))), 'forged remote removal refuses');
         invalid.group = '00'.repeat(32);
@@ -158,6 +167,8 @@ try {
         const committed = await receivingStore.read('membership', groupHex);
         check((await receive(message)).alreadyKnown === true
           && (await receivingStore.read('membership', groupHex)).revision === committed.revision, 'remote replay does not rewrite');
+        check((await receiveBatch(batch)).added === 1, 'batch adds remaining removal while retaining held evidence');
+        check((await receiveBatch(batch)).added === 0, 'batch replay is idempotent');
         check(await receivingMembership.peerStatus(peers[0].certificate, peers[0].subject) === 'revoked', 'remote removal enforced');
         const self = encodeRemoval(group, await issuer.issueRevocation({subject: member, sequence: 99n, reason: 0}));
         check((await receive(self)).thisDeviceRemoved === true, 'receiver accepts signed self removal');

@@ -170,6 +170,31 @@ choices without changing the selected route, current leg or learning settings.
 Closing Settings retains the channel; explicit disconnect or pagehide closes it.
 Reconnection still requires manual message transfer, not automatic discovery.
 
+The next candidate uses `along-journey-connect-v2`. Its initial messages include
+the sender's retained signed group removals, which the recipient verifies and
+commits before membership/permission review and opening the journey session.
+Both directions catch up without separately copying each removal. This still
+requires transferring the connection messages; it is not automatic discovery,
+continuous background propagation or proof that no newer removal exists elsewhere.
+The v1 connection profile used by published preview 3802 is refused by this new
+flow; both devices need the newer candidate. No v1 downgrade silently skips catch-up.
+
+The set carries group-member identifiers and signatures, not addresses, history
+or AT keys. Each message discloses the added group information. The bounded binary
+encoding supports 256 removals within the transfer component's message limit.
+Every incoming signature is checked before a single atomic membership write;
+bad signatures, malformed encoding and duplicate subjects refuse the entire set.
+Existing evidence is retained, replay makes no new write, and authenticated local
+invalidation follows commit. Removal of either session participant prevents the
+subsequent membership checks from opening a journey connection.
+
+The full generated-app check starts each device with a different authentic
+removal for an unrelated synthetic subject, then connects through visible controls
+and verifies that both retain both removals before sharing journeys. The component
+and browser-custody tests also cover the new framing and tampered-final-signature
+refusal without partial state. AT-key reconnection does not yet exchange this set;
+the existing manual removal flow remains available.
+
 Incoming changes refresh the saved-service button without rebuilding the selected
 journey or its steps. If keyboard focus is inside the saved-journey shortcuts,
 the existing shortcuts remain in place until focus leaves that group; the latest

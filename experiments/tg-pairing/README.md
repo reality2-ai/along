@@ -907,3 +907,12 @@ followed by signed removal receipt. The prior bundle must be extracted at
 `releases/along-device-preview-3801/`; the test verifies its pinned manifest and all
 payload hashes before serving it. These are browser-profile checks, not physical
 device acceptance or proof of uninterrupted enrollment.
+
+`removal-set.mjs` supports pre-session catch-up in the next journey-connection
+profile. Each fixed-width record stores a subject, epoch, sequence, reason and
+signature; canonical base64 stays below 40,000 characters for at most 256 records.
+The group comes from the established local context, not the incoming set. All
+signatures are verified before a guarded atomic merge; retained removals are never
+deleted by a smaller or stale set. Replay performs no write or needless local
+invalidation. The result confirms only a local merge, not globally fresh group
+knowledge. This is Along-specific framing, not a normative R2 wire format.

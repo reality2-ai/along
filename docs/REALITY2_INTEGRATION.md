@@ -47,6 +47,12 @@ receipt are covered by the browser custody test. The test harness transfers the
 text; this is not automatic propagation, proof of every peer receiving it or
 physical-device acceptance. Automatic distribution and epoch/key rotation remain
 unfinished; removal cannot recall an AT key already copied.
+The next candidate additionally catches up retained removal sets in both initial
+journey-connection messages before opening the peer session. A full-app test with
+different signed removals on each side verifies bidirectional merge before journey
+sharing. This uses a new Along connection profile requiring both devices to update;
+it does not add discovery, background propagation or catch-up to AT-key reconnection.
+Public preview 3802 still uses the earlier journey profile and manual removal flow.
 The separate AT two-app `REMOVE_GROUP_MEMBER=1` check now verifies that group
 removal closes an active shared-key live connection after two expected mocked
 provider reads and causes no further provider request. The recipient accepts the

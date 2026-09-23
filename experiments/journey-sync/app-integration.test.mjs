@@ -222,7 +222,39 @@ try {
       await closeSharing(page);
     }
   };
+  // Each device holds a different authentic removal for an unrelated synthetic
+  // subject. Connection must merge both sets before handing off journey data.
+  const removalMessages = await owner.evaluate(async database => {
+    const wasm = await import('../experiments/tg-pairing/hive_wasm.js'); await wasm.default();
+    const store = await (await import('../experiments/tg-pairing/storage.mjs')).openBrowserStorage(database);
+    let issuer;
+    try {
+      const group = (await store.read('candidate-persona', 'active')).value.record.group;
+      issuer = await (await import('../experiments/tg-pairing/software-persona.mjs')).loadSoftwareIssuer({wasm, store, expectedGroup: group});
+      const {encodeRemoval, receiveRemoval} = await import('../experiments/tg-pairing/removal-message.mjs');
+      const messages = [];
+      for (const sequence of [1n, 2n]) messages.push(encodeRemoval(group, await issuer.issueRevocation({subject: crypto.getRandomValues(new Uint8Array(32)), sequence, reason: 0})));
+      await receiveRemoval({wasm, store, expectedGroup: group, text: messages[0]});
+      return messages;
+    } finally { issuer?.close(); store.close(); }
+  }, namespaces.devices);
+  await candidate.evaluate(async ({database, text}) => {
+    const wasm = await import('../experiments/tg-pairing/hive_wasm.js'); await wasm.default();
+    const store = await (await import('../experiments/tg-pairing/storage.mjs')).openBrowserStorage(database);
+    try {
+      const group = (await store.read('candidate-persona', 'active')).value.record.group;
+      await (await import('../experiments/tg-pairing/removal-message.mjs')).receiveRemoval({wasm, store, expectedGroup: group, text});
+    } finally { store.close(); }
+  }, {database: namespaces.devices, text: removalMessages[1]});
   await connectJourneys();
+  for (const page of pages) assert.deepEqual(await page.evaluate(async database => {
+    const store = await (await import('../experiments/tg-pairing/storage.mjs')).openBrowserStorage(database);
+    try {
+      const group = (await store.read('candidate-persona', 'active')).value.record.group;
+      const key = Array.from(group, byte => byte.toString(16).padStart(2, '0')).join('');
+      return (await store.read('membership', key)).value.revocations.map(record => String(record.sequence)).sort();
+    } finally { store.close(); }
+  }, namespaces.devices), ['1', '2'], 'connection catches up both signed removal sets');
   await expect.poll(async () => (await saved(candidate)).length).toBe(2);
   await expect.poll(async () => (await saved(owner)).length).toBe(2);
   assert.deepEqual((await saved(candidate)).find(j => j.to.id === preferred.to.id).savedRoutes, preferred.savedRoutes);

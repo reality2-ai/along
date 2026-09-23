@@ -15,7 +15,7 @@ export async function checkJourneySession({wasm, owner, receiver, group}) {
   ];
   check(await denied(() => openJourneySession(options[0])), 'session refuses absent permission before signaling');
   const permissionBefore = JSON.stringify(await receiver.store.read('along-journey-sharing-v1', hex(group)));
-  const descriptor = {profile: 'along-journey-connect-v1', group: hex(group), member: hex(owner.subject), certificate: [...owner.certificate]};
+  const descriptor = {profile: 'along-journey-connect-v2', group: hex(group), member: hex(owner.subject), certificate: [...owner.certificate], removals: ''};
   for (const [message, cancel] of [
     [{...descriptor, group: '00'.repeat(32)}, false],
     [{...descriptor, member: hex(receiver.subject)}, false],

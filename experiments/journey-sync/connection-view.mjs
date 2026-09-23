@@ -4,7 +4,9 @@ import {showDeviceTransfer} from '../tg-pairing/transfer-view.mjs';
 import {readJourneyPermission} from './permission.mjs';
 import {showJourneyPermission} from './permission-view.mjs';
 import {openJourneySession} from './journey-session.mjs';
-const profile = 'along-journey-connect-v1', mounted = new WeakMap();
+import {certificateCodec} from '../tg-pairing/certificate.mjs';
+import {exportRemovalSet, receiveRemovalSet} from '../tg-pairing/removal-set.mjs';
+const profile = 'along-journey-connect-v2', mounted = new WeakMap();
 const hex = bytes => Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
 const unhex = value => {
   if (typeof value !== 'string' || !/^[0-9a-f]{64}$/.test(value)) throw Error('Device identity unavailable');
@@ -43,7 +45,7 @@ export function showJourneyConnection(container, {wasm, store, expectedGroup, ro
   };
   const fail = () => {
     if (disposed || failed || handedOff) return;
-    message('Journey connection unavailable', 'Keep your saved devices and try again with both open. A permission choice may already have been saved; it has not been reset.');
+    message('Journey connection unavailable', 'Check that both devices use the latest preview. Keep your saved devices and try again with both open. A permission choice or signed group removal may already have been saved; it has not been reset.');
     failed = true; lifetime.abort(); session?.close();
   };
   const transfer = options => {
@@ -55,6 +57,8 @@ export function showJourneyConnection(container, {wasm, store, expectedGroup, ro
         || !Array.isArray(descriptor.certificate) || descriptor.certificate.length !== 136
         || descriptor.certificate.some(byte => !Number.isInteger(byte) || byte < 0 || byte > 255)) throw Error('Different device');
     const peer = unhex(descriptor.member), certificate = new Uint8Array(descriptor.certificate);
+    if (!certificateCodec(wasm).authentic(certificate, peer, group)) throw Error('Invalid certificate');
+    await receiveRemovalSet({wasm, store, expectedGroup: group, text: descriptor.removals, signal: lifetime.signal}); current();
     const held = openMembership(store, wasm, group, own.subject);
     try { if (await held.peerStatus(certificate, peer) !== 'current') throw Error('Unenrolled device'); } finally { held.close(); }
     current();
@@ -97,12 +101,13 @@ export function showJourneyConnection(container, {wasm, store, expectedGroup, ro
       if (!local) throw Error('Identity unavailable');
       own = (await store.read('candidate-persona', 'active'))?.value?.record; current();
       if (!own) throw Error('Identity unavailable');
-      const descriptor = {profile, group: hex(group), member: local.member, certificate: [...own.certificate]};
+      const descriptor = {profile, group: hex(group), member: local.member, certificate: [...own.certificate],
+        removals: await exportRemovalSet({wasm, store, expectedGroup: group})}; current();
       if (role === 'start') transfer({title: 'Connect your journey-sharing device', outgoing: JSON.stringify(descriptor),
-        explanation: 'On your other enrolled device, choose Join journey connection. Transfer this device message, then paste its connection request here. Saved addresses are not included in these messages.',
+        explanation: 'On your other enrolled device, choose Join journey connection. Transfer this device message, then paste its connection request here. Messages include signed group removals so your devices can catch up, but no saved addresses or AT keys.',
         incomingLabel: 'Journey connection request', action: 'Review journey device', onReceive: async text => {
           const request = JSON.parse(text);
-          if (!fields(request, ['profile', 'group', 'member', 'certificate', 'for', 'offer']) || request.for !== local.member) throw Error('Different request');
+          if (!fields(request, ['profile', 'group', 'member', 'certificate', 'removals', 'for', 'offer']) || request.for !== local.member) throw Error('Different request');
           const peer = await review(request); await open(peer, 'answer');
           const answer = await session.accept(request.offer); current();
           transfer({title: 'Send the journey connection reply', outgoing: JSON.stringify({profile, group: hex(group), from: local.member, to: request.member, answer}), receive: false,
@@ -111,10 +116,10 @@ export function showJourneyConnection(container, {wasm, store, expectedGroup, ro
           void watch();
         }});
       else transfer({title: 'Join journey connection', outgoing: '',
-        explanation: 'Paste the message from your other enrolled device. You will review journey-sharing permission before connecting.',
+        explanation: 'Paste the message from your other enrolled device. Signed group removals are checked and saved before connection. You will review journey-sharing permission before connecting.',
         incomingLabel: 'Journey device message', action: 'Review journey device', onReceive: async text => {
           const remote = JSON.parse(text);
-          if (!fields(remote, ['profile', 'group', 'member', 'certificate'])) throw Error('Invalid device message');
+          if (!fields(remote, ['profile', 'group', 'member', 'certificate', 'removals'])) throw Error('Invalid device message');
           const peer = await review(remote); await open(peer, 'offer');
           const offer = await session.offer(); current();
           transfer({title: 'Send the journey connection request', outgoing: JSON.stringify({...descriptor, for: remote.member, offer}),
