@@ -53,7 +53,7 @@ test('nearby results compare lines and filter direct services',()=>{
 });
 test('fresh cancellations remove departures; stale feeds do not masquerade as live',()=>{
   const p=new Planner(network()),args={lat:-36.85,lon:174.76,now:{date:'2026-09-22',seconds:28740}};
-  const feed={available:true,updated:Date.now()/1000,entities:[{trip_update:{trip:{trip_id:'t1',start_date:'20260922',schedule_relationship:3}}}]};
+  const feed={available:true,updated:Math.floor(Date.now()/1000),entities:[{trip_update:{trip:{trip_id:'t1',start_date:'20260922',schedule_relationship:3}}}]};
   const live=p.nearby({...args,feed});assert.equal(live.stops.find(s=>s.stop.id==='a').departures.length,1);
   const stale=p.nearby({...args,feed:{...feed,updated:1}});assert.equal(stale.live,false);assert.equal(stale.stops.find(s=>s.stop.id==='a').departures.length,2);
 });
@@ -105,19 +105,31 @@ test('live updates require an unambiguous trip instance and matching optional ro
     [item({start_date:'20260922'}),item({start_date:'20260922'})]
   ];
   for(const entities of cases){
-    const result=p.nearby({...args,feed:{available:true,updated:Date.now()/1000,entities}});
+    const result=p.nearby({...args,feed:{available:true,updated:Math.floor(Date.now()/1000),entities}});
     const departures=result.stops.find(s=>s.stop.id==='a').departures;
     assert.equal(departures.length,2);assert.equal(departures.some(d=>d.live),false);
   }
-  const matched=p.nearby({...args,feed:{available:true,updated:Date.now()/1000,entities:[item({start_date:'20260922',route_id:'r1'})]}});
+  const matched=p.nearby({...args,feed:{available:true,updated:Math.floor(Date.now()/1000),entities:[item({start_date:'20260922',route_id:'r1'})]}});
   assert.equal(matched.stops.find(s=>s.stop.id==='a').departures.length,1);
 });
 
 test('malformed live event numbers retain scheduled departure times',()=>{
   const p=new Planner(network()),args={lat:-36.85,lon:174.76,now:{date:'2026-09-22',seconds:28740}};
   for(const departure of [{delay:'not-a-number'},{time:'not-a-number'},{delay:Infinity}]){
-    const feed={available:true,updated:Date.now()/1000,entities:[{trip_update:{trip:{trip_id:'t1',start_date:'20260922'},stop_time_update:[{stop_id:'a',departure}]}}]};
+    const feed={available:true,updated:Math.floor(Date.now()/1000),entities:[{trip_update:{trip:{trip_id:'t1',start_date:'20260922'},stop_time_update:[{stop_id:'a',departure}]}}]};
     const result=p.nearby({...args,feed}).stops.find(s=>s.stop.id==='a').departures.find(d=>d.trip==='t1');
     assert.equal(result.departure,28800);assert.equal(result.live,false);
   }
+});
+
+test('nearby retains schedules for no-data, ambiguous stops and invalid event values',()=>{
+ const args={lat:-36.85,lon:174.76,now:{date:'2026-09-22',seconds:28740}};
+ const makeFeed=event=>({available:true,updated:Math.floor(Date.now()/1000),entities:[{trip_update:{trip:{trip_id:'t1',start_date:'20260922'},stop_time_update:[{stop_id:'a',...event}]}}]});
+ for(const event of [{schedule_relationship:'NO_DATA',departure:{delay:60}},{schedule_relationship:3,departure:{delay:60}},{departure:{delay:true}},{departure:{time:1e20}}]){
+  const result=new Planner(network()).nearby({...args,feed:makeFeed(event)}).stops.find(s=>s.stop.id==='a').departures.find(d=>d.trip==='t1');
+  assert.equal(result.departure,28800);assert.equal(result.live,false);
+ }
+ const n=network();n.connections.push(0,1,0,30000,30600,0,0);
+ const result=new Planner(n).nearby({...args,feed:makeFeed({departure:{delay:60}})}).stops.find(s=>s.stop.id==='a').departures.find(d=>d.trip==='t1');
+ assert.equal(result.departure,28800);assert.equal(result.live,false);
 });

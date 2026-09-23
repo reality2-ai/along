@@ -1,0 +1,20 @@
+import {test,expect} from '@playwright/test';
+import AxeBuilder from '@axe-core/playwright';
+test('map expands, locates only on request, and Back or Escape restores the detail',async({page,context})=>{
+ await page.setViewportSize({width:360,height:780});
+ await context.grantPermissions(['geolocation']);await context.setGeolocation({latitude:-36.85,longitude:174.76,accuracy:25});
+ await page.addInitScript(()=>{window.locationRequests=0;const get=navigator.geolocation.getCurrentPosition.bind(navigator.geolocation);navigator.geolocation.getCurrentPosition=(...args)=>{window.locationRequests++;get(...args);};});
+ await page.goto('/');await expect(page.locator('#data-status')).toContainText('offline ready',{timeout:60000});
+ await page.locator('#browse-routes').click();await page.locator('#route-search').fill('70');await page.locator('#route-search-results button').first().click();await page.locator('#detail-body > .route-variant').first().click();
+ expect(await page.evaluate(()=>window.locationRequests)).toBe(0);
+ await page.locator('#map-fullscreen').click();await expect(page.locator('#information')).toHaveClass(/map-expanded/);
+ const size=await page.locator('#information').boundingBox();expect(size.width).toBe(360);expect(size.height).toBe(780);
+ await page.locator('#map-locate').click();await expect(page.locator('#map-location-status')).toContainText('Accuracy about 25 metres');expect(await page.evaluate(()=>window.locationRequests)).toBe(1);
+ expect((await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa']).analyze()).violations).toEqual([]);
+ await page.screenshot({path:'test-results/map-fullscreen-mobile.png'});
+ await page.keyboard.press('Escape');await expect(page.locator('#information')).not.toHaveClass(/map-expanded/);await expect(page.locator('#route-stop-filter')).toBeVisible();await expect(page.locator('#map-fullscreen')).toBeFocused();
+ await page.locator('#map-fullscreen').click();await page.goBack();await expect(page.locator('#information')).not.toHaveClass(/map-expanded/);await expect(page.locator('#route-stop-filter')).toBeVisible();
+ await page.evaluate(()=>{navigator.geolocation.getCurrentPosition=(_,failure)=>failure({code:1});});
+ await page.locator('#map-locate').click();await expect(page.locator('#map-location-status')).toContainText('Location unavailable');await expect(page.locator('#map-locate')).toBeEnabled();
+ await context.setOffline(true);await page.locator('#map-fullscreen').click();await expect(page.locator('#context-map')).toBeVisible();await expect(page.locator('#context-map .leaflet-overlay-pane path[fill="#245ba1"]')).toBeVisible();await page.locator('#map-fullscreen').click();await expect(page.locator('#route-stop-filter')).toBeVisible();
+});

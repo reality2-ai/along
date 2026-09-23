@@ -670,3 +670,19 @@ to read “Use at your own risk”, with the course explanation revealed on open
 Version 33 removes redundant disclosure containers and shortens this label. The
 refinement balances recognisable actions with calm presentation: extra borders
 can add visual complexity without conveying another meaningful interaction.
+
+### Full-width actions, map control and immediate purpose
+
+The user preferred full-width buttons, requested a full-screen map and centring
+on current location, and asked for Auckland public transport to be named on the
+main page. Version 34 applies full width to standalone actions while retaining
+compact navigation and inline route controls. Maps expand within the app window,
+with close, Escape and history Back restoring the detail. Location is requested
+only on the centring action, with an accuracy circle and a recoverable permission
+failure. The home brand now states “Auckland public transport” without replacing
+the destination question. These changes connect clear purpose with control over
+how much space the current task receives.
+
+The follow-up observation that “Plan a journey” was redundant removed that home
+screen progress label and its empty navigation space. Back and step context
+remain available once the traveller begins choosing a journey.

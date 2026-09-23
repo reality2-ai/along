@@ -636,3 +636,22 @@ Version 33 Pages deployment [35823256837](https://github.com/reality2-ai/along/a
 [Release hashes](evidence/release-v33.json) match the local ZIP/checksum.
 [Public smoke evidence](evidence/public-site-v33.json) records the deployed version
 and offline journey, installation-guide and feedback-draft checks.
+
+## Version 34: full-width actions and contextual map controls
+
+Standalone actions use the available width. The home brand says “Auckland public
+transport”. Every contextual map has an app-window full-screen control and a
+one-shot location-centre control with an accuracy circle. Escape, close and Back
+restore the detail. Denied location permission preserves manual map exploration.
+Route geometry remains available offline; uncached street backgrounds need a
+connection. Location-centre does not start background tracking.
+
+Nearby predictions now use the same conservative matcher as stop boards,
+including no-data, invalid numeric events and repeated-stop safeguards. Original
+GTFS stop-sequence support is still needed to enable live predictions for loops.
+
+Validation: 50 JavaScript and 11 Python tests passed, along with all 16 browser
+scenarios, static subpath/accessibility/offline checks and installed-app update
+checks. The final removal of the home progress label is additionally checked by
+the release smoke and focused journey-navigation checks. Geolocation is emulated
+in browser tests, including permission denial; actual device GPS remains untested.

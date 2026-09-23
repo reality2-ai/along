@@ -219,3 +219,23 @@ button,.secondary-button,.tab,.setting,select,input[type=date],input[type=time]{
 .guided-app .course-notice,.guided-app footer .course-notice,
 .guided-app footer .course-notice[open]{border:0;padding:0;background:transparent}
 .guided-app .journey-preferences{border:0;padding:0}
+
+/* Standalone actions share the available width; compact navigation stays compact. */
+.guided-app main .text-button,.guided-app main .secondary-button,
+.guided-app dialog .text-button,.guided-app dialog .secondary-button{width:100%;text-align:center}
+.guided-app .flow-nav .text-button{width:auto}
+.guided-app #edit-origin{width:calc(100% - 56px)}
+.guided-app dialog .secondary-button + .secondary-button{margin-top:8px}
+.map-actions{display:grid;gap:8px;margin-top:12px}
+.map-shell #map-location-status:empty{display:none}
+.guided-app #information.map-expanded{position:fixed;inset:0;margin:0;width:100%;max-width:none;height:100dvh;max-height:none;border-radius:0;padding:12px;overflow:hidden}
+.guided-app #information.map-expanded > :not(#detail-body){display:none!important}
+.guided-app #information.map-expanded #detail-body{height:100%}
+.guided-app #information.map-expanded #detail-body > :not(.map-shell){display:none!important}
+.guided-app #information.map-expanded .map-shell{display:flex;flex-direction:column;height:100%;min-height:0}
+.guided-app #information.map-expanded .context-map-frame{flex:1;min-height:100px}
+.guided-app #information.map-expanded .context-map{height:100%}
+.guided-app #information.map-expanded .map-actions{flex-shrink:0}
+.guided-app #information.map-expanded #map-location-status{margin:8px 0 0;flex-shrink:0}
+
+.brand-copy{display:block}.brand-copy small{display:block;font-size:12px;letter-spacing:0;font-weight:500;line-height:1.3;margin-top:2px}

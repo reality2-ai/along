@@ -116,6 +116,8 @@ function showScreen(screen,{focus=true,historyEntry=true}={}){
   for(const section of document.querySelectorAll('[data-screen]'))section.hidden=section.dataset.screen!==screen;
   $('journey-form').hidden=!['destination','origin','review'].includes(screen);
   renderFlowLanguage();
+  $('app-purpose').hidden=screen!=='destination';
+  $('flow-progress').closest('nav').hidden=screen==='destination';
   $('new-journey').hidden=screen==='destination';$('flow-back').hidden=screen==='destination';
   $('review-origin').textContent=state.from?.name||'Choose a starting place';$('review-destination').textContent=state.to?.name||'';
   $('review-destination-row').hidden=state.intent==='nearby';$('swap').hidden=state.intent==='nearby';
@@ -129,7 +131,10 @@ function showScreen(screen,{focus=true,historyEntry=true}={}){
   if(focus)$('flow-title').focus();
 }
 window.addEventListener('popstate',event=>{
-  if(event.state?.alongDetail){displayDetail(event.state.alongDetail);return;}
+  if(event.state?.alongDetail){
+    if(event.state.alongDetail===activeDetail && $('information').open && ($('information').classList.contains('map-expanded') || event.state.alongMap)){setMapExpanded(!!event.state.alongMap);return;}
+    displayDetail(event.state.alongDetail).then(()=>{if(event.state.alongMap)setMapExpanded(true);});return;
+  }
   if($('information').open){const target=detailViews.get(activeDetail)?.returnFocus;$('information').close();if(contextMap){contextMap.remove();contextMap=null;}activeDetail=null;if(target?.isConnected)target.focus();return;}
 
   navDepth=event.state?.depth||0;state.intent=event.state?.intent||'plan';
@@ -197,7 +202,7 @@ async function searchJourney(){
 }
 // Detail layers keep the underlying task, scroll position and explicit journey progress.
 const detailViews=new Map();let detailId=0,activeDetail=null;
-$('information').addEventListener('close',()=>{for(const view of detailViews.values())view.dispose?.();});
+$('information').addEventListener('close',()=>{$('information').classList.remove('map-expanded');for(const view of detailViews.values())view.dispose?.();});
 function detailLink(label,title,body,className='detail-link'){
   const id=++detailId;detailViews.set(id,{title,body,titleKey:({'Route details':'explore.routeTitle','Walking connection':'explore.walkTitle'})[title]});
   return `<button type="button" class="${className}" data-detail="${id}" aria-haspopup="dialog">${label}</button>`;
@@ -251,6 +256,7 @@ function legDetail(leg,label,className){
 async function displayDetail(id){
   const view=detailViews.get(id);if(!view)return;
   detailViews.get(activeDetail)?.dispose?.();
+  $('information').classList.remove('map-expanded');
   if(contextMap){contextMap.remove();contextMap=null;}
   activeDetail=id;if(view.titleKey)translated('detail-title',view.titleKey);else {$('detail-title').textContent=view.title;$('detail-title').lang='en-NZ';textBindings.delete('detail-title');}$('detail-body').innerHTML=`<p role="status">${message('explore.loading')}</p>`;
   if(!$('information').open)$('information').showModal();
@@ -261,17 +267,45 @@ async function displayDetail(id){
 function openInformation(button){
   if(!button)return;
   const id=Number(button.dataset.detail),view=detailViews.get(id);if(!view)return;
-  if(activeDetail){const parent=detailViews.get(activeDetail);parent.scroll=$('information').scrollTop;parent.openDetails=[...$('detail-body').querySelectorAll('details')].map(d=>d.open);parent.restoreDetail=id;}view.returnFocus=button;history.pushState({...history.state,alongDetail:id},'');displayDetail(id);
+  if(activeDetail){const parent=detailViews.get(activeDetail);parent.scroll=$('information').scrollTop;parent.openDetails=[...$('detail-body').querySelectorAll('details')].map(d=>d.open);parent.restoreDetail=id;}view.returnFocus=button;history.pushState({...history.state,alongDetail:id,alongMap:false},'');displayDetail(id);
 }
 document.addEventListener('click',event=>openInformation(event.target.closest('[data-detail]')));
 $('detail-back').onclick=()=>history.back();
-$('information').addEventListener('cancel',event=>{event.preventDefault();history.back();});
+$('information').addEventListener('cancel',event=>{event.preventDefault();if($('information').classList.contains('map-expanded')){$('map-fullscreen').click();return;}history.back();});
 function explorationTime(){return ['options','follow','arrived'].includes(state.screen)&&state.lastSearch?{date:state.lastSearch.date,time:state.lastSearch.time,seconds:Number(state.lastSearch.time.slice(0,2))*3600+Number(state.lastSearch.time.slice(3))*60}:aucklandNow();}
-function mapMarkup(){return `<div class="context-map-frame"><div id="context-map" data-i18n-aria="map.controls" class="context-map" role="region" aria-label="Map. Use arrow keys to pan and plus or minus to zoom." tabindex="0"></div><button type="button" class="map-load-button" id="map-streets"><strong>${message('map.show')}</strong><span>${message('map.internet')}</span></button></div><p class="field-help">${message('map.help')}</p>`;}
+function mapMarkup(){return `<section class="map-shell" aria-label="Street and transport map"><div class="context-map-frame"><div id="context-map" data-i18n-aria="map.controls" class="context-map" role="region" aria-label="Map. Use arrow keys to pan and plus or minus to zoom." tabindex="0"></div><button type="button" class="map-load-button" id="map-streets"><strong>${message('map.show')}</strong><span>${message('map.internet')}</span></button></div><div class="map-actions"><button type="button" class="secondary-button" id="map-fullscreen" aria-pressed="false">Full-screen map</button><button type="button" class="secondary-button" id="map-locate">Centre on my location</button></div><p id="map-location-status" class="field-help" role="status"></p></section><p class="field-help">${message('map.help')}</p>`;}
 let contextMap;
+function setMapExpanded(expanded){
+  const button=$('map-fullscreen');if(!button || !contextMap)return;
+  $('information').classList.toggle('map-expanded',expanded);
+  button.setAttribute('aria-pressed',String(expanded));button.textContent=expanded?'Close full-screen map':'Full-screen map';
+  const map=contextMap;requestAnimationFrame(()=>{if(contextMap===map){map.invalidateSize({pan:false});button.focus();}});
+}
 function mountMap(points,stops){
   if(!$('context-map')||!globalThis.L)return;
   contextMap=L.map('context-map',{scrollWheelZoom:false,zoomAnimation:false,fadeAnimation:false,markerZoomAnimation:false});
+  const map=contextMap,full=$('map-fullscreen'),locate=$('map-locate'),status=$('map-location-status');
+  let locationMarker=null,accuracyCircle=null;
+  full.onclick=()=>{
+    if($('information').classList.contains('map-expanded')){history.back();return;}
+    history.pushState({...history.state,alongMap:true},'');setMapExpanded(true);
+  };
+  locate.onclick=()=>{
+    if(!navigator.geolocation){status.textContent='Location is not available in this browser.';return;}
+    locate.disabled=true;status.textContent='Finding your location…';
+    const current=()=>locate.isConnected&&contextMap===map;
+    navigator.geolocation.getCurrentPosition(position=>{
+      if(!current())return;locate.disabled=false;
+      const {latitude,longitude,accuracy}=position.coords;
+      if(!Number.isFinite(latitude)||!Number.isFinite(longitude)){status.textContent='Your location could not be determined.';return;}
+      if(locationMarker)map.removeLayer(locationMarker);if(accuracyCircle)map.removeLayer(accuracyCircle);
+      const point=[latitude,longitude];
+      if(Number.isFinite(accuracy)&&accuracy>=0)accuracyCircle=L.circle(point,{radius:accuracy,color:'#4269a0',weight:1,fillOpacity:.1,interactive:false}).addTo(map);
+      locationMarker=L.circleMarker(point,{radius:8,color:'#fff',weight:3,fillColor:'#245ba1',fillOpacity:1,interactive:false}).addTo(map);
+      map.setView(point,16,{animate:false});
+      status.textContent='Map centred on your location.'+(Number.isFinite(accuracy)?' Accuracy about '+Math.round(accuracy)+' metres.':'');
+    },()=>{if(current()){locate.disabled=false;status.textContent='Location unavailable. Check location permission or explore the map manually.';}},{enableHighAccuracy:false,timeout:12000,maximumAge:60000});
+  };
   contextMap.attributionControl.addAttribution('<span lang="en-NZ">Route and stops: Auckland Transport</span>');
   for(const [selector,key] of [['.leaflet-control-zoom-in','map.zoomIn'],['.leaflet-control-zoom-out','map.zoomOut']]){
     const button=$('context-map').querySelector(selector);button.dataset.i18nAria=key;button.title=language.text(key);
@@ -308,7 +342,7 @@ $('browse-routes').onclick=()=>{
   const label='Explore a route',button=$('browse-routes'),id=++detailId;
   detailViews.set(id,{title:label,titleKey:'explore.title',returnFocus:button,body:()=>`<label class="preference-field">${message('explore.search')}<input id="route-search" data-i18n-placeholder="explore.searchHint" type="search" placeholder="For example, 70 or Western"></label><div id="route-search-results" aria-live="polite"></div>`,mount:()=>{
     const view=detailViews.get(id);$('route-search').value=view.query||'';$('route-search-results').innerHTML=view.results||'';let request=0;$('route-search').oninput=async()=>{const sequence=++request,query=$('route-search').value;view.query=query;const results=await ask('routes',{query});if(sequence!==request||!$('route-search-results'))return;view.results=$('route-search-results').innerHTML=results.length?results.map(r=>routeLink(`${escape(r.number)} · ${escape(r.name)}`,{routeId:r.id},'detail-link route-variant')).join(''):query?`<p>${message('explore.noRoutes')}</p>`:'';};
-  }});history.pushState({...history.state,alongDetail:id},'');displayDetail(id);
+  }});history.pushState({...history.state,alongDetail:id,alongMap:false},'');displayDetail(id);
 };
 
 function legMarkup(l){
