@@ -83,7 +83,8 @@ review, authorized merge, and removal during commit with saved journeys retained
 It uses real WASM identities, membership evidence and IndexedDB. Consent grants
 now use the visible permission component; race/stale-state setup still uses
 harness calls. The controller binds packets to the selected authenticated peer.
-Settings integration and device selection remain unfinished.
+Settings integration remains unfinished. The connection component below reviews
+the peer identity from a transferred public device message.
 
 ## Authenticated snapshot exchange
 
@@ -116,7 +117,8 @@ oversize headers and closure checks. The real-enrollment fixture additionally ru
 `session-check.test.mjs` over authenticated WebRTC and actual IndexedDB before any
 AT settings exist. It checks multi-chunk transfer, bidirectional convergence,
 offline save/deletion and reconnect, then removal on an open channel. Consent and
-removal use visible controls; peer selection/signaling are harness actions on one
+removal use visible controls; the connection component reviews peer messages and
+manages signaling while the harness copies public text between panels on one
 host. App preference migration, Settings integration,
 automatic reconciliation and physical-device acceptance remain unfinished.
 
@@ -134,3 +136,23 @@ confirmation/focus return, Escape, stale-review refusal, 320px/200% reflow and a
 It uses this component to grant both sides before the real journey exchange and
 remove permission while that channel is open. This is a component in a test page,
 not yet the commuter Settings flow, TalkBack acceptance or public deployment.
+
+## Journey connection component
+
+`connection-view.mjs` guides two already enrolled devices through Start or Join,
+identity review, independent sharing permission and connection-message transfer.
+It verifies the group, current membership certificate and intended recipient
+before accepting the peer. Reconnection asks for confirmation of the saved peer;
+it does not silently connect because permission exists. AT-key setup is separate.
+
+The setup screen sends no journey snapshots. Only after authentication and the
+trusted **Use journey connection** action does it hand its session to the caller.
+Back, Escape and disposal close unfinished connections; disposing after handoff
+preserves the caller's session. Public signaling messages contain identities and
+may include network addresses, but contain neither saved journeys nor AT keys.
+
+The enrollment fixture drives the controls and copies the public messages between
+panels. It checks wrong-group/self messages and cancellation without permission
+changes, keyboard review, narrow layout and automated accessibility, then exchanges
+durable journeys over the handed-off channel. This is still a component test,
+not automatic device discovery, app Settings integration or physical-device proof.

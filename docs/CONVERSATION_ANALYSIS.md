@@ -1065,3 +1065,12 @@ was disabled before its focus state was recorded; the repair preserves a useful
 Back target. Escape, stale reviews and narrow-screen zoom are checked with real
 enrolled identities. This advances progressive disclosure and accessible consent,
 while peer selection, app Settings integration and physical testing remain separate.
+
+The next step composed identity review, independent consent and connection-message
+transfer into one guided flow. Returning devices confirm the peer before reconnecting.
+The setup reports an authenticated connection without claiming that saved journeys
+have already arrived. Wrong-group/self messages and Back preserve permission;
+only the explicit final action hands the channel to journey synchronization.
+The browser harness still copies messages between panels on one host. This advances
+the progressive-disclosure theme while leaving automatic discovery, commuter Settings
+integration and physical-device acceptance as distinct, unfinished requirements.

@@ -1,6 +1,7 @@
-// Real enrollment fixture supplies identities. Consent/removal use visible controls;
-// peer selection and signaling are harness actions, not app integration.
+// Real enrollment fixture supplies identities. Connection/consent use visible
+// controls; the harness copies public messages, not app Settings integration.
 import {openJourneySession} from './journey-session.mjs';
+import {showJourneyConnection} from './connection-view.mjs';
 import {showJourneyPermission} from './permission-view.mjs';
 import {openJourneyStore} from './store.mjs';
 import {projectJourney, journeyId, savedJourneys} from './state.mjs';
@@ -13,9 +14,22 @@ export async function checkJourneySession({wasm, owner, receiver, group}) {
     {wasm, store: receiver.store, expectedGroup: group, peer: owner.subject, certificate: owner.certificate, role: 'answer'},
   ];
   check(await denied(() => openJourneySession(options[0])), 'session refuses absent permission before signaling');
-  for (const context of options) {
-    const view = showJourneyPermission(document.querySelector('#consent'), {...context, focus: true});
-    await view.ready; await window.exerciseJourneyPermission('allow'); await view.completed; view.dispose();
+  const permissionBefore = JSON.stringify(await receiver.store.read('along-journey-sharing-v1', hex(group)));
+  const descriptor = {profile: 'along-journey-connect-v1', group: hex(group), member: hex(owner.subject), certificate: [...owner.certificate]};
+  for (const [message, cancel] of [
+    [{...descriptor, group: '00'.repeat(32)}, false],
+    [{...descriptor, member: hex(receiver.subject)}, false],
+    [descriptor, true],
+  ]) {
+    const container = document.createElement('div'); container.id = 'journey-negative'; document.querySelector('main').append(container);
+    let left = false, connected = false;
+    const view = showJourneyConnection(container, {...options[1], role: 'join', focus: true,
+      onBack: () => { left = true; }, onConnected: session => { connected = true; session.close(); }});
+    try {
+      await view.ready; await window.exerciseJourneyConnectionRejected(JSON.stringify(message), cancel);
+      check(!connected && left === cancel, 'wrong message or Back never hands off a session');
+      check(JSON.stringify(await receiver.store.read('along-journey-sharing-v1', hex(group))) === permissionBefore, 'wrong message or Back preserves permission');
+    } finally { view.dispose(); container.remove(); }
   }
   const a = openJourneyStore({store: owner.store, group: hex(group), actor: hex(owner.subject)});
   const b = openJourneyStore({store: receiver.store, group: hex(group), actor: hex(receiver.subject)});
@@ -25,9 +39,18 @@ export async function checkJourneySession({wasm, owner, receiver, group}) {
   await b.save(value(20));
   let sessions;
   const connect = async () => {
-    sessions = await Promise.all(options.map(openJourneySession));
-    const offer = await sessions[0].offer(), answer = await sessions[1].accept(offer); await sessions[0].accept(answer);
-    await Promise.all(sessions.map(session => session.authenticated()));
+    sessions = [];
+    const containers = ['journey-start', 'journey-join'].map(id => {
+      const node = document.createElement('div'); node.id = id; document.querySelector('main').append(node); return node;
+    });
+    const views = options.map((context, index) => showJourneyConnection(containers[index], {...context,
+      role: index ? 'join' : 'start', focus: true, onConnected: session => { sessions[index] = session; }}));
+    try {
+      await Promise.all(views.map(view => view.ready));
+      await window.exerciseJourneyConnection();
+      check(sessions.length === 2 && sessions.every(Boolean), 'visible connection hands off both authenticated controllers');
+    } finally { views.forEach(view => view.dispose()); containers.forEach(node => node.remove()); }
+    await Promise.all(sessions.map(session => session.authenticated())); // handoff survives view disposal
   };
   const synchronize = async () => {
     for (const session of sessions) check((await session.synchronize()).status === 'peer-saved-snapshot', 'authenticated peer confirms committed snapshot');

@@ -5,7 +5,7 @@ import {readFile} from 'node:fs/promises';
 import {join} from 'node:path';
 const {chromium} = await import(process.env.PLAYWRIGHT_MODULE || '@playwright/test');
 const sources = new Map();
-for (const name of ['state.mjs', 'store.mjs', 'permission.mjs', 'permission-view.mjs', 'exchange.mjs', 'journey-session.mjs', 'permission-check.test.mjs', 'session-check.test.mjs']) sources.set('/' + name, await readFile(new URL('../journey-sync/' + name, import.meta.url)));
+for (const name of ['state.mjs', 'store.mjs', 'permission.mjs', 'permission-view.mjs', 'connection-view.mjs', 'exchange.mjs', 'journey-session.mjs', 'permission-check.test.mjs', 'session-check.test.mjs']) sources.set('/' + name, await readFile(new URL('../journey-sync/' + name, import.meta.url)));
 for (const name of ['storage.mjs', 'membership.mjs', 'certificate.mjs', 'peer-session.mjs', 'peer-link.mjs', 'challenge.mjs', 'session-statement.mjs', 'enrollment-session.mjs', 'invitation-journal.mjs', 'enrollment-link.mjs', 'enrollment-exchange.mjs', 'enrollment-protection.mjs', 'invitation.mjs']) sources.set('/' + name, await readFile(join(process.env.R2_BROWSER_DIR, name)));
 for (const name of ['../tg-pairing/initial-persona.mjs', '../tg-pairing/software-persona.mjs', '../tg-pairing/core-candidate-session.mjs', '../tg-pairing/software-traffic.mjs', '../tg-pairing/enrollment-payloads.mjs', '../tg-pairing/enrollment-profile.mjs', '../tg-pairing/installation-receipt.mjs', '../tg-pairing/stored-claim.mjs', '../tg-pairing/local-persona.mjs', 'local-owner.mjs', 'owner-policy.mjs', 'owner-access-view.mjs', 'owner-policy-send.mjs', 'policy-sync.mjs', 'owner-delivery.mjs', 'delivery-history.mjs', 'delivery-recovery.mjs', 'remote-owner.mjs', 'policy-update.mjs', 'policy-update-message.mjs', 'remote-owner-view.mjs', 'settings-view.mjs', 'key-replacement-view.mjs', 'credential-view.mjs', '../tg-pairing/comparison.css', '../tg-pairing/local-persona-session.mjs', 'policy.mjs', 'policy-store.mjs', 'local-vault.mjs', 'delivery-ack.mjs', 'delivery-message.mjs']) sources.set('/' + name.split('/').pop(), await readFile(new URL(name, import.meta.url)));
 for (const name of ['hive_wasm.js', 'hive_wasm_bg.wasm']) sources.set('/' + name, await readFile(join(process.env.R2_WASM_DIR, name)));
@@ -21,6 +21,41 @@ try {
   browser = await chromium.launch({headless: true, executablePath: process.env.CHROMIUM_PATH});
   const context = await browser.newContext({viewport: {width: 320, height: 640}});
   const page = await context.newPage(); await page.goto(`http://127.0.0.1:${server.address().port}`);
+  await page.exposeFunction('exerciseJourneyConnectionRejected', async (message, cancel) => {
+    const panel = page.locator('#journey-negative');
+    await panel.getByLabel('Journey device message', {exact: true}).fill(message);
+    await panel.getByRole('button', {name: 'Review journey device', exact: true}).click();
+    if (cancel) {
+      await panel.getByRole('button', {name: 'Allow journey sharing', exact: true}).waitFor();
+      await panel.getByRole('button', {name: 'Back', exact: true}).click();
+    } else await panel.getByRole('heading', {name: 'Journey connection unavailable', exact: true}).waitFor();
+  });
+  await page.exposeFunction('exerciseJourneyConnection', async () => {
+    const start = page.locator('#journey-start'), join = page.locator('#journey-join');
+    const move = async (from, to, label, action) => {
+      const text = await from.getByLabel('Device message to copy').inputValue();
+      assert.equal(text.includes('Saved destination'), false);
+      await to.getByLabel(label, {exact: true}).fill(text); await to.getByRole('button', {name: action, exact: true}).click();
+    };
+    const consent = async panel => {
+      const button = panel.getByRole('button', {name: /^(Allow journey sharing|Connect this device)$/});
+      await button.focus(); await page.keyboard.press('Enter');
+    };
+    await move(start, join, 'Journey device message', 'Review journey device');
+    await consent(join);
+    await join.getByRole('heading', {name: 'Send the journey connection request', exact: true}).waitFor();
+    await move(join, start, 'Journey connection request', 'Review journey device');
+    await consent(start);
+    await start.getByRole('heading', {name: 'Send the journey connection reply', exact: true}).waitFor();
+    await move(start, join, 'Journey connection reply', 'Connect journey devices');
+    for (const panel of [start, join]) {
+      await panel.getByRole('heading', {name: 'Journey devices connected', exact: true}).waitFor();
+      assert.deepEqual((await new AxeBuilder({page}).include('#' + await panel.getAttribute('id')).analyze()).violations.map(v => v.id), []);
+      await panel.getByRole('button', {name: 'Use journey connection', exact: true}).evaluate(button => button.click());
+      await panel.getByRole('button', {name: 'Use journey connection', exact: true}).click();
+    }
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+  });
   await page.exposeFunction('exerciseJourneyPermission', async action => {
     if (action === 'cancel') { await page.keyboard.press('Escape'); return; }
     await page.evaluate(() => document.documentElement.style.fontSize = '200%');
@@ -564,5 +599,5 @@ try {
     finally { ownerStore.close(); }
   }, historyBinding), 'recipient-confirmed-saved');
   console.log('PASS: distinct real browser identities mutually authenticate over direct WebRTC, owner grant gates signed delivery, receiver encrypts/consumes request, removed peer is refused. Actual software issuer and acknowledged recipient enrollment; harness trust/comparison/signaling, reviewed-descriptor fixture and synthetic AT keys; checked receiver acceptance; one browser host, not physical-device reachability or public release.');
-  console.log('PASS: independent journey permission and transaction-race guards; visible journey consent/removal, authenticated multi-chunk exchange, committed receipts, offline edits/deletion catch-up and live-session removal. Real enrolled identities; peer selection/signaling remain harness actions.');
+  console.log('PASS: independent journey permission and transaction-race guards; visible connection, consent/removal, wrong-device/cancel refusal, authenticated multi-chunk exchange, committed receipts, offline edits/deletion catch-up and live-session removal. Real enrolled identities; harness copies public signaling between component panels on one host, not app Settings or physical-device acceptance.');
 } finally { await browser?.close(); await new Promise(resolve => server.close(resolve)); }
