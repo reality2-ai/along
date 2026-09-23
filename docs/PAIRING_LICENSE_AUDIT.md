@@ -97,3 +97,19 @@ The script follows only non-development edges from `hive-wasm`, reports missing
 declarations/texts, and omits local filesystem paths from its output. It inventories
 files rather than synthesizing permission statements. Review the source revision,
 lockfile and built binary together when regenerating the evidence.
+
+
+## Draft metadata verification
+
+The full R2 `cargo xtask verify` run reported **verify green — check, layering,
+conform, docs** against HEAD `1b9229ad6d8483ba43cb66a53e14d336b0c6e091` with only
+the proposed `r2-ident/Cargo.toml` declaration draft (SHA-256
+`ba8204d6bfea7b75310d6288f1543d8cb6cc8c4d3ee78aa5dddcf3b738d38187`).
+The terminal process and unchanged snapshot were checked. The initial attempt
+ran out of `/tmp` space; the completed retry used a dedicated temporary directory
+on the larger filesystem. No hardware was flashed.
+
+This is technical verification of the draft metadata, not a determination of the
+applicable licence. The declaration remains uncommitted pending the owner's
+clarification of the contradictory source history. Runtime distribution is still
+pending that clarification and the complete notice bundle.

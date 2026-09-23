@@ -653,3 +653,23 @@ merely because the connection authenticated, discovery of owner removal before
 another fetch, and loss of provider access when the owner connection closes.
 Manual signaling and physical-device reachability remain separate work. This
 controller is still experimental and is not loaded by the public journey app.
+
+
+### Contextual stop updates
+
+`stop-live-view.mjs` adds an explicitly requested live-information region beside
+the enclosing screen’s scheduled board. It snapshots that stop’s verified rows,
+uses Along’s existing dated-trip, stop-sequence and alert-scope matchers, and
+renders only matching results. Predictions are labelled expected; cancellations
+and skipped stops have distinct wording. Old results expire without another
+request. Neither schedule data nor ordering is changed. The client receives only
+feed kinds and explicit consent, not stop IDs, addresses or journey objects.
+
+The dedicated browser check covers keyboard activation, synthetic-click refusal,
+wrong dated trips and unrelated alerts, untrusted text rendering, expiry,
+navigation during a pending request, unavailable fallback, narrow text zoom and
+axe. The real-peer credential test also mounts this view with `openATPolicySession`
+and clicks its button: real saved identities, authenticated owner policy replies
+and encrypted synthetic-key access precede mocked AT predictions. This joins the
+UI and credential checks, but does not claim a real provider response or public
+app integration. Journey and vehicle screens still need equivalent wiring.

@@ -8,7 +8,7 @@ const sources = new Map();
 for (const name of ['storage.mjs', 'membership.mjs', 'certificate.mjs', 'peer-session.mjs', 'peer-link.mjs', 'challenge.mjs', 'session-statement.mjs', 'enrollment-session.mjs', 'invitation-journal.mjs', 'enrollment-link.mjs', 'enrollment-exchange.mjs', 'enrollment-protection.mjs', 'invitation.mjs']) sources.set('/' + name, await readFile(join(process.env.R2_BROWSER_DIR, name)));
 for (const name of ['../tg-pairing/initial-persona.mjs', '../tg-pairing/software-persona.mjs', '../tg-pairing/core-candidate-session.mjs', '../tg-pairing/software-traffic.mjs', '../tg-pairing/enrollment-payloads.mjs', '../tg-pairing/enrollment-profile.mjs', '../tg-pairing/installation-receipt.mjs', '../tg-pairing/stored-claim.mjs', '../tg-pairing/local-persona.mjs', 'local-owner.mjs', 'owner-policy.mjs', 'owner-access-view.mjs', 'owner-policy-send.mjs', 'policy-sync.mjs', 'owner-delivery.mjs', 'delivery-history.mjs', 'delivery-recovery.mjs', 'remote-owner.mjs', 'policy-update.mjs', 'policy-update-message.mjs', 'remote-owner-view.mjs', 'settings-view.mjs', 'key-replacement-view.mjs', 'credential-view.mjs', '../tg-pairing/comparison.css', '../tg-pairing/local-persona-session.mjs', 'policy.mjs', 'policy-store.mjs', 'local-vault.mjs', 'delivery-ack.mjs', 'delivery-message.mjs']) sources.set('/' + name.split('/').pop(), await readFile(new URL(name, import.meta.url)));
 for (const name of ['hive_wasm.js', 'hive_wasm_bg.wasm']) sources.set('/' + name, await readFile(join(process.env.R2_WASM_DIR, name)));
-for (const name of ['policy-session.mjs', 'saved-client.mjs', 'live-client.mjs', '../../public/at-client.js', '../../public/live-client.js']) sources.set('/' + name.split('/').pop(), await readFile(new URL(name, import.meta.url)));
+for (const name of ['stop-live-view.mjs', '../../public/live-predictions.js', '../../public/live-context.js', '../../public/live-time.js', 'policy-session.mjs', 'saved-client.mjs', 'live-client.mjs', '../../public/at-client.js', '../../public/live-client.js']) sources.set('/' + name.split('/').pop(), await readFile(new URL(name, import.meta.url)));
 const server = createServer((req, res) => {
   const path = '/' + req.url.split('/').pop();
   res.setHeader('Content-Type', req.url.endsWith('.wasm') ? 'application/wasm' : req.url.endsWith('.css') ? 'text/css' : sources.has(path) ? 'text/javascript' : 'text/html');
@@ -37,6 +37,12 @@ try {
     await page.evaluate(() => document.querySelector('.pairing-primary').click());
     await page.getByRole('button', {name: action === 'remove' ? 'Remove AT access' : 'Allow AT access', exact: true}).waitFor();
     await page.keyboard.press('Tab'); await page.keyboard.press('Enter');
+  });
+  await page.exposeFunction('exerciseStopLive', async () => {
+    await page.getByRole('button', {name: 'Check live times and alerts', exact: true}).click();
+    await page.getByRole('status').filter({hasText: '1 matching departure update and 0 service updates'}).waitFor();
+    assert.match(await page.locator('#consent').textContent(), /Expected/);
+    assert.deepEqual((await new AxeBuilder({page}).analyze()).violations.map(v => v.id), []);
   });
   await page.evaluate(async () => {
     const wasm = await import('./hive_wasm.js'); await wasm.default();
@@ -373,7 +379,9 @@ try {
       const recipientController = await openATPolicySession({wasm, store: receiver.store, expectedGroup: group, role: 'recipient', now: () => 1001,
         fetcher: async (url, options) => {
           controllerFetches++; check(options.headers['Ocp-Apim-Subscription-Key'] === 'synthetic-peer-delivery', 'controller obtains locally encrypted key after actual owner check');
-          return {ok: true, json: async () => ({header: {timestamp: 1000}, entity: []})};
+          return {ok: true, json: async () => ({header: {timestamp: 1000}, entity: [
+            {trip_update: {trip: {trip_id: 'view-trip', route_id: 'view-route', start_date: '19700101'}, stop_time_update: [{stop_id: 'view-stop', stop_sequence: 1, departure: {delay: 60}}]}},
+          ]})};
         }});
       const reconnectOffer = await recipientController.offer();
       await recipientController.accept(await ownerController.accept(reconnectOffer));
@@ -381,6 +389,13 @@ try {
       check(!(await recipientController.read('alerts')).available && controllerFetches === 0, 'authenticated connection is not automatic provider consent');
       const controllerResults = await Promise.all(['alerts', 'predictions'].map(kind => recipientController.read(kind, {requested: true})));
       check(controllerResults.every(result => result.available) && controllerFetches === 2, 'controller routes authenticated nonce-bound policy replies for parallel feeds');
+      const stopView = (await import('./stop-live-view.mjs')).showStopLiveUpdates(document.querySelector('#consent'), {
+        client: recipientController, place: {id: 'view-stop'}, at: {date: '1970-01-01', seconds: 44200}, now: () => 1001,
+        rows: [{trip: 'view-trip', routeId: 'view-route', route: '70', headsign: 'Example', serviceDate: '19700101', stop: {id: 'view-stop'}, stopSequence: 1, departure: 44200}],
+      });
+      await window.exerciseStopLive();
+      check(controllerFetches === 4, 'visible stop check uses authenticated controller for both feeds');
+      stopView.dispose();
       const removalView = showOwnerDeviceAccess(document.querySelector('#consent'), ownerViewOptions);
       await removalView.ready; await window.exerciseOwnerAccess('remove');
       const removalReceipt = await removalView.completed;
@@ -389,18 +404,18 @@ try {
       removalView.dispose();
       // Do not push removal: the recipient must discover it before provider I/O.
       check(await receiverVault.getKey() === 'synthetic-peer-delivery', 'recipient has not yet learned removal');
-      check(!(await recipientController.read('vehicles', {requested: true})).available && controllerFetches === 2, 'controller learns owner removal before provider fetch');
+      check(!(await recipientController.read('vehicles', {requested: true})).available && controllerFetches === 4, 'controller learns owner removal before provider fetch');
       check(!(await guardedLive.read('vehicles', {requested: true})).available && gatedFetches === 3,
         'restored adapter preserves learned removal before another provider request');
       check(await denied(() => receiverVault.getKey()), 'catch-up saved owner removal');
       guardedLive.close();
-      check(!(await recipientController.read('vehicles', {requested: true})).available && controllerFetches === 2, 'controller refuses locally removed recipient before provider fetch');
+      check(!(await recipientController.read('vehicles', {requested: true})).available && controllerFetches === 4, 'controller refuses locally removed recipient before provider fetch');
       ownerController.close();
       await new Promise(resolve => {
         if (recipientController.signal.aborted) resolve();
         else recipientController.signal.addEventListener('abort', resolve, {once: true});
       });
-      check(!(await recipientController.read('alerts', {requested: true})).available && controllerFetches === 2, 'peer closure ends controller provider access');
+      check(!(await recipientController.read('alerts', {requested: true})).available && controllerFetches === 4, 'peer closure ends controller provider access');
       recipientController.close();
       holdPolicyChecks = true;
       const abortCheck = new AbortController();

@@ -46,7 +46,10 @@ removal before provider I/O; provider responses remain mocked. A saved-owner con
 accepted binding, establishes authenticated transport and dispatches policy replies
 internally. Browser peer checks cover parallel feeds, owner substitution refusal,
 remote removal before fetching and peer closure. The contextual public UI still
-needs this controller wired in.
+needs this controller wired in. An experimental contextual stop region now uses
+that controller with the existing trip/stop/alert matchers. Its browser integration
+check follows visible activation through actual authenticated policy checks to
+mocked provider data; scheduled times remain separate and old results expire.
 Manual transfer is currently cumbersome, and the one-minute invitation lifetime
 needs real usability assessment. Public deployment, simpler transfer, group epoch
 updates/removal, saved-journey sync and physical-device validation remain work.
