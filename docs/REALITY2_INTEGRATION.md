@@ -66,3 +66,19 @@ adapter truncates these to whole seconds; the future direct client must explicit
 normalise provider timestamps before handing records to the strict live matchers.
 This probe verifies network access and feed freshness, not correct end-to-end
 journey matching, TG storage, or installed Android behaviour.
+
+## Direct feed adapter (source only)
+
+`public/at-client.js` now supplies the direct AT transport and provider-response
+conversion. It requests only AT's three fixed HTTPS feed URLs, sends the key in
+the subscription header, omits cookies/referrers, refuses redirects, and reuses
+the explicit-request, cancellation, timeout and freshness behaviour of the live
+client. Fractional feed header timestamps are normalised to integer seconds;
+alert scope restrictions are preserved, including malformed null restrictions.
+
+Credential retrieval is an injected application dependency, not a claimed
+Reality2 API or a storage implementation. It is not connected to the public UI.
+The eventual TG integration must cancel clients when locking, revoking or rotating
+credentials so cached results and pending work are cleared. Tests cover cancelled
+and stalled credential retrieval, endpoint confinement, offline silence and feed
+conversion. An integrated TG/browser end-to-end check remains outstanding.
