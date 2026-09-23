@@ -108,3 +108,11 @@ button,.secondary-button,.tab,.setting,select,input[type=date],input[type=time]{
 .context-map{height:300px;width:100%;border:1px solid #879b89;border-radius:12px;background:#e9efe8}.guided-app .route-variant{display:block;width:100%;border-bottom:1px solid var(--line);padding:14px 0}.route-stop-list{padding-left:24px}.route-stop-list li{padding:6px 0;border-bottom:1px solid var(--line);font-size:15px}.stop-schedule{font-variant-numeric:tabular-nums}.guided-app .preference-field input{display:block;padding:12px;width:100%;border:1px solid #82917b;border-radius:8px;background:white}.leaflet-container a{color:#214e40}.guided-app #information .leaflet-control-attribution{font-size:11px}.guided-app #information .leaflet-control-zoom a{width:44px;height:44px;line-height:44px}
 
 .guided-app #detail-back{position:sticky;top:-25px;z-index:1100;background:#fff;width:100%;text-align:left;box-shadow:0 8px 8px #fff;margin-bottom:8px}
+
+.install-guide main{max-width:760px;padding:32px 24px;line-height:1.75}.install-guide h1{margin-top:24px}.install-guide h2{margin:32px 0 12px}.install-guide p,.install-guide ol{margin:16px 0;font-size:16px}.install-guide li{margin:10px 0}.install-guide table{border-collapse:collapse;width:100%;font-size:14px}.install-guide td,.install-guide th{padding:10px;border:1px solid #bcc7b5;text-align:left;vertical-align:top}.install-guide a{overflow-wrap:anywhere}.install-guide code{overflow-wrap:anywhere}
+
+.guide-table{overflow-x:auto}.install-guide main>p:first-of-type{font-size:19px}
+
+.install-platform{border-top:1px solid var(--line);padding:12px 0}.install-platform summary{cursor:pointer;font-size:17px;font-weight:600;min-height:44px;padding:10px 0}
+
+.guide-table:focus-visible{outline:3px solid #214e40;outline-offset:3px}

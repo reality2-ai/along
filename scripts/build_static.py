@@ -11,6 +11,8 @@ OUT=ROOT/'dist'
 
 
 def build():
+    from render_install_guide import render
+    render()
     for name in ['network','streets','addresses','routes']:
         if not (ROOT/'data'/f'{name}.json.gz').exists():
             raise SystemExit(f'Missing {name} data. Complete the data imports first.')
@@ -22,6 +24,7 @@ def build():
         shutil.copy2(ROOT/'data'/f'{name}.json.gz',OUT/'data'/f'{name}.json.gz')
     (OUT/'.nojekyll').touch()
     shutil.copy2(ROOT/'deploy'/'README.md',OUT/'README.md')
+    shutil.copy2(ROOT/'docs'/'INSTALL.md',OUT/'INSTALL.md')
     for name in ['LICENSE','NOTICE.md']:
         if (ROOT/name).exists():shutil.copy2(ROOT/name,OUT/name)
     # Relative paths support both a custom domain and GitHub Pages /repository/ URLs.

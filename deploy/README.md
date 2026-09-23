@@ -33,3 +33,8 @@ Without that backend, Along uses labelled schedules. It does not show live vehic
 Moving to another hostname does not transfer saved journeys: storage is local to
 that browser and origin. Current coverage, accessibility and schedule limitations
 are explained in the app. Keep LICENSE, NOTICE.md and vendor licences when sharing.
+
+For Android, iPhone/iPad, Windows, macOS, Linux and Chromebook installation steps,
+read INSTALL.md or open install.html on the hosted site. Once prepared, core Along
+operations do not require the portal. Journey searches, saved routes and preferences
+stay on the device; the guide explains optional online requests and storage limits.

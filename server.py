@@ -104,6 +104,7 @@ class Handler(BaseHTTPRequestHandler):
                 for asset in ['leaflet.js','leaflet.css','images/layers.png','images/layers-2x.png','images/marker-icon.png','images/marker-icon-2x.png','images/marker-shadow.png']:
                     allowed['/vendor/leaflet/'+asset]='vendor/leaflet/'+asset
                 allowed['/update.html']='update.html'
+                allowed['/install.html']='install.html'
                 allowed['/updates.js']='updates.js'
                 for icon in ['icon-192.png','icon-512.png','maskable-512.png','apple-touch-icon.png','favicon-32.png']:
                     allowed['/icons/'+icon] = 'icons/'+icon

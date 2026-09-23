@@ -92,3 +92,13 @@ vendored locally. Route paths and stop markers need no external map service;
 street background tiles are a separate, explicit online action. Stop-name search
 is not a geometric street-intersection test and says so in the interface. Maps
 have parallel stop lists with scheduled times and keyboard-operable detail links.
+
+## Installation documentation
+
+`docs/INSTALL.md` is the installation/privacy guide's source. The build runs
+`scripts/render_install_guide.py` to produce `public/install.html`; this small
+renderer supports the Markdown subset used by the guide. Browser sections are
+native disclosures. The service worker caches the guide, and the archive also
+contains INSTALL.md. Update the source and rebuild rather than editing rendered
+HTML alone. The guide explicitly requires a readiness check in the installed
+browser context, because its storage can differ from the initial browser tab.

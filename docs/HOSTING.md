@@ -103,3 +103,23 @@ prefetch or package street tiles. Leaflet is vendored locally with its licence;
 it does not require a CDN at runtime. Review the
 [OSM tile policy](https://operations.osmfoundation.org/policies/tiles/) for hosting
 scale and provider requirements before a large public rollout.
+
+## Reality2 portal
+
+The organisation site already uses GitHub Pages with the custom domain
+`reality2.ai`. GitHub project sites inherit that domain, so enabling Pages for
+`reality2-ai/along` without its own CNAME would serve `https://reality2.ai/along/`.
+This does not require replacing the organisation homepage or changing DNS.
+The deployment bundle is prepared on the `site-preview` branch; Along Pages is
+not yet enabled. After publication approval, choose that branch and `/` as the
+Pages source in the Along repository, without adding another CNAME.
+
+The portal's role is distribution and updates. Once prepared in the installed
+app, address search, scheduled journeys and local personalisation do not require
+the portal. Installation help is cached too. Journey history is not uploaded.
+See [browser/platform installation and privacy details](INSTALL.md).
+
+Service-worker scope stays under `/along/`. Browser storage permissions are
+origin-based, so host only mutually trusted applications on the same domain;
+subdirectories are not separate security origins. Saved data from a private host
+will not automatically move to the public origin.

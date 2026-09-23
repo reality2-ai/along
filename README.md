@@ -3,7 +3,9 @@
 An independent, installable webapp for finding a useful next ride and planning
 street-address-to-street-address journeys across walking, buses, trains and ferries.
 After the first download, address search and scheduled routing run in your browser,
-including offline. No account is needed.
+including offline. **Once prepared, Along does not need the web portal to operate.**
+**Your searches, saved journeys and preferences stay on your device.** No account
+or uploaded journey history is needed.
 
 Along uses Auckland Transport's public data and its own bounded routing engine.
 It is **not an official AT app** and does not reproduce AT Mobile's journey planner.
@@ -24,6 +26,11 @@ The design rule is: **make the user's likely next action the clearest option,
 while keeping alternatives accessible**. See [interaction principles](docs/INTERACTION_PRINCIPLES.md).
 
 ## Install and try
+
+Follow the [browser-by-browser installation and offline guide](docs/INSTALL.md)
+for Chrome, Edge, Brave and Safari, covering Android,
+iPhone/iPad, Windows, macOS, Linux and Chromebook. Install the icon, reopen it
+online to finish preparation, then test it without a connection.
 
 Open a hosted copy over HTTPS, wait for **Along · offline ready**, then use the
 browser's **Install app** or **Add to Home Screen** action. On desktop Chromium,

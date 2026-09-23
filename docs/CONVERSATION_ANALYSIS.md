@@ -308,3 +308,14 @@ spatial representation, while “showing the current context” constrains its s
 Version 17 links route → direction/branch → stops and map → stop departures,
 preserving Back, focus and journey state. Test whether this supports route
 understanding; do not equate a plotted shape with confirmed service or access.
+
+## Refinement: make independence and privacy understandable
+
+The user's request to stress independence from the portal, followed by “your data
+stays on your device,” makes the architecture a user-facing requirement. Installing
+an icon is not evidence of downloaded data, so the guide adds an online preparation
+check inside the installed app and an offline reopening test. Browser/platform
+instructions explain concrete actions while separating documented paths from
+physical validation. Privacy wording names which data stays local and which
+optional actions still contact services; it does not promise that online use makes
+no network requests. The portal is a distribution channel, not a routing engine.

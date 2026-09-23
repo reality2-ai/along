@@ -1,6 +1,6 @@
 # Release evidence and remaining gates
 
-Current candidate: **version 17**, reviewed 23 September 2026. The private site and
+Current candidate: **version 18**, reviewed 23 September 2026. The private site and
 static ZIP are prepared; no public AWS or GitHub Pages deployment has been made.
 This register separates automated evidence, user observations and remaining checks.
 
@@ -79,3 +79,19 @@ No fares, live vehicle display, delay-aware itinerary replanning or cross-device
 sync is implemented. The optional live adapter is fixture-tested without an AT
 key. iOS and disabled-commuter participant testing are not recorded. See the
 README for behaviour and the device checklist for the remaining observations.
+
+## Version 18: installation, offline independence and privacy
+
+The app Settings and README now explicitly distinguish local operation from the
+portal used to obtain updates. The browser/platform guide covers Chrome, Edge,
+Brave and Safari on applicable desktop/mobile platforms, and labels unverified
+menu variations and device checks. It explains offline readiness, local storage,
+optional outbound requests and recovery after storage loss. The same guide is
+rendered as install.html, cached with the app and included as INSTALL.md in the ZIP.
+
+GitHub Pages can inherit the organisation domain at `reality2.ai/along/`; the
+static deployment branch `site-preview` is prepared. Public app hosting is not enabled.
+
+The version 18 static run also opened the installation guide while offline,
+expanded browser instructions, and checked 320-pixel reflow and axe rules.
+[Measurements](evidence/install-guide-v18-metrics.json) accompany that run.

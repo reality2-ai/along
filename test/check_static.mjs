@@ -120,6 +120,13 @@ try{
  await choose('origin','277 Broadway Newmarket');await page.locator('#origin-next').click();
  await page.locator('#journey-preferences > summary').click();await page.locator('#date').fill('2026-09-23');await page.locator('#time').fill('09:00');
  await page.locator('#find').click();await expect(page.locator('.journey-card').first()).toBeVisible({timeout:30000});
+ // The help itself remains available when the host is unreachable.
+ await page.goto(origin+prefix+'install.html');await expect(page.locator('h1')).toContainText('offline');
+ await expect(page.locator('main')).toContainText('Your journey searches');
+ for(const name of ['Chrome — Windows','Edge — Windows','Brave — Windows','Safari — macOS','Safari — iPhone'])await expect(page.locator('summary').filter({hasText:name})).toBeVisible();
+ await page.locator('summary').filter({hasText:'Brave — Windows'}).click();
+ await page.setViewportSize({width:320,height:800});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+ expect((await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa']).analyze()).violations).toEqual([]);
  expect(errors).toEqual([]);
  await writeFile('test-results/static-metrics.json',JSON.stringify(measurements,null,2)+'\n');
  console.log(JSON.stringify(measurements,null,2));
