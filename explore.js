@@ -32,12 +32,12 @@ export function routeDetails(planner,{routeId,tripId,date,time='00:00'},geometry
 }
 export function stopDetails(planner,{id,now}){
   const ids=new Set(planner.group(id)),seen=new Set(),departures=[];
-  for(const [departure,,ti,a,,pickup,,offset] of planner.connections(now.date,now.seconds,now.seconds+7200,['bus','train','ferry'])){
+  for(const [departure,,ti,a,,pickup,,offset,stopSequence] of planner.connections(now.date,now.seconds,now.seconds+7200,['bus','train','ferry'])){
     if(!ids.has(a)||pickup!==0)continue;
     const trip=planner.data.trips[ti],route=planner.data.routes[trip[1]],key=`${ti}:${offset}:${a}:${departure}`;
     if(seen.has(key))continue;seen.add(key);
     const serviceDate=new Date(Date.parse(now.date+'T12:00:00Z')+offset*86400000).toISOString().slice(0,10).replaceAll('-','');
-    departures.push({serviceDate,trip:trip[0],routeId:route[0],routeType:route[3],route:route[1]||route[2],headsign:trip[3],departure,stop:planner.stops[a],mode:planner.mode(trip[1])});
+    departures.push({serviceDate,stopSequence,trip:trip[0],routeId:route[0],routeType:route[3],agencyId:planner.data.routeAgencies?.[trip[1]],directionId:planner.data.tripDirections?.[ti],route:route[1]||route[2],headsign:trip[3],departure,stop:planner.stops[a],mode:planner.mode(trip[1])});
   }
   const result=departures.sort((a,b)=>a.departure-b.departure).slice(0,30);
   const metadata=tripStopMetadata(planner.data,planner.stops,new Set(result.map(d=>d.trip)));

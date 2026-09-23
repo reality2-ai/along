@@ -17,7 +17,11 @@ export function metres(lat,lon,stop) {
 
 export class Planner {
   constructor(data) {
+    if(data.connectionSequences && data.connectionSequences.length!==data.connections.length/7)throw new Error('Timetable stop sequences are incomplete. Update the timetable.');
     if(data.version !== 1) throw new Error('Please update Along to read this timetable.');
+    for(const [field,count] of [['routeAgencies',data.routes.length],['tripDirections',data.trips.length]]){
+      if(data[field]!==undefined&&(!Array.isArray(data[field])||data[field].length!==count))throw new Error('Timetable service identities are incomplete. Update the timetable.');
+    }
     this.data=data;
     this.stops=data.stops.map(([id,code,name,lat,lon,parent,kind,wheelchair=0])=>({id,code,name,lat,lon,parent,kind,wheelchair}));
     this.stopIndex=new Map(this.stops.map((s,i)=>[s.id,i]));
@@ -90,7 +94,7 @@ export class Planner {
   range(start,end){const c=this.data.connections,n=c.length/7;let lo=0,hi=n;while(lo<hi){const mid=(lo+hi)>>>1;if(c[mid*7+3]<start)lo=mid+1;else hi=mid;}const begin=lo*7;lo=0;hi=n;while(lo<hi){const mid=(lo+hi)>>>1;if(c[mid*7+3]<=end)lo=mid+1;else hi=mid;}return [begin,lo*7];}
   connections(day,start,end,modes){const c=this.data.connections,out=[];
     for(const offset of [-1,0,1]){const active=this.active(shiftDate(day,offset)),shift=offset*86400,[lo,hi]=this.range(start-shift,end-shift);
-      for(let i=lo;i<hi;i+=7){const trip=this.data.trips[c[i]];if(active.has(trip[2])&&modes.includes(this.mode(trip[1])))out.push([c[i+3]+shift,c[i+4]+shift,c[i],c[i+1],c[i+2],c[i+5],c[i+6],offset]);}
+      for(let i=lo;i<hi;i+=7){const trip=this.data.trips[c[i]];if(active.has(trip[2])&&modes.includes(this.mode(trip[1])))out.push([c[i+3]+shift,c[i+4]+shift,c[i],c[i+1],c[i+2],c[i+5],c[i+6],offset,this.data.connectionSequences?.[i/7]]);}
     }return out.sort((a,b)=>a[0]-b[0]||a[1]-b[1]);
   }
   plan({from,to,date,time,modes,maxWalk=900,profile={},preferredRoutes=null,routeSequence=null}){
@@ -124,14 +128,14 @@ export class Planner {
     if((!starts.size||!ends.size)&&!results.length)throw new Error(this.profile.confirmedAccess?'AT’s timetable does not confirm accessibility for the required stops. We cannot verify a wheelchair-accessible journey.':'No connected stops within your walking preference. Try a longer walk or choose a nearby stop.');
     for(let boardings=1;boardings<=(routeSequence?.length||4);boardings++){
       const current=new Map(),onboard=new Map();
-      for(const [dep,arr,ti,a,b,pickup,dropoff,offset] of connections){
+      for(const [dep,arr,ti,a,b,pickup,dropoff,offset,stopSequence] of connections){
         if(this.profile.confirmedAccess&&this.data.trips[ti][4]!==1)continue;
         if(routeSequence){const ri=this.data.trips[ti][1],route=this.data.routes[ri],wanted=routeSequence[boardings-1];if(this.mode(ri)!==wanted.mode||(route[1]||route[2])!==wanted.route)continue;}
         if(arr>horizon)continue;const key=`${ti}:${offset}`,base=previous.get(a),rule=this.rules.get(`${a}:${a}`)||{type:0,seconds:120};
         let rider=onboard.get(key),buffer=boardings===1?(origin.placeType==='address'?60:0):Math.max(120,rule.seconds);
         if(!rider&&pickup===0&&base&&base.arrival+buffer<=dep&&(boardings===1||rule.type!==3)&&(!this.profile.confirmedAccess||this.accessibleStop(a))){
           const [trip,ri,,headsign]=this.data.trips[ti],route=this.data.routes[ri];
-          rider={path:base.path,walking:base.walking,leg:{mode:this.mode(ri),route:route[1]||route[2],routeId:route[0],routeType:route[3],serviceDate:compactDate(shiftDate(date,offset)),serviceOffset:offset,headsign,trip,origin:a,destination:b,departure:dep,arrival:arr,stops:0}};
+          rider={path:base.path,walking:base.walking,leg:{mode:this.mode(ri),route:route[1]||route[2],routeId:route[0],routeType:route[3],agencyId:this.data.routeAgencies?.[ri],directionId:this.data.tripDirections?.[ti],serviceDate:compactDate(shiftDate(date,offset)),serviceOffset:offset,stopSequence,headsign,trip,origin:a,destination:b,departure:dep,arrival:arr,stops:0}};
         }
         if(!rider)continue;
         const leg={...rider.leg,destination:b,arrival:arr,stops:rider.leg.stops+1};onboard.set(key,{...rider,leg});
@@ -181,8 +185,9 @@ export class Planner {
     if(ends)for(const [,arr,ti,,b,,dropoff,offset]of connections)if(ends.has(b)&&dropoff===0){const key=`${ti}:${offset}`;onward.set(key,Math.max(onward.get(key)||0,arr));}
     const fresh=feed.available===true&&typeof feed.updated==='number'&&Number.isSafeInteger(feed.updated)&&Math.abs(Date.now()/1000-feed.updated)<=180;
     const metadata=fresh?tripStopMetadata(this.data,this.stops,new Set(connections.filter(c=>ids.has(c[3])).map(c=>this.data.trips[c[2]][0]))):new Map();
+    let liveExpires=Infinity;
     const found=new Map(stops.map(s=>[s.i,[]])),seen=new Set();
-    for(const [dep,,ti,a,,pickup,,offset]of connections){
+    for(const [dep,,ti,a,,pickup,,offset,stopSequence]of connections){
       if(this.profile.confirmedAccess&&this.data.trips[ti][4]!==1)continue;
       if(!ids.has(a)||pickup!==0||(ends&&!(onward.get(`${ti}:${offset}`)>dep)))continue;
       const [trip,ri,,headsign]=this.data.trips[ti],dedup=`${trip}:${offset}:${a}:${dep}`;
@@ -190,7 +195,8 @@ export class Planner {
       let expected=dep,live=false;
       if(fresh){
         const run=metadata.get(trip);
-        const prediction=departurePrediction(feed,{trip,routeId:this.data.routes[ri][0],serviceDate:compactDate(shiftDate(now.date,offset)),stop:this.stops[a],stopVisits:run?.visits.get(this.stops[a].id)||0,startTime:run?.startTime});
+        const prediction=departurePrediction(feed,{trip,stopSequence,routeId:this.data.routes[ri][0],serviceDate:compactDate(shiftDate(now.date,offset)),stop:this.stops[a],stopVisits:run?.visits.get(this.stops[a].id)||0,startTime:run?.startTime});
+        if(prediction.status!=='scheduled')liveExpires=Math.min(liveExpires,Number(prediction.updated)+180);
         if(['cancelled','skipped'].includes(prediction.status))continue;
         if(prediction.status==='predicted'){
           if(prediction.epoch){const at=aucklandNow(new Date(prediction.epoch*1000));expected=(Date.parse(at.date)-Date.parse(now.date))/86400000*86400+at.seconds;}
@@ -204,6 +210,6 @@ export class Planner {
     const result=stops.map(s=>({...s,distance:Math.round(s.distance),departures:found.get(s.i).sort((a,b)=>a.departure-b.departure).slice(0,5)})).filter(s=>s.departures.length);
     for(const s of result)for(const d of s.departures)d.tight=d.minutes<s.walk+2;
     result.sort((a,b)=>Math.min(...a.departures.filter(d=>!d.tight).map(d=>d.minutes),999)-Math.min(...b.departures.filter(d=>!d.tight).map(d=>d.minutes),999));
-    return {stops:result,live:fresh,directOnly:!!ends,walkingSource:this.streets?'mapped':'estimated',message:fresh?'Live predictions where available.':'Scheduled departures · live updates are not connected.'};
+    return {stops:result,liveExpires:Number.isFinite(liveExpires)?liveExpires:null,live:fresh,directOnly:!!ends,walkingSource:this.streets?'mapped':'estimated',message:fresh?'Live predictions where available.':'Scheduled departures · live updates are not connected.'};
   }
 }

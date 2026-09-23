@@ -13,7 +13,7 @@ const $=id=>document.getElementById(id);
 const language=createLocalizer({storage:null});
 const liveClient=createLiveClient({baseURL:liveBaseURL,pageURL:import.meta.url});
 const journeyAlertClient=createLiveClient({baseURL:liveBaseURL,pageURL:import.meta.url});
-let journeyAlertSequence=0,journeyAlertTimer=null,journeyPredictionTimer=null;
+let journeyAlertSequence=0,journeyAlertTimer=null,journeyPredictionTimer=null,nearbyLiveTimer=null;
 $('nearby-live').hidden=!liveClient.configured;
 $('nearby-live-help').hidden=!liveClient.configured;
 const textBindings=new Map();
@@ -117,7 +117,7 @@ let navDepth=0;
 function showScreen(screen,{focus=true,historyEntry=true}={}){
   if(state.screen==='follow' && screen!=='follow')resetJourneyAlerts();
   if(screen!=='options'&&state.screen==='options'){state.searchSequence++;$('find').disabled=false;}
-  if(state.screen==='nearby' && screen!=='nearby'){state.nearbySequence++;liveClient.cancel();$('nearby-live').disabled=false;$('refresh').disabled=false;}
+  if(state.screen==='nearby' && screen!=='nearby'){clearTimeout(nearbyLiveTimer);state.nearbySequence++;liveClient.cancel();$('nearby-live').disabled=false;$('refresh').disabled=false;}
   state.screen=screen;
   for(const section of document.querySelectorAll('[data-screen]'))section.hidden=section.dataset.screen!==screen;
   $('journey-form').hidden=!['destination','origin','review'].includes(screen);
@@ -234,11 +234,11 @@ function mountStopLive(id,rows,at,place){
     const [feed,alerts]=await Promise.all([client.read('predictions',{requested:true}),client.read('alerts',{requested:true})]);
     if(request!==sequence || !button.isConnected)return;
     button.disabled=false;
-    let matched=0;
+    let matched=0,expires=Number(feed.updated)+180;
     document.querySelectorAll('[data-stop-time]').forEach((cell,i)=>{
       const departure=rows[i],prediction=departurePrediction(feed,departure);
       if(prediction.status==='scheduled')return;
-      matched++;
+      matched++;expires=Math.min(expires,Number(prediction.updated)+180);
       let label=prediction.status==='cancelled'?'Cancelled':prediction.status==='skipped'?'Not stopping here':'';
       if(prediction.status==='predicted'){
         let seconds=departure.departure+prediction.delay,date=at.date;
@@ -263,7 +263,7 @@ function mountStopLive(id,rows,at,place){
       }else alertBox.textContent='No matching alerts returned for this stop and time.';
       alertTimer=setTimeout(()=>{if(button.isConnected)alertBox.textContent='Service updates have expired. Check again for current information.';},Math.max(0,(alerts.updated+180-Date.now()/1000)*1000));
     }else alertBox.textContent='Service alerts unavailable. Check AT for disruptions.';
-    if(feed.available)timer=setTimeout(()=>{if(button.isConnected){reset();$('stop-live-status').textContent='Live information has expired. Showing scheduled departures.';}},Math.max(0,(feed.updated+180-Date.now()/1000)*1000));
+    if(feed.available)timer=setTimeout(()=>{if(button.isConnected){reset();$('stop-live-status').textContent='Live information has expired. Showing scheduled departures.';}},Math.max(0,(expires-Date.now()/1000)*1000));
   };
 }
 
@@ -430,7 +430,7 @@ $('journey-alert-check').onclick=async()=>{
   if(sequence!==journeyAlertSequence||state.screen!=='follow')return;
   $('journey-alert-check').disabled=false;
   const predictionBox=$('journey-prediction-results');
-  let matched=0;
+  let matched=0,predictionExpires=Number(predictions.updated)+180;
   for(const leg of legs.filter(l=>l.trip)){
     const prediction=departurePrediction(predictions,{...leg,stop:leg.from});
     if(prediction.status==='scheduled')continue;
@@ -442,7 +442,7 @@ $('journey-alert-check').onclick=async()=>{
       const expected=aucklandNow(new Date(epoch*1000));
       label='Expected '+clock(expected.seconds)+(expected.date!==date?' · '+expected.date:'');
     }
-    matched++;
+    matched++;predictionExpires=Math.min(predictionExpires,Number(prediction.updated)+180);
     const item=document.createElement('p');
     item.textContent=leg.route+' from '+leg.from.name+': '+label+'. Scheduled '+clock(leg.departure)+'.';
     predictionBox.append(item);
@@ -450,7 +450,7 @@ $('journey-alert-check').onclick=async()=>{
   if(matched){
     const stamp=document.createElement('p');stamp.className='field-help';
     stamp.textContent='Live feed updated '+clock(aucklandNow(new Date(predictions.updated*1000)).seconds)+'. Your scheduled itinerary has not changed.';predictionBox.append(stamp);
-    journeyPredictionTimer=setTimeout(()=>{if(sequence===journeyAlertSequence)predictionBox.textContent='Live predictions have expired. Your scheduled itinerary is still here.';},Math.max(0,(predictions.updated+180-Date.now()/1000)*1000));
+    journeyPredictionTimer=setTimeout(()=>{if(sequence===journeyAlertSequence)predictionBox.textContent='Live predictions have expired. Your scheduled itinerary is still here.';},Math.max(0,(predictionExpires-Date.now()/1000)*1000));
   }else predictionBox.textContent=predictions.available?'No live departure match for the remaining steps. Times remain scheduled.':'Live departure predictions unavailable. Times remain scheduled.';
   if(!feed.available){$('journey-alert-status').textContent='Service updates unavailable. Your scheduled journey is still here.';return;}
   const alerts=contextualAlerts(feed,contexts);
@@ -489,6 +489,7 @@ $('prefer-services').onclick=()=>{
 $('sort').onchange=renderJourneys;
 $('use-any-route').onclick=()=>{state.savedPreference=null;searchJourney();};
 async function refreshNearby({liveRequested=false}={}){
+  clearTimeout(nearbyLiveTimer);
   if(!state.location){$('departures').innerHTML=`<div class="empty-state"><h3>${message('nearby.start')}</h3><p>${message('nearby.startHelp')}</p></div>`;return;}
   const sequence=++state.nearbySequence,location={...state.location};
   if($('direct-only').checked&&!state.to){$('departures').innerHTML=`<div class="error-state">${message('nearby.chooseDestination')}</div>`;return;}
@@ -501,7 +502,14 @@ async function refreshNearby({liveRequested=false}={}){
     if(!liveRequested)return;
     const fresh=await liveClient.read('predictions',{requested:true});if(sequence!==state.nearbySequence || state.screen!=='nearby')return;
     $('nearby-live-status').textContent=fresh.available?'Current feed checked. Only matched services show live predictions.':'Current predictions unavailable. Scheduled departures are still available.';
-    if(fresh.available){const updated=await ask('nearby',{...args,feed:fresh,now:aucklandNow()});if(sequence===state.nearbySequence)renderDepartures(updated);}
+    if(fresh.available){const updated=await ask('nearby',{...args,feed:fresh,now:aucklandNow()});if(sequence===state.nearbySequence){
+      renderDepartures(updated);
+      if(Number.isFinite(updated.liveExpires))nearbyLiveTimer=setTimeout(async()=>{
+        if(sequence!==state.nearbySequence||state.screen!=='nearby')return;
+        await refreshNearby();
+        if(state.nearbySequence===sequence+1&&state.screen==='nearby')$('nearby-live-status').textContent='Live predictions have expired. Showing scheduled departures.';
+      },Math.max(0,(updated.liveExpires-Date.now()/1000)*1000));
+    }}
   }catch(error){if(sequence===state.nearbySequence)$('departures').innerHTML=`<div class="error-state">${errorPhraseKey(error)?message(errorPhraseKey(error)):`<span lang="en-NZ">${escape(error.message)}</span>`}</div>`;}
   finally{if(sequence===state.nearbySequence){$('refresh').disabled=false;$('nearby-live').disabled=false;}}
 }

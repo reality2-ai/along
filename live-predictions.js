@@ -12,27 +12,40 @@ export function departurePrediction(feed,departure,{now=Date.now()/1000}={}){
   if([3,'CANCELED'].includes(trip.schedule_relationship))return {status:'cancelled',updated:feed.updated};
   if(trip.schedule_relationship!=null && ![0,'SCHEDULED'].includes(trip.schedule_relationship))return scheduled('unsupported-trip');
   if(!Array.isArray(update.stop_time_update))return scheduled('no-stop');
-  // The compact timetable currently has no source stop_sequence. A loop visit
-  // must not be guessed from stop_id alone, even if only one update is present.
-  if(departure.stopVisits!==1)return scheduled('ambiguous-stop');
-  const events=update.stop_time_update.filter(e=>e?.stop_id===departure.stop.id);
+  // New bundles retain the original GTFS sequence. Older bundles can match
+  // by stop ID only when the full trip visits that stop exactly once.
+  const knownSequence=integer(departure.stopSequence)&&Number(departure.stopSequence)>=0;
+  if(!knownSequence&&departure.stopVisits!==1)return scheduled('ambiguous-stop');
+  const events=update.stop_time_update.filter(e=>{
+    if(!e)return false;
+    if(knownSequence&&e.stop_sequence!=null)return integer(e.stop_sequence)&&Number(e.stop_sequence)===Number(departure.stopSequence);
+    return departure.stopVisits===1&&e.stop_id===departure.stop.id;
+  });
   if(events.length!==1)return scheduled('unmatched-stop');
   const event=events[0];
+  if(event.stop_id!=null&&event.stop_id!==departure.stop.id)return scheduled('unmatched-stop');
   if(event.stop_time_properties?.assigned_stop_id && event.stop_time_properties.assigned_stop_id!==departure.stop.id)return scheduled('changed-stop');
   if([1,'SKIPPED'].includes(event.schedule_relationship))return {status:'skipped',updated:feed.updated};
   if(event.schedule_relationship!=null && ![0,'SCHEDULED'].includes(event.schedule_relationship))return scheduled('no-prediction');
   const value=event.departure;
   if(!value)return scheduled('no-departure');
+  // A new feed header cannot refresh an old progress measurement. Status-only
+  // cancellations/skips above remain assertions from the current feed.
+  let updated=Number(feed.updated);
+  if(Object.hasOwn(update,'timestamp')){
+    if(!integer(update.timestamp)||Number(update.timestamp)<=0||Math.abs(now-Number(update.timestamp))>180)return scheduled('stale-trip');
+    updated=Math.min(updated,Number(update.timestamp));
+  }
   if(Object.hasOwn(value,'time')){
     if(!integer(value.time)||Number(value.time)<=0||Number(value.time)>8640000000000)return scheduled('invalid-time');
-    return {status:'predicted',epoch:Number(value.time),updated:feed.updated};
+    return {status:'predicted',epoch:Number(value.time),updated};
   }
-  if(integer(value.delay)&&Number(value.delay)>=-2147483648&&Number(value.delay)<=2147483647)return {status:'predicted',delay:Number(value.delay),updated:feed.updated};
+  if(integer(value.delay)&&Number(value.delay)>=-2147483648&&Number(value.delay)<=2147483647)return {status:'predicted',delay:Number(value.delay),updated};
   return scheduled('invalid-delay');
 }
 
-// Source stop_sequence is not in the compact timetable. Count full-trip visits
-// (including the final arrival), never only the current two-hour search window.
+// Count full-trip visits for legacy bundles without source stop sequences,
+// including the final arrival, never only the current two-hour search window.
 export function tripStopMetadata(data,stops,tripIds){
   const wanted=new Map([...tripIds].map(id=>[id,{visits:new Map(),first:Infinity,last:-Infinity,end:null}]));
   if(!wanted.size)return wanted;
