@@ -20,6 +20,7 @@ sequence of findings, so earlier source-only/version statements are historical.
 | Direct AT access | Authenticated browser reads and strict timetable matching | Connect each user's authorized credential to contextual UI; verify actual installed devices |
 | Local installation | Core ceremony, candidate-generated key and atomic installation; real initial group-of-one, first-use storage, reopen and cancellation checks | Local setup integration, reset, issuer custody across restarts and application-secret policy |
 | Membership | Core certificates, local epoch policy, signed revocations; restored signing refuses revoked identity | Freshness after partition, epoch advancement and removal propagation |
+| AT credential custody | Experimental own-member owner pin, signed device grants, encrypted IndexedDB record and direct-client access checks; synthetic browser tests cover restart, rotation and removal during requests | Consent UI, authenticated delivery, cross-device freshness and installed-device provider verification |
 | Receipts | Published encrypted receipt/acknowledgment exchange and durable records; authenticated recovery passes fresh-document, mismatch, cancellation and concurrent-write checks | Group announcement and end-user integration |
 | Reconnection | Installed-key mutual peer authentication, revocation closure and screen-cancellation checks | End-user signaling, actual device/network reachability and operation-specific authorization |
 | Comparison UI | Isolated comparison/live-session adapter, keyboard/reflow/axe and cancellation checks | Enclosing setup flow, actual TalkBack and physical co-presence; not loaded by Along |
@@ -38,6 +39,16 @@ Status prose was refreshed after the full gate; hosted success for this revision
 is not yet established.
 
 ### Next integration boundary: starting a device
+
+The [credential experiment](../experiments/at-credentials/README.md) now connects
+the verified local member to an explicitly pinned application owner and an
+encrypted AT-key record. Atomic read-only revision guards prevent a save from
+committing against changed membership or grant evidence. Their R2 implementation
+passed the full local verification gate against its recorded source snapshot.
+The direct-client adapter checks access before and after a provider response,
+uses no shared feed cache, and aborts on screen cancellation or closure. Tests
+use synthetic credentials and simulated provider responses; this is not evidence
+of a deployed live feature or authenticated delivery between physical devices.
 
 The integrated recovery test now starts with a real initial persona and atomic
 claim/membership storage. Trust in the target group and provisioner platform facts
