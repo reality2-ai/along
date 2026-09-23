@@ -28,9 +28,9 @@ node experiments/at-credentials/policy.test.mjs
 
 Passing checks cover real Ed25519 signatures, explicit grant/removal, context and
 counter binding, malformed/cross-application messages, and caller mutation while
-crypto is pending. Durable public-policy acceptance is described below. Still required: owner establishment,
-current TG standing, storage encryption, request-time authority, device delivery,
-removal propagation, rotation and the contextual live-client integration.
+crypto is pending. Durable policy acceptance, local owner establishment,
+encrypted storage and request-time checks are described below. Device delivery,
+removal propagation, user-facing rotation and contextual UI integration remain.
 
 ## Durable policy acceptance
 
@@ -56,3 +56,78 @@ node experiments/at-credentials/policy-store.test.mjs
 This stores public policies only. It does not establish the owner's authority,
 check current TG standing, prevent rollback of an entire browser profile, or
 implement credential storage/delivery. Those remain required before public use.
+
+## Initial application owner (experimental)
+
+`establishLocalATOwner` derives the application owner from the actual verified
+local member and signs an initial policy with that member's held key. It atomically
+commits the owner pin and policy, with read-only transaction checks on the persona,
+membership and installation evidence. The runtime must explicitly support those
+checks; older runtimes refuse. No persona or membership record is rewritten, and
+this does not change TG claim state or make the application owner a TG issuer.
+
+Real-browser checks pass for own-member pinning, granting only that member,
+existing-owner refusal, older-runtime refusal, membership changes before commit,
+and interruption between policy and pin writes. Failed operations leave neither
+an orphan policy nor a partial owner pin. The R2 transaction-check dependency
+passed its full local verification; this controller is not loaded by the public app.
+The encrypted local record and request-time checks below build on this owner pin.
+An explicit local live-information UI and authenticated device delivery remain
+to implement.
+
+## Local encrypted AT-key record (experimental)
+
+`openLocalATVault` binds access to caller-established group/owner/credential
+identifiers, the saved owner pin, a verified local member, held membership and
+installation evidence, and the latest locally accepted signed device grant.
+Owner-only saves encrypt the supplied AT string with AES-GCM and a fresh nonce
+under a generated nonextractable AES wrapping key. Associated data binds Along,
+owner, group, credential, local member, generation and the policy revision at save.
+The write transaction checks all evidence revisions without rewriting them.
+Replacing a key requires a higher signed credential generation.
+
+Reads validate ciphertext metadata and recheck every evidence revision after
+decryption. A newer policy for the same credential generation can change grants;
+an older encrypted generation is never returned under a newer generation.
+Buffers are cleared where JavaScript permits, but returned strings and browser
+engine internals cannot be promised erased. The trusted direct AT client must
+cancel pending work and clear live caches when credentials or permissions change.
+
+The initial browser check passes with synthetic keys for encrypted save/use,
+private wrapping-key export refusal, ciphertext damage, generation advancement,
+replacement, fresh-document reopening and permission removal during decryption.
+Run `node experiments/at-credentials/local-vault.test.mjs` with the same R2/browser
+environment as `local-owner.test.mjs`. The transaction-check runtime dependency
+passed its full local gate.
+
+This is software browser custody, not hardware-rooted sealing and not protection
+against arbitrary same-origin script or browser-profile rollback. It stores no TG
+issuer/traffic key and makes no claim of globally fresh offline membership. Peer
+delivery, local UI consent, public provider-client integration and wider race/
+cancellation checks remain before public enablement. No real AT key was used.
+
+## Direct provider adapter (experimental)
+
+`createVaultATClient` connects the local vault to the existing fixed-endpoint AT
+client. It reads credentials only for explicit online requests, rechecks access
+after the provider response, and suppresses results after observed local removal,
+rotation, cancellation or loss of connectivity. Each read has its own client;
+there is no shared feed cache that could bypass a later permission check. Cancel
+aborts current reads; close also prevents future reads. The timeout covers both
+credential checks and the provider request. The adapter retains no key for later
+requests, although JavaScript strings cannot be reliably erased.
+
+This is a transport boundary, not the contextual presentation layer. The caller
+must still apply Along's verified journey/stop/service-date matching before
+showing a feed. Revocation cannot undo a request already sent to AT, and only
+locally accepted membership/policy information is known. Device-delivered policy
+updates, public UI lifecycle wiring and real provider verification remain open.
+
+Run `node --test experiments/at-credentials/live-client.test.mjs` for simulated
+provider checks covering opt-in, offline refusal (including during credential
+retrieval), fixed endpoints, removal, rotation, simultaneous-request closure,
+reusable cancellation and timeout. `local-vault.test.mjs` additionally exercises
+the adapter with actual WASM identity, signed policy and IndexedDB encryption:
+removal during a simulated response suppresses that result and prevents another
+request; an explicitly signed restored grant permits a fresh request. These
+checks pass with synthetic credentials only. Nothing here is shipped publicly.
