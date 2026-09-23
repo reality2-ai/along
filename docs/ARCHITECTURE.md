@@ -10,9 +10,15 @@ flowchart LR
   Worker <--> DB[IndexedDB]
   UI[HTML and JavaScript UI] <--> Worker
   SW[Service worker] --> UI
-  UI --> Proxy[Optional same-origin Python proxy]
-  Proxy --> Live[AT live API]
+  UI -. planned optional connection .-> Direct[Direct AT client]
+  TG[Personal Reality2 TG credential access — pending] -.-> Direct
+  Direct --> Live[AT live API]
 ```
+
+The solid offline path is deployed. The dotted live connection is not enabled:
+the direct AT client is implemented and browser-verified, while the TG credential
+path is still under investigation. No Along-operated server is required or planned
+for public live access. See [integration evidence](REALITY2_INTEGRATION.md).
 
 ## Files and responsibilities
 
@@ -25,7 +31,10 @@ flowchart LR
 | `public/worker.js` | Data download, decompression, persistence and routing requests |
 | `public/preferences.js` | Saved journeys and transparent repeated-search heuristics |
 | `public/sw.js`, `public/updates.js` | Offline shell and explicit update activation |
-| `server.py`, `lib/realtime.py` | Local hosting and optional authenticated live adapter |
+| `public/at-client.js` | Direct AT requests and provider JSON conversion; no credential persistence |
+| `public/live-client.js` | Explicit reads, caching, expiry, cancellation and quiet failure |
+| `public/live-predictions.js`, `public/live-vehicles.js`, `public/live-context.js` | Strict contextual matching of predictions, positions and alerts |
+| `server.py`, `lib/realtime.py`, `live_proxy.py` | Local/development hosting and retained proxy experiment; not the planned public architecture |
 | `scripts/` | Reproducible preprocessing, icons and static packaging |
 
 The browser performs scheduled planning independently. Legacy server planning
@@ -67,15 +76,18 @@ updates; offline/unreachable checks fail quietly.
 The worker keeps computation off the interface thread. JavaScript already meets
 the tested desktop scenarios; measurements are recorded separately from claims
 about phones. WASM is an option if profiling identifies a useful bottleneck.
-Running a server inside WASM would not itself supply browser persistence, external
-network access, HTTPS hosting or fresh transit predictions.
+WASM may host a local runtime, but does not bypass browser network restrictions
+or protect a shared API key shipped to every browser. AT allows the direct
+cross-origin requests verified in the integration evidence; credential access
+and protection remain separate responsibilities.
 
 ## Changes requiring care
 
 - Change the shell cache version whenever shipping modified cached assets.
 - Preserve saved preferences and offline data through app upgrades.
 - Version incompatible dataset schemas and preserve usable data on failures.
-- Keep secrets in the backend; never copy `.env` into a public build.
+- Never bundle a shared AT key, `APIKey` or `.env`. Keep personal credential access
+  separate from exports, feedback, ordinary preferences and public assets.
 - Test real data and synthetic edge cases. Neither alone proves routing quality.
 
 ## Contextual exploration and maps

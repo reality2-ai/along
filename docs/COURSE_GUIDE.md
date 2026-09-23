@@ -207,3 +207,50 @@ route branch, map, scheduled stop times and the nested Back behaviour. Test that
 exploration does not mutate the user's active journey or imply live tracking.
 Compare offline AT geometry with optional online street tiles, including privacy,
 licensing, deployment and accessibility implications.
+
+
+## Additional exercise: independence, credentials and real provider evidence
+
+Allow 30–45 minutes, using the recorded evidence without an AT key. The human
+writes no code: ask the assistant to inspect the evidence, make any requested
+fixture changes and run the checks. Never paste a key into a prompt or worksheet.
+
+Read the user's clarification, “the goal is to make it independent of any central
+server aside from that we are getting info from,” and the subsequent proposal to
+keep a personal AT key in a Reality2 TG. Compare the earlier proxy proposal with
+[the current architecture](ARCHITECTURE.md) and [runtime investigation](REALITY2_INTEGRATION.md).
+Identify which constraint each design meets and which capability it merely assumes.
+A secure shared-key proxy can still be the wrong answer to this product requirement.
+
+Ask the assistant to explain the difference between these recorded claims:
+
+1. An HTTP preflight permits a subscription-key header.
+2. A real browser can read all three AT feeds from the app's origin.
+3. The direct adapter can match actual records to the downloaded timetable.
+4. A user's TG can securely make their credential available after a browser restart.
+5. Two installed devices can share that credential and handle revocation correctly.
+
+Use [CORS evidence](evidence/at-direct-cors-check.json),
+[browser evidence](evidence/at-direct-browser.json),
+[matching evidence](evidence/at-direct-matching.json), and the inspected runtime
+source links. For each claim, mark it supported, contradicted, or not established,
+and name the next observation needed. Do not turn successful feed matching into
+a claim that the TG integration exists.
+
+Then ask the assistant to demonstrate the single-stop-update regression using
+`test/at-client.test.js`. Have it compare the legacy object-shaped update with the
+list-shaped fixture, and explain why the provider adapter converts the shape
+while the matcher still rejects a wrong service date or an ambiguous repeated
+stop. The fixture contains a dummy key only; these tests make no real AT requests.
+
+Deliverable: a one-page architecture decision and evidence table, plus the
+assistant's regression-test result. Explain why encrypting a credential, holding
+a non-extractable signing key, and running WASM are distinct from a verified
+TG application-secret facility. Include the limitation that removing TG membership
+cannot recall an AT key already copied to a device; AT-side rotation is needed
+for a suspected exposure.
+
+Assessment uses the existing rubric. Strong work preserves the independence
+requirement, identifies missing runtime capabilities without inventing an API,
+and distinguishes the observed snapshot from a coverage or security guarantee.
+No credit is added for deploying a proxy that violates the stated constraint.

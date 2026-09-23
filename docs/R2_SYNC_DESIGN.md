@@ -4,6 +4,14 @@ Status: design investigation, 23 September 2026. No sync functionality is enable
 in Along. This proposal extends the product; it is not evidence that the existing
 release has cross-device sync.
 
+The earlier implementation references below are historical: those projects are
+now archived. The [current runtime investigation](REALITY2_INTEGRATION.md) pins
+the active monorepo and identifies missing durable browser TG/application-secret
+support. Do not use an archived example as proof that Along can already pair or
+synchronise securely. The latest requirement excludes an Along-operated central
+service; any transport or storage proposal must preserve that independence and
+make user-controlled peer dependencies explicit.
+
 ## Intended experience
 
 A person deliberately pairs their devices into a personal trust group once. Saving
@@ -16,7 +24,7 @@ A browser app can be suspended or terminated by the OS. Promise reconciliation
 when it can run and reach a peer/store, not continuous background sync merely
 because the phone has an internet connection.
 
-## Evidence inspected
+## Evidence inspected (historical)
 
 - [Published L5 trust and identity](https://reality2.ai/standard/L5-trust-and-identity.html):
   deliberate membership, trust-group delivery gates and payload protection.
