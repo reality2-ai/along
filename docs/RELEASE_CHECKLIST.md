@@ -1,6 +1,6 @@
 # Release evidence and remaining gates
 
-Current release candidate: **version 30**, reviewed 23 September 2026. The static ZIP
+Current deployed app: **version 30**, reviewed 23 September 2026. The static ZIP
 is prepared and the private server is retired. GitHub Pages is published at `reality2.ai/along/`; no AWS deployment has been made.
 This register separates automated evidence, user observations and remaining checks.
 
@@ -498,3 +498,10 @@ scenarios, update/recovery regressions and the local release smoke check. The
 static subpath suite passed on these guide changes before the version bump.
 The ZIP checksum and every archived file were compared with `dist/`; both guide
 sources are present and local credentials are excluded.
+
+Version 30 is live: [public smoke evidence](evidence/public-site-v30.json) confirms
+version/scope, installability, offline new-address routing, bilingual guide and
+language persistence. [Pages deployment](https://github.com/reality2-ai/along/actions/runs/35819556453)
+succeeded. The [experimental downloadable release](https://github.com/reality2-ai/along/releases/tag/v0.30.0)
+is public and explicitly marked prerelease. Its uploaded ZIP and checksum digests
+match the local verified files: [release evidence](evidence/release-v30.json).
