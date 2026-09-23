@@ -1003,3 +1003,13 @@ open the same named build on the S23 and desktop, with no terminal commands or
 real credentials. It does not establish physical pairing, screen-reader usability
 or seamless journey synchronization. Those distinctions keep publication evidence
 separate from user acceptance and from completion of the original product goal.
+
+The next integration step replaced a test-harness removal call with an owner
+Settings screen listing saved AT-key grants. The same two-device journey test
+now reaches removal through visible controls, verifies cancellation and keyboard
+confirmation, then observes the recipient stop before its next provider request.
+The UI distinguishes permission saved here from receipt elsewhere, and from
+revoking an already copied key at AT. This extends progressive disclosure and
+honest state reporting to access management. Automated UI and policy evidence
+still does not establish intuitive physical-device use, and identifier-based
+device labels remain a usability limitation.

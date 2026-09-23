@@ -1072,3 +1072,30 @@ the static output. Separate `--browser`, `--wasm` and `--notices` inputs remain
 available for local development, but do not establish runtime provenance.
 Two identical fresh builds on one host are not physical-device or provider
 acceptance, and the experimental app still has release checks outstanding.
+
+### Manage another device's AT permission from Settings
+
+In the experimental journey app, an owner can open **Device and AT-key setup →
+Manage AT access on other devices**. The list comes from the verified saved AT
+policy, excludes the owner's device, and does not claim to list online peers or
+all trust-group members. Device identifiers are shortened on full-width buttons;
+the removal review exposes the complete identifier under **Device identity**.
+Friendly device names are not yet available.
+
+The review uses the existing owner policy transaction and its expected revision.
+Selecting a saved grant is sufficient to remove permission, but cannot grant it:
+the new removal-only entry refuses an absent grant, while the sharing path still
+requires a verified membership certificate for new access. Back and untrusted
+synthetic clicks do not mutate policy. Success reports a local save, not remote
+receipt or invalidation of a copied AT credential. Provider-side key replacement
+is still necessary if an already copied key must cease working at AT.
+
+The two-app test now performs removal entirely through Settings, replacing its
+previous runtime mutation. It checks Back, synthetic-click refusal, keyboard
+confirmation/focus return, narrow-screen zoom/axe, the saved policy revision and
+empty list after removal. The connected recipient learns the new signed policy
+before another contextual provider request; its selected journey and offline
+planning remain intact. The peer test separately rejects stale removal and an
+attempt to turn the removal-only entry into a grant. These are synthetic-key
+browser checks on one host, not physical-device or real-provider acceptance.
+The public version-37 app and published standalone lab are unchanged.

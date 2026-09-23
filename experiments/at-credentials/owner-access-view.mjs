@@ -5,12 +5,13 @@ const mounted = new WeakMap();
 // The enclosing device-selection flow supplies the selected member and certificate.
 // A friendly label is display text only; the exact member identity is reviewable.
 export function showOwnerDeviceAccess(container, {wasm, store, expectedGroup, peer, certificate,
-  deviceName = 'Selected device', focus = false, onBack = () => {}}) {
+  deviceName = 'Selected device', removalOnly = false, focus = false, onBack = () => {}}) {
   if (!(expectedGroup instanceof Uint8Array) || expectedGroup.length !== 32
       || !(peer instanceof Uint8Array) || peer.length !== 32
-      || !(certificate instanceof Uint8Array) || certificate.length !== 136) throw new Error('Device access unavailable');
+      || typeof removalOnly !== 'boolean'
+      || (!removalOnly && (!(certificate instanceof Uint8Array) || certificate.length !== 136))) throw new Error('Device access unavailable');
   const group = expectedGroup.slice(), member = Array.from(peer, b => b.toString(16).padStart(2, '0')).join('');
-  const proof = certificate.slice();
+  const proof = removalOnly ? undefined : certificate.slice();
   mounted.get(container)?.();
   const document = container.ownerDocument, lifetime = new AbortController();
   const node = (tag, text) => { const element = document.createElement(tag); element.textContent = text; return element; };
@@ -44,7 +45,7 @@ export function showOwnerDeviceAccess(container, {wasm, store, expectedGroup, pe
     try {
       const devices = granted ? reviewed.devices.filter(id => id !== member) : [...reviewed.devices, member];
       const result = await updateLocalATPolicy({wasm, store, expectedGroup: group,
-        expectedRevision: reviewed.revision, devices, certificates: [proof], signal: lifetime.signal});
+        expectedRevision: reviewed.revision, devices, certificates: proof ? [proof] : [], signal: lifetime.signal});
       if (disposed) return;
       heading.textContent = granted ? 'Access removal saved' : 'Access permission saved';
       status.textContent = granted
@@ -69,6 +70,9 @@ export function showOwnerDeviceAccess(container, {wasm, store, expectedGroup, pe
       if (saved.status !== 'policy-loaded') throw new Error('Policy required');
       if (disposed) return;
       reviewed = saved.policy; granted = reviewed.devices.includes(member);
+      // A saved-grant list is enough to remove permission, never to grant it.
+      // New grants still require a currently verified membership certificate.
+      if (removalOnly && !granted) throw new Error('Permission no longer present');
       heading.textContent = granted ? 'Remove this device’s AT access?' : 'Allow this device to use your AT key?';
       explanation.textContent = granted
         ? 'This removes permission to use and receive your AT key. Downloaded journey planning still works. A device that is offline will not learn about the change until it reconnects.'

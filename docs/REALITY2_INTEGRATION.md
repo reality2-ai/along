@@ -69,6 +69,13 @@ This is same-host build/browser evidence, not full R2 conformance or physical
 acceptance. The standalone lab's deployed hashes and HTTPS setup/restore were
 verified; the full experimental journey-app release remains pending.
 The [device-test guide](PAIRING_DEVICE_CHECK.md) supplies the live lab URL.
+The local experimental journey app also exposes **Manage AT access on other
+devices** in owner Settings. It lists verified saved grants and opens a removal
+review with full identity details. The two-app browser test now removes access
+through that UI and checks that the recipient learns removal before another
+provider request, while preserving its journey. Removal-only selection cannot
+become a new grant and stale policy reviews are rejected. This is application-key
+permission management, not TG membership revocation or revocation at AT itself.
 The lab also exposes interrupted-installation confirmation recovery using saved
 identities and an authenticated receipt exchange. A browser test interrupts the
 original connection after the inviter’s receipt commit, then recovers confirmation

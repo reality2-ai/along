@@ -5,6 +5,7 @@ import {loadLocalPersona} from '../tg-pairing/local-persona.mjs';
 import {loadATBinding} from './local-owner.mjs';
 import {showATSettings} from './settings-view.mjs';
 import {showKeySharingFlow} from './key-sharing-flow.mjs';
+import {showOwnerDevices} from './owner-devices-view.mjs';
 
 // Lazy, explicit setup inside the journey app. This owns its storage handle;
 // onChanged may borrow it until disposal. No automatic identity or key creation.
@@ -80,6 +81,7 @@ export function mountAppDeviceSettings({onChanged}) {
         const show = (view, options = {}) => { clear(); child = view(content, {wasm, store, expectedGroup: group, focus: true, onBack: home, ...options}); };
         action(panel, binding ? 'Manage my AT key' : 'Use my own AT key', () => show(showATSettings), true);
         action(panel, binding?.role === 'owner' ? 'Share my AT key' : 'Receive a shared AT key', () => show(showKeySharingFlow, {role: binding?.role === 'owner' ? 'owner' : 'recipient'}));
+        if (binding?.role === 'owner') action(panel, 'Manage AT access on other devices', () => show(showOwnerDevices));
         const details = node('details', ''); details.append(node('summary', 'Connect or recover another device'));
         if (identity.origin === 'initial' || !identity.peerAcknowledged) panel.append(details);
         if (identity.origin === 'initial') {

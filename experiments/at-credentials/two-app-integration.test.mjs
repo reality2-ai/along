@@ -357,19 +357,49 @@ try {
   await expect(candidate.locator('#journey-prediction-results')).toContainText('No live departure match', {timeout: 15000});
   assert.deepEqual(providerRequests.sort(), ['/realtime/legacy/servicealerts', '/realtime/legacy/tripupdates']);
   assert.equal((await candidate.locator('body').textContent()).includes('synthetic-two-app-key'), false);
-  // Withhold a removal push: the next contextual read must learn the signed
-  // owner change before AT receives another request. Removal UI remains separate.
-  await owner.evaluate(async () => {
+  // Save removal through Settings without pushing it: the next contextual read
+  // must learn the signed owner change before AT receives another request.
+  const ownerPolicy = () => owner.evaluate(async () => {
     const wasm = await import('../experiments/tg-pairing/hive_wasm.js');
     const store = await (await import('../experiments/tg-pairing/storage.mjs')).openBrowserStorage('along-pairing-lab-v1');
     try {
       const record = (await store.read('candidate-persona', 'active')).value.record;
       const {binding} = await (await import('../experiments/at-credentials/local-owner.mjs')).loadATBinding({wasm, store, expectedGroup: record.group});
       const loaded = await (await import('../experiments/at-credentials/policy-store.mjs')).openCredentialPolicyStore({store, ...binding}).read();
-      await (await import('../experiments/at-credentials/owner-policy.mjs')).updateLocalATPolicy({wasm, store, expectedGroup: record.group,
-        expectedRevision: loaded.policy.revision, devices: [binding.owner]});
+      return {owner: binding.owner, devices: loaded.policy.devices, revision: String(loaded.policy.revision)};
     } finally { store.close(); }
   });
+  const beforeRemoval = await ownerPolicy();
+  await owner.locator('#settings-open').click();
+  await owner.getByRole('button', {name: 'Device and AT-key setup', exact: true}).click();
+  await owner.getByRole('button', {name: 'Manage AT access on other devices', exact: true}).click();
+  const device = owner.getByRole('button', {name: /^Device [0-9a-f]{8}/});
+  await device.click();
+  await owner.getByRole('heading', {name: 'Remove this device’s AT access?', exact: true}).waitFor();
+  await owner.getByRole('button', {name: 'Back', exact: true}).click();
+  assert.deepEqual(await ownerPolicy(), beforeRemoval, 'Back does not change access');
+  await device.click();
+  await owner.getByRole('button', {name: 'Remove AT access', exact: true}).waitFor();
+  await owner.evaluate(() => [...document.querySelectorAll('button')].find(button => button.textContent === 'Remove AT access').click());
+  assert.deepEqual(await ownerPolicy(), beforeRemoval, 'synthetic activation cannot remove access');
+  await owner.setViewportSize({width: 320, height: 640});
+  await owner.evaluate(() => { document.documentElement.style.fontSize = '200%'; });
+  assert.equal(await owner.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+  assert.deepEqual((await new AxeBuilder({page: owner}).include('dialog[open]').analyze()).violations.map(v => v.id), []);
+  await owner.getByRole('button', {name: 'Remove AT access', exact: true}).focus();
+  await owner.keyboard.press('Enter');
+  await owner.getByRole('heading', {name: 'Access removal saved', exact: true}).waitFor();
+  assert.equal(await owner.evaluate(() => document.activeElement.textContent), 'Back');
+  const removed = await ownerPolicy();
+  assert.deepEqual(removed.devices, [beforeRemoval.owner]);
+  assert.equal(BigInt(removed.revision), BigInt(beforeRemoval.revision) + 1n);
+  await owner.getByRole('button', {name: 'Back', exact: true}).click();
+  await owner.getByText('No other devices have permission to use your AT key.', {exact: true}).waitFor();
+  await owner.getByRole('button', {name: 'Back', exact: true}).click();
+  await owner.getByRole('button', {name: 'Back to settings', exact: true}).click();
+  await owner.getByRole('button', {name: 'Close settings', exact: true}).click();
+  await owner.setViewportSize({width: 1280, height: 900});
+  await owner.evaluate(() => { document.documentElement.style.fontSize = ''; });
   await candidate.locator('#journey-alert-check').click();
   await expect(candidate.locator('#journey-prediction-results')).toContainText('Live departure predictions unavailable', {timeout: 15000});
   assert.equal(providerRequests.length, 2);
@@ -392,5 +422,5 @@ try {
   await expect(candidate.locator('#journey-live')).toBeHidden();
   assert.equal(providerRequests.length, 2);
   assert.deepEqual(errors, []);
-  console.log('PASS: two isolated browser app instances restore actual enrollment and encrypted WebRTC-delivered key, reconnect through Settings, close Settings, request contextual mocked AT feeds for a real bus/ferry journey, learn withheld removal before further provider I/O, disconnect without changing the selected step, and reopen/route offline. Setup grant/consent uses visible controls; removal uses a runtime harness call; one host, not physical devices or real provider verification.');
+  console.log('PASS: two isolated browser app instances restore actual enrollment and encrypted WebRTC-delivered key, reconnect through Settings, close Settings, request contextual mocked AT feeds for a real bus/ferry journey, learn withheld removal before further provider I/O, disconnect without changing the selected step, and reopen/route offline. Setup, grant, consent and removal use visible controls; one host, not physical devices or real provider verification.');
 } finally { await browser?.close(); await new Promise(resolve => server.close(resolve)); }

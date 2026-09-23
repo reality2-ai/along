@@ -477,12 +477,18 @@ try {
       vehicleView.dispose();
       check(map.hasLayer(routeLine) && !Object.values(map._layers).some(layer => layer instanceof L.CircleMarker), 'vehicle cleanup preserves scheduled route');
       map.remove(); mapElement.remove();
-      const removalView = showOwnerDeviceAccess(document.querySelector('#consent'), ownerViewOptions);
+      const removalOptions = {...ownerViewOptions, certificate: undefined, removalOnly: true};
+      const removalView = showOwnerDeviceAccess(document.querySelector('#consent'), removalOptions);
       await removalView.ready; await window.exerciseOwnerAccess('remove');
       const removalReceipt = await removalView.completed;
       check(removalReceipt.policy.revision === 5n && !removalReceipt.policy.devices.includes(hex(receiver.subject)), 'owner removal saved from review');
       check(document.querySelector('[role=status]').textContent.includes('must receive it'), 'removal does not claim remote completion');
       removalView.dispose();
+      const noRegrant = showOwnerDeviceAccess(document.querySelector('#consent'), removalOptions);
+      await noRegrant.ready;
+      check(await denied(() => noRegrant.completed), 'saved-grant removal entry cannot become a new grant');
+      check(document.querySelector('.pairing-primary').hidden, 'no grant action without a membership proof');
+      noRegrant.dispose();
       // Do not push removal: the recipient must discover it before provider I/O.
       check(await receiverVault.getKey() === 'synthetic-peer-delivery', 'recipient has not yet learned removal');
       check(!(await recipientController.read('vehicles', {requested: true})).available && controllerFetches === 7, 'controller learns owner removal before provider fetch');
@@ -512,7 +518,7 @@ try {
       await updateLocalATPolicy({wasm, store: owner.store, expectedGroup: group, expectedRevision: 5n,
         devices: [hex(owner.subject), hex(receiver.subject)], certificates: [receiver.certificate]});
       await sendPolicy();
-      const staleView = showOwnerDeviceAccess(document.querySelector('#consent'), ownerViewOptions);
+      const staleView = showOwnerDeviceAccess(document.querySelector('#consent'), removalOptions);
       await staleView.ready;
       await updateLocalATPolicy({wasm, store: owner.store, expectedGroup: group, expectedRevision: 6n,
         devices: [hex(owner.subject), hex(receiver.subject)]});
