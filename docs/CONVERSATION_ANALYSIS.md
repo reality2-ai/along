@@ -708,3 +708,14 @@ request succeeded, changing the next design question from hosting to personal
 credential handling. Browser integration remains unverified, and the proposed
 personal-key option awaits agreement. This illustrates why satisfying a security
 constraint is not sufficient evidence of alignment with the product's core drivers.
+
+### Provider evidence changes implementation assumptions
+
+Direct browser access succeeded, but exercising the actual adapter against AT's
+feed revealed a JSON-shape difference missed by synthetic tests: a single stop
+update was an object rather than a list. The adapter was corrected at the provider
+boundary, with strict identity matching retained. The subsequent snapshot matched
+1,203 departure predictions and 992 vehicle positions, while retaining explicit
+unmatched outcomes. For the course, this distinguishes three separate claims:
+network access works, provider data reaches matching correctly, and the finished
+credential/UI experience works. Evidence for one is not evidence for all three.

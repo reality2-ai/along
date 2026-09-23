@@ -14,7 +14,17 @@ export function normaliseATFeed(kind,payload){
   if(!Object.hasOwn(endpoints,kind))return {available:false};
   const feed=payload?.response??payload,updated=timestamp(feed?.header?.timestamp);
   if(updated===null||!Array.isArray(feed?.entity))return {available:false};
-  if(kind!=='alerts')return {available:true,updated,entities:feed.entity};
+  if(kind!=='alerts'){
+    // AT's legacy JSON endpoint can encode a single stop update as an object.
+    // Convert only that known shape; preserve arrays, restrictions and identities.
+    const entities=kind==='predictions'?feed.entity.map(e=>{
+      const update=e?.trip_update,event=update?.stop_time_update;
+      if(event&&typeof event==='object'&&!Array.isArray(event)&&(Object.hasOwn(event,'stop_id')||Object.hasOwn(event,'stop_sequence')))
+        return {...e,trip_update:{...update,stop_time_update:[event]}};
+      return e;
+    }):feed.entity;
+    return {available:true,updated,entities};
+  }
   const alerts=feed.entity.filter(e=>e&&!e.is_deleted&&e.alert&&typeof e.alert==='object').map(e=>{
     const a=e.alert;
     return {id:e.id,title:english(a.header_text),description:english(a.description_text),

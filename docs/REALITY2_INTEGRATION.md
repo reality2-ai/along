@@ -82,3 +82,22 @@ The eventual TG integration must cancel clients when locking, revoking or rotati
 credentials so cached results and pending work are cleared. Tests cover cancelled
 and stalled credential retrieval, endpoint confinement, offline silence and feed
 conversion. An integrated TG/browser end-to-end check remains outstanding.
+
+### Real feed matching audit
+
+The browser probe now imports Along's actual direct client and matching modules,
+loads the downloaded timetable, checks service-day activity, and records aggregate
+matching outcomes. On 23 September 2026 it exposed a provider compatibility issue:
+AT's legacy JSON encodes a single `stop_time_update` as an object rather than an
+array. The direct adapter now converts that recognised shape without altering
+trip/stop restrictions or mutating the source. A regression test checks the actual
+conversion-to-matcher path, including wrong-date and repeated-stop rejection.
+
+After the fix, [the recorded snapshot](evidence/at-direct-matching.json) produced
+1,203 matched departure predictions and 992 matched vehicle positions. Other
+records remained scheduled/unmatched: 809 stop records had no departure event,
+68 involved ambiguous stop visits, and nine had no stop-update array; 686 vehicle
+trip IDs were absent from the downloaded timetable, six positions were stale and
+two were ambiguous/unmatched. These are snapshot counts, not coverage guarantees.
+They demonstrate actual provider-to-matcher operation; they do not establish TG
+credential handling, public UI enablement, or the correctness of every AT record.

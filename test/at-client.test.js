@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {departurePrediction} from '../public/live-predictions.js';
 import {createATClient,normaliseATFeed} from '../public/at-client.js';
 const payload={response:{header:{timestamp:1000.813},entity:[]}};
 test('direct client reads only on explicit online request, sends key only to fixed AT endpoints',async()=>{
@@ -51,4 +52,21 @@ test('an unresponsive credential provider times out without fetching',async()=>{
 test('explicit null alert scopes stay malformed instead of becoming unrestricted',()=>{
  const result=normaliseATFeed('alerts',{header:{timestamp:1000},entity:[{alert:{informed_entity:null,active_period:null}}]});
  assert.equal(result.alerts[0].informed_entity,null);assert.equal(result.alerts[0].active_period,null);
+});
+
+test('AT single-stop JSON records reach the strict matcher without changing trip or stop scope',()=>{
+ const event={stop_id:'s',stop_sequence:12,departure:{delay:90},schedule_relationship:0};
+ const trip={trip_id:'t',route_id:'r',start_date:'20260923',start_time:'09:00:00'};
+ const source={header:{timestamp:1000.5},entity:[{trip_update:{trip,stop_time_update:event}}]};
+ const result=normaliseATFeed('predictions',source);
+ const departure={trip:'t',routeId:'r',serviceDate:'20260923',startTime:'09:00:00',stop:{id:'s'},stopVisits:1};
+ assert.equal(departurePrediction(result,departure,{now:1001}).delay,90);
+ assert.equal(departurePrediction(result,{...departure,serviceDate:'20260924'},{now:1001}).status,'scheduled');
+ assert.equal(departurePrediction(result,{...departure,stopVisits:2},{now:1001}).status,'scheduled');
+ assert.equal(source.entity[0].trip_update.stop_time_update,event);
+ assert.deepEqual(result.entities[0].trip_update.stop_time_update,[event]);
+ for(const malformed of [null,{},'invalid',false]){
+  const feed=normaliseATFeed('predictions',{header:{timestamp:1000},entity:[{trip_update:{trip,stop_time_update:malformed}}]});
+  assert.equal(departurePrediction(feed,departure,{now:1001}).status,'scheduled');
+ }
 });
