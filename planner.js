@@ -171,20 +171,27 @@ export class Planner {
     const onward=new Map();
     if(ends)for(const [,arr,ti,,b,,dropoff,offset]of connections)if(ends.has(b)&&dropoff===0){const key=`${ti}:${offset}`;onward.set(key,Math.max(onward.get(key)||0,arr));}
     const fresh=feed.available&&Math.abs(Date.now()/1000-feed.updated)<180,predictions=new Map();
-    if(fresh)for(const entity of feed.entities||[]){const update=entity.trip_update;if(update?.trip?.trip_id)predictions.set(`${update.trip.trip_id}:${update.trip.start_date||''}`,update);}
+    if(fresh)for(const entity of feed.entities||[]){
+      const update=entity.trip_update,trip=update?.trip;
+      if(!trip?.trip_id||!/^\d{8}$/.test(trip.start_date||''))continue;
+      const key=`${trip.trip_id}:${trip.start_date}`;
+      // Multiple records for one instance are ambiguous; do not guess a winner.
+      predictions.set(key,predictions.has(key)?null:update);
+    }
     const found=new Map(stops.map(s=>[s.i,[]])),seen=new Set();
     for(const [dep,,ti,a,,pickup,,offset]of connections){
       if(this.profile.confirmedAccess&&this.data.trips[ti][4]!==1)continue;
       if(!ids.has(a)||pickup!==0||(ends&&!(onward.get(`${ti}:${offset}`)>dep)))continue;
       const [trip,ri,,headsign]=this.data.trips[ti],dedup=`${trip}:${offset}:${a}:${dep}`;
       if(seen.has(dedup))continue;seen.add(dedup);
-      const date=compactDate(shiftDate(now.date,offset)),update=predictions.get(`${trip}:${date}`)||predictions.get(`${trip}:`);
+      const date=compactDate(shiftDate(now.date,offset)),candidate=predictions.get(`${trip}:${date}`);
+      const update=candidate&&(!candidate.trip.route_id||candidate.trip.route_id===this.data.routes[ri][0])?candidate:null;
       let expected=dep,live=false;
       if(update){if([3,'CANCELED'].includes(update.trip.schedule_relationship))continue;
         const event=update.stop_time_update?.find(u=>u.stop_id===this.stops[a].id);
         if(event){if([1,3,'SKIPPED','CANCELED'].includes(event.schedule_relationship))continue;
-          if(event.departure?.time){const at=aucklandNow(new Date(Number(event.departure.time)*1000));expected=(Date.parse(at.date)-Date.parse(now.date))/86400000*86400+at.seconds;live=true;}
-          else if(event.departure?.delay!=null){expected+=Number(event.departure.delay);live=true;}
+          if(Number.isFinite(Number(event.departure?.time))&&Number(event.departure.time)>0){const at=aucklandNow(new Date(Number(event.departure.time)*1000));expected=(Date.parse(at.date)-Date.parse(now.date))/86400000*86400+at.seconds;live=true;}
+          else if(event.departure?.delay!=null&&Number.isFinite(Number(event.departure.delay))){expected+=Number(event.departure.delay);live=true;}
         }
       }
       if(expected<now.seconds||expected>now.seconds+7200)continue;

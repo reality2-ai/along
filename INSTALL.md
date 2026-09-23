@@ -202,7 +202,7 @@ cloud account or automatic cloud backup of your journeys in Along.
 ## Optional public feedback
 
 **Give feedback on this screen** is available in Settings, route/stop details and
-journey/departure notes. Your draft is kept locally, including offline. Review the
+journey and nearby-departure screens. Your draft is kept locally, including offline. Review the
 exact text before opening GitHub. A GitHub account and its **Submit new issue**
 step are required; submitted reports are public. Opening GitHub alone does not
 confirm delivery. Paste the resulting issue link into Along to check receipt.

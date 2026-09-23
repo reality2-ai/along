@@ -1,4 +1,4 @@
-const CACHE = 'along-shell-v31';
+const CACHE = 'along-shell-v32';
 const SHELL = ['./feedback.js','./feedback-ui.js','./i18n.js','./locales.js','./install.html','./vendor/leaflet/images/layers.png','./vendor/leaflet/images/layers-2x.png','./vendor/leaflet/images/marker-icon.png','./vendor/leaflet/images/marker-icon-2x.png','./vendor/leaflet/images/marker-shadow.png','./explore.js', './vendor/leaflet/leaflet.js', './vendor/leaflet/leaflet.css', './', './style.css', './app.js', './updates.js', './worker.js', './planner.js', './streets.js', './preferences.js', './manifest.webmanifest', './icon.svg', './icons/icon-192.png', './icons/icon-512.png', './icons/maskable-512.png', './icons/apple-touch-icon.png', './icons/favicon-32.png'];
 self.addEventListener('install', event => {
   event.waitUntil((async()=>{

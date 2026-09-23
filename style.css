@@ -169,3 +169,46 @@ button,.secondary-button,.tab,.setting,select,input[type=date],input[type=time]{
 #feedback a.primary-button{display:block;text-align:center;margin-top:12px}
 #feedback [hidden]{display:none}
 #feedback-context-preview{overflow-wrap:anywhere}
+
+/* Actions must be recognisable before hovering, including on touch screens.
+   Filled green remains the primary next action; alternatives use quiet outlines. */
+.guided-app .text-button,.guided-app #feedback-close{
+  border:1px solid #829487;border-radius:8px;background:#fff;color:#214e40;
+  padding:10px 14px;line-height:1.45;font-weight:600;min-height:44px;
+}
+.guided-app .text-button span{margin-left:0}
+.guided-app .alternate-action{width:100%;margin-top:12px}
+.guided-app .secondary-button,.guided-app .icon-button,.guided-app .swap,
+.guided-app .usual-card,.guided-app button.route-badge.detail-link{border-color:#829487}
+.guided-app .swap{min-width:44px}
+.guided-app .place-review .text-button{margin-top:8px}
+.guided-app [data-feedback-open]{margin:12px 0}
+.guided-app summary,.install-guide summary{
+  cursor:pointer;border:1px solid #829487;border-radius:8px;background:#f6f8f0;
+  padding:12px!important;min-height:44px;list-style-position:inside;line-height:1.5;
+}
+.guided-app summary:focus-visible,.install-guide summary:focus-visible{
+  outline:3px solid #739d49;outline-offset:3px;
+}
+.guided-app .detail-link{text-decoration-thickness:1.5px}
+.guided-app .route-variant{padding:14px 12px;border:1px solid #829487;border-radius:8px;margin:8px 0;background:#fff}
+.guided-app .text-button:hover,.guided-app .secondary-button:hover,
+.guided-app .icon-button:hover,.guided-app .usual-card:hover,
+.guided-app summary:hover,.install-guide summary:hover{background:#eaf1e5;border-color:#214e40}
+.guided-app button:active{filter:brightness(.94)}
+@media(forced-colors:active){
+  .guided-app .text-button,.guided-app .secondary-button,.guided-app .icon-button,
+  .guided-app .usual-card,.guided-app summary,.install-guide summary,
+  .guided-app .route-variant{border-color:ButtonText;background:Canvas;color:ButtonText}
+}
+
+/* Every journey choice has the same action placement and comfortable spacing. */
+.guided-app .journey-summary > [data-follow]{
+  display:flex;width:100%;justify-content:center;align-items:center;
+  margin-top:24px;min-height:52px;font-size:16px;padding:15px 17px;
+}
+/* Share the change-place action row so the next step stays within phone view. */
+.guided-app .place-review .swap{float:right;margin:-44px 0 0 12px}
+.guided-app .place-review > div{clear:both}
+.guided-app #edit-origin{max-width:calc(100% - 56px)}
+.guided-app #review-destination-row{margin-top:16px}
