@@ -407,3 +407,17 @@ check, layering, conformance and documentation. Rust source changed during that
 run, so it is not being claimed as complete verification of the latest snapshot.
 A fresh full pass has started against a recorded source snapshot; runtime source
 is being held steady while that pass runs. The latest focused browser tests pass.
+
+While the runtime snapshot is held unchanged for full verification, an isolated
+[comparison-screen component](../experiments/tg-pairing/README.md) prepares the
+ordinary-member person-confirmation step. It displays the complete code,
+full-width explicit match/cancel actions, one decision only, and honest pending
+and expired states. It is outside `public/` and the static build; the released
+app does not load it.
+
+Its synthetic browser fixture passes keyboard match/cancel, duplicate-action
+refusal, cancellation during a pending callback, recoverable failure, narrow
+layout, enlarged-text reflow and automated axe checks. The phone-sized rendering
+was inspected. These are component observations, not actual TalkBack, co-presence
+or completed enrollment. The runtime must independently bind the decision to a
+verified ceremony and honor cancellation before any protected operation.
