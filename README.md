@@ -1,4 +1,4 @@
-# Along — your Auckland commute
+<h1><img src="public/icons/icon-192.png" width="48" height="48" alt="" align="absmiddle"> Along — your Auckland commute</h1>
 
 > **Course exercise — use at your own risk.** Along was created as an exercise
 > for an AI-assisted coding course. It is an experimental educational webapp,
