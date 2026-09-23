@@ -7,7 +7,7 @@ const {chromium} = await import(process.env.PLAYWRIGHT_MODULE || '@playwright/te
 if (!process.env.R2_BROWSER_DIR) throw new Error('Set R2_BROWSER_DIR to the experimental Reality2 browser module directory');
 if (!process.env.R2_WASM_DIR) throw new Error('Set R2_WASM_DIR');
 const sources = new Map(await Promise.all(['peer-session', 'challenge', 'session-statement', 'membership', 'certificate', 'enrollment-session', 'storage', 'invitation-journal', 'enrollment-link', 'enrollment-exchange', 'enrollment-protection', 'peer-link', 'invitation'].map(async name => ['/' + name + '.mjs', await readFile(join(process.env.R2_BROWSER_DIR, name + '.mjs'))])));
-for (const name of ['enrollment-profile.mjs', 'enrollment-payloads.mjs', 'core-candidate-session.mjs', 'software-traffic.mjs', 'initial-persona.mjs', 'software-persona.mjs', 'software-invitation.mjs', 'stored-claim.mjs', 'installation-receipt.mjs', 'local-persona.mjs', 'local-persona-session.mjs', 'receipt-recovery.mjs']) sources.set('/' + name, await readFile(new URL('./' + name, import.meta.url)));
+for (const name of ['enrollment-profile.mjs', 'enrollment-payloads.mjs', 'core-candidate-session.mjs', 'software-traffic.mjs', 'initial-persona.mjs', 'software-persona.mjs', 'software-invitation.mjs', 'receive-invitation-view.mjs', 'stored-claim.mjs', 'installation-receipt.mjs', 'local-persona.mjs', 'local-persona-session.mjs', 'receipt-recovery.mjs']) sources.set('/' + name, await readFile(new URL('./' + name, import.meta.url)));
 if (process.env.RECOVERY_MODULE) sources.set('/receipt-recovery.mjs', await readFile(process.env.RECOVERY_MODULE));
 for (const name of ['hive_wasm.js', 'hive_wasm_bg.wasm']) sources.set('/' + name, await readFile(join(process.env.R2_WASM_DIR, name)));
 const server = createServer((req, res) => {
@@ -89,16 +89,25 @@ try {
     window.payloads = (await import('./enrollment-payloads.mjs')).enrollmentPayloads({wasm, invitation, epoch: 0n, role: 'provisioner', session});
     return {descriptor: invite.descriptor, certificate: [...evidence.certificate], proof: [...evidence.proof]};
   }, nonce);
+  await pages[0].evaluate(async () => {
+    window.review = (await import('./receive-invitation-view.mjs')).showReceiveInvitation(document.body, {focus: true});
+  });
+  await pages[0].getByLabel('Invitation text').fill(invitation.descriptor);
+  await pages[0].getByRole('button', {name: 'Review invitation', exact: true}).click();
+  await pages[0].getByRole('button', {name: 'Use invitation from my other device', exact: true}).click();
+  assert.equal(await pages[0].evaluate(async () => (await review.completed).descriptor), invitation.descriptor);
   await pages[0].evaluate(async input => {
-    // A reviewed QR/invitation must establish this group in the real UI. Here
-    // the harness supplies that trust decision and the session descriptions.
-    window.invitation = (await import('./software-invitation.mjs')).decodeSoftwareInvitation(input.descriptor);
+    // The real review UI supplies the selected group; the harness performs its
+    // physical-origin confirmation and exchanges the session descriptions.
+    const reviewed = await review.completed;
+    if (reviewed.signal.aborted) throw new Error('Review closed');
+    window.invitation = (await import('./software-invitation.mjs')).decodeSoftwareInvitation(reviewed.descriptor);
     const membership = wasm.BrowserMembership.establish(invitation.group, 0n, 0n);
     const statement = wasm.tg_invitation_statement(invitation.group, invitation.issuer, 1, invitation.code, invitation.validity);
     const authorized = membership.authorise_invitation(statement, new Uint8Array(input.certificate), nonce, new Uint8Array(input.proof));
     membership.free(); if (!authorized) throw new Error('Actual invitation proof refused');
     window.session = await (await import('./core-candidate-session.mjs')).createCoreCandidateSession({wasm, store, invitation, authorized,
-      softwareCustody: true, platform: {candidateDevelopment: false, provisionerDevelopment: false, provisionerHoldsCustody: true, epoch: 0n}});
+      softwareCustody: true, signal: reviewed.signal, platform: {candidateDevelopment: false, provisionerDevelopment: false, provisionerHoldsCustody: true, epoch: 0n}});
   }, invitation);
   const offer = await pages[0].evaluate(() => session.offer());
   const answer = await pages[1].evaluate(offer => session.accept(offer), offer);

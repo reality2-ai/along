@@ -512,3 +512,25 @@ software custody and invitation creation, but mocks clipboard success and failur
 It checks keyboard operation, cancellation, expiry/retry, late completion, manual
 copy fallback, automated axe checks and 320px/200% text reflow. Physical clipboard
 transfer and spoken screen-reader behavior remain unverified.
+
+### Receiving an invitation
+
+`showReceiveInvitation` provides paste, review, and explicit confirmation that the
+invitation was just copied from Along on a device the person controls. It validates
+the descriptor and returns a canonical snapshot with a cancellation signal only
+after trusted confirmation. It makes no membership or network changes. Recognised
+format is explicitly distinguished from source authentication and expiry checks;
+the subsequent challenge proof and comparison are still required.
+
+Back/Escape from review returns to editing; leaving after confirmation or replacing
+the screen aborts the returned signal. The enrollment controller must retain that
+signal through its ceremony. The actual software enrollment test now obtains its
+invitation from this screen and passes the signal into the core candidate adapter.
+The harness still pastes the descriptor, confirms its physical origin, exchanges
+proofs/session descriptions and decides the comparison. This does not establish
+usable cross-device signaling or physical-device acceptance.
+
+The receiving-screen checks cover malformed input, synthetic-click refusal,
+keyboard confirmation, edit/back, cancellation/replacement, non-rendering of pasted
+markup, automated axe checks and narrow enlarged text. No camera or clipboard-read
+permission is requested. This remains outside the public app.
