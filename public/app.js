@@ -1,3 +1,4 @@
+import {setupFeedback} from './feedback-ui.js';
 import {createLocalizer, setLocalizedText, errorPhraseKey} from './i18n.js';
 import {setupUpdates} from './updates.js';
 import {aucklandNow} from './planner.js';
@@ -366,3 +367,5 @@ history.replaceState({alongScreen:'destination',depth:0,intent:'plan'},'');showS
 translated('location','location.use');translated('preparation-hint','status.preparing');applyLanguage();renderUsual();setNow();$('today').textContent=new Intl.DateTimeFormat('en-NZ',{timeZone:'Pacific/Auckland',weekday:'long',day:'numeric',month:'short'}).format(new Date());
 if('serviceWorker' in navigator){navigator.serviceWorker.register(new URL('./sw.js',import.meta.url),{type:'module',updateViaCache:'none'}).then(registration=>{setupUpdates(registration,language);return navigator.serviceWorker.ready;}).then(()=>{state.shellReady=true;updateStatus();}).catch(()=>{});}
 ask('init').then(async result=>{ready(result);navigator.storage?.persist?.().catch(()=>{});await loadStreets();}).catch(error=>{translated('data-status','status.unavailable');showError('form-error',error);showError('offline-info',error);});
+
+setupFeedback(language,()=>({version:document.querySelector('#settings').textContent.match(/App version (\d+)/)?.[1],language:language.language,screen:state.screen}));

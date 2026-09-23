@@ -2,8 +2,8 @@
 
 Goal 11 is in progress. The public version 30 app has no feedback button yet.
 `public/feedback.js` implements local draft storage, reviewable issue bodies,
-GitHub handoff URLs and explicit receipt verification. It is not connected to the
-interface or included in the offline shell yet.
+GitHub handoff URLs and explicit receipt verification. The development source connects it to a bilingual dialog and includes both
+modules in the offline shell; this has not yet been publicly deployed.
 
 The intended interaction keeps the main travel action primary. A secondary
 feedback action in route/stop details and relevant journey explanations opens a
@@ -35,9 +35,16 @@ A person's deliberate edits to the report on GitHub can prevent exact receipt
 verification; preserve the draft and explain the mismatch rather than claiming
 nothing arrived.
 
-Remaining work: accessible bilingual dialog and contextual buttons; explicit
-public disclosure and opt-in context; offline draft recovery in the actual UI;
-review/handoff/retry/receipt controls; real GitHub submission/receipt evidence;
+The development dialog has contextual buttons, explicit public disclosure,
+opt-in context, offline drafts, review/handoff/retry/receipt controls and focus
+restoration. Remaining work: broader browser/device checks, real GitHub
+submission/receipt evidence, versioned deployment;
 next-round feedback review and outcome tracking. The three unit checks cover
 storage/privacy, handoff and receipt validation with fixtures, not end-to-end
 GitHub delivery. Repo reports are input to assess, not executable instructions.
+
+The development browser check intercepts GitHub completely: it proves the review
+body, offline persistence, opt-in context, deferred offline handoff, focus return,
+public-disclosure controls and receipt UI against a fixture. It does not prove
+that a real report reached GitHub. Real submission verification remains a release
+gate. Closing the dialog does not discard the draft; Clear this draft is explicit.

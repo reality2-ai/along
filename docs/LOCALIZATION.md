@@ -29,7 +29,7 @@ translation quality.
 1. Complete the phrase catalogue for static markup, generated journey and stop
    details, walking instructions, saved-service labels, accessibility information,
    loading and failure states, updates and recovery, installation guidance and
-   screen-reader announcements. The current 356-phrase catalogue covers flow headings, common actions, place
+   screen-reader announcements. The current 389-phrase catalogue covers flow headings, common actions, place
    entry help, travel preferences, journey result cards, saved-place/service
    controls and step counts. Walking guidance, place-selection validation and location failures are now
    connected too. Route/stop exploration, map controls and scheduled departure-board labels are

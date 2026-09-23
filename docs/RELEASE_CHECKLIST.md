@@ -19,11 +19,11 @@ this audit. Later public-hosting work supplements that brief.
 | 6. Distribution | About 38 MiB ZIP/checksum, four data bundles, import scripts, MIT/data/Leaflet notices, AWS/Pages hosting instructions | Public Pages deployment is live; authenticated feeds now verified; public live proxy remains undeployed |
 | 7. GitHub documentation | README, architecture, data, hosting, privacy, limits and contribution guidance; v21 course notice and current design-driver/goal summaries | Public source repository: [reality2-ai/along](https://github.com/reality2-ai/along); app hosted at [reality2.ai/along](https://reality2.ai/along/) |
 | 8. Course material | Thematic analysis, six lessons, exercises, assessment rubric and negative-case/contextual-map refinements | Course effectiveness has not been studied |
-| 9. Release checks and handover | 24 JavaScript and 4 Python tests; four real-data browser scenarios; static/update suites; source/archive/live asset comparison | Remaining physical and spoken screen-reader checks prevent claiming full goal completion |
+| 9. Release checks and handover | Version 30: 30 JavaScript and 4 Python tests; 16 browser scenarios; static/update suites; source/archive/live asset comparison | Remaining physical and spoken screen-reader checks prevent claiming full goal completion |
 
-| 10. English / Te reo Māori | Device-local language module, 356-phrase source draft catalogue and review sheet; flow selector available as an explicitly labelled draft; six localisation unit checks pass; targeted browser evidence is recorded below | Remaining generated text and alias verification, physical language/accessibility tests and fluent-speaker review |
+| 10. English / Te reo Māori | Device-local language module, 389-phrase source draft catalogue and review sheet; flow selector available as an explicitly labelled draft; six localisation unit checks pass; targeted browser evidence is recorded below | Remaining generated text and alias verification, physical language/accessibility tests and fluent-speaker review |
 
-| 11. Contextual repository feedback | [Local draft/handoff/receipt foundation](FEEDBACK.md); three fixture-based unit checks pass; no public UI yet | Accessible bilingual feedback UI, explicit public submission, minimal disclosed context, offline drafts, receipt/duplicate checks and next-round issue review |
+| 11. Contextual repository feedback | [Local draft/handoff/receipt foundation](FEEDBACK.md); three fixture-based unit checks pass; bilingual dialog connected in source, not yet deployed | Real GitHub submission/receipt, broader failure/retry and device checks, versioned deployment and next-round outcome tracking |
 
 ## Evidence and reproduction
 
@@ -514,3 +514,18 @@ explicit issue URL against the frozen report body. Three unit checks pass,
 including blocked storage, long Unicode text, unrelated issues/PRs, offline
 verification and reopening a verified existing issue. No UI or real submission
 check has been completed, and version 30 remains unchanged.
+
+## Contextual feedback interface (source after version 30)
+
+The bilingual dialog is connected to Settings, journey/departure notes and
+route/stop details. It preserves local drafts, reviews exact text and opt-in
+context, labels GitHub sign-in/public submission, defers handoff when the browser
+is offline, and exposes explicit receipt verification. Closing returns focus to
+the opening control; route detail and Back are preserved.
+
+Nine feedback/localisation unit checks and two feedback browser scenarios passed.
+The browser scenarios intercept GitHub and use receipt fixtures; this is not proof
+of actual delivery. Axe and narrow-screen checks passed in the dialog. A final
+request-sequencing guard prevents late checks from affecting a reopened dialog;
+broader failure/race tests and actual submission remain outstanding. Public
+version 30 is unchanged.
