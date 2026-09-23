@@ -1,0 +1,34 @@
+{
+  "checked_at": "2026-09-23T06:18:23.785Z",
+  "browser": "151.0.7922.34",
+  "page_origin": "https://reality2.ai",
+  "harness": "Locally fulfilled test page at the app origin; real cross-origin AT requests through Chromium.",
+  "credential_recorded": false,
+  "public_live_enabled": false,
+  "feeds": {
+    "tripupdates": {
+      "status": 200,
+      "readable": true,
+      "entities": 2129,
+      "updated": 1790144301.62,
+      "requires_timestamp_normalization": true,
+      "fresh": true
+    },
+    "servicealerts": {
+      "status": 200,
+      "readable": true,
+      "entities": 186,
+      "updated": 1790144301.877,
+      "requires_timestamp_normalization": true,
+      "fresh": true
+    },
+    "vehiclelocations": {
+      "status": 200,
+      "readable": true,
+      "entities": 1700,
+      "updated": 1790144302.428,
+      "requires_timestamp_normalization": true,
+      "fresh": true
+    }
+  }
+}

@@ -358,8 +358,9 @@ live information. Do not deploy the proposed proxy. A read-only check of AT's
 vehicle-location endpoint returned HTTP 200 for both an OPTIONS preflight allowing
 the subscription-key header and an authenticated GET, with `Access-Control-Allow-Origin: *`.
 See [the recorded header check](evidence/at-direct-cors-check.json). This establishes
-that this endpoint permits cross-origin browser access; all-feed browser integration
-and the credential experience still need implementation and verification.
+that this endpoint permits cross-origin browser access; all three feeds subsequently passed a real Chromium cross-origin read check
+(see the runtime investigation below). The integrated client and credential
+experience still need implementation and verification.
 
 A shared key embedded in JavaScript or WASM would be public. Optional direct access
 using each user's own AT key is proposed, pending the user's decision. The key
@@ -384,3 +385,6 @@ keys. An AT key must therefore not be treated as group identity or assumed to be
 a built-in management-wallet field. Application storage/access policy and a real
 browser-compatible runtime or device bridge still need to be identified and
 verified. No TG credential API or security conformance is claimed by Along yet.
+
+The [runtime investigation](REALITY2_INTEGRATION.md) records the inspected code,
+its actual capabilities and the missing application-secret integration contract.
