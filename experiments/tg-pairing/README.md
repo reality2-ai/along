@@ -426,3 +426,9 @@ persistence remains unfinished; this test proves member installation and restore
 not complete group-material restoration, discovery, physical co-presence or full
 standard conformance. The AT peer scenario still has its separate bootstrap
 fixture until these paths are joined. No public app feature is enabled yet.
+
+
+The AT credential peer test now also uses this actual enrollment path, including
+both sides of installation acknowledgment and recipient restore before key sharing.
+Earlier references to its bootstrap fixture are historical. Initial trust,
+comparison approval and manual signaling are still supplied by the harness.

@@ -569,3 +569,23 @@ certificate. The recipient bootstrap and reviewed descriptor remain fixtures;
 this is not yet full enrollment or physical-device pairing. Earlier references
 to a synthetic issuer describe the previous test arrangement. AT keys and provider
 responses remain synthetic, and the public app still excludes these modules.
+
+
+## AT sharing after actual recipient enrollment
+
+`peer-delivery.test.mjs` now creates the recipient through the actual core
+candidate ceremony instead of editing its stored persona, bootstrap and membership
+records. The restored software issuer's member signs the invitation challenge;
+the issuer derives the bundle and signs the newly generated candidate member key.
+The sessions compare, install, exchange an installation acknowledgment and close.
+The recipient store reopens and restores its consumed enrollment before the
+existing AT owner/recipient consent, encrypted delivery, acknowledgment recovery,
+policy catch-up and removal checks run. The original group-of-one member key is
+not reused as the enrolled member key.
+
+The test still supplies the initial target-group trust decision, matching
+comparison approvals, connection descriptions and reviewed AT owner descriptor.
+It runs on one browser host with synthetic AT credentials/provider replies.
+These remaining boundaries must become a usable device-selection and pairing
+flow; traffic-key persistence is also unfinished. This connected test does not
+enable public live data or establish physical-device reachability.
