@@ -83,12 +83,14 @@ that all validation is complete.
 
 Actual app screens using public example addresses and the preserved Auckland
 transport timetable. The route map shows downloaded AT geometry over an optional
-online OpenStreetMap background, not live vehicle tracking. Tap a screenshot to view it at full size.
+online OpenStreetMap background, not live vehicle tracking. These views show the
+interface after acknowledging the first-use course notice; the notice remains
+available in the footer and Settings. Tap a screenshot to view it at full size.
 
 <table width="100%">
 <tr><th width="50%">Start with your destination</th><th width="50%">Choose a mixed-mode journey</th></tr>
 <tr>
-<td width="50%"><a href="docs/screenshots/01-start.png"><img src="docs/screenshots/01-start.png" width="100%" alt="Along identifies itself as a course exercise and asks for a destination."></a></td>
+<td width="50%"><a href="docs/screenshots/01-start.png"><img src="docs/screenshots/01-start.png" width="100%" alt="Along asks for a destination, with the acknowledged course notice available in the footer."></a></td>
 <td width="50%"><a href="docs/screenshots/02-journey.png"><img src="docs/screenshots/02-journey.png" width="100%" alt="A scheduled Broadway to Devonport journey shows walking, train and ferry connections with one clear Use this journey action."></a></td>
 </tr>
 <tr><th>Follow one step at a time</th><th>Explore a route's path and stops</th></tr>

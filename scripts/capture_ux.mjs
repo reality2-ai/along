@@ -9,6 +9,10 @@ try{
  await mkdir('docs/screenshots',{recursive:true});await page.goto(base);await expect(page.locator('#data-status')).toContainText('offline ready',{timeout:90000});
  async function capture(name){await page.screenshot({path:`docs/screenshots/${name}.png`,fullPage:false});}
  async function choose(field,text){await page.locator('#'+field).fill(text);await page.locator('#'+field+'-options [data-index]').first().click();}
+ // Show the everyday interface after the real first-use acknowledgement.
+ await page.locator('#course-understood').click();
+ await expect(page.locator('footer #course-notice')).toBeAttached();
+ await expect(page.locator('#course-notice')).not.toHaveAttribute('open','');
  await capture('01-start');
  await choose('destination','10 Victoria Road Devonport');await page.locator('#destination-next').click();await choose('origin','277 Broadway Newmarket');await page.locator('#origin-next').click();
  await capture('05-save-places');
