@@ -760,7 +760,9 @@ and installed-app update behavior are not established by this build/test.
 Saved journeys have a separate [Settings integration and two-profile app test](../journey-sync/README.md#actual-app-saved-places-local-experimental-build).
 It works without an AT key, with local journalling of offline saves/removals and
 manual connection-message transfer. It does not yet provide automatic discovery
-or reconnect, complete permission management or public release qualification.
+or reconnect, complete TG lifecycle management or public release qualification.
+The journey-sharing screen now includes saved-permission review and removal,
+including while offline; journey permission remains separate from AT-key access.
 
 
 ### Optional restoration does not delay the planner

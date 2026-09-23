@@ -35,6 +35,7 @@ export async function openJourneySession({wasm, store, expectedGroup, peer, role
         return receipt;
       }});
     return Object.freeze({
+      peer: hex(selectedPeer),
       offer: () => { current(); return session.offer(); },
       accept: description => { current(); return session.accept(description); },
       authenticated: async () => { current(); await session.authenticated(); current(); await journeys.check(); },

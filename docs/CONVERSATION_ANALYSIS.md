@@ -1086,3 +1086,12 @@ without moving the current journey step. For the course, this illustrates why pa
 transport tests does not establish integration: data ownership, durability and the
 ongoing user task each need their own evidence. Manual signaling and physical-device
 acceptance remain explicit limitations.
+
+The next app check closed the consent loop: users can list saved journey-sharing
+permissions and stop sharing with a device, even after reopening offline. The list
+does not pretend to show current online presence, and removal explicitly keeps
+copies already received. Tests distinguish disconnecting a channel, removing an
+application permission and deleting a saved journey; none is presented as removing
+TG membership. Back and synthetic clicks leave permission unchanged, while a real
+keyboard confirmation closes the matching channel and prevents later peer edits.
+This extends the user-control theme from initial consent to an accessible way out.

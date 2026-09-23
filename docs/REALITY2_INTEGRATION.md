@@ -132,8 +132,13 @@ preferences, checks connected edits and offline deletion/save convergence after
 reconnection, and preserves the current journey and local learning history. A local
 journal and atomic import receipt prevent losing an outbound edit between preference
 storage and IndexedDB. See the [implementation and limits](../experiments/journey-sync/README.md#actual-app-saved-places-local-experimental-build).
-Manual connection messages remain required. Permission-management UI, broader
-preference sync, capacity recovery, automatic reconnect and physical-device checks
+Settings also lists saved journey-sharing permissions and supports removal during
+an active connection or after offline reopening. The two-profile check verifies
+Back/synthetic-click refusal, keyboard confirmation, retained copies and refusal
+of subsequent peer edits. Removal closes the matching journey channel and does not
+claim to revoke TG membership or erase the other device's data.
+Manual connection messages remain required. Broader preference sync, capacity
+recovery, automatic reconnect and physical-device checks
 are unfinished; neither public app nor published pairing lab includes this change.
 
 

@@ -115,6 +115,11 @@ try {
     await page.getByRole('button', {name: 'Back to settings', exact: true}).click();
     await page.getByRole('button', {name: 'Close settings', exact: true}).click();
   };
+  await share(owner);
+  await owner.getByRole('button', {name: 'Manage journey-sharing devices', exact: true}).click();
+  await expect(owner.getByRole('dialog', {name: 'Saved journey sharing'})).toContainText('No other devices have permission here');
+  assert.equal((await preferences(owner)).journeySync, undefined, 'listing permissions does not opt into sharing');
+  await owner.getByRole('button', {name: 'Back', exact: true}).click(); await closeSharing(owner);
   const connectJourneys = async () => {
     await Promise.all(pages.map(share));
     await owner.getByRole('button', {name: 'Start journey connection', exact: true}).click();
@@ -160,6 +165,54 @@ try {
   await connectJourneys();
   await expect.poll(async () => (await saved(candidate)).map(j => j.to.id)).toEqual([candidateNew.to.id]);
   await expect.poll(async () => (await saved(owner)).map(j => j.to.id)).toEqual([candidateNew.to.id]);
+  const stored = page => page.evaluate(async () => {
+    const store = await (await import('../experiments/tg-pairing/storage.mjs')).openBrowserStorage('along-pairing-lab-v1');
+    try {
+      const persona = await store.read('candidate-persona', 'active');
+      const hex = bytes => Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+      const group = hex(persona.value.record.group);
+      return {personaRevision: persona.revision, permission: await store.read('along-journey-sharing-v1', group),
+        journeys: await store.read('along-saved-journeys-v1', group), at: await store.read('along-at-owners', group)};
+    } finally { store.close(); }
+  });
+  const beforeRemoval = await Promise.all(pages.map(stored));
+  const manage = async page => {
+    await page.getByRole('button', {name: 'Manage journey-sharing devices', exact: true}).click();
+    await page.getByRole('button', {name: /^Device [0-9a-f]{8}…[0-9a-f]{8}$/}).click();
+    await page.getByRole('button', {name: 'Stop journey sharing', exact: true}).waitFor();
+  };
+  await share(owner); await manage(owner);
+  await owner.getByRole('button', {name: 'Back', exact: true}).click();
+  assert.deepEqual((await stored(owner)).permission, beforeRemoval[1].permission, 'Back preserves permission');
+  await owner.getByRole('button', {name: /^Device [0-9a-f]{8}…[0-9a-f]{8}$/}).click();
+  const remove = owner.getByRole('button', {name: 'Stop journey sharing', exact: true});
+  await remove.waitFor(); await remove.evaluate(button => button.click());
+  assert.deepEqual((await stored(owner)).permission, beforeRemoval[1].permission, 'synthetic activation cannot remove permission');
+  await owner.evaluate(() => document.documentElement.style.fontSize = '200%');
+  assert.equal(await owner.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+  assert.deepEqual((await new AxeBuilder({page: owner}).analyze()).violations.map(v => v.id), []);
+  await remove.focus(); await owner.keyboard.press('Enter');
+  await owner.getByRole('heading', {name: 'Journey-sharing permission removed', exact: true}).waitFor();
+  await expect(owner.getByRole('button', {name: 'Back', exact: true})).toBeFocused();
+  const removed = await stored(owner);
+  assert.deepEqual(removed.permission.value.peers, []);
+  assert.deepEqual(removed.journeys, beforeRemoval[1].journeys);
+  assert.equal(removed.personaRevision, beforeRemoval[1].personaRevision);
+  assert.equal(removed.at, null);
+  assert.deepEqual((await stored(candidate)).permission, beforeRemoval[0].permission, 'permission removal is local, not a remote rewrite');
+  await candidate.locator('#save-places').click();
+  await expect.poll(async () => (await stored(candidate)).journeys.value.journeys.find(j => j.id.includes(candidateNew.to.id)).value).toBe(null);
+  assert.deepEqual((await stored(owner)).journeys, removed.journeys, 'removed peer cannot update local journeys');
+  await owner.getByRole('button', {name: 'Back', exact: true}).click();
+  await expect(owner.getByRole('dialog', {name: 'Saved journey sharing'})).toContainText('No other devices have permission here');
+  await owner.keyboard.press('Escape');
+  await owner.getByRole('heading', {name: 'Share your saved journeys', exact: true}).waitFor(); await closeSharing(owner);
+  await contexts[0].setOffline(true); await candidate.reload();
+  await share(candidate); await manage(candidate);
+  await candidate.getByRole('button', {name: 'Stop journey sharing', exact: true}).click();
+  await candidate.getByRole('heading', {name: 'Journey-sharing permission removed', exact: true}).waitFor();
+  assert.deepEqual((await stored(candidate)).permission.value.peers, [], 'permission can be removed offline after reopening');
+  assert.equal((await saved(owner)).length, 1, 'stopping sharing preserves the already shared copy');
   assert.equal(providerRequests.length, 0); assert.deepEqual(errors, []);
-  console.log('PASS: actual Settings enrollment/connection, saved places and service preferences, independent local history, live local edits, current-step preservation, narrow/zoom accessibility, offline reopening and save/removal convergence. Two browser profiles on one host; manual message transfer, not physical reachability or automatic discovery.');
+  console.log('PASS: actual Settings enrollment/connection, saved places and service preferences, local history, current-step preservation, narrow/zoom accessibility, offline edits and convergence; saved-permission list/review, Back/synthetic refusal, keyboard removal closing an active channel, retained copies and offline permission removal. Two browser profiles on one host; manual transfer, not physical reachability or automatic discovery.');
 } finally { await browser?.close(); await new Promise(resolve => server.close(resolve)); }

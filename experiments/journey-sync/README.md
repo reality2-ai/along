@@ -134,9 +134,9 @@ Removal explains that already shared copies remain on the other device.
 The real-enrollment browser fixture checks synthetic-click refusal, keyboard
 confirmation/focus return, Escape, stale-review refusal, 320px/200% reflow and axe.
 It uses this component to grant both sides before the real journey exchange and
-remove permission while that channel is open. Removal is still a component check;
-management of saved permissions in commuter Settings, TalkBack acceptance and
-public deployment remain unfinished.
+remove permission while that channel is open. The generated-app test also exercises
+removal from the Settings device list. TalkBack acceptance and public deployment
+remain unfinished.
 
 ## Journey connection component
 
@@ -187,8 +187,16 @@ database or provide rollback resistance. Web Locks are required for sharing.
 Saved places are retained separately from the thirty-item learned-history bound.
 The replication model's 256-pair bound also includes retained tombstones; reaching
 it can prevent further sharing changes without discarding local saves. The journal is bounded
-at 256 pending operations. Compaction, a user-facing capacity recovery path, broader
-preference sync and saved-permission management are still required before release.
+at 256 pending operations. Compaction, a user-facing capacity recovery path and
+broader preference sync are still required before release.
+
+**Manage journey-sharing devices** lists locally saved permissions, including when
+the other device is offline. Selecting a device opens the existing removal review,
+with its complete identity behind a disclosure. No membership certificate is
+supplied to this removal-only path, so a stale list cannot silently regrant access.
+Successful removal closes a connection to that peer and retains local saved places.
+It does not erase the other device's copies, remove TG membership or change AT-key
+permission. A channel ending in the background does not dismiss an open review.
 
 Verification:
 
@@ -203,5 +211,9 @@ saves real address pairs and a service preference, connects through the visible
 flow, checks local-history separation and current-step preservation, then tests a
 connected removal and offline reopening/edit/reconnect convergence. It also checks
 320px/200% layout and axe in the sharing screen, with zero AT provider requests.
+Permission-management checks cover the empty list without opting in, Back and
+synthetic-click refusal, keyboard confirmation/focus, active-channel closure,
+refusal of subsequent peer edits, retained copies and offline permission removal
+after reopening. These are independent from removing an individual saved journey.
 The harness copies public connection messages; this is one-host browser evidence,
 not S23/TalkBack acceptance, remote reachability or a public release.

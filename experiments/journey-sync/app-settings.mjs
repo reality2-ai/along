@@ -1,4 +1,5 @@
 import {showJourneyConnection} from './connection-view.mjs';
+import {showJourneyDevices} from './devices-view.mjs';
 import {openAppJourneyStore} from './app-store.mjs';
 import {enableJourneyTracking, readEnvelope, changedEvent, preferenceKey} from './app-preferences.mjs';
 
@@ -12,7 +13,7 @@ export function mountAppJourneySettings({wasm, store, expectedGroup, member}) {
   const dialog = node('dialog', ''); dialog.setAttribute('aria-label', 'Saved journey sharing');
   const content = node('section', ''); content.className = 'pairing-comparison'; dialog.append(content); document.body.append(dialog);
   const lifetime = new AbortController();
-  let view, session, disposed = false, status, queue = Promise.resolve(), message = '', generation = 0, starting = false;
+  let view, session, disposed = false, status, queue = Promise.resolve(), message = '', generation = 0, starting = false, screen = 'home';
   const clear = () => { generation++; starting = false; view?.dispose(); view = undefined; content.replaceChildren(); };
   const report = text => { message = text; if (status?.isConnected) status.textContent = text; };
   const reconcile = (send = false) => {
@@ -33,11 +34,12 @@ export function mountAppJourneySettings({wasm, store, expectedGroup, member}) {
     const previous = session; session = undefined;
     previous?.signal.removeEventListener('abort', disconnected); previous?.close();
   };
-  const disconnected = () => { session = undefined; message = 'Connection ended. Saved changes stay on this device until you reconnect.'; if (dialog.open) home(); };
+  const disconnected = () => { session = undefined; message = 'Connection ended. Saved changes stay on this device until you reconnect.'; if (dialog.open && screen === 'home') home(); };
   const back = () => { clear(); dialog.close(); settings.showModal(); open.focus(); };
   const action = (text, run) => {
     const button = node('button', text); button.type = 'button';
-    button.addEventListener('click', event => { if (event.isTrusted && !disposed && !button.disabled) void run(); }); content.append(button); return button;
+    const selected = generation;
+    button.addEventListener('click', event => { if (event.isTrusted && !disposed && selected === generation && !button.disabled) void run(); }); content.append(button); return button;
   };
   const connect = async role => {
     if (starting) return; starting = true;
@@ -46,6 +48,7 @@ export function mountAppJourneySettings({wasm, store, expectedGroup, member}) {
       enableJourneyTracking(group); await replica.reconcile({signal: lifetime.signal});
       if (disposed || !dialog.open || generation !== selected) return;
       clear();
+      screen = 'connection';
       view = showJourneyConnection(content, {wasm, store, expectedGroup, role, focus: true, signal: lifetime.signal, onBack: home,
         onSaved: () => { void reconcile(); },
         onConnected: connected => {
@@ -59,7 +62,7 @@ export function mountAppJourneySettings({wasm, store, expectedGroup, member}) {
     finally { if (generation === selected) starting = false; }
   };
   const home = () => {
-    clear();
+    clear(); screen = 'home';
     const heading = node('h2', session ? 'Your journeys are connected' : 'Share your saved journeys'); heading.tabIndex = -1;
     content.append(heading, node('p', 'Share saved starting places, destinations and service preferences with an enrolled device. Learning history, current location and the journey on screen stay here. This does not require an AT key.'));
     status = node('p', message || 'Both devices must be online and open. Connection currently uses messages you transfer between them.'); status.setAttribute('role', 'status'); content.append(status);
@@ -70,6 +73,14 @@ export function mountAppJourneySettings({wasm, store, expectedGroup, member}) {
       action('Start journey connection', () => connect('start')).className = 'pairing-primary';
       action('Join journey connection', () => connect('join'));
     }
+    action('Manage journey-sharing devices', () => {
+      clear(); screen = 'devices';
+      view = showJourneyDevices(content, {wasm, store, expectedGroup, focus: true, onBack: home,
+        onRemoved: peer => {
+          if (session?.peer === peer) disconnect();
+          message = 'Journey-sharing permission removed here. Your saved places and copies already shared are kept.';
+        }});
+    });
     action('Back to settings', back); heading.focus();
   };
   open.addEventListener('click', event => { if (event.isTrusted && !disposed) { settings.close(); dialog.showModal(); home(); } });
