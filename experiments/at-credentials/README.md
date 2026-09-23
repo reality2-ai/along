@@ -131,3 +131,25 @@ the adapter with actual WASM identity, signed policy and IndexedDB encryption:
 removal during a simulated response suppresses that result and prevents another
 request; an explicitly signed restored grant permits a fresh request. These
 checks pass with synthetic credentials only. Nothing here is shipped publicly.
+
+## Local consent screen (experimental)
+
+`showCredentialSetup` presents a password field and a full-width “Save key on this
+device” action, with a separate Back action. It explains offline planning,
+encrypted local storage and direct AT use. Saving does not contact AT or grant
+another device access. Its enclosing flow must first establish the application
+owner and provide that owner's vault; this screen does not create authority.
+
+The input clears when saving or leaving, errors remain generic, and a saved
+receipt is labelled as unverified with AT. Back/Escape cancels pending work; a
+late completion cannot overwrite a replacement screen. A commit which already
+completed is not undone by leaving. The enclosing settings flow must reread saved
+state when reopened instead of assuming cancellation proves nothing was saved.
+
+`credential-view.test.mjs` passes keyboard save/focus, validation, generic failure,
+input clearing, cancellation, replacement, full-width actions, axe and narrow
+enlarged-text checks. It also saves a synthetic key through actual WASM identity,
+signed owner policy and the encrypted vault. Run with the R2/browser environment
+used by `local-vault.test.mjs`. This is not a TalkBack, physical-device or real AT
+validation result. The screen and its CSS remain excluded from the public build;
+the enclosing setup/settings flow and device-delivery consent remain unfinished.
