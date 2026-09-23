@@ -89,3 +89,9 @@ dialog to the catalogue. Links remain separate operable elements. This adds 23
 AI-generated draft phrases; it has not yet been deployed over version 29. The
 public draft and the source catalogue therefore have different coverage until the
 next versioned release.
+
+Dynamic status bindings can now resolve their substitutions again when language
+changes. In particular, the saved-service announcement translates transport names
+while keeping route identifiers unchanged, instead of reusing an English label
+inside a Māori sentence. Cleared or replaced status messages still remain cleared.
+This change does not alter the stored preferred service sequence.

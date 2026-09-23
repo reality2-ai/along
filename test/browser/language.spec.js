@@ -83,16 +83,21 @@ test('draft language switch preserves current task, saved places, Back and offli
   await page.locator('[data-follow]').first().click();
   await page.locator('#prefer-services').click();
   const savedServices=await page.evaluate(()=>localStorage.getItem('along-journeys-v1'));
+  const savedAnnouncement=await page.locator('#announcement').textContent();
+  expect(savedAnnouncement).toContain('Train S-C');
   await page.locator('#full-itinerary > summary').click();
   const step=await page.locator('#step-count').textContent();
   await switchTo(page,'mi');
   await expect(page.locator('#step-count')).toContainText('Hipanga');
+  await expect(page.locator('#announcement')).toContainText('Tereina S-C');
+  await expect(page.locator('#announcement')).not.toContainText('Train');
   await expect(page.locator('#itinerary-legs')).toContainText('Ngā tohutohu hīkoi');
   await expect(page.locator('#prefer-services')).toContainText('Ngā ratonga e manakohia ana');
   await expect(page.locator('#full-itinerary')).toHaveAttribute('open','');
   expect(await page.evaluate(()=>localStorage.getItem('along-journeys-v1'))).toBe(savedServices);
   await switchTo(page,'en');
   await expect(page.locator('#step-count')).toHaveText(step);
+  await expect(page.locator('#announcement')).toHaveText(savedAnnouncement);
   await expect(page.locator('#full-itinerary')).toHaveAttribute('open','');
   // Saved cards and their service sequence remain usable after offline reopening.
   await page.reload();

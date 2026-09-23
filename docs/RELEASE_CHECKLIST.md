@@ -466,3 +466,9 @@ two targeted browser scenarios passed. They verify translated region labels,
 retained AT links, narrow-screen layout and axe checks, plus offline switching
 and saved-service preservation. These source changes are awaiting the next
 versioned deployment; public version 29 remains unchanged.
+
+The bilingual journey regression also passes with transport names in the saved
+service announcement re-resolved on each language switch (`Train S-C` →
+`Tereina S-C` → the original English announcement). Saved routes, open journey
+steps and offline reopening remain intact. This is source evidence for the next
+release, not a change to the deployed version 29.

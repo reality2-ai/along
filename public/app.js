@@ -1,12 +1,12 @@
 import {createLocalizer, setLocalizedText, errorPhraseKey} from './i18n.js';
 import {setupUpdates} from './updates.js';
 import {aucklandNow} from './planner.js';
-import {readPreferences,writePreferences,recordJourney,suggestions,journeyRoutes,sameRoutes,routePreferenceLabel} from './preferences.js';
+import {readPreferences,writePreferences,recordJourney,suggestions,journeyRoutes,sameRoutes} from './preferences.js';
 const $=id=>document.getElementById(id);
 const language=createLocalizer();
 const textBindings=new Map();
 function showError(id,error){const key=errorPhraseKey(error);if(key){translated(id,key);return;}textBindings.delete(id);$(id).lang='en-NZ';$(id).textContent=error.message;}
-const translated=(id,key,values)=>{const phrase=setLocalizedText($(id),language,key,values);textBindings.set(id,{key,values,text:phrase.text});return phrase;};
+const translated=(id,key,values)=>{const phrase=setLocalizedText($(id),language,key,typeof values==='function'?values():values);textBindings.set(id,{key,values,text:phrase.text});return phrase;};
 // Acknowledgement is local to this browser, separate from journey learning.
 function collapseCourseNotice(focus=false){
   const notice=$('course-notice');notice.open=false;
@@ -273,7 +273,7 @@ $('browse-routes').onclick=()=>{
 };
 
 function legMarkup(l){
-  return `<div class="leg"><strong>${clock(l.departure)}</strong><div>${l.mode==='walk'?message('journey.walkTo',{place:l.to.name}):` ${routeLink(`${message('mode.'+l.mode+'Word')} ${escape(l.route)}`,{routeId:l.routeId,tripId:l.trip},`route-badge detail-link ${l.mode}`)} ${escape(l.headsign||l.to.name)}`}<p>${message('place.from')} ${placeDetail(l.from)}${l.from.code?' · '+escape(l.from.code):''}</p><p>${message('place.to')} ${placeDetail(l.to)} · ${clock(l.arrival)} · ${minutes(l.arrival-l.departure)} min</p>${l.mode==='walk'?walkingDirections(l):''}</div></div>`;
+  return `<div class="leg"><strong>${clock(l.departure)}</strong><div>${l.mode==='walk'?message('journey.walkTo',{place:l.to.name}):` ${routeLink(`${message('mode.'+l.mode+'Word')} ${escape(l.route)}`,{routeId:l.routeId,tripId:l.trip},`route-badge detail-link ${l.mode}`)} ${escape(l.headsign||l.to.name)}`}<p>${message('place.from')} ${placeDetail(l.from)}${l.from.code?' · '+escape(l.from.code):''}</p><p>${message('place.to')} ${placeDetail(l.to)} · ${clock(l.arrival)} · ${minutes(l.arrival-l.departure)} ${message('journey.minuteUnit')}</p>${l.mode==='walk'?walkingDirections(l):''}</div></div>`;
 }
 function renderJourneys(){
   const sort=$('sort').value,journeys=[...state.journeys].sort((a,b)=>Number(!!b.preferred)-Number(!!a.preferred)||a[sort]-b[sort]||a.arrival-b.arrival);state.displayJourneys=journeys;
@@ -318,7 +318,7 @@ $('prefer-services').onclick=()=>{
   const wasSaved=journey.saved&&sameRoutes(journey.savedRoutes,routes);
   journey.saved=true;journey.savedRoutes=wasSaved?null:routes;
   state.savedPreference=null;for(const option of state.journeys)delete option.preferred;
-  renderJourneys();persist();renderFollow();translated('announcement',wasSaved?'service.removed':'service.saved',{services:routePreferenceLabel(routes)});
+  renderJourneys();persist();renderFollow();translated('announcement',wasSaved?'service.removed':'service.saved',()=>({services:routes.length?routes.map(r=>`${language.text('mode.'+r.mode+'Title')} ${r.route}`).join(' → '):language.text('journey.walkRoll')}));
 };
 $('sort').onchange=renderJourneys;
 $('use-any-route').onclick=()=>{state.savedPreference=null;searchJourney();};
