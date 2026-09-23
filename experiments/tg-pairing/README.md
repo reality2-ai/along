@@ -870,3 +870,10 @@ receive field while offline, observes self-removal and reloads without the journ
 sharing action. The harness copies the message; this does not establish physical
 QR scanning or automatic propagation. Sending devices get no receipt merely from
 copying. Automatic catch-up, delivery tracking and key rotation remain unfinished.
+
+The software issuer rechecks recipient membership between both asynchronous
+traffic-key derivations and immediately before returning material. The browser
+test removes the target during each derivation in turn, verifies refusal and
+observes that every derived buffer is zeroed. This closes the gap between checking
+eligibility to issue a certificate and later releasing enrollment keys. Returned
+bytes are still not an enduring authorization and cannot be recalled after release.

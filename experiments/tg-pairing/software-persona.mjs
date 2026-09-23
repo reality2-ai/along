@@ -158,11 +158,19 @@ export async function loadSoftwareIssuer({wasm, store, expectedGroup, signal}) {
       enrollmentMaterial: async subject => {
         let payloadKey, integrityKey;
         try {
-          const certificate = await issueCertificate(subject);
+          if (!bytes(subject, 32)) throw fail();
+          const member = subject.slice(), certificate = await issueCertificate(member);
+          const checkRecipient = async () => {
+            await check();
+            const local = Uint8Array.from(persona.member.match(/../g), byte => parseInt(byte, 16));
+            const membership = openMembership(store, wasm, group, local);
+            try { if (await membership.peerStatus(certificate, member) !== 'current') throw fail(); }
+            finally { membership.close(); }
+          };
           const derive = async purpose => new Uint8Array(await crypto.subtle.deriveBits({name: 'HKDF', hash: 'SHA-256',
             salt: group, info: new TextEncoder().encode(purpose)}, derivationKey, 256));
-          await check(); payloadKey = await derive('r2/v0/group/payload');
-          await check(); integrityKey = await derive('r2/v0/group/integrity'); await check();
+          await checkRecipient(); payloadKey = await derive('r2/v0/group/payload');
+          await checkRecipient(); integrityKey = await derive('r2/v0/group/integrity'); await checkRecipient();
           return Object.freeze({certificate, epoch: 0n, payloadKey, integrityKey,
             destroy: () => { payloadKey.fill(0); integrityKey.fill(0); }});
         } catch { payloadKey?.fill(0); integrityKey?.fill(0); throw fail(); }

@@ -41,6 +41,13 @@ receipt are covered by the browser custody test. The test harness transfers the
 text; this is not automatic propagation, proof of every peer receiving it or
 physical-device acceptance. Automatic distribution and epoch/key rotation remain
 unfinished; removal cannot recall an AT key already copied.
+The separate AT two-app `REMOVE_GROUP_MEMBER=1` check now verifies that group
+removal closes an active shared-key live connection after two expected mocked
+provider reads and causes no further provider request. The recipient accepts the
+signed removal and reopens to route offline. A targeted custody race test also
+removes a recipient during either key-derivation step: issuance now rechecks the
+recipient and wipes derived buffers before refusing. These are software-profile
+enforcement checks, not revocation of the subscription key at Auckland Transport.
 The existing 3801 preview bundle is unchanged by this source addition.
 
 The experimental existing-device reconnect screen now exchanges public connection

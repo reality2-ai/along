@@ -1142,3 +1142,22 @@ It does not rotate a key at AT, revoke copies outside Along, advance the R2 grou
 epoch, prove cross-network reachability or qualify all combinations of interrupted
 replacement and receipt recovery. An offline device may retain the old key until
 it learns the owner's newer policy.
+
+`REMOVE_GROUP_MEMBER=1 MAIN_APP_SETUP=1` selects a separate two-app scenario.
+After actual enrollment and shared-key delivery, the recipient makes the two
+expected contextual mocked AT requests. The owner then removes its group member
+through Settings while the AT connection is open. The recipient's live controls
+disappear without another provider request. The owner shares the signed removal
+through the visible message flow; the recipient applies it, retains its selected
+step and reopens to plan a new journey offline without live controls. This differs
+from removing AT-key permission alone. Use this variant independently of the
+other interruption/replacement variants.
+
+```sh
+MAIN_APP_SETUP=1 REMOVE_GROUP_MEMBER=1 CHROMIUM_PATH=/path/to/chromium node experiments/at-credentials/two-app-integration.test.mjs
+```
+
+This verifies the composed app's enforcement of learned group removal. It cannot
+erase an AT key already copied or revoke that key at AT; provider replacement is
+still needed for an exposed key. Automatic removal propagation, key/epoch rotation
+and physical-device acceptance remain unfinished.

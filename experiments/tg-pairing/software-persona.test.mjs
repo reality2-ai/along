@@ -176,6 +176,20 @@ try {
         for (const peer of peers) check(await observer.peerStatus(peer.certificate, peer.subject) === 'revoked', 'persisted removal verifies');
       } finally { observer.close(); }
       const lateSubject = crypto.getRandomValues(new Uint8Array(32)), lateCertificate = await issuer.issueCertificate(lateSubject);
+      for (const removeAfter of [1, 2]) {
+        const subject = crypto.getRandomValues(new Uint8Array(32));
+        const certificate = await issuer.issueCertificate(subject);
+        const derive = crypto.subtle.deriveBits.bind(crypto.subtle), returned = [];
+        crypto.subtle.deriveBits = async (...args) => {
+          const buffer = await derive(...args); returned.push(new Uint8Array(buffer));
+          if (returned.length === removeAfter) await removeSoftwareMember({...base, subject, certificate});
+          return buffer;
+        };
+        try {
+          check(await denied(() => issuer.enrollmentMaterial(subject)), 'recipient removal during derivation refuses material');
+          check(returned.length === removeAfter && returned.every(bytes => !bytes.some(Boolean)), 'derived material is wiped on recipient removal');
+        } finally { crypto.subtle.deriveBits = derive; }
+      }
       const lateAbort = new AbortController();
       const lateStore = {...store, compareAndSwapMany: async (...args) => {
         const committed = await store.compareAndSwapMany(...args); lateAbort.abort(); return committed;
@@ -218,7 +232,7 @@ try {
     const issued = await (await import('./software-persona.mjs')).readIssuedMembers({wasm, store, expectedGroup: group});
     const membership = (await import('./membership.mjs')).openMembership(store, wasm, group, saved.value.subject);
     try {
-      return issued.length === 4 && saved.value.revocations.length === 3 && await membership.status() === 'current';
+      return issued.length === 6 && saved.value.revocations.length === 5 && await membership.status() === 'current';
     } finally { membership.close(); store.close(); }
   }, group), true);
   console.log('PASS: restored software issuer signs verified revocations; durable removals and issued-device directory survive a fresh document. Signed-message receipt rejects tampering/wrong groups and handles replay, peer removal and self-removal. Invalid targets, failed writes and early cancellation refuse; late cancellation retains the committed result. UI, automatic propagation and epoch rotation are not covered by this test.');
