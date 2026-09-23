@@ -751,7 +751,28 @@ reopening preserved the regular preferences, feedback draft and pairing sentinel
 and every regular shell-cache response matched its earlier SHA-256 hash.
 
 These checks establish coexistence, not same-origin security isolation or physical
-installation acceptance. Before publishing this candidate, finish the preview's
-privacy/live-information/install wording, qualify its AT flows and update lifecycle,
-and provide a specific physical-device guide. Public version 37 and the standalone
-pairing lab remain the deployed builds; this candidate has not replaced either.
+installation acceptance. Public version 37 and the standalone pairing lab remain
+the deployed builds; this candidate has not replaced either.
+
+### Preview wording and AT/update qualification
+
+The preview now has its own Settings privacy/live wording and offline installation
+guide. The history-clearing action explicitly includes saved places and explains
+that permitted devices receive those removals. Browser/platform instructions are
+rendered from the existing installation guide; they are not a fresh physical
+qualification of every browser. The [S23/desktop check](PREVIEW_DEVICE_CHECK.md)
+requires no human coding and keeps TalkBack separate from ordinary touch use.
+
+Using `PREVIEW=1`, the owner-key app check passed with `CHECK_BFCACHE=1`; the
+two-app check passed with `MAIN_APP_SETUP=1 REPLACE_SHARED_KEY=1`. These establish
+synthetic-key setup, encrypted sharing/replacement, contextual mocked AT reads,
+withheld removal before another provider request, quiet offline fallback and
+survival of unreadable schema/stalled runtime/browser Back. The preview guide also
+passed offline opening, 320px/200% reflow and axe. No production credential was used.
+
+The coexistence check now serves a simulated older 3800 shell, then activates 3801.
+Saved places, the verified device identity/revision and exact encrypted key record
+survive the upgrade and offline reopening. The regular app's storage/cache remains
+unchanged. This is an upgrade fixture, not evidence of a released version 3800.
+Publishing the qualified test preview and inspecting its HTTPS deployment are next;
+physical observations and the wider unfinished TG/sync goal remain separate gates.

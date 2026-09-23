@@ -7,9 +7,11 @@ import {createServer} from 'node:http';
 import {readFile} from 'node:fs/promises';
 import {join, extname} from 'node:path';
 const {chromium, expect} = await import(process.env.PLAYWRIGHT_MODULE || '@playwright/test');
-const root = new URL('../../releases/along-experimental-app/', import.meta.url).pathname;
+const preview = process.env.PREVIEW === '1';
+const root = new URL(preview ? '../../releases/along-device-preview/' : '../../releases/along-experimental-app/', import.meta.url).pathname;
 const manifest = JSON.parse(await readFile(join(root, 'build-info.json'), 'utf8'));
-assert.equal(manifest.profile, 'along-experimental-app-v1');
+assert.equal(manifest.profile, preview ? 'along-device-preview-v1' : 'along-experimental-app-v1');
+const deviceDatabase = manifest.namespaces?.devices ?? 'along-pairing-lab-v1';
 assert.equal(Object.keys(manifest.files).some(name => /APIKey|\.test\./.test(name)), false);
 const sources = new Map(await Promise.all(Object.entries(manifest.files).map(async ([name, hash]) => {
   const bytes = await readFile(join(root, name));
@@ -32,6 +34,7 @@ try {
   const context = await browser.newContext({viewport: {width: 1280, height: 900}});
   const origin = `http://127.0.0.1:${server.address().port}${prefix}`;
   const page = await context.newPage(), errors = [], requests = [];
+  await page.addInitScript(name => { window.testDeviceDatabase = name; }, deviceDatabase);
   let offlineMode = false, offlineAttempts = 0;
   page.on('pageerror', error => errors.push(error.message));
   await context.route('https://api.at.govt.nz/**', async route => {
@@ -46,6 +49,12 @@ try {
   await expect(page.locator('#data-status')).toContainText('offline ready', {timeout: 90000});
   await page.locator('#destination').fill('10 Victoria Road');
   await page.locator('#settings-open').click();
+  if (preview) {
+    await expect(page.locator('#settings')).toContainText('saved places and service preferences can be exchanged');
+    await expect(page.locator('#settings')).toContainText('directly from AT');
+    await expect(page.locator('#clear-history')).toHaveText('Forget history and saved places');
+    await expect(page.locator('#settings')).not.toContainText('live connection is not yet enabled');
+  }
   await page.getByRole('button', {name: 'Device and AT-key setup', exact: true}).click();
   await page.getByRole('button', {name: 'Set up my device', exact: true}).click();
   await page.getByRole('button', {name: 'Create my device group', exact: true}).click();
@@ -109,7 +118,7 @@ try {
   await page.evaluate(async () => {
     const wasm = await import('../experiments/tg-pairing/hive_wasm.js');
     const {openBrowserStorage} = await import('../experiments/tg-pairing/storage.mjs');
-    const store = await openBrowserStorage('along-pairing-lab-v1');
+    const store = await openBrowserStorage(window.testDeviceDatabase);
     const saved = await store.read('candidate-persona', 'active');
     const {createSavedATClient} = await import('../experiments/at-credentials/saved-client.mjs');
     window.testLiveStore = store;
@@ -179,6 +188,19 @@ try {
   assert.equal(requests.length, 2);
   // Optional WASM can stall even with a saved identity. Planning must start,
   // and a late runtime result must not silently enable live access afterwards.
+  if (preview) {
+    await page.goto(origin + 'public/install.html');
+    await expect(page.getByRole('heading', {level: 1})).toHaveText('Install Along Device Preview');
+    await expect(page.locator('main')).toContainText('not a security boundary');
+    await expect(page.locator('main')).toContainText('No Along server stores');
+    await page.getByText('Chrome — Android phone or tablet', {exact: true}).click();
+    await page.setViewportSize({width: 320, height: 640});
+    await page.evaluate(() => document.documentElement.style.fontSize = '200%');
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+    assert.deepEqual((await new AxeBuilder({page}).analyze()).violations.map(v => v.id), []);
+    await page.setViewportSize({width: 1280, height: 900});
+    await page.goto(origin + 'public/');
+  }
   await context.setOffline(false); offlineMode = false;
   await page.addInitScript(() => {
     document.addEventListener('DOMContentLoaded', () => {
@@ -212,7 +234,7 @@ try {
   // A newer, unreadable lab schema must not be reset or hold up the planner.
   await page.goto(origin + 'public/install.html');
   const futureCount = await page.evaluate(() => new Promise((resolve, reject) => {
-    const request = indexedDB.open('r2-browser:along-pairing-lab-v1', 2);
+    const request = indexedDB.open('r2-browser:' + window.testDeviceDatabase, 2);
     request.onerror = () => reject(request.error);
     request.onsuccess = () => {
       const db = request.result, count = db.transaction('records').objectStore('records').count();
@@ -225,7 +247,7 @@ try {
     for (const method of ['put', 'add', 'delete', 'clear']) {
       const original = IDBObjectStore.prototype[method];
       IDBObjectStore.prototype[method] = function(...args) {
-        if (this.transaction.db.name === 'r2-browser:along-pairing-lab-v1') r2WriteAttempts++;
+        if (this.transaction.db.name === 'r2-browser:' + window.testDeviceDatabase) r2WriteAttempts++;
         return original.apply(this, args);
       };
     }
@@ -235,7 +257,7 @@ try {
   assert.equal(await page.evaluate(() => r2WriteAttempts), 0);
   assert.equal(await page.evaluate(async () => (await import('../experiments/at-credentials/app-live-bridge.mjs')).createLiveClient().configured), false);
   assert.deepEqual(await page.evaluate(() => new Promise((resolve, reject) => {
-    const request = indexedDB.open('r2-browser:along-pairing-lab-v1');
+    const request = indexedDB.open('r2-browser:' + window.testDeviceDatabase);
     request.onerror = () => reject(request.error);
     request.onsuccess = () => {
       const db = request.result, version = db.version, count = db.transaction('records').objectStore('records').count();

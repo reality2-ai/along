@@ -254,5 +254,17 @@ and the preview on one origin, sets up a preview identity, updates/reopens the
 preview, then reopens both offline. It checks the original app's preferences,
 feedback draft, pairing record and every cached shell response remain unchanged.
 Window storage-access observation also verifies preview use of the separate names.
-The regular and preview timetable databases coexist. Physical install/update
-acceptance and preview-specific release wording remain outstanding.
+The regular and preview timetable databases coexist. A simulated older 3800 shell
+updates to 3801 and retains the exact saved preferences, device identity revision
+and encrypted AT-key ciphertext. This is a fixture upgrade; 3800 was not released.
+
+The candidate now includes [preview-specific installation/privacy guidance](../../docs/PREVIEW_INSTALL.md),
+rendered with the regular browser/platform instructions. Settings distinguishes
+local history from optional saved-place sharing, describes direct AT requests and
+labels the history-clearing action's effect on saved places. The guide is verified
+offline with narrow/zoom and axe checks. Owner and shared-key app checks also pass
+with the preview namespaces, including key replacement, withheld access removal,
+browser Back, unreadable schema and stalled optional runtime. AT responses are
+mocked and keys synthetic; this does not establish real-provider or physical-device
+acceptance. The [S23/desktop guide](../../docs/PREVIEW_DEVICE_CHECK.md) is ready for
+publication alongside the candidate; the preview has not yet been deployed.

@@ -15,14 +15,18 @@ const sources = new Map(await Promise.all(Object.entries(manifest.files).map(asy
   const body = await readFile(join(root, name));
   assert.equal(createHash('sha256').update(body).digest('hex'), hash); return [name, body];
 })));
+// Simulate an earlier shell using the same tested implementation and stores.
+// This is an upgrade fixture, not a claim that version 3800 was released.
+let serveCurrent = false;
 const server = createServer(async (req, res) => {
   const path = new URL(req.url, 'http://localhost').pathname;
   const preview = path.startsWith('/along/preview/');
   const prefix = preview ? '/along/preview/' : '/along/';
   const name = path.startsWith(prefix) ? path.slice(prefix.length) + (path.endsWith('/') ? 'index.html' : '') : '';
   try {
-    const body = preview ? sources.get(name) : name && await readFile(join(regularRoot, name));
+    let body = preview ? sources.get(name) : name && await readFile(join(regularRoot, name));
     if (!body) throw Error('missing');
+    if (preview && !serveCurrent && ['public/index.html', 'public/sw.js'].includes(name)) body = Buffer.from(body.toString().replaceAll('3801', '3800'));
     res.setHeader('Content-Type', ({'.js': 'text/javascript', '.mjs': 'text/javascript', '.wasm': 'application/wasm', '.html': 'text/html', '.css': 'text/css', '.gz': 'application/gzip', '.json': 'application/json', '.webmanifest': 'application/manifest+json', '.png': 'image/png', '.svg': 'image/svg+xml'})[extname(name)] || 'text/plain');
     res.end(body);
   } catch { res.writeHead(404); res.end(); }
@@ -68,11 +72,30 @@ try {
   await expect(preview.locator('#address-status')).toContainText('ready offline', {timeout: 60000});
   await expect.poll(() => preview.evaluate(() => navigator.serviceWorker.controller?.scriptURL)).toBe(origin + '/along/preview/public/sw.js');
   await preview.locator('#settings-open').click();
-  await expect(preview.locator('#settings')).toContainText('App version 3801');
+  await expect(preview.locator('#settings')).toContainText('App version 3800');
   await preview.getByRole('button', {name: 'Device and AT-key setup', exact: true}).click();
   await preview.getByRole('button', {name: 'Set up my device', exact: true}).click();
   await preview.getByRole('button', {name: 'Create my device group', exact: true}).click();
   await preview.getByRole('heading', {name: 'Your devices and AT key', exact: true}).waitFor();
+  await preview.getByRole('button', {name: 'Use my own AT key', exact: true}).click();
+  await preview.getByRole('button', {name: 'Set up live information', exact: true}).click();
+  await preview.getByLabel('Personal AT API key', {exact: true}).fill('synthetic-preview-update-key');
+  await preview.getByRole('button', {name: 'Save key on this device', exact: true}).click();
+  await preview.getByRole('heading', {name: 'AT key saved on this device', exact: true}).waitFor();
+  const previewState = () => preview.evaluate(async namespaces => {
+    const {openBrowserStorage} = await import('../experiments/tg-pairing/storage.mjs');
+    const store = await openBrowserStorage(namespaces.devices);
+    const hex = bytes => Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+    try {
+      const persona = await store.read('candidate-persona', 'active'), group = hex(persona.value.record.group);
+      const anchor = await store.read('along-at-owners', group);
+      const secret = await store.read('along-at-secret:' + anchor.value.owner, group + ':' + anchor.value.credential);
+      return {group, member: hex(persona.value.record.subject), personaRevision: persona.revision,
+        secretRevision: secret.revision, ciphertext: hex(secret.value.ciphertext), preferences: localStorage.getItem(namespaces.preferences)};
+    } finally { store.close(); }
+  }, manifest.namespaces);
+  await preview.evaluate(key => localStorage.setItem(key, JSON.stringify({learning: false, journeys: [{from: {id: 'preview-from', name: 'Preview saved start', lat: -36.85, lon: 174.76}, to: {id: 'preview-to', name: 'Preview saved destination', lat: -36.86, lon: 174.77}, saved: true, savedRoutes: [{mode: 'bus', route: '70'}], count: 0, hours: Array(24).fill(0), days: Array(7).fill(0), last: 0}]})), manifest.namespaces.preferences);
+  const previewBefore = await previewState();
   const accesses = await preview.evaluate(() => window.previewStorageAccess);
   assert.ok(accesses.some(([kind, name]) => kind === 'database' && name === 'r2-browser:' + manifest.namespaces.devices));
   assert.ok(accesses.some(([kind, name]) => kind === 'getItem' && name === manifest.namespaces.preferences));
@@ -81,11 +104,17 @@ try {
   const databases = await preview.evaluate(() => indexedDB.databases());
   assert.ok(databases.some(db => db.name === manifest.namespaces.offline));
   assert.ok(databases.some(db => db.name === 'along-offline'));
+  serveCurrent = true;
   await preview.goto(origin + '/along/preview/public/update.html');
   await preview.locator('#recover-update').click();
   await expect(preview.locator('#recovery-status')).toContainText('3801', {timeout: 60000});
   await preview.locator('#recover-update').click();
   await expect(preview.locator('#address-status')).toContainText('ready offline', {timeout: 60000});
+  await expect(preview.locator('#settings')).toContainText('App version 3801');
+  assert.deepEqual(await previewState(), previewBefore, 'upgrade retains saved places, identity and exact encrypted key record');
+  await preview.locator('#settings-open').click();
+  await preview.getByRole('button', {name: 'Device and AT-key setup', exact: true}).click();
+  await preview.getByRole('button', {name: 'Manage my AT key', exact: true}).waitFor();
   await context.setOffline(true);
   await Promise.all([normal.reload(), preview.reload()]);
   await expect(normal.locator('#address-status')).toContainText('ready offline', {timeout: 60000});
@@ -105,6 +134,7 @@ try {
     finally { store.close(); }
   });
   assert.deepEqual(after, original); assert.deepEqual(sentinel, {revision: 1, value: {kept: 'regular pairing lab'}});
+  assert.deepEqual(await previewState(), previewBefore);
   assert.deepEqual(errors, []);
-  console.log('PASS: regular and preview app coexist on one origin; preview setup, update/reopen and offline reopening preserve regular preferences, feedback, pairing record and byte-identical shell cache. Namespacing is not a same-origin security boundary.');
+  console.log('PASS: regular and preview coexist on one origin; a simulated 3800→3801 update preserves preview saved places, verified identity and exact encrypted key; offline reopening preserves regular preferences, feedback, pairing record and byte-identical shell cache. Namespacing is not a same-origin security boundary.');
 } finally { await browser?.close(); await new Promise(resolve => server.close(resolve)); }

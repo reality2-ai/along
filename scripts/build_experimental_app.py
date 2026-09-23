@@ -10,6 +10,7 @@ import tempfile
 
 from runtime_notices import copy_runtime_notices
 from runtime_provenance import copy_provenance, runtime_arguments
+from preview_content import prepare_preview_content
 
 ROOT = Path(__file__).resolve().parents[1]
 PROFILE = 'along-experimental-app-v1'
@@ -145,6 +146,7 @@ window.addEventListener('along-saved-journeys-applied', () => {
             manifest['name'] = 'Along Device Preview'
             manifest['short_name'] = 'Along Preview'
             (stage / 'public/manifest.webmanifest').write_text(json.dumps(manifest, indent=2) + '\n')
+            prepare_preview_content(stage)
             (stage / '.nojekyll').touch()
         (stage / 'DO-NOT-PUBLISH.txt').write_text('Local experimental build only. Experimental release checks remain pending. Use synthetic credentials.\n'
             + ('Runtime provenance is included; see runtime-provenance.json.\n' if runtime else 'Runtime source/compiler provenance is not verified by this build.\n'))

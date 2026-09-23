@@ -1114,3 +1114,12 @@ then compares the original app's saved records and cache bytes. The distinction
 between preventing accidental data mixing and providing a security boundary is
 kept explicit. This extends the evidence theme from “works in a fresh profile” to
 “coexists with what the commuter already installed.”
+
+Preparing preview wording exposed a privacy mismatch: the regular app's “data
+stays on this device” copy no longer described opt-in device sharing, and “Forget
+history” hid its effect on saved places. The preview now explains the actual data
+boundary and the propagation of saved-place removals. Its installation guide
+distinguishes scheduled planning, direct AT requests and deliberate peer exchange.
+An upgrade fixture then checks that a new shell retains the same encrypted key,
+identity and saved choices. The course lesson is that release readiness includes
+accurate user promises and continuity of existing data, alongside functional tests.
