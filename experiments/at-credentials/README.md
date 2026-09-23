@@ -319,5 +319,26 @@ The distinct-member WebRTC test now uses this operation instead of directly writ
 receiver pins. It passes refusal of invalid signatures, mismatched credentials,
 wrong owner certificates, a valid signed policy lacking the local grant, cancellation,
 interrupted writes and repeated acceptance; then it installs the delivered key.
-The issuer and reviewed descriptor are still fixtures. User-facing review/consent,
-descriptor exchange, removal propagation and reconnect freshness remain open.
+The issuer and reviewed descriptor are still fixtures. The consent screen below
+uses this operation; descriptor exchange, removal propagation and reconnect
+freshness remain open.
+
+## Receiver consent screen
+
+`showRemoteOwnerConsent` now presents the checked acceptance path after the
+trusted pairing flow has selected the owner. It explains encrypted local storage,
+direct optional AT use and the limits of receiving access changes. A full-width
+allow action is separate from Back; technical identity details are expandable.
+The screen snapshots the reviewed binding and evidence, waits for connection
+authentication, and invokes acceptance only on trusted user activation. Back,
+Escape, disposal and connection loss prevent a pending choice from silently
+continuing. Leaving does not undo a commit that already completed. Completed
+acceptance says the key has not arrived yet.
+
+The WebRTC test now drives this screen with actual keyboard input before key
+delivery. Back without acceptance, synthetic-click refusal, completion focus,
+200% text on a narrow viewport and axe checks pass. The test then continues through
+signed delivery and encrypted receiver installation. It is still a one-host test
+with a synthetic issuer and reviewed descriptor; no physical TalkBack check or
+public integration is claimed. The enclosing descriptor/discovery flow and
+connected-device settings after acceptance remain unfinished.

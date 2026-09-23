@@ -1,23 +1,34 @@
 import assert from 'node:assert/strict';
+import AxeBuilder from '@axe-core/playwright';
 import {createServer} from 'node:http';
 import {readFile} from 'node:fs/promises';
 import {join} from 'node:path';
 const {chromium} = await import(process.env.PLAYWRIGHT_MODULE || '@playwright/test');
 const sources = new Map();
 for (const name of ['storage.mjs', 'membership.mjs', 'certificate.mjs', 'peer-session.mjs', 'peer-link.mjs', 'challenge.mjs', 'session-statement.mjs']) sources.set('/' + name, await readFile(join(process.env.R2_BROWSER_DIR, name)));
-for (const name of ['../tg-pairing/initial-persona.mjs', '../tg-pairing/local-persona.mjs', 'local-owner.mjs', 'owner-policy.mjs', 'owner-delivery.mjs', 'remote-owner.mjs', '../tg-pairing/local-persona-session.mjs', 'policy.mjs', 'policy-store.mjs', 'local-vault.mjs', 'delivery-message.mjs']) sources.set('/' + name.split('/').pop(), await readFile(new URL(name, import.meta.url)));
+for (const name of ['../tg-pairing/initial-persona.mjs', '../tg-pairing/local-persona.mjs', 'local-owner.mjs', 'owner-policy.mjs', 'owner-delivery.mjs', 'remote-owner.mjs', 'remote-owner-view.mjs', '../tg-pairing/comparison.css', '../tg-pairing/local-persona-session.mjs', 'policy.mjs', 'policy-store.mjs', 'local-vault.mjs', 'delivery-message.mjs']) sources.set('/' + name.split('/').pop(), await readFile(new URL(name, import.meta.url)));
 for (const name of ['hive_wasm.js', 'hive_wasm_bg.wasm']) sources.set('/' + name, await readFile(join(process.env.R2_WASM_DIR, name)));
 for (const name of ['live-client.mjs', '../../public/at-client.js', '../../public/live-client.js']) sources.set('/' + name.split('/').pop(), await readFile(new URL(name, import.meta.url)));
 const server = createServer((req, res) => {
   const path = '/' + req.url.split('/').pop();
-  res.setHeader('Content-Type', req.url.endsWith('.wasm') ? 'application/wasm' : sources.has(path) ? 'text/javascript' : 'text/html');
-  res.end(sources.get(path) || '<!doctype html><title>First-use test</title>');
+  res.setHeader('Content-Type', req.url.endsWith('.wasm') ? 'application/wasm' : req.url.endsWith('.css') ? 'text/css' : sources.has(path) ? 'text/javascript' : 'text/html');
+  res.end(sources.get(path) || '<!doctype html><html lang="en"><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>Device consent</title><link rel="stylesheet" href="/comparison.css"></head><body><main><h1 style="font:600 1.5rem system-ui">Connect devices</h1><div id="consent"></div></main></body></html>');
 });
 await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
 let browser;
 try {
   browser = await chromium.launch({headless: true, executablePath: process.env.CHROMIUM_PATH});
-  const page = await browser.newPage(); await page.goto(`http://127.0.0.1:${server.address().port}`);
+  const context = await browser.newContext({viewport: {width: 320, height: 640}});
+  const page = await context.newPage(); await page.goto(`http://127.0.0.1:${server.address().port}`);
+  await page.exposeFunction('exerciseConsent', async action => {
+    if (action === 'cancel') { await page.keyboard.press('Escape'); return; }
+    await page.evaluate(() => document.documentElement.style.fontSize = '200%');
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+    assert.deepEqual((await new AxeBuilder({page}).analyze()).violations.map(v => v.id), []);
+    await page.evaluate(() => document.querySelector('.pairing-primary').click());
+    await page.getByRole('heading', {name: 'Use your connected device’s AT key?'}).waitFor();
+    await page.keyboard.press('Tab'); await page.keyboard.press('Enter');
+  });
   await page.evaluate(async () => {
     const wasm = await import('./hive_wasm.js'); await wasm.default();
     const {openBrowserStorage} = await import('./storage.mjs');
@@ -95,7 +106,19 @@ try {
       finally { IDBObjectStore.prototype.put = originalPut; }
       check(await receiver.store.read('along-at-owners', binding.group) === null
         && await receiver.store.read(policyScope, policyKey) === null, 'no orphan pin or policy');
-      const accepted = await accept({});
+      const {showRemoteOwnerConsent} = await import('./remote-owner-view.mjs');
+      const consentOptions = {wasm, store: receiver.store, expected: binding, ownerCertificate: owner.certificate,
+        policyBytes: signed.value.bytes, policySignature: signed.value.signature, connection: receiving, focus: true};
+      let backs = 0;
+      const cancelledView = showRemoteOwnerConsent(document.querySelector('#consent'), {...consentOptions, onBack: () => { backs++; }});
+      await cancelledView.ready; await window.exerciseConsent('cancel');
+      check(backs === 1 && await receiver.store.read('along-at-owners', binding.group) === null, 'Back does not accept owner');
+      const consent = showRemoteOwnerConsent(document.querySelector('#consent'), consentOptions);
+      await consent.ready; await window.exerciseConsent('allow');
+      const accepted = await consent.completed;
+      check(document.activeElement.textContent === 'Back', 'consent completion keeps keyboard focus');
+      check(document.querySelector('[role=status]').textContent.includes('has not been received'), 'consent is not delivery');
+      consent.dispose();
       check(accepted.status === 'remote-owner-accepted', 'receiver accepted owner and grant');
       check(await denied(() => accept({})), 'accepted owner is not replaced');
       request = await receiverVault.prepareDelivery({ownerCertificate: owner.certificate, signal: receiving.signal});
