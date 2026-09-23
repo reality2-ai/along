@@ -150,6 +150,14 @@ End with what the evidence supports and what remains untested.
 
 Deliverable: a reproducible release folder and a reviewable handover.
 
+## Optional evidence-audit lab
+
+The [evidence-audit worksheet](course/EVIDENCE_AUDIT_LAB.md) adds a 60–90 minute
+exercise using Along's actual feedback, offline and R2 integration artifacts.
+Learners predict what would prove a claim, identify fixtures, direct one useful
+failure check, and write a scoped handover. It includes instructor discussion
+notes and requires no human coding or public test submissions.
+
 ## Example assistant prompts
 
 - “Interpret this commuter scenario. Separate requirements from assumptions and

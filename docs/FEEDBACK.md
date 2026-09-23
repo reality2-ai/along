@@ -1,6 +1,6 @@
 # Contextual feedback to the Along repository
 
-Goal 11 is in progress. Version 36 includes the contextual feedback dialog first
+Goal 11 is in progress. Version 37 includes the contextual feedback dialog first
 released in version 31.
 `public/feedback.js` implements local draft storage, reviewable issue bodies,
 GitHub handoff URLs and explicit receipt verification. Both feedback modules are included in the offline shell.
