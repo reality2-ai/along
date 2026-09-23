@@ -945,3 +945,12 @@ limits still apply. Interrupted sharing recovery is a separate unfinished path;
 the successful path does not establish it. This illustrates how a course can
 track increasing integration coverage without relabeling every passing test as
 release acceptance.
+
+
+A later interruption check drops the real key-delivery confirmation after the
+recipient has saved its key. Recovery now distinguishes the recipient sending
+its saved receipt from the owner verifying and saving confirmation. The two-profile
+test checks unchanged ciphertext and permission revisions, rather than inferring
+preservation from a success message. This extends the theme that visible outcomes
+must follow durable evidence. It still establishes a browser test with synthetic
+credentials, not physical-device or live-provider acceptance.

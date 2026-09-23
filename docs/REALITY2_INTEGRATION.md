@@ -25,8 +25,12 @@ and no rewrite of the existing grant; the two-profile test covers that path.
 Recipient acceptance also survives a reload before key arrival: the matching
 saved binding and current owner policy are checked before an explicit receive
 retry. Tests cover preserved revisions and refusal of a substituted credential
-descriptor. Recovery after key installation with lost confirmation, and bringing
-setup into main-app Settings, remain outstanding.
+descriptor. A lost delivery confirmation now recovers through explicit saved-
+receipt controls on a fresh authenticated connection. The two-profile check
+preserves both encrypted key records and permission revisions while changing
+only the owner's pending delivery to confirmed. This is historical storage
+confirmation, not provider verification. Further interruption combinations and
+bringing setup into main-app Settings remain outstanding.
 Physical phone/desktop connectivity remains unverified; this is not seamless
 background reconnection or a public release.
 

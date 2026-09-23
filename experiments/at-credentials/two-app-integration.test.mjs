@@ -154,6 +154,14 @@ try {
     RTCDataChannel.prototype.send = function(...args) { window.withheldSharingMessages++; };
     window.restoreSharingTransport = () => { RTCDataChannel.prototype.send = send; };
   });
+  if (process.env.LOSE_KEY_CONFIRMATION === '1') await candidate.evaluate(() => {
+    const send = RTCDataChannel.prototype.send;
+    window.sharingSends = 0; window.droppedConfirmation = 0;
+    RTCDataChannel.prototype.send = function(...args) {
+      if (++window.sharingSends === 1) return send.apply(this, args);
+      window.droppedConfirmation++;
+    };
+  });
   await acceptKey.focus(); await candidate.keyboard.press('Enter');
   if (process.env.INTERRUPT_ACCEPTANCE === '1') {
     await candidate.getByRole('heading', {name: 'Receiving the shared key', exact: true}).waitFor();
@@ -204,6 +212,57 @@ try {
     console.log('Acceptance interruption: restored the actual saved owner choice and explicitly resumed delivery.');
   }
   await candidate.getByRole('heading', {name: 'Shared AT key saved', exact: true}).waitFor();
+  if (process.env.LOSE_KEY_CONFIRMATION === '1') {
+    await candidate.waitForFunction(() => window.droppedConfirmation > 0);
+    const snapshot = page => page.evaluate(async () => {
+      const store = await (await import('./tg-pairing/storage.mjs')).openBrowserStorage('along-pairing-lab-v1');
+      try {
+        const record = (await store.read('candidate-persona', 'active')).value.record;
+        const hex = bytes => Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+        const group = hex(record.group), anchor = await store.read('along-at-owners', group);
+        const key = group + ':' + anchor.value.credential;
+        const secret = await store.read('along-at-secret:' + anchor.value.owner, key);
+        const policy = await store.read('along-at-policy:' + anchor.value.owner, key);
+        return {member: hex(record.subject), binding: {group, owner: anchor.value.owner, credential: anchor.value.credential},
+          anchorRevision: anchor.revision, policyRevision: policy.revision, secretRevision: secret.revision,
+          ciphertextHash: hex(new Uint8Array(await crypto.subtle.digest('SHA-256', secret.value.ciphertext)))};
+      } finally { store.close(); }
+    });
+    const before = await Promise.all(pages.map(snapshot));
+    const historyState = () => owner.evaluate(async recipient => {
+      const store = await (await import('./tg-pairing/storage.mjs')).openBrowserStorage('along-pairing-lab-v1');
+      try {
+        return await (await import('./at-credentials/delivery-history.mjs')).openDeliveryHistory({store, ...recipient.binding, recipient: recipient.member}).read();
+      } finally { store.close(); }
+    }, before[0]);
+    assert.equal((await historyState()).status, 'pending');
+    assert.equal(await owner.getByRole('heading', {name: 'Other device saved the key', exact: true}).count(), 0);
+    await Promise.all(pages.map(page => page.reload()));
+    await Promise.all(pages.map(page => page.getByRole('button', {name: 'Restore saved test device', exact: true}).click()));
+    await owner.getByRole('button', {name: 'Share my AT key', exact: true}).click();
+    await candidate.getByRole('button', {name: 'Receive a shared AT key', exact: true}).click();
+    await owner.getByRole('heading', {name: 'Share your AT key', exact: true}).waitFor();
+    await move(owner, candidate, 'AT-key sharing message', 'Review sharing device');
+    await candidate.getByRole('button', {name: 'Connect to this sharing device', exact: true}).click();
+    await candidate.getByRole('heading', {name: 'Connect for key sharing', exact: true}).waitFor();
+    await move(candidate, owner, 'Sharing connection request', 'Connect for key sharing');
+    await owner.getByRole('heading', {name: 'Send the sharing reply', exact: true}).waitFor();
+    await move(owner, candidate, 'Sharing connection reply', 'Check sharing connection');
+    const checkReceipt = owner.getByRole('button', {name: 'Check saved confirmation', exact: true});
+    await checkReceipt.waitFor(); await checkReceipt.evaluate(button => button.click());
+    assert.equal(await candidate.getByRole('button', {name: 'Send saved confirmation', exact: true}).count(), 0);
+    await checkReceipt.focus(); await owner.keyboard.press('Enter');
+    const sendReceipt = candidate.getByRole('button', {name: 'Send saved confirmation', exact: true});
+    await sendReceipt.waitFor(); await sendReceipt.evaluate(button => button.click());
+    assert.equal((await historyState()).status, 'pending');
+    await sendReceipt.focus(); await candidate.keyboard.press('Enter');
+    await candidate.getByRole('heading', {name: 'Saved confirmation sent', exact: true}).waitFor();
+    await owner.getByRole('heading', {name: 'Other device saved the key', exact: true}).waitFor();
+    assert.equal((await historyState()).status, 'recipient-confirmed-saved');
+    assert.deepEqual(await Promise.all(pages.map(snapshot)), before, 'receipt recovery preserves identities, bindings, policies and exact encrypted key records');
+    assert.equal(providerRequests.length, 0);
+    console.log('Lost confirmation: actual pending delivery recovered through visible receipt controls without replacing either encrypted key.');
+  }
   await owner.getByRole('heading', {name: 'Other device saved the key', exact: true}).waitFor();
   assert.equal(providerRequests.length, 0);
   await candidate.setViewportSize({width: 1280, height: 900});

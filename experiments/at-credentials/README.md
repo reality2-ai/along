@@ -890,8 +890,8 @@ message matches its saved group, owner and credential. The current signed policy
 is verified on the new authenticated connection; an unchanged policy is not
 rewritten. The recipient explicitly chooses **Receive the shared key** when the
 key is missing. A stored key is kept with an explanatory status instead of
-silently delivered again. Recovery of an unacknowledged stored delivery is still
-needed. The generic unconfirmed outcome explicitly warns that permission
+silently delivered again. An unacknowledged stored delivery now has an explicit
+saved-receipt recovery path. The generic unconfirmed outcome explicitly warns that permission
 or a key may already have been saved. Browser software-custody limits still apply.
 
 The two-app test now obtains its shared key entirely through these visible setup
@@ -931,3 +931,34 @@ INTERRUPT_ACCEPTANCE=1 CHROMIUM_PATH=/path/to/chromium node experiments/at-crede
 This test establishes recovery before key arrival. It does not prove recovery
 when a key committed but the receipt or its acknowledgment was lost. Nor does
 it qualify credential rotation, hardware protection or real provider responses.
+
+
+### Recovering a lost key-delivery confirmation
+
+When the owner restores a pending delivery on a newly authenticated connection,
+**Check saved confirmation** is the primary action. It sends the exact historical
+context from the owner's delivery journal. The recipient matches it against its
+accepted binding and asks before sending the saved receipt. Its message says
+**Saved confirmation sent**; only the owner reports **Other device saved the key**
+after verifying and durably recording that receipt. This proves historical
+installation, not current provider validity or a new permission grant.
+
+No credential is sent on the receipt path. If the owner still grants access,
+**Retry key delivery instead** remains available as an explicit alternative for
+a key that never arrived. It rechecks current policy and still requires recipient
+consent or explicit receipt continuation. The recipient refuses to overwrite an
+already-saved current key. Interrupted-delivery retry combinations beyond the
+verified cases remain to be checked.
+
+`LOSE_KEY_CONFIRMATION=1` drops the recipient's actual outbound confirmation after
+nonce delivery, observes an installed key and pending owner journal, reloads both
+profiles and recovers through the visible controls. It refuses synthetic actions
+on both devices and verifies the pending-to-confirmed journal transition. Identity,
+owner-binding and policy revisions, secret storage revisions and ciphertext hashes
+are unchanged on both sides. The test then completes contextual mocked AT reads,
+removal, disconnect and offline routing. The interrupted-acceptance variant also
+passes with this implementation.
+
+```sh
+LOSE_KEY_CONFIRMATION=1 CHROMIUM_PATH=/path/to/chromium node experiments/at-credentials/two-app-integration.test.mjs
+```

@@ -10,6 +10,7 @@ import {showRemoteOwnerConsent} from './remote-owner-view.mjs';
 import {openLocalATVault} from './local-vault.mjs';
 import {sendOwnerCredential} from './owner-delivery.mjs';
 import {openDeliveryHistory} from './delivery-history.mjs';
+import {requestDeliveryRecovery, answerDeliveryRecovery, decodeRecoveryRequest} from './delivery-recovery.mjs';
 import {applyRemoteATPolicy} from './policy-update.mjs';
 const profile = 'along-at-sharing-v1';
 const hex = bytes => Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
@@ -23,12 +24,14 @@ export function showKeySharingFlow(container, {wasm, store, expectedGroup, role,
   const dispose = () => { if (disposed) return; disposed = true; child?.dispose(); lifetime.abort(); request?.close(); session?.close(); };
   const back = () => { dispose(); onBack(); };
   const screen = () => { current(); child?.dispose(); child = undefined; const node = document.createElement('div'); container.replaceChildren(node); return node; };
-  const message = (title, text, action, handler) => {
+  const message = (title, text, action, handler, secondary) => {
     const node = screen(), panel = document.createElement('section'); panel.className = 'pairing-comparison';
     const heading = document.createElement('h2'); heading.textContent = title; heading.tabIndex = -1;
     const status = document.createElement('p'); status.textContent = text; status.setAttribute('role', 'status'); panel.append(heading, status);
-    if (action) { const button = document.createElement('button'); button.type = 'button'; button.className = 'pairing-primary'; button.textContent = action;
-      button.addEventListener('click', async event => { if (!event.isTrusted || disposed || failed || button.disabled) return; button.disabled = true; try { await handler(); } catch { fail(); } }); panel.append(button); }
+    for (const [label, run, primary] of [[action, handler, true], [secondary?.label, secondary?.run, false]]) if (label) {
+      const button = document.createElement('button'); button.type = 'button'; button.className = primary ? 'pairing-primary' : ''; button.textContent = label; button.dataset.sharingAction = '';
+      button.addEventListener('click', async event => { if (!event.isTrusted || disposed || failed || button.disabled) return; for (const control of panel.querySelectorAll('[data-sharing-action]')) control.disabled = true; try { await run(); } catch { fail(); } }); panel.append(button);
+    }
     const leave = document.createElement('button'); leave.type = 'button'; leave.textContent = 'Back'; leave.addEventListener('click', back); panel.append(leave); node.append(panel);
     panel.addEventListener('keydown', event => { if (event.key === 'Escape') { event.preventDefault(); back(); } });
     if (focus) heading.focus();
@@ -74,9 +77,9 @@ export function showKeySharingFlow(container, {wasm, store, expectedGroup, role,
                 phase = 'sending';
                 sending = sendOwnerCredential({wasm, store, expectedGroup: group, peer, peerCertificate: certificate, nonce: packet, connection: session});
                 sendResult = await sending; current(); phase = 'await-ack';
-              } else if (phase === 'sending' || phase === 'await-ack') {
+              } else if (phase === 'sending' || phase === 'await-ack' || phase === 'await-recovery-ack') {
                 if (sending) await sending; current();
-                if (!sendResult) throw Error('No delivery');
+                if (!sendResult && phase !== 'await-recovery-ack') throw Error('No delivery');
                 const receipt = await openDeliveryHistory({store, ...binding, recipient: hex(peer)}).confirm(packet, {signal: session.signal}); current();
                 if (receipt.status !== 'recipient-confirmed-saved') throw Error('No confirmation');
                 completed = true; phase = 'complete';
@@ -106,7 +109,15 @@ export function showKeySharingFlow(container, {wasm, store, expectedGroup, role,
                   if (phase === 'await-request') message('Waiting for your other device', 'Access permission is saved here. Your other device must accept the key before it is sent.');
                 };
                 const {parsed} = await readPolicy();
-                if (parsed.devices.includes(hex(peer))) {
+                const history = await openDeliveryHistory({store, ...binding, recipient: hex(peer)}).read({signal: lifetime.signal}); current();
+                if (history.status === 'pending') {
+                  message('Check the earlier key delivery?', 'This device has not saved confirmation of its earlier delivery. Check the other device’s saved receipt without sending the key again.',
+                    'Check saved confirmation', async () => {
+                      phase = 'await-recovery-ack';
+                      await requestDeliveryRecovery({wasm, store, expectedGroup: group, peer, connection: session}); current();
+                      if (phase === 'await-recovery-ack') message('Waiting for saved confirmation', 'Your other device must choose to send its saved receipt. This does not send or replace the key.');
+                    }, parsed.devices.includes(hex(peer)) ? {label: 'Retry key delivery instead', run: continueSharing} : undefined);
+                } else if (parsed.devices.includes(hex(peer))) {
                   message('Continue sharing with this device?', 'This connected device already has your permission. Continuing keeps that permission and waits for its consent before sending the key. Device identity: ' + hex(peer),
                     'Continue sharing my key', continueSharing);
                 } else {
@@ -133,6 +144,19 @@ export function showKeySharingFlow(container, {wasm, store, expectedGroup, role,
                 phase = 'await-policy';
                 await open('offer', async packet => {
                   if (phase === 'await-policy') {
+                    let recovery;
+                    try { recovery = decodeRecoveryRequest(packet); } catch { /* Other packet type. */ }
+                    if (recovery) {
+                      if (!saved || ['group', 'owner', 'credential'].some(key => recovery[key] !== saved.binding[key])) throw Error('Different recovery context');
+                      phase = 'recovery-consent';
+                      message('Confirm the key already saved?', 'Your sharing device is checking its earlier delivery. Send the saved receipt; your key and permissions will not be replaced.',
+                        'Send saved confirmation', async () => {
+                          await answerDeliveryRecovery({wasm, store, expectedGroup: group, peer, connection: session, packet}); current();
+                          completed = true; phase = 'complete';
+                          message('Saved confirmation sent', 'Your saved receipt was sent to the sharing device. Check that it shows Other device saved the key. Your existing key has been kept.');
+                        });
+                      return;
+                    }
                     if (packet.length > 10000) throw Error('Policy too large');
                     const policy = JSON.parse(new TextDecoder('utf-8', {fatal: true}).decode(packet));
                     if (policy.type !== 'sharing-policy' || !Array.isArray(policy.bytes) || policy.bytes.length > 2048) throw Error('Invalid policy');
@@ -153,7 +177,7 @@ export function showKeySharingFlow(container, {wasm, store, expectedGroup, role,
                         acceptUnchanged: true, signal: lifetime.signal}); current();
                       const state = await openLocalATVault({wasm, store, ...binding}).inspect({signal: lifetime.signal}); current();
                       if (state.status === 'saved-unverified') {
-                        message('A shared key is already saved', 'Your existing key has been kept. Use Along Settings to reconnect for live information. Confirmation of an earlier delivery needs its own recovery check.');
+                        message('A shared key is already saved', 'Your existing key has been kept. If your sharing device is still waiting for confirmation, reconnect and choose Check saved confirmation there. Otherwise, use Along Settings to reconnect for live information.');
                       } else if (['missing', 'replacement-needed'].includes(state.status)) {
                         message('Continue receiving your shared key?', 'This is the sharing device you previously accepted. Keep that choice and request the key over this new connection.', 'Receive the shared key', receiveKey);
                       } else throw Error('Saved access unavailable');
