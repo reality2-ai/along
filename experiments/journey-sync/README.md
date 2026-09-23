@@ -169,6 +169,13 @@ choices without changing the selected route, current leg or learning settings.
 Closing Settings retains the channel; explicit disconnect or pagehide closes it.
 Reconnection still requires manual message transfer, not automatic discovery.
 
+Incoming changes refresh the saved-service button without rebuilding the selected
+journey or its steps. If keyboard focus is inside the saved-journey shortcuts,
+the existing shortcuts remain in place until focus leaves that group; the latest
+list then appears without moving focus. Saved state is committed immediately even
+when this visible refresh is deferred. This avoids removing a control while the
+user is about to activate it. It is not a physical screen-reader acceptance claim.
+
 `app-preferences.mjs` adds a local outbound journal to the same localStorage value
 as the existing preferences. A save/removal and its queued change are one write.
 Tracking begins only when the user starts or joins sharing. Existing saved places
@@ -215,5 +222,9 @@ Permission-management checks cover the empty list without opting in, Back and
 synthetic-click refusal, keyboard confirmation/focus, active-channel closure,
 refusal of subsequent peer edits, retained copies and offline permission removal
 after reopening. These are independent from removing an individual saved journey.
+The same test removes/restores a preferred service from the other profile and
+checks both the saved-service button state and the identity of the existing step
+DOM node. It also removes a focused shortcut remotely, checks that focus and the
+button survive, then checks the list refresh when the user leaves the group.
 The harness copies public connection messages; this is one-host browser evidence,
 not S23/TalkBack acceptance, remote reachability or a public release.

@@ -73,7 +73,12 @@ $('more-stops').onclick=()=>{state.showAllStops=!state.showAllStops;if(state.dep
 const context=()=>{const at=aucklandNow();return {hour:Number(at.time.slice(0,2)),day:new Date(at.date+'T12:00:00Z').getUTCDay(),timestamp:Date.now()};};
 function persist(){const saved=writePreferences(state.preferences);if(saved)$('storage-message').textContent='';else translated('storage-message','storage.failed');renderUsual();}
 function serviceMarkup(routes){return routes.length?routes.map(r=>`${message('mode.'+r.mode+'Title')} ${escape(r.route)}`).join(' → '):message('journey.walkRoll');}
-function renderUsual(){
+let usualRefreshPending=false;
+function renderUsual({background=false}={}){
+  // Keep the shortcut under a keyboard user's focus stable while peer updates
+  // arrive. Apply the latest list when focus leaves this group of choices.
+  if(background&&$('usual-journeys').contains(document.activeElement)){usualRefreshPending=true;return;}
+  usualRefreshPending=false;
   const usual=suggestions(state.preferences,context());
   $('usual-journeys').innerHTML=usual.length?usual.map((j,i)=>`<button type="button" class="usual-card" data-usual="${i}"><span class="usual-icon" aria-hidden="true">${j.saved?'☆':'↗'}</span><span><strong>${escape(j.to.name)}</strong><small>${message('usual.from',{place:j.from.name})}</small><small>${j.saved?(j.savedRoutes?message('usual.saved')+' · '+serviceMarkup(j.savedRoutes):message('usual.savedJourney')):message('usual.searches',{count:j.count})}</small></span></button>`).join(''):`<div class="usual-placeholder"><span class="usual-icon" aria-hidden="true">↗</span><div><strong>${message(state.preferences.learning?'usual.begin':'usual.different')}</strong>${message(state.preferences.learning?'usual.learnHelp':'usual.pausedHelp')}</div></div>`;
   document.querySelectorAll('[data-usual]').forEach(button=>button.onclick=()=>{state.intent='plan';const trip=usual[Number(button.dataset.usual)];state.savedPreference=trip.saved&&trip.savedRoutes?{from:trip.from.id,to:trip.to.id,routes:trip.savedRoutes}:null;setPlace('origin',trip.from);setPlace('destination',trip.to);setNow();searchJourney();});
@@ -81,6 +86,9 @@ function renderUsual(){
   $('learning-enabled').checked=state.preferences.learning;
   translated('learning-note',state.preferences.learning?'learning.active':'learning.paused');
 }
+$('usual-journeys').addEventListener('focusout',()=>{
+  if(usualRefreshPending)queueMicrotask(()=>renderUsual({background:true}));
+});
 function setNow(){const now=aucklandNow();$('date').value=now.date;$('time').value=now.time;updatePreferenceSummary();}
 function setPlace(field,stop){state[field==='origin'?'from':'to']=stop;$(field).value=stop?.name||'';$(field+'-options').hidden=true;$(field).setAttribute('aria-expanded','false');if(field==='origin'){state.location=null;if(stop){state.location={lat:stop.lat,lon:stop.lon};state.locationLabel=stop.name;}}}
 function renderFlowLanguage(){
@@ -412,6 +420,11 @@ function renderFollow(){
   $('itinerary-legs').innerHTML=journey.legs.map(legMarkup).join('');
   $('previous-leg').hidden=state.legIndex===0;
   translated('next-leg',state.legIndex===journey.legs.length-1?'follow.arrived':'action.nextStep');
+  renderServicePreference();
+}
+function renderServicePreference(){
+  const journey=state.selectedJourney;
+  if(!journey||!state.lastSearch)return;
   const previousSave=state.preferences.journeys.find(j=>j.saved&&j.from.id===state.lastSearch.from.id&&j.to.id===state.lastSearch.to.id);
   const saved=!!previousSave&&sameRoutes(previousSave.savedRoutes,journeyRoutes(journey));
   translated('prefer-services',saved?'service.preferred':previousSave?.savedRoutes?'service.instead':'service.prefer');$('prefer-services').setAttribute('aria-pressed',String(saved));

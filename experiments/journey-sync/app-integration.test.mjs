@@ -93,9 +93,12 @@ try {
     await expect(page.locator('#' + field + '-options [data-index]').first()).toBeVisible({timeout: 30000});
     await input.press('ArrowDown'); await input.press('Enter');
   };
-  const savePlaces = async (page, destination) => {
+  const reviewPlaces = async (page, destination) => {
     await choose(page, 'destination', destination); await page.locator('#destination-next').click();
     await choose(page, 'origin', '277 Broadway Newmarket'); await page.locator('#origin-next').click();
+  };
+  const savePlaces = async (page, destination) => {
+    await reviewPlaces(page, destination);
     await page.locator('#save-places').click();
     await expect(page.locator('#save-places')).toHaveAttribute('aria-pressed', 'true');
   };
@@ -143,6 +146,25 @@ try {
   assert.deepEqual((await saved(candidate)).find(j => j.to.id === preferred.to.id).savedRoutes, preferred.savedRoutes);
   assert.equal((await saved(candidate)).find(j => j.to.id === preferred.to.id).count, 0, 'owner learning history stays local');
   assert.equal(await owner.locator('#current-step').textContent(), originalStep, 'receipt preserves current journey');
+  // Remote changes should refresh the saved-service control without rebuilding
+  // the route being followed or removing its focused action.
+  await owner.locator('#prefer-services').focus();
+  const currentStepNode = await owner.locator('#current-step .leg').elementHandle();
+  await candidate.locator('#new-journey').click(); await reviewPlaces(candidate, '10 Victoria Road Devonport');
+  await candidate.locator('#save-places').click();
+  await expect(owner.locator('#prefer-services')).toHaveAttribute('aria-pressed', 'false');
+  await expect(owner.locator('#prefer-services')).toBeFocused();
+  assert.equal(await currentStepNode.evaluate(node => node.isConnected), true);
+  assert.equal(await owner.locator('#current-step').textContent(), originalStep);
+  await candidate.locator('#save-places').click();
+  await candidate.locator('#journey-preferences > summary').click();
+  await candidate.locator('#date').fill('2026-09-23'); await candidate.locator('#time').fill('09:00'); await candidate.locator('#find').click();
+  await expect(candidate.locator('.journey-card').first()).toBeVisible({timeout: 30000});
+  await candidate.locator('[data-follow]').first().click(); await candidate.locator('#prefer-services').click();
+  await expect(owner.locator('#prefer-services')).toHaveAttribute('aria-pressed', 'true');
+  await expect(owner.locator('#prefer-services')).toBeFocused();
+  assert.equal(await currentStepNode.evaluate(node => node.isConnected), true);
+  await candidate.locator('#new-journey').click(); await reviewPlaces(candidate, '1 Queen Street Auckland Central');
   await candidate.locator('#save-places').click();
   await expect(candidate.locator('#save-places')).toHaveAttribute('aria-pressed', 'false');
   await expect.poll(async () => (await saved(owner)).length).toBe(1);
@@ -165,6 +187,18 @@ try {
   await connectJourneys();
   await expect.poll(async () => (await saved(candidate)).map(j => j.to.id)).toEqual([candidateNew.to.id]);
   await expect.poll(async () => (await saved(owner)).map(j => j.to.id)).toEqual([candidateNew.to.id]);
+  const shortcut = owner.locator('[data-usual]').first(); await shortcut.focus();
+  const focusedShortcut = await shortcut.elementHandle();
+  await candidate.locator('#save-places').click();
+  await expect.poll(async () => (await saved(owner)).length).toBe(0);
+  assert.equal(await focusedShortcut.evaluate(node => node.isConnected && document.activeElement === node), true, 'incoming removal preserves the focused shortcut until the user leaves it');
+  await owner.locator('#destination').focus();
+  await expect(owner.locator('.usual-section')).toBeHidden();
+  await expect(owner.locator('#destination')).toBeFocused();
+  await candidate.locator('#save-places').click();
+  await expect.poll(async () => (await saved(owner)).length).toBe(1);
+  await expect(owner.locator('[data-usual]').first()).toBeVisible();
+  await expect(owner.locator('#destination')).toBeFocused();
   const stored = page => page.evaluate(async () => {
     const store = await (await import('../experiments/tg-pairing/storage.mjs')).openBrowserStorage('along-pairing-lab-v1');
     try {
@@ -214,5 +248,5 @@ try {
   assert.deepEqual((await stored(candidate)).permission.value.peers, [], 'permission can be removed offline after reopening');
   assert.equal((await saved(owner)).length, 1, 'stopping sharing preserves the already shared copy');
   assert.equal(providerRequests.length, 0); assert.deepEqual(errors, []);
-  console.log('PASS: actual Settings enrollment/connection, saved places and service preferences, local history, current-step preservation, narrow/zoom accessibility, offline edits and convergence; saved-permission list/review, Back/synthetic refusal, keyboard removal closing an active channel, retained copies and offline permission removal. Two browser profiles on one host; manual transfer, not physical reachability or automatic discovery.');
+  console.log('PASS: actual Settings enrollment/connection, saved places and service preferences, local history, current-step preservation, focused shortcut preservation and deferred refresh, service-control refresh without route replacement, narrow/zoom accessibility, offline edits and convergence; permission review/removal, retained copies and offline removal. Two browser profiles on one host; manual transfer, not physical reachability or automatic discovery.');
 } finally { await browser?.close(); await new Promise(resolve => server.close(resolve)); }

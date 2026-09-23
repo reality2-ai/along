@@ -83,7 +83,7 @@ window.addEventListener('along-live-connection-changed', () => {
 });
 window.addEventListener('along-saved-journeys-applied', () => {
   state.preferences = readPreferences();
-  renderUsual(); renderSavedPlaces();
+  renderUsual({background:true}); renderSavedPlaces(); renderServicePreference();
   // A peer's changes update saved choices for next time. Do not replace the
   // current route, current leg, screen, focused control or route-detail map.
 });

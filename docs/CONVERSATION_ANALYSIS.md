@@ -1095,3 +1095,13 @@ application permission and deleting a saved journey; none is presented as removi
 TG membership. Back and synthetic clicks leave permission unchanged, while a real
 keyboard confirmation closes the matching channel and prevents later peer edits.
 This extends the user-control theme from initial consent to an accessible way out.
+
+An interaction review then found that correct replication still caused two interface
+problems: rebuilding the shortcut list could remove the focused button, while the
+service-preference button could retain its old value. The repair separates durable
+state from visible refresh. Saved changes commit immediately; a shortcut list in
+keyboard use waits until focus leaves, and the preference button updates without
+replacing the route steps. The app test checks focus and DOM identity as well as
+the new data. This gives the course a concrete calm-computing example: “the screen
+still looks the same” is weaker evidence than proving that the user's current
+control and journey survived a background change.
