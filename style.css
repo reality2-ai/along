@@ -92,7 +92,10 @@ button,.secondary-button,.tab,.setting,select,input[type=date],input[type=time]{
 .guided-app #itinerary-legs .leg{padding:16px 0;line-height:1.6}
 .guided-app #itinerary-legs .leg p{margin:6px 0}
 .guided-app #previous-leg{margin-top:8px}
-.guided-app #save-journey{display:block;margin:12px 0;background:none;min-height:44px;padding:8px 0}
+.guided-app .follow-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:0 0 16px}
+.guided-app .follow-heading #step-count{margin:0}
+.guided-app #save-journey{display:block;margin:0;background:#fff;border:1px solid #214e40;border-radius:9px;min-height:48px;padding:12px 16px;color:#214e40;font-size:16px;font-weight:600}
+.guided-app #save-journey[aria-pressed="true"]{background:#e8f0e4}
 .guided-app #arrived-panel .secondary-button{width:100%;margin-top:16px}
 .guided-app #nearby-edit,.guided-app #change-search{display:block;margin-top:16px}
 .guided-app footer{margin-top:56px;padding:16px 0;border-top:1px solid var(--line);font-size:11px;line-height:1.8;display:block}
