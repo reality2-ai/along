@@ -71,3 +71,16 @@ The enriched timetable increases total compressed datasets to 41,308,937 bytes
 measured about 70.6 MB of browser storage. Timings in this run were collected
 while other release browser checks ran on the same machine, so they are not a
 controlled speed comparison or a phone performance claim.
+
+
+## Version 37 regression measurement
+
+The [local static rebuild check](evidence/release-v37-recheck.json) observed 5.75
+seconds from a fresh profile to offline-ready, 2.49 seconds for offline reopening,
+and 3.40 seconds for the Newmarket–Devonport mixed-mode search. Chromium reported
+70,563,618 bytes of browser storage; the four compressed datasets total
+41,308,937 bytes. The browser reported no installability errors.
+
+These are single-run desktop observations, not a controlled comparison with
+previous releases or evidence about Samsung S23 memory/performance. The app still
+needs physical-device observations before these figures can support phone claims.

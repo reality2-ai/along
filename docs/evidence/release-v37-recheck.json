@@ -1,0 +1,64 @@
+{
+  "sourceCommit": "f9bb8a9d27d8d4f33e5c07900eb31c8dd651cf98",
+  "appVersion": 37,
+  "javascriptTests": 68,
+  "pythonTests": 18,
+  "archiveMatchesDist": true,
+  "experimentalFilesIncluded": false,
+  "localCredentialFilenameIncluded": false,
+  "archiveBytes": 41120122,
+  "archiveSha256": "0dc01e92f4eaabe89580d45a84d8019d7b0a04a0b24a666725d91a0b7176c51f",
+  "archiveFiles": 48,
+  "buildInfo": {
+    "built_at": "2026-09-23T14:51:58.998774+00:00",
+    "datasets": {
+      "addresses.json.gz": {
+        "bytes": 10277401,
+        "sha256": "cb69efea8b16f06b3bdb75ed766111d2f79657fedb443289afb7616599276c2b"
+      },
+      "network.json.gz": {
+        "bytes": 13536722,
+        "sha256": "06d23f3865ddc6be14158f3196414c5ee82d7221ecbad1c9afd5b00fc1cccdc2"
+      },
+      "routes.json.gz": {
+        "bytes": 2650630,
+        "sha256": "dccb96540fbb0f7631e1c961e14590c9f7e004c7f8d0b8d8434bf4147252d6d1"
+      },
+      "streets.json.gz": {
+        "bytes": 14844184,
+        "sha256": "57ccbe556bd00967fa14f2092b59d8f5cb7daca279530ad62a234d1dbf0d86a4"
+      }
+    }
+  },
+  "publication": "Local rebuild only; not uploaded as a new public release",
+  "limits": [
+    "No physical device or spoken screen-reader check",
+    "R2 integration remains experimental",
+    "No provider request in these checks"
+  ],
+  "staticBrowserCheck": "passed",
+  "staticMetrics": {
+    "runtime": "v26.4.0",
+    "browser": "151.0.7922.34",
+    "host": "Local static HTTP, repository subpath, Chromium desktop",
+    "physicalPhone": false,
+    "coldReadyMs": 5754,
+    "installability": {
+      "installabilityErrors": []
+    },
+    "mixedModeRouteMs": 3395,
+    "datasetBytes": 41308937,
+    "storage": {
+      "quota": 10807981858,
+      "usage": 70563618,
+      "usageDetails": {
+        "caches": 824832,
+        "indexedDB": 69736213,
+        "serviceWorkerRegistrations": 2573
+      }
+    },
+    "mainPageResourceTransferBytes": 433414,
+    "offlineReadyMs": 2487
+  },
+  "installedAppUpdateCheck": "passed"
+}

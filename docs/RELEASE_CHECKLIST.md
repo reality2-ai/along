@@ -19,7 +19,7 @@ this audit. Later public-hosting work supplements that brief.
 | 6. Distribution | About 39.2 MiB ZIP/checksum, four data bundles, import scripts, MIT/data/Leaflet notices, AWS/Pages hosting instructions | Public Pages deployment is live; authenticated feeds now verified; direct browser feed access verified; TG credential integration remains incomplete |
 | 7. GitHub documentation | README, architecture, data, hosting, privacy, limits and contribution guidance; v21 course notice and current design-driver/goal summaries | Public source repository: [reality2-ai/along](https://github.com/reality2-ai/along); app hosted at [reality2.ai/along](https://reality2.ai/along/) |
 | 8. Course material | Thematic analysis, six lessons, exercises, assessment rubric and negative-case/contextual-map refinements | Course effectiveness has not been studied |
-| 9. Release checks and handover | Version 36: 68 JavaScript and 18 Python tests; 20 active browser scenarios; static/update suites; source/archive/live asset comparison | Remaining physical and spoken screen-reader checks prevent claiming full goal completion |
+| 9. Release checks and handover | Version 37 rebuild: 68 JavaScript and 18 Python tests, static and update checks; version 36 remains the baseline for all 20 browser scenarios; published source/archive/live comparison | Remaining physical and spoken screen-reader checks prevent claiming full goal completion |
 
 | 10. English / Te reo Māori | Deferred by user instruction; version 31 removes the selector and ignores earlier saved Māori choices | Re-enable only with renewed direction; draft review remains incomplete |
 
@@ -715,3 +715,22 @@ build metadata match the tested files; [release hashes](evidence/release-v37.jso
 match the downloadable archive. The version 36 full-suite results remain the
 baseline; version 37 adds focused layout/browser checks rather than claiming
 a new run of that entire suite.
+
+
+## Public app regression check during R2 development
+
+A fresh local rebuild of version 37 passed all 68 JavaScript and 18 Python tests,
+the static `/along/` Chromium check, and installed-app update recovery checks.
+The latter cover stale open windows, mismatched deployments, retained localStorage
+and IndexedDB, English recovery despite a saved Māori preference, and quiet
+refresh while offline. Static checks include new-address routing offline, saved
+journeys, installability, keyboard/axe, zoom, narrow screens and failed/successful
+data refresh.
+
+[Recheck evidence](evidence/release-v37-recheck.json) records the source revision,
+build metadata, archive checksum and desktop timings. The ZIP was compared
+byte-for-byte with `dist`; experimental files and the local credential filename
+are absent. This rebuilt archive has not replaced the published release, whose
+original hashes remain authoritative. No public app version changed, no provider
+was contacted, and the full 20-scenario browser suite was not rerun in this pass.
+Physical-device, spoken screen-reader and R2 end-to-end gates remain open.
