@@ -1,6 +1,6 @@
 # Release evidence and remaining gates
 
-Current deployed app: **version 32**, reviewed 23 September 2026. The static ZIP
+Current deployed app: **version 33**, reviewed 23 September 2026. The static ZIP
 is prepared and the private server is retired. GitHub Pages is published at `reality2.ai/along/`; no AWS deployment has been made.
 This register separates automated evidence, user observations and remaining checks.
 
@@ -19,7 +19,7 @@ this audit. Later public-hosting work supplements that brief.
 | 6. Distribution | About 38 MiB ZIP/checksum, four data bundles, import scripts, MIT/data/Leaflet notices, AWS/Pages hosting instructions | Public Pages deployment is live; authenticated feeds now verified; public live proxy remains undeployed |
 | 7. GitHub documentation | README, architecture, data, hosting, privacy, limits and contribution guidance; v21 course notice and current design-driver/goal summaries | Public source repository: [reality2-ai/along](https://github.com/reality2-ai/along); app hosted at [reality2.ai/along](https://reality2.ai/along/) |
 | 8. Course material | Thematic analysis, six lessons, exercises, assessment rubric and negative-case/contextual-map refinements | Course effectiveness has not been studied |
-| 9. Release checks and handover | Version 32: 35 JavaScript and 7 Python tests; 12 active browser scenarios; static/update suites; source/archive/live asset comparison | Remaining physical and spoken screen-reader checks prevent claiming full goal completion |
+| 9. Release checks and handover | Version 33: 49 JavaScript and 11 Python tests; 15 active browser scenarios; static/update suites; source/archive/live asset comparison | Remaining physical and spoken screen-reader checks prevent claiming full goal completion |
 
 | 10. English / Te reo Māori | Deferred by user instruction; version 31 removes the selector and ignores earlier saved Māori choices | Re-enable only with renewed direction; draft review remains incomplete |
 
@@ -631,3 +631,8 @@ Version 33 validation passed: 49 JavaScript tests, 11 Python tests, all 15 brows
 scenarios, static subpath/accessibility/offline checks, update/recovery checks and
 local release smoke. The ZIP is byte-identical to the generated static files and
 excludes the private key. This does not replace physical-device/TalkBack checks.
+
+Version 33 Pages deployment [35823256837](https://github.com/reality2-ai/along/actions/runs/35823256837) succeeded.
+[Release hashes](evidence/release-v33.json) match the local ZIP/checksum.
+[Public smoke evidence](evidence/public-site-v33.json) records the deployed version
+and offline journey, installation-guide and feedback-draft checks.
