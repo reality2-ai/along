@@ -167,3 +167,18 @@ Browser checks cover these states, cancellation, removed grants, reopening a
 saved key, and an old asynchronous inspection completing after its screen has
 been replaced. An unreadable or unauthorized state never exposes an overwrite
 action. This does not implement owner recovery or provider-side key rotation.
+
+## Restoring the local owner binding
+
+`loadLocalATOwner` reopens a previously established own-device application owner
+under a caller-established group. It verifies the current local persona, held
+membership, installation evidence, owner pin and signed policy, then rechecks
+their revisions. It returns the public binding only; the vault still checks
+authorization on each use. It does not adopt a peer's owner or initialize missing
+state. Missing pins return null; damaged or inconsistent saved evidence refuses.
+
+Real-browser checks pass for fresh-document restoration, read-only behavior,
+wrong owner/group, malformed credential identifiers, damaged or absent policy,
+cancellation and concurrent anchor changes. The consent-screen integration now
+opens its real vault through this restored binding. Recovery of deleted state,
+ownership transfer and consenting to another device's owner remain separate work.

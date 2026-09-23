@@ -96,7 +96,9 @@ try {
     window.realStore = await (await import('./storage.mjs')).openBrowserStorage('credential-view-real');
     const initial = await (await import('./initial-persona.mjs')).initializeLocalPersona({wasm, store: realStore}); initial.close();
     const expectedGroup = (await realStore.read('candidate-persona', 'active')).value.record.group;
-    const {binding} = await (await import('./local-owner.mjs')).establishLocalATOwner({wasm, store: realStore, expectedGroup});
+    const owners = await import('./local-owner.mjs');
+    await owners.establishLocalATOwner({wasm, store: realStore, expectedGroup});
+    const {binding} = await owners.loadLocalATOwner({wasm, store: realStore, expectedGroup});
     window.realVault = (await import('./local-vault.mjs')).openLocalATVault({wasm, store: realStore, ...binding});
     window.view = mount(realVault);
   });

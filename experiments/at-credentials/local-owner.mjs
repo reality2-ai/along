@@ -5,6 +5,43 @@ import {credentialPolicyBytes} from './policy.mjs';
 import {openCredentialPolicyStore} from './policy-store.mjs';
 const hex = value => Array.from(value, b => b.toString(16).padStart(2, '0')).join('');
 const fail = () => new Error('Local AT owner unavailable');
+// Restore only this device's previously established application-owner binding.
+// This does not adopt an owner from a peer or automatically initialize absence.
+export async function loadLocalATOwner({wasm, store, expectedGroup, signal}) {
+  try {
+    if (!(expectedGroup instanceof Uint8Array) || expectedGroup.length !== 32) throw fail();
+    const groupBytes = expectedGroup.slice(), group = hex(groupBytes);
+    const current = () => { if (signal?.aborted) throw fail(); };
+    current();
+    const anchor = await store.read('along-at-owners', group); current();
+    if (!anchor) return null;
+    const persona = await store.read('candidate-persona', 'active');
+    const membership = await store.read('membership', group); current();
+    if (!persona || !membership) throw fail();
+    const evidenceScope = persona.value.origin === 'initial' ? 'persona-bootstrap' : 'enrollment-invitations';
+    const evidenceKey = persona.value.origin === 'initial' ? 'initial' : group + ':' + hex(persona.value.invitation.code);
+    const evidence = await store.read(evidenceScope, evidenceKey); current();
+    if (!evidence) throw fail();
+    const identity = await loadLocalPersona({wasm, store, expectedGroup: groupBytes}); current();
+    if (!identity || !persona || !membership || anchor.value?.format !== 1
+        || anchor.value.group !== group || anchor.value.owner !== identity.member
+        || hex(persona.value.record.subject) !== identity.member) throw fail();
+    const binding = Object.freeze({group, owner: identity.member, credential: anchor.value.credential});
+    const policy = await openCredentialPolicyStore({store, ...binding}).read({signal}); current();
+    if (policy.status !== 'policy-loaded') throw fail();
+    for (const [scope, key, revision] of [
+      ['along-at-owners', group, anchor.revision],
+      ['candidate-persona', 'active', persona.revision],
+      ['membership', group, membership.revision],
+      [evidenceScope, evidenceKey, evidence.revision],
+      ['along-at-policy:' + binding.owner, group + ':' + binding.credential, policy.storageRevision],
+    ]) {
+      current(); const saved = await store.read(scope, key); current();
+      if (saved?.revision !== revision) throw fail();
+    }
+    return Object.freeze({status: 'local-owner-loaded', binding});
+  } catch { throw fail(); }
+}
 export async function establishLocalATOwner({wasm, store, expectedGroup, signal}) {
   if (store.capabilities?.transactionChecks !== true || !(expectedGroup instanceof Uint8Array) || expectedGroup.length !== 32) throw fail();
   const groupBytes = expectedGroup.slice(), group = hex(groupBytes);
