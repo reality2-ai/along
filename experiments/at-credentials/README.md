@@ -281,3 +281,26 @@ also pass after sharing the encryption helper. Tests use a self-recipient fixtur
 and synthetic keys: they do not prove distinct-device transport or owner-consent
 bootstrap. Channel integration, receiver owner consent,
 policy delivery/freshness and the full device-sharing flow remain unfinished.
+
+## Owner send and distinct-member transport check
+
+`sendOwnerCredential` loads the actual local owner, verifies the peer certificate
+and explicit grant, retrieves the current encrypted key, and signs the delivery
+message. Before sending it rechecks the connection, peer standing and the held
+owner/policy/membership revisions. The trusted session controller must supply the
+group and peer actually bound to that connection; a caller-provided object is
+not a security capability. A `sent-unconfirmed` result does not imply receiver
+storage or acknowledgment. The temporary message buffer is cleared after send.
+
+`peer-delivery.test.mjs` passes with two distinct nonextractable browser member
+keys, separate IndexedDB stores, actual mutual peer authentication and a direct
+WebRTC channel. The recipient consumes its request and encrypts the received key
+under its own browser wrapping key. Removing its owner-side grant prevents a
+further send. No relay, STUN, TURN or real AT request is used in this check.
+
+The test runs on one browser host. Its issuer and prior receiver owner-consent/
+policy bootstrap are synthetic fixtures; they are not the missing production
+setup workflow. This evidence extends the earlier self-recipient storage checks
+to distinct members and an encrypted transport, but does not establish physical
+device reachability, automatic discovery, policy freshness after partitions,
+durable issuer custody, recipient acknowledgments or public release readiness.
