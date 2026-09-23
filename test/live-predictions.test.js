@@ -27,3 +27,14 @@ test('invalid numeric events and old feeds keep scheduled times',()=>{
  assert.equal(predict([entity({}, {departure:{delay:-60}})]).delay,-60);
  assert.equal(departurePrediction({available:true,updated:1000,entities:[entity()]},d,{now:1181}).status,'scheduled');
 });
+
+test('fresh feed headers do not renew stale trip progress predictions',()=>{
+ for(const timestamp of [819,1181,0,true,null,'bad']){
+  const e=entity();e.trip_update.timestamp=timestamp;
+  assert.equal(predict([e]).reason,'stale-trip');
+ }
+ const e=entity();e.trip_update.timestamp='850';assert.equal(predict([e]).updated,850);
+ assert.equal(departurePrediction({available:true,updated:1000,entities:[e]},d,{now:1031}).reason,'stale-trip');
+ const cancelled=entity({schedule_relationship:'CANCELED'});cancelled.trip_update.timestamp=1;
+ assert.equal(predict([cancelled]).status,'cancelled');
+});

@@ -25,7 +25,7 @@ test('nearby live requests require an explicit action and offline fallback retai
  await context.close();
 });
 
-async function openObservedStop(browser){
+async function openObservedStop(browser,{time=new Date('2026-09-22T21:00:00Z'),workerClock=false}={}){
  const context=await browser.newContext({serviceWorkers:'block',viewport:{width:360,height:780}});
  await context.route('**/live-config.js',r=>r.fulfill({contentType:'text/javascript',body:"export const liveBaseURL='./api/';"}));
  await context.addInitScript(()=>{
@@ -35,7 +35,12 @@ async function openObservedStop(browser){
    postMessage(data,...rest){if(data.type==='stopDetails')this.stopRequests.add(data.id);if(data.type==='plan')this.planRequests.add(data.id);return super.postMessage(data,...rest);}
   };
  });
- const page=await context.newPage();await page.clock.install({time:new Date('2026-09-22T21:00:00Z')});
+ if(workerClock)await context.route('**/worker.js',async route=>{
+  const response=await route.fetch();
+  const prefix=`const TestDate=Date;globalThis.Date=class extends TestDate{constructor(...args){super(...(args.length?args:[${time.getTime()}]));}static now(){return ${time.getTime()};}};\n`;
+  await route.fulfill({response,body:prefix+await response.text()});
+ });
+ const page=await context.newPage();await page.clock.install({time});
  await page.goto(process.env.TEST_BASE_URL||'http://127.0.0.1:3080');
  await expect(page.locator('#data-status')).toContainText('session ready',{timeout:60000});
  await page.locator('#nearby-start').click();await page.locator('#try-britomart').click();await page.locator('#find').click();
@@ -54,7 +59,7 @@ test('matched stop predictions preserve schedule and ordering, then expire',asyn
   const routes=await page.locator('.board-route').allTextContents();
   await context.route('**/api/predictions',async route=>{
    const updated=await page.evaluate(()=>Math.floor(Date.now()/1000));
-   const entities=chosen.map(({d},i)=>({trip_update:{trip:{trip_id:d.trip,start_date:d.serviceDate,route_id:d.routeId,...(i===1?{schedule_relationship:'CANCELED'}:{})},stop_time_update:[{stop_id:d.stop.id,...(i===2?{schedule_relationship:'SKIPPED'}:{departure:{delay:120}})}]}}));
+   const entities=chosen.map(({d},i)=>({trip_update:{timestamp:updated-120,trip:{trip_id:d.trip,start_date:d.serviceDate,route_id:d.routeId,...(i===1?{schedule_relationship:'CANCELED'}:{})},stop_time_update:[{stop_id:d.stop.id,...(i===2?{schedule_relationship:'SKIPPED'}:{departure:{delay:120}})}]}}));
    await route.fulfill({contentType:'application/json',body:JSON.stringify({available:true,updated,entities})});
   });
   await page.locator('#stop-live').click();await expect(page.locator('#stop-live-status')).toContainText('matched to 3');
@@ -67,7 +72,7 @@ test('matched stop predictions preserve schedule and ordering, then expire',asyn
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   expect((await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa']).analyze()).violations).toEqual([]);
   await page.screenshot({path:'test-results/live-stop-board.png',fullPage:true});
-  await page.clock.fastForward(181000);
+  await page.clock.fastForward(61000);
   await expect(page.locator('#stop-live-status')).toContainText('expired');
   expect(await page.locator('[data-stop-time]').allTextContents()).toEqual(before);
   await expect(page.locator('.departure-board caption')).toContainText('Scheduled');
@@ -139,7 +144,7 @@ test('selected journey checks matched predictions and alerts while preserving th
    const trip={trip_id:leg.trip,start_date:predictionKind==='unmatched'?'20990101':leg.serviceDate,route_id:leg.routeId,start_time:leg.startTime};
    if(predictionKind==='cancelled')trip.schedule_relationship='CANCELED';
    const event={stop_id:leg.from.id,...(predictionKind==='skipped'?{schedule_relationship:'SKIPPED'}:{departure:{delay:120}})};
-   await route.fulfill({contentType:'application/json',body:JSON.stringify({available:true,updated,entities:[{trip_update:{trip,stop_time_update:[event]}}]})});
+   await route.fulfill({contentType:'application/json',body:JSON.stringify({available:true,updated,entities:[{trip_update:{timestamp:updated-120,trip,stop_time_update:[event]}}]})});
   });
   const before=await page.locator('#current-step').innerText();expect(requests).toBe(0);expect(predictionRequests).toBe(0);
   await page.locator('#journey-alert-check').click();await expect(page.locator('#journey-alert-status')).toContainText('1 matching service update');
@@ -147,7 +152,9 @@ test('selected journey checks matched predictions and alerts while preserving th
   await expect(page.locator('#journey-prediction-results')).toContainText('Scheduled');
   await page.locator('#journey-alert-results summary').click();await expect(page.locator('#journey-alert-results')).toContainText('Relevant service change');await expect(page.locator('#journey-alert-results')).not.toContainText('Wrong day');
   expect(await page.locator('#current-step').innerText()).toBe(before);
-  await page.clock.fastForward(181000);await expect(page.locator('#journey-alert-status')).toContainText('expired');
+  await page.clock.fastForward(61000);await expect(page.locator('#journey-prediction-results')).toContainText('expired');
+  await expect(page.locator('#journey-alert-results details')).toHaveCount(1);
+  await page.clock.fastForward(120000);await expect(page.locator('#journey-alert-status')).toContainText('expired');
   await expect(page.locator('#journey-prediction-results')).toContainText('expired');
   for(const [kind,label] of [['cancelled','Cancelled'],['skipped','Not stopping at your boarding stop'],['unmatched','No live departure match']]){
    predictionKind=kind;await page.locator('#journey-alert-check').click();
@@ -157,5 +164,25 @@ test('selected journey checks matched predictions and alerts while preserving th
   await context.setOffline(true);await page.locator('#journey-alert-check').click();await expect(page.locator('#journey-alert-status')).toContainText('scheduled journey is still here');
   expect(await page.locator('#current-step').innerText()).toBe(before);expect(requests).toBe(4);expect(predictionRequests).toBe(4);
   await expect(page.locator('#journey-prediction-results')).toContainText('unavailable');
+ }finally{await context.close();}
+});
+
+test('nearby predictions expire from the trip measurement without another AT request',async({browser})=>{
+ // Playwright's page clock does not replace Date inside a Web Worker.
+ const {page,context,rows}=await openObservedStop(browser,{workerClock:true});
+ try{
+  const row=rows.find(r=>r.stopVisits===1);expect(row).toBeTruthy();
+  let requests=0;
+  await context.route('**/api/predictions',async route=>{
+   requests++;const now=await page.evaluate(()=>Math.floor(Date.now()/1000));
+   const trip={trip_id:row.trip,start_date:row.serviceDate,route_id:row.routeId,start_time:row.startTime};
+   await route.fulfill({contentType:'application/json',body:JSON.stringify({available:true,updated:now,entities:[{trip_update:{timestamp:now-120,trip,stop_time_update:[{stop_id:row.stop.id,departure:{delay:120}}]}}]})});
+  });
+  await page.locator('#detail-back').click();await page.locator('#nearby-live').click();
+  await expect(page.locator('#nearby-live-status')).toContainText('Current feed checked');
+  await expect(page.locator('#nearby-live')).toBeEnabled();
+  await page.clock.fastForward(61000);
+  await expect(page.locator('#nearby-live-status')).toContainText('expired');
+  await expect(page.locator('.stop-card').first()).toBeVisible();expect(requests).toBe(1);
  }finally{await context.close();}
 });

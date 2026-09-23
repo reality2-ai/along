@@ -181,6 +181,7 @@ export class Planner {
     if(ends)for(const [,arr,ti,,b,,dropoff,offset]of connections)if(ends.has(b)&&dropoff===0){const key=`${ti}:${offset}`;onward.set(key,Math.max(onward.get(key)||0,arr));}
     const fresh=feed.available===true&&typeof feed.updated==='number'&&Number.isSafeInteger(feed.updated)&&Math.abs(Date.now()/1000-feed.updated)<=180;
     const metadata=fresh?tripStopMetadata(this.data,this.stops,new Set(connections.filter(c=>ids.has(c[3])).map(c=>this.data.trips[c[2]][0]))):new Map();
+    let liveExpires=Infinity;
     const found=new Map(stops.map(s=>[s.i,[]])),seen=new Set();
     for(const [dep,,ti,a,,pickup,,offset]of connections){
       if(this.profile.confirmedAccess&&this.data.trips[ti][4]!==1)continue;
@@ -191,6 +192,7 @@ export class Planner {
       if(fresh){
         const run=metadata.get(trip);
         const prediction=departurePrediction(feed,{trip,routeId:this.data.routes[ri][0],serviceDate:compactDate(shiftDate(now.date,offset)),stop:this.stops[a],stopVisits:run?.visits.get(this.stops[a].id)||0,startTime:run?.startTime});
+        if(prediction.status!=='scheduled')liveExpires=Math.min(liveExpires,Number(prediction.updated)+180);
         if(['cancelled','skipped'].includes(prediction.status))continue;
         if(prediction.status==='predicted'){
           if(prediction.epoch){const at=aucklandNow(new Date(prediction.epoch*1000));expected=(Date.parse(at.date)-Date.parse(now.date))/86400000*86400+at.seconds;}
@@ -204,6 +206,6 @@ export class Planner {
     const result=stops.map(s=>({...s,distance:Math.round(s.distance),departures:found.get(s.i).sort((a,b)=>a.departure-b.departure).slice(0,5)})).filter(s=>s.departures.length);
     for(const s of result)for(const d of s.departures)d.tight=d.minutes<s.walk+2;
     result.sort((a,b)=>Math.min(...a.departures.filter(d=>!d.tight).map(d=>d.minutes),999)-Math.min(...b.departures.filter(d=>!d.tight).map(d=>d.minutes),999));
-    return {stops:result,live:fresh,directOnly:!!ends,walkingSource:this.streets?'mapped':'estimated',message:fresh?'Live predictions where available.':'Scheduled departures · live updates are not connected.'};
+    return {stops:result,liveExpires:Number.isFinite(liveExpires)?liveExpires:null,live:fresh,directOnly:!!ends,walkingSource:this.streets?'mapped':'estimated',message:fresh?'Live predictions where available.':'Scheduled departures · live updates are not connected.'};
   }
 }

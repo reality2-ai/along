@@ -101,3 +101,24 @@ trip IDs were absent from the downloaded timetable, six positions were stale and
 two were ambiguous/unmatched. These are snapshot counts, not coverage guarantees.
 They demonstrate actual provider-to-matcher operation; they do not establish TG
 credential handling, public UI enablement, or the correctness of every AT record.
+
+### Individual prediction freshness
+
+A subsequent audit tightened the earlier matching result: a fresh feed header
+must not make an explicitly old trip-progress measurement current. The
+[GTFS reference](https://gtfs.org/documentation/realtime/reference/) distinguishes
+`TripUpdate.timestamp` from feed creation time. When supplied, that timestamp must
+now be a valid measurement within Along's 180-second freshness window. Missing
+optional trip timestamps still use feed freshness. Cancellation/skip notices are
+current-feed status assertions, not progress-derived departure predictions.
+
+Stop and selected-journey predictions expire at the earlier of feed and trip
+measurement deadlines. Nearby comparisons now also return to scheduled results
+at expiry without fetching AT again. In the [follow-up real snapshot](evidence/at-direct-freshness.json),
+591 stop predictions passed and 613 were rejected as stale trip measurements.
+The earlier 1,203-match snapshot predates this safeguard and must not be cited as
+evidence of individual-measurement freshness. Snapshot totals vary with time.
+
+The current source checks include expiry while alerts remain current, unchanged
+chosen-journey content, and nearby fallback without another AT request. These
+source changes do not enable the public live connection or supply TG credentials.

@@ -23,11 +23,18 @@ export function departurePrediction(feed,departure,{now=Date.now()/1000}={}){
   if(event.schedule_relationship!=null && ![0,'SCHEDULED'].includes(event.schedule_relationship))return scheduled('no-prediction');
   const value=event.departure;
   if(!value)return scheduled('no-departure');
+  // A new feed header cannot refresh an old progress measurement. Status-only
+  // cancellations/skips above remain assertions from the current feed.
+  let updated=Number(feed.updated);
+  if(Object.hasOwn(update,'timestamp')){
+    if(!integer(update.timestamp)||Number(update.timestamp)<=0||Math.abs(now-Number(update.timestamp))>180)return scheduled('stale-trip');
+    updated=Math.min(updated,Number(update.timestamp));
+  }
   if(Object.hasOwn(value,'time')){
     if(!integer(value.time)||Number(value.time)<=0||Number(value.time)>8640000000000)return scheduled('invalid-time');
-    return {status:'predicted',epoch:Number(value.time),updated:feed.updated};
+    return {status:'predicted',epoch:Number(value.time),updated};
   }
-  if(integer(value.delay)&&Number(value.delay)>=-2147483648&&Number(value.delay)<=2147483647)return {status:'predicted',delay:Number(value.delay),updated:feed.updated};
+  if(integer(value.delay)&&Number(value.delay)>=-2147483648&&Number(value.delay)<=2147483647)return {status:'predicted',delay:Number(value.delay),updated};
   return scheduled('invalid-delay');
 }
 
