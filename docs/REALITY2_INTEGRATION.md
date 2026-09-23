@@ -340,3 +340,15 @@ incoming messages or the public app.
 
 The full runtime gate has reached its explicit WASM build and Android-native
 checks. It has not yet returned a complete verification result.
+
+The invitation journal now has a passing independent-tab reservation race and a
+concurrent decline/install check. Browser invitation statements also use the
+existing core L5B encoder through a new WASM export. With actual member signatures,
+the browser test rejects changes to group, issuer, role, code and validity against
+the expected invitation, while accepting the intended statement. Invalid browser
+numeric bounds and role names are refused before conversion.
+
+The updated WASM build and browser checks pass. The long-running full gate began
+before this Rust export was added, so another full pass over the final snapshot
+will be required; its current run is being preserved. Signature coverage is not
+yet complete enrollment authorization or issuer custody evidence.
