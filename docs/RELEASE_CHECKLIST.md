@@ -292,3 +292,17 @@ Version 27 is deployed to the private site and GitHub Pages. Core CI and the
 installation eligibility, new offline address routing, cached help and its
 scheduled-only notice. The public and offline installation guides now carry the
 same limitations. Saved endpoints and service preferences remain device-local.
+
+
+## Current handover candidate
+
+The version 27 draft prerelease `v0.27.0` targets source commit `aff8a8d`. Its ZIP
+and checksum match the local build; all ZIP entries match `dist/`. Archive SHA-256:
+`c1d622e2ab51b1f3e7728d9b0ca0f59f465f2b65f062210a866caf3783bf2f6c`.
+The README now shows six equally sized screenshots of the current public app,
+including saved places and the scheduled departure board. Draft download assets
+remain maintainer-only pending acceptance; the public app itself is live.
+
+A live mobile-size check measured the optional street-map button at the horizontal
+and vertical centre of route, stop and street-address maps. All use the same
+shared map markup; the centred treatment applies to each existing map view.
