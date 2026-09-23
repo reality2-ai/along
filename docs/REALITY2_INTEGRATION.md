@@ -55,7 +55,12 @@ and timed intermediate calls. Mixed-mode UI tests and an authenticated peer
 integration test pass. A selected-service vehicle panel now places only a verified
 position on an actual Leaflet map; expiry and navigation remove its marker while
 preserving the scheduled route. Its map and authenticated-controller tests pass
-with synthetic feeds. These panels are not mounted in the public app yet.
+with synthetic feeds. These panels are not mounted in the public app yet. A separate local-only build
+now connects the actual journey app’s existing contextual UI to saved local-owner
+AT settings. Its generated-app test covers visible setup, address-to-address
+bus/ferry routing, explicit mocked AT requests and offline reopening/routing.
+The public build is untouched; shared-owner reconnection and deployment remain
+outstanding. See the [experimental build instructions](../experiments/at-credentials/README.md#actual-journey-app-integration-build-local-only).
 Manual transfer is currently cumbersome, and the one-minute invitation lifetime
 needs real usability assessment. Public deployment, simpler transfer, group epoch
 updates/removal, saved-journey sync and physical-device validation remain work.

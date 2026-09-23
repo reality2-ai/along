@@ -713,3 +713,41 @@ expiry, delayed response after navigation, narrow zoom and axe. The real-peer te
 also clicks this view and checks an actual marker after authenticated owner policy
 exchange and encrypted synthetic-key access. Provider data remains mocked; the
 public route screen still needs this experimental controller/view wired in.
+
+
+### Actual journey-app integration build (local only)
+
+`scripts/build_experimental_app.py` creates a separate generated tree under
+`releases/along-experimental-app/`. It follows the required runtime/module imports,
+copies the existing journey app and public datasets, and changes only that copy’s
+live-client import to `app-live-bridge.mjs`. The normal public build is untouched.
+The experimental worker uses a separate cache prefix and includes the runtime
+modules for offline reopening. It does not delete the public app’s shell cache.
+Every generated payload is hashed in `build-info.json`; no test or credential file
+is copied. **Do not publish this build:** the R2 licence/notice question is pending.
+
+```sh
+python3 scripts/build_experimental_app.py --browser "$R2_BROWSER_DIR" --wasm "$R2_WASM_DIR"
+node experiments/at-credentials/app-integration.test.mjs
+node --test experiments/at-credentials/app-live-bridge.test.mjs
+```
+
+Serve the generated root locally and visit its `public/` URL. The entry links to
+its `experiments/` device/key setup. Use dummy text only. Bootstrap restores that
+lab’s accepted local identity and AT binding without creating an identity,
+decrypting a key or requesting provider data. Each app screen owns a cancellable
+client. Missing or unreadable state leaves scheduled planning enabled.
+
+The generated-app test performs visible first-use/key setup, address search and
+a Newmarket–Devonport bus/ferry journey. Clicking the actual journey live button
+uses the saved encrypted synthetic key in fixed direct AT requests intercepted
+by the test. It checks no startup request or displayed key, then offline reopening,
+a second address-to-address route and an unavailable live check without a provider
+response. Offline mode also aborts the provider mock so interception cannot bypass
+the simulated disconnection; an uncached local request must fail as well. In this
+Chromium check `navigator.onLine` remained true: two attempted mock requests were
+aborted, and the app still fell back quietly. This does not establish zero request
+attempts under every kind of network loss. Bridge checks cover late responses after context change and separate
+screen cancellation. This is a local-owner path; shared-key owner-session
+reconnection still needs its app interface. Physical devices, real provider feeds
+and installed-app update behavior are not established by this build/test.
