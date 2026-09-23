@@ -7,10 +7,20 @@ information with AT. The preview is not the regular Along release.
 ## Keep the preview separate
 
 The installed name is **Along Device Preview** (some launchers shorten it to
-**Along Preview**). Check for **App version 3801 · Device preview** in Settings.
+**Along Preview**). Check for **App version 3802 · Device preview** in Settings.
 The preview starts with its own saved places, offline download and device setup.
 It does not import the regular app's AT key or saved journeys. Keep your regular
 Along installation while testing.
+
+If you already installed preview 3801, use **Check for updates** or open this
+preview's `update.html` page and choose **Update and reopen**. Updating preserves
+the preview's saved places, identity and stored key. Do not clear site data.
+
+Version 3802 adds a device list and signed group-removal messages. Devices issued
+membership before 3802 may be absent from the list. Removal is enforced by each
+device only after it learns the signed update; it does not erase copied data,
+replace an AT key at its provider or rotate group keys. Automatic delivery remains
+unfinished.
 
 These separate storage names prevent accidental mixing; they are not a security boundary. They do not protect one
 page from other scripts on the same website. Clearing this website's browser data

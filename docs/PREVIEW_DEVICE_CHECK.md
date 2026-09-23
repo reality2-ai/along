@@ -1,7 +1,7 @@
 # Along Device Preview: S23 and desktop check
 
 Open [Along Device Preview](https://reality2.ai/along/preview/public/) and check
-version **3801**. These instructions are for that preview, not public version 37 or
+version **3802**. These instructions are for that preview, not public version 37 or
 the standalone pairing lab. No coding or terminal commands are required.
 
 Use your Samsung S23 and desktop. Record the browser name/version on each device.
@@ -9,10 +9,15 @@ Use dummy addresses from the examples and dummy key text only. Keep the regular
 Along installation. Do not clear the whole website's storage to restart a test;
 that can remove data from both apps. Mark anything you cannot check as **not tested**.
 
+If preview 3801 is already installed, open
+[preview update recovery](https://reality2.ai/along/preview/public/update.html)
+and choose **Update and reopen**. Check that saved places and setup remain and
+Settings shows 3802. Do not recreate an existing group to test an update.
+
 ## Install and plan offline
 
 1. Open the supplied preview URL in the browser used for installation. In Settings,
-   check **App version 3801 · Device preview** and wait for timetable and addresses
+   check **App version 3802 · Device preview** and wait for timetable and addresses
    to be ready offline.
 2. Follow the preview's **Install on your device** guide. The installed name is
    **Along Device Preview** or **Along Preview**. Check that the icon opens its own
@@ -41,6 +46,11 @@ only if they match. Keep both screens open until the phone reports **Device
 connected** and desktop reports **Other device installed**. Reload and check that
 the saved setup remains. Do not create new identities to recover an interrupted
 installation; preserve the last screen and report its wording.
+
+Version 3802 records newly issued device certificates for removal. Older paired
+devices may be missing from that list; report this as **older enrollment**, not a
+reason to clear storage. The list is not a live roster and may include an
+interrupted enrollment.
 
 ## Share saved places and stop sharing
 
@@ -108,3 +118,24 @@ dialog and check that it points to the existing issue instead of inviting anothe
 submission. If you already submitted but cannot verify receipt, keep the draft
 and issue URL; do not submit again merely because verification failed. Mark this
 check **not tested** if you do not use GitHub or do not want to post publicly.
+
+## Group removal — do this last
+
+Only test this with a disposable test pairing created in 3802. Removal stops that
+device's group access; it does not remove its local journeys. Skip it for an older
+enrollment missing from the list or a group you want to keep using.
+
+1. On the device that created the group, open **Device and AT-key setup → Connect
+   or recover another device → Review group devices**. Select the other device,
+   inspect its identity, then try Back. No removal should be saved.
+2. Select it again and choose **Save device removal here**. Check that the result
+   says it is saved here and has not been delivered to the other devices.
+3. Choose **Share this removal** and transfer the signed message privately. On the
+   other device choose **Device and AT-key setup → Receive a group removal**,
+   paste the message and choose **Check and save removal**.
+4. Check that the receiver says it has been removed from the group. Reopen it
+   offline: journey planning should still work, while group sharing is unavailable.
+   Reopening the issuer's review should show the saved removal.
+
+Copying alone is not delivery. Copies of journeys or keys already shared remain
+on the other device; group-key rotation is unfinished. Dummy keys only.
