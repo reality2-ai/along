@@ -5,16 +5,16 @@ test('feedback preserves an offline draft, reviews only chosen context and verif
   await page.setViewportSize({width:360,height:780});
   await page.goto('/');await expect(page.locator('#data-status')).toContainText('offline ready',{timeout:90000});
   await page.locator('#destination').fill('private destination example');
-  await page.locator('#settings-open').click();await page.locator('#language-choice').selectOption('mi');
+  await page.locator('#settings-open').click();
   const entry=page.locator('#settings [data-feedback-open]');await entry.click();
-  await expect(page.locator('#feedback-title')).toHaveText('Urupare mō Along');
+  await expect(page.locator('#feedback-title')).toHaveText('Feedback on Along');
   await expect(page.locator('#feedback-context')).not.toBeChecked();
   await page.locator('#feedback-message').fill('The departure board label is confusing.');
   await page.locator('#feedback-close').click();await expect(entry).toBeFocused();
   await page.locator('#settings .close-dialog').click();
   await expect(page.locator('#destination')).toHaveValue('private destination example');
   await context.setOffline(true);await page.reload();
-  await page.locator('#settings-open').click();await page.locator('#language-choice').selectOption('en');await entry.click();
+  await page.locator('#settings-open').click();await entry.click();
   await expect(page.locator('#feedback-message')).toHaveValue('The departure board label is confusing.');
   await page.locator('#feedback-review').click();
   const text=await page.locator('#feedback-body').inputValue();
@@ -24,7 +24,7 @@ test('feedback preserves an offline draft, reviews only chosen context and verif
   await expect.poll(()=>page.evaluate(()=>navigator.onLine)).toBe(false);
   await page.locator('#feedback-github').click();await expect(page.locator('#feedback-status')).toContainText('offline');
   await page.locator('#feedback-edit-again').click();await page.locator('#feedback-context').check();await page.locator('#feedback-review').click();
-  const body=await page.locator('#feedback-body').inputValue();expect(body).toContain('language mi; screen settings');
+  const body=await page.locator('#feedback-body').inputValue();expect(body).toContain('language en; screen settings');
   expect((await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa']).analyze()).violations).toEqual([]);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   await context.setOffline(false);

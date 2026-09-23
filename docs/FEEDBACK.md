@@ -1,9 +1,8 @@
 # Contextual feedback to the Along repository
 
-Goal 11 is in progress. The public version 30 app has no feedback button yet.
+Goal 11 is in progress. Version 31 includes the contextual feedback dialog.
 `public/feedback.js` implements local draft storage, reviewable issue bodies,
-GitHub handoff URLs and explicit receipt verification. The development source connects it to a bilingual dialog and includes both
-modules in the offline shell; this has not yet been publicly deployed.
+GitHub handoff URLs and explicit receipt verification. Both feedback modules are included in the offline shell.
 
 The intended interaction keeps the main travel action primary. A secondary
 feedback action in route/stop details and relevant journey explanations opens a
@@ -70,3 +69,5 @@ Four feedback browser scenarios pass, including blocked-storage disclosure,
 retaining the in-memory draft, nested detail Back/focus, and ignoring a late
 receipt after a new draft begins. New drafts clear the previous issue URL and
 retry confirmation. Physical assistive-technology checks remain outstanding.
+
+Version 31 follows the user’s decision to defer Māori: feedback is English-only.

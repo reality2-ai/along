@@ -133,3 +133,13 @@ rounds, distinguish reports from instructions, prioritise against the project go
 and track the outcome in code, tests or the issue as appropriate. Test actual
 submission/receipt and offline draft recovery before claiming this requirement
 complete. Avoid duplicate submissions on retries.
+
+## Updated direction: defer Māori translation (23 September 2026)
+
+The user is not comfortable including the Māori translations and requested removal
+of the language selector for now. The active public app, installation guidance and
+recovery interface must use English, including when a device previously saved a
+Māori preference. Requirement 10 and bilingual feedback are deferred; they are not
+current release requirements. Retain draft source/review history for possible
+future work, but do not offer or enable the draft without renewed user direction.
+Preserve official Māori place names and macrons in transport/address data.

@@ -628,3 +628,27 @@ usable draft. This supports iterative evaluation without implying linguistic
 validation. The implementation must preserve explicit AI-translation warnings,
 English fallbacks and the outstanding fluent-speaker review requirement. Human
 participation remains testing and ordinary-language feedback, not coding.
+
+## Feedback delivery as an observable outcome
+
+The contextual feedback requirement distinguishes composing a message, opening
+an external service, submitting it and verifying receipt. The implementation
+keeps these states separate. A synthetic issue established real repository
+acceptance and anonymous browser receipt verification; authenticated CLI
+submission was recorded explicitly, rather than claimed as evidence for GitHub's
+interactive sign-in flow. This is a course example of matching a completion claim
+to the exact boundary exercised by a test.
+
+Privacy here means an informed exception: journey calculations stay local, while
+a person may deliberately share a reviewed public report. Optional context is
+limited to version, language and screen category. Neither useful context nor a
+feedback button justifies automatic address/history collection.
+
+## Withdrawing an unreviewed translation
+
+After trying the language direction, the user said they were not comfortable
+including Māori translations and requested removal of the selector. This changes
+the active requirement: technical availability and disclaimer text do not imply
+acceptance. Version 31 returns to English throughout and ignores saved Māori
+choices. The goal records translation as deferred, while preserving official
+place names and the historical draft for possible future review.

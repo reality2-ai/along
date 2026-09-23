@@ -25,7 +25,6 @@ def build():
     (OUT/'.nojekyll').touch()
     shutil.copy2(ROOT/'deploy'/'README.md',OUT/'README.md')
     shutil.copy2(ROOT/'docs'/'INSTALL.md',OUT/'INSTALL.md')
-    shutil.copy2(ROOT/'docs'/'INSTALL.mi.md',OUT/'INSTALL.mi.md')
     for name in ['LICENSE','NOTICE.md']:
         if (ROOT/name).exists():shutil.copy2(ROOT/name,OUT/name)
     # Relative paths support both a custom domain and GitHub Pages /repository/ URLs.

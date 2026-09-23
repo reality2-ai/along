@@ -1,6 +1,6 @@
 # Release evidence and remaining gates
 
-Current deployed app: **version 30**, reviewed 23 September 2026. The static ZIP
+Current release candidate: **version 31**, reviewed 23 September 2026. The static ZIP
 is prepared and the private server is retired. GitHub Pages is published at `reality2.ai/along/`; no AWS deployment has been made.
 This register separates automated evidence, user observations and remaining checks.
 
@@ -21,9 +21,9 @@ this audit. Later public-hosting work supplements that brief.
 | 8. Course material | Thematic analysis, six lessons, exercises, assessment rubric and negative-case/contextual-map refinements | Course effectiveness has not been studied |
 | 9. Release checks and handover | Version 30: 30 JavaScript and 4 Python tests; 16 browser scenarios; static/update suites; source/archive/live asset comparison | Remaining physical and spoken screen-reader checks prevent claiming full goal completion |
 
-| 10. English / Te reo Māori | Device-local language module, 389-phrase source draft catalogue and review sheet; flow selector available as an explicitly labelled draft; six localisation unit checks pass; targeted browser evidence is recorded below | Remaining generated text and alias verification, physical language/accessibility tests and fluent-speaker review |
+| 10. English / Te reo Māori | Deferred by user instruction; version 31 removes the selector and ignores earlier saved Māori choices | Re-enable only with renewed direction; draft review remains incomplete |
 
-| 11. Contextual repository feedback | [Local draft/handoff/receipt foundation](FEEDBACK.md); three fixture-based unit checks pass; bilingual dialog connected in source, not yet deployed | Interactive GitHub sign-in/submission check, physical device checks, versioned deployment and next-round outcome tracking |
+| 11. Contextual repository feedback | [Local draft/handoff/receipt foundation](FEEDBACK.md); three fixture-based unit checks pass; English contextual dialog included in v31 candidate | Interactive GitHub sign-in/submission check, physical device checks, versioned deployment and next-round outcome tracking |
 
 ## Evidence and reproduction
 
@@ -539,3 +539,33 @@ was accepted by the repository, verified through the app's anonymous browser
 receipt check, and closed. Submission used GitHub CLI; the interactive GitHub
 composer/sign-in step is explicitly not claimed as tested. These changes remain
 in source pending a versioned public deployment.
+
+## Version 31: contextual public feedback
+
+Feedback is available in Settings, route/stop details and journey/departure notes.
+The feedback dialog keeps drafts locally, shows the exact text before handoff,
+and attaches only opt-in version/language/general-screen context. GitHub account
+and final submission requirements are explicit. Receipt is checked from a pasted
+issue URL; opening GitHub never counts as delivery. The guides and README explain
+that this deliberate public submission is separate from private journey planning.
+
+New-repository review found no commuter reports; only the closed synthetic test
+issue exists. Interactive GitHub sign-in/submission and physical accessibility
+checks remain outstanding even though real receipt verification passed.
+
+### Revised version 31 scope: English only
+
+Before publication the user withdrew the Māori translation option. Version 31
+removes the selector, translation notices and bilingual guide interface. App and
+recovery use English regardless of a saved language preference. The Māori guide
+is excluded from the downloadable build; its source and earlier review history
+are retained as deferred work. Official names are unchanged. Historical bilingual
+browser scenarios are in `test/deferred/`, outside the active test suite. A new
+regression covers old Māori preferences across app/guide/recovery and offline use.
+
+The revised release passed all 11 active browser scenarios, including removal
+of language controls and English app/guide/recovery with an old Māori preference.
+The earlier 10 bilingual browser cases are deferred, not counted as current
+release coverage. The core suite passed 33 JavaScript and four Python tests;
+update/recovery and local deployment smoke checks passed. The downloadable guide
+is English-only and archive contents/checksum were verified.

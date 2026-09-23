@@ -4,7 +4,7 @@ import {setupUpdates} from './updates.js';
 import {aucklandNow} from './planner.js';
 import {readPreferences,writePreferences,recordJourney,suggestions,journeyRoutes,sameRoutes} from './preferences.js';
 const $=id=>document.getElementById(id);
-const language=createLocalizer();
+const language=createLocalizer({storage:null});
 const textBindings=new Map();
 function showError(id,error){const key=errorPhraseKey(error);if(key){translated(id,key);return;}textBindings.delete(id);$(id).lang='en-NZ';$(id).textContent=error.message;}
 const translated=(id,key,values)=>{const phrase=setLocalizedText($(id),language,key,typeof values==='function'?values():values);textBindings.set(id,{key,values,text:phrase.text});return phrase;};
@@ -94,9 +94,6 @@ function applyLanguage(){
   document.documentElement.lang=language.tag;
   document.body.lang='en-NZ';
   applyBindings();
-  $('language-choice').value=language.language;
-  $('language-draft').hidden=language.language!=='mi';
-  $('language-notice').hidden=language.language!=='mi';
   for(const [id,binding] of textBindings){
     // A cleared or replaced status must not reappear when the language changes.
     if($(id)?.textContent===binding.text)translated(id,binding.key,binding.values);
@@ -104,11 +101,7 @@ function applyLanguage(){
   }
   renderFlowLanguage();updatePreferenceSummary();renderSavedPlaces();
 }
-$('language-choice').onchange=()=>{
-  const result=language.setLanguage($('language-choice').value);
-  applyLanguage();
-  translated('language-status',result.stored?'language.changed':'language.session',{language:language.language==='mi'?'Te reo Māori':'English'});
-};
+
 let navDepth=0;
 function showScreen(screen,{focus=true,historyEntry=true}={}){
   if(screen!=='options'&&state.screen==='options'){state.searchSequence++;$('find').disabled=false;}

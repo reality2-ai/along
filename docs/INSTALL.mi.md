@@ -1,3 +1,5 @@
+> **Deferred source draft.** Withdrawn from the app and downloadable build at the user’s request. Not currently offered or linguistically reviewed.
+
 # Tāutahia a Along, ka whakamahi tuimotu
 
 > **He whakamāoritanga hukihuki nā AI.** Tērā pea he hapa kei roto. Kāore anō kia arotakengia e tētahi kaikōrero matatau ki te reo Māori. Ka puritia ngā ingoa tahua pūtirotiro ki te reo Ingarihi kia māmā ai te kimi.
@@ -110,3 +112,18 @@ Ka tukatukahia ā-rohe ngā wāhitau ka patohia me ngā rapunga haerenga, ahakoa
 Ka tuku tonu ngā tikiake paetukutuku/raraunga noa i ngā kōrero hononga, pērā i tō wāhitau IP, ki te kaihautū. Ka tuku ngā mahere tiriti tuihono kōwhiringa i ngā tono mō te takiwā mahere e kitea ana ki OpenStreetMap. Ka whiwhi tono raraunga tētahi tūmau wā tūturu kua whirihorahia. Kāore a Along e tuku i ō wāhitau kua patohia, ō haerenga kua tiakina, tō hītori ritenga rānei me aua tono. Kāore a Along e whakahaere i ngā tārua haumaru pūrere/pūnaha whakahaere me ngā kaupapa here pūtirotiro.
 
 He motuhake te rokiroki o ia pūtirotiro, kōtaha me te pūtakenga pae. Kāore te tāuta mai i tētahi URL tūmatanui hou e whakawhiti raraunga mai i tētahi pae tūmataiti/whakamātau. Kāore he pūkete kapua, he tārua haumaru kapua aunoa rānei mō ō haerenga i a Along.
+
+## Urupare tūmatanui kōwhiringa
+
+Kei Ngā tautuhinga, ngā taipitopito ara/tūnga me ngā tuhipoka haerenga/wehenga te
+**Tukuna he urupare mō tēnei mata**. Ka puritia tō hukihuki ā-rohe, ahakoa tuimotu.
+Arotakengia te tuhinga katoa i mua i te huaki i a GitHub. Me whai pūkete GitHub,
+me kōwhiri hoki **Submit new issue** ki reira; he tūmatanui ngā pūrongo kua tukuna.
+Kāore te huaki i a GitHub anake e whakaū kua tae atu. Whakapirihia te hononga take
+ki Along hei tirotiro kua tae atu.
+
+Kāore he wāhitau, he tauwāhi, he hītori haerenga rānei ka tāpirihia aunoatia. Ka
+taea te kōwhiri kia whakaurua te putanga taupānga, te reo me te mata whānui e
+whakaaturia ana. Kaua e pato kōrero whaiaro kāore koe e hiahia kia tūmatanui. Mā
+**Mukua tēnei hukihuki** e tango te hukihuki ā-rohe; kāore e muku i tētahi take kua
+tukuna kē ki GitHub.

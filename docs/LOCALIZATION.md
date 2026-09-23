@@ -1,3 +1,13 @@
+# Māori translation deferred
+
+At the user’s request on 23 September 2026, version 31 removes the language
+selector and uses English in the app, installation guide and recovery page, even
+if the device previously saved Māori. The draft catalogue and review history are
+retained for possible future development; they are not offered in the interface.
+Official Māori place names and macrons are preserved. Requirement 10 is deferred.
+
+The material below records historical development, not current availability.
+
 # English and te reo Māori implementation
 
 This is work in progress under [goal requirement 10](PROJECT_GOAL.md).
