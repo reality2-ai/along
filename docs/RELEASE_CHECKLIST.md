@@ -697,3 +697,13 @@ draft recovery with no page errors. [Release evidence](evidence/release-v36.json
 records verified GitHub asset hashes and public shell/build metadata comparisons.
 The enriched dataset is now published; existing devices can fetch it through
 Settings → Update downloaded timetable.
+
+## Version 37 layout fixes
+
+The Filter departures label now stays inline with its native disclosure marker.
+The description-only styling applies only to the journey preference description.
+Change starting place now spans the card width; the swap control sits beside the
+place heading. At a 360-pixel viewport the button fills all 286 available pixels.
+Mobile nearby and address-journey browser scenarios pass, including their
+accessibility checks; rendered screenshots were inspected. This release changes
+layout only, with the same data and live-connection status as version 36.

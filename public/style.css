@@ -8,7 +8,7 @@
 .field-help{font-size:13px;color:#56654e;line-height:1.6;margin:12px 0}
 .journey-preferences{border-top:1px solid var(--line);margin:8px 0 20px;padding-top:5px}
 .journey-preferences>summary,.journey-notes>summary{font-size:14px;font-weight:600;min-height:44px;padding:12px 0;cursor:pointer}
-.journey-preferences>summary span{display:block;font-size:12px;font-weight:400;color:#56654e;margin:6px 0 0 15px}
+.journey-preferences>summary #preference-summary{display:block;font-size:12px;font-weight:400;color:#56654e;margin:6px 0 0 15px}
 .preference-field{display:flex;flex-direction:column;gap:8px;font-size:14px;margin:16px 0;line-height:1.5}
 .preference-field select{max-width:none;width:100%;font-size:14px;min-height:44px}
 .next-step{margin-top:16px;padding:12px 14px;background:#f0f4e9;border-radius:8px;color:#304c2e;font-size:14px;line-height:1.7}
@@ -73,7 +73,7 @@ button,.secondary-button,.tab,.setting,select,input[type=date],input[type=time]{
 .place-review .swap{margin:0 0 0 auto}
 .guided-app .journey-preferences{margin:20px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:8px 0}
 .guided-app .journey-preferences>summary{font-size:15px}
-.guided-app .journey-preferences>summary span{font-size:13px;line-height:1.6}
+.guided-app .journey-preferences>summary #preference-summary{font-size:13px;line-height:1.6}
 .guided-app .results-heading{margin-bottom:12px;flex-wrap:wrap}
 .guided-app .results-heading h2{font-size:18px}
 .guided-app .journey-card{background:white;margin:20px 0;border-radius:14px;overflow:hidden}
@@ -207,10 +207,9 @@ button,.secondary-button,.tab,.setting,select,input[type=date],input[type=time]{
   display:flex;width:100%;justify-content:center;align-items:center;
   margin-top:24px;min-height:52px;font-size:16px;padding:15px 17px;
 }
-/* Share the change-place action row so the next step stays within phone view. */
-.guided-app .place-review .swap{float:right;margin:-44px 0 0 12px}
-.guided-app .place-review > div{clear:both}
-.guided-app #edit-origin{max-width:calc(100% - 56px)}
+/* Keep swap beside the place heading, leaving change-place actions full width. */
+.guided-app .place-review .swap{position:absolute;top:12px;right:16px;margin:0}
+.guided-app .place-review > div:first-child > small,.guided-app #review-origin{padding-right:56px}
 .guided-app #review-destination-row{margin-top:16px}
 
 .departure-board .board-scheduled{display:block;font-family:inherit;font-size:12px;font-weight:400;color:#d9e9df;margin-top:6px}
@@ -224,7 +223,7 @@ button,.secondary-button,.tab,.setting,select,input[type=date],input[type=time]{
 .guided-app main .text-button,.guided-app main .secondary-button,
 .guided-app dialog .text-button,.guided-app dialog .secondary-button{width:100%;text-align:center}
 .guided-app .flow-nav .text-button{width:auto}
-.guided-app #edit-origin{width:calc(100% - 56px)}
+
 .guided-app dialog .secondary-button + .secondary-button{margin-top:8px}
 .map-actions{display:grid;gap:8px;margin-top:12px}
 .map-shell #map-location-status:empty{display:none}

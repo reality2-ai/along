@@ -230,7 +230,7 @@ coverage, provenance and reproducibility.
 
 ## Static hosting and downloadable build
 
-The [version 36 preview release](https://github.com/reality2-ai/along/releases/tag/v0.36.0)
+The [version 37 preview release](https://github.com/reality2-ai/along/releases/tag/v0.37.0)
 contains the ready-to-host ZIP and SHA-256 checksum. It is an experimental course
 app. The ZIP must be served
 over HTTPS; opening it as a local file does not install the app.
