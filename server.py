@@ -61,6 +61,8 @@ class Handler(BaseHTTPRequestHandler):
             elif url.path == '/api/predictions':
                 feed = realtime.get('tripupdates')
                 self.json(feed)
+            elif url.path == '/api/vehicles':
+                self.json(realtime.get('vehiclelocations'))
             elif url.path == '/api/alerts':
                 self.json(realtime.alerts())
             elif url.path.startswith('/api/') and not planner:
@@ -105,7 +107,7 @@ class Handler(BaseHTTPRequestHandler):
                 allowed['/update.html']='update.html'
                 allowed['/install.html']='install.html'
                 allowed['/updates.js']='updates.js'
-                for module in ['i18n.js','locales.js','feedback.js','feedback-ui.js','live-client.js','live-context.js','live-predictions.js','live-time.js']:
+                for module in ['i18n.js','locales.js','feedback.js','feedback-ui.js','live-client.js','live-context.js','live-predictions.js','live-time.js','live-vehicles.js']:
                     allowed['/'+module]=module
                 for icon in ['icon-192.png','icon-512.png','maskable-512.png','apple-touch-icon.png','favicon-32.png']:
                     allowed['/icons/'+icon] = 'icons/'+icon

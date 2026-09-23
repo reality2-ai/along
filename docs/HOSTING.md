@@ -264,7 +264,7 @@ Advancing a step or leaving the journey clears and cancels the check. Results
 expire after the feed freshness window, and offline failure retains the chosen
 schedule. Unknown agency/direction selectors still require additional source
 metadata; this is not a guarantee that every relevant alert can be identified.
-Vehicle positions remain unfinished. Public version 34
+Vehicle position source integration is described below. Public version 34
 still has no configured live proxy.
 
 For the journey-alert integration, all 54 JavaScript and 11 Python tests pass,
@@ -288,3 +288,21 @@ an expected departure, cancellation, skipped stop, wrong service date, expiry an
 offline fallback against a real downloaded journey, using synthetic live records.
 Public version 34 still uses the offline schedule; this source integration needs
 a configured secure live proxy and a subsequent release before public use.
+
+### Contextual vehicle positions (source integration)
+
+Configured route-detail maps now offer an explicit current-position check for the
+selected departure. The proxy exposes `/api/vehicles` using AT's `vehiclelocations`
+feed. Matching requires one dated trip, consistent route/start time when supplied,
+a scheduled trip relationship, valid coordinates, and both feed and individual
+GPS timestamps within 180 seconds. Missing or ambiguous identity and unknown GPS
+freshness leave the scheduled route visible. The timestamp distinction follows
+the [GTFS vehicle-position specification](https://gtfs.org/documentation/realtime/feed-entities/vehicle-positions/).
+
+A matched marker includes its observation time and a text description of its
+straight-line distance from the nearest stop in the selected run. It is not an
+arrival prediction. Results expire when either timestamp becomes stale; changing
+the run or leaving the detail clears the marker and cancels pending requests.
+No automatic polling, street-tile loading or location permission is involved.
+The browser test uses a real downloaded route with synthetic vehicle records;
+public hosting remains unconfigured, and public version 34 is unchanged.

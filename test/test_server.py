@@ -27,7 +27,7 @@ class ServerAssetsTests(unittest.TestCase):
         cls.thread.join(timeout=5)
 
     def test_current_modules_are_served_and_private_files_are_not(self):
-        for asset in ['i18n.js', 'locales.js', 'feedback.js', 'feedback-ui.js', 'live-client.js', 'live-context.js', 'live-predictions.js', 'live-time.js']:
+        for asset in ['i18n.js', 'locales.js', 'feedback.js', 'feedback-ui.js', 'live-client.js', 'live-context.js', 'live-predictions.js', 'live-time.js', 'live-vehicles.js']:
             with self.subTest(asset=asset), urllib.request.urlopen(self.base+'/'+asset) as response:
                 self.assertEqual(response.status, 200)
                 self.assertIn('javascript', response.headers['Content-Type'])
@@ -49,6 +49,14 @@ class ServerAssetsTests(unittest.TestCase):
         with patch.object(module, 'planner', None), patch.object(module.realtime, 'alerts', return_value=expected):
             with urllib.request.urlopen(self.base+'/api/alerts') as response:
                 self.assertEqual(json.load(response), expected)
+
+    def test_vehicle_feed_does_not_require_local_planner(self):
+        module = importlib.import_module('server')
+        expected = {'available': True, 'updated': 1234, 'entities': []}
+        with patch.object(module, 'planner', None), patch.object(module.realtime, 'get', return_value=expected) as get:
+            with urllib.request.urlopen(self.base+'/api/vehicles') as response:
+                self.assertEqual(json.load(response), expected)
+            get.assert_called_once_with('vehiclelocations')
 
     def test_live_configuration_exposes_only_proxy_path_not_key(self):
         module = importlib.import_module('server')

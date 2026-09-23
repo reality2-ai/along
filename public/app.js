@@ -1,3 +1,4 @@
+import {vehiclePosition} from './live-vehicles.js';
 import {contextualAlerts} from './live-context.js';
 import {stopAlertContexts,journeyAlertContexts,aucklandWallEpoch} from './live-time.js';
 import {departurePrediction} from './live-predictions.js';
@@ -346,11 +347,38 @@ function routeLink(label,args,className='detail-link'){
 }
 function routeVariantMarkup(data,v){
   const run=v.runs.find(r=>r.trip===v.selectedTrip)||v.runs[0];
-  return `<p>${escape(data.date)} · ${message('explore.scheduled')}</p>${mapMarkup()}<p>${message(v.shape?'explore.geometry':'explore.noGeometry')}</p><label class="preference-field">${message('explore.run')}<select id="route-run">${v.runs.map(r=>`<option value="${escape(r.trip)}" ${r.trip===run.trip?'selected':''}>${clock(r.departure)}</option>`).join('')}</select></label><label class="preference-field">${message('explore.filter')}<input id="route-stop-filter" data-i18n-placeholder="explore.filterHint" type="search" placeholder="For example, Symonds"></label><p class="field-help">${message('explore.filterHelp')}</p><p id="route-match-status" role="status"></p><ol class="route-stop-list">${run.stops.map((s,i)=>`<li data-stop-name="${escape(s.stop.name.toLowerCase())}"><span class="stop-schedule">${clock(s.time)}</span> ${placeDetail(s.stop)}${i===run.stops.length-1?message('explore.lastStop'):!s.pickup?message('explore.noPickup'):''}</li>`).join('')}</ol>`;
+  return `<p>${escape(data.date)} · ${message('explore.scheduled')}</p>${mapMarkup()}${liveClient.configured?'<button type="button" class="secondary-button" id="route-vehicle">Check this service’s current position</button><p class="field-help">Optional online check for the selected departure. Your route selection stays on this device; the server receives your IP address.</p><p id="route-vehicle-status" class="field-help" role="status"></p>':''}<p>${message(v.shape?'explore.geometry':'explore.noGeometry')}</p><label class="preference-field">${message('explore.run')}<select id="route-run">${v.runs.map(r=>`<option value="${escape(r.trip)}" ${r.trip===run.trip?'selected':''}>${clock(r.departure)}</option>`).join('')}</select></label><label class="preference-field">${message('explore.filter')}<input id="route-stop-filter" data-i18n-placeholder="explore.filterHint" type="search" placeholder="For example, Symonds"></label><p class="field-help">${message('explore.filterHelp')}</p><p id="route-match-status" role="status"></p><ol class="route-stop-list">${run.stops.map((s,i)=>`<li data-stop-name="${escape(s.stop.name.toLowerCase())}"><span class="stop-schedule">${clock(s.time)}</span> ${placeDetail(s.stop)}${i===run.stops.length-1?message('explore.lastStop'):!s.pickup?message('explore.noPickup'):''}</li>`).join('')}</ol>`;
+}
+function mountVehicle(view){
+  const button=$('route-vehicle'),status=$('route-vehicle-status'),map=contextMap;
+  if(!button||!map)return;
+  const client=createLiveClient({baseURL:liveBaseURL,pageURL:import.meta.url});
+  let sequence=0,timer=null,marker=null;
+  const clear=()=>{clearTimeout(timer);if(marker){map.removeLayer(marker);marker=null;}};
+  view.dispose=()=>{sequence++;client.cancel();clear();};
+  button.onclick=async()=>{
+    const request=++sequence;clear();client.cancel();button.disabled=true;status.textContent='Checking this service’s current position…';
+    const run=view.variant.runs.find(r=>r.trip===view.variant.selectedTrip)||view.variant.runs[0];
+    const startTime=[Math.floor(run.departure/3600),Math.floor(run.departure%3600/60),run.departure%60].map(n=>String(n).padStart(2,'0')).join(':');
+    const feed=await client.read('vehicles',{requested:true});
+    if(request!==sequence||!button.isConnected||contextMap!==map)return;
+    button.disabled=false;
+    const position=vehiclePosition(feed,{trip:run.trip,routeId:view.routeData.id,serviceDate:view.routeData.date.replaceAll('-',''),startTime});
+    if(!position.available){status.textContent='No current position could be matched to this departure. The scheduled route is still shown.';return;}
+    const label='Vehicle position reported at '+clock(aucklandNow(new Date(position.updated*1000)).seconds);
+    marker=L.circleMarker([position.lat,position.lon],{radius:10,color:'#fff',weight:3,fillColor:'#884400',fillOpacity:1}).addTo(map).bindTooltip(label,{permanent:true,direction:'top'});
+    const nearest=run.stops.map(({stop})=>({stop,distance:map.distance([position.lat,position.lon],[stop.lat,stop.lon])})).sort((a,b)=>a.distance-b.distance)[0];
+    const location=nearest?' About '+Math.round(nearest.distance)+' metres in a straight line from '+nearest.stop.name+'.':'';
+    status.textContent=label+'.'+location+' This is a reported location, not an arrival prediction.';
+    // The check is explicit: include the marker without discarding route context.
+    map.fitBounds(map.getBounds().extend([position.lat,position.lon]),{animate:false,padding:[25,25]});
+    timer=setTimeout(()=>{if(request===sequence){clear();status.textContent='The vehicle position has expired. Check again for a current position.';}},Math.max(0,(position.expires-Date.now()/1000)*1000));
+  };
 }
 function mountVariant(view){
   const v=view.variant;if(!v)return;
   mountMap(v.shape,v.stops.map(s=>s.stop));
+  mountVehicle(view);
   $('route-run').onchange=()=>{v.selectedTrip=$('route-run').value;view.markup=routeVariantMarkup(view.routeData,v);displayDetail(activeDetail);$('route-run')?.focus();};
   const filter=()=>{const q=$('route-stop-filter').value.toLowerCase().trim();let count=0;document.querySelectorAll('.route-stop-list li').forEach(li=>{li.hidden=!li.dataset.stopName.includes(q);if(!li.hidden)count++;});if(q)translated('route-match-status','explore.matches',{count});else $('route-match-status').textContent='';view.filter=q;};
   $('route-stop-filter').value=view.filter||'';$('route-stop-filter').oninput=filter;filter();
