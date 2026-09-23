@@ -233,3 +233,20 @@ appearing on a physical device. Matched display, expiration and cancellation bro
 actual abort on Back, unchanged row order, retained scheduled times, 360 px reflow
 and an axe check of the live board. These use synthetic live events matched to
 real downloaded departures; they do not establish public proxy availability.
+
+### Contextual stop alerts (source integration after version 34)
+
+A configured stop check requests both predictions and alerts after the user's
+explicit action. Matching alerts appear in a collapsed service-updates disclosure;
+only its count is added to the status announcement. Text is rendered as text,
+not trusted HTML. Alert expiry clears the disclosure independently of prediction
+expiry, and leaving the detail cancels both pending feeds.
+
+Each departure supplies a verified stop, route, route type, dated trip and start
+time. Matching is evaluated at its displayed Auckland departure time. A separate
+stop-only context covers the inspected stop's two-hour window, including when no
+departures are returned. Wall-time conversion does not depend on the device's
+timezone; ambiguous or missing daylight-saving wall times are left unmatched.
+Agency/direction restrictions still need corresponding source metadata before
+those selectors can match. This does not yet implement selected-journey alerts.
+The public proxy remains unconfigured; version 34 is still the deployed release.

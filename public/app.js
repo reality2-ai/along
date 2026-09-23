@@ -1,3 +1,5 @@
+import {contextualAlerts} from './live-context.js';
+import {stopAlertContexts} from './live-time.js';
 import {departurePrediction} from './live-predictions.js';
 import {createLiveClient} from './live-client.js';
 import {liveBaseURL} from './live-config.js';
@@ -212,20 +214,20 @@ function placeDetail(place){
   const link=detailLink(label,place.name,async()=>{
     const now=explorationTime(),departures=place.placeType==='address'?[]:await ask('stopDetails',{id:place.id,now});
     stopRows=departures;stopNow=now;
-    return `<p>${message(place.placeType==='address'?'place.addressType':'explore.stationStop')}${place.code?' · '+message('place.stopType',{code:place.code}):''}</p>${mapMarkup()}<p>${message('explore.access')}</p>${place.placeType==='address'?'':`<h3>${message('board.heading',{time:clock(now.seconds),date:now.date})}</h3><p>${message('board.limit')}</p><p><a href="https://at.govt.nz/atmobile/" target="_blank" rel="noopener noreferrer">${message('board.at')}</a> <small>${message('board.online')}</small></p>${liveClient.configured?'<button type="button" class="secondary-button" id="stop-live">Check live departures at this stop</button><p class="field-help">Optional online check. Your journey details stay on this device; the server receives your IP address.</p><p id="stop-live-status" class="field-help" role="status"></p>':''}${departures.length?`<div class="departure-board"><table><caption>${message('board.caption')}</caption><thead><tr><th scope="col">${message('board.time')}</th><th scope="col">${message('board.route')}</th><th scope="col">${message('board.destination')}</th></tr></thead><tbody>${departures.map((d,i)=>`<tr><td class="board-time" data-stop-time="${i}">${clock(d.departure)}</td><td>${routeLink(escape(d.route),{routeId:d.routeId,tripId:d.trip},'board-route')}</td><td>${escape(d.headsign)}</td></tr>`).join('')}</tbody></table></div>`:`<p>${message('board.none')}</p>`}`}`;
-  });detailViews.get(id).mount=()=>{mountMap(null,[place]);mountStopLive(id,stopRows,stopNow);};return link;
+    return `<p>${message(place.placeType==='address'?'place.addressType':'explore.stationStop')}${place.code?' · '+message('place.stopType',{code:place.code}):''}</p>${mapMarkup()}<p>${message('explore.access')}</p>${place.placeType==='address'?'':`<h3>${message('board.heading',{time:clock(now.seconds),date:now.date})}</h3><p>${message('board.limit')}</p><p><a href="https://at.govt.nz/atmobile/" target="_blank" rel="noopener noreferrer">${message('board.at')}</a> <small>${message('board.online')}</small></p>${liveClient.configured?'<button type="button" class="secondary-button" id="stop-live">Check live times and alerts</button><p class="field-help">Optional online check. Your journey details stay on this device; the server receives your IP address.</p><p id="stop-live-status" class="field-help" role="status"></p><div id="stop-alerts"></div>':''}${departures.length?`<div class="departure-board"><table><caption>${message('board.caption')}</caption><thead><tr><th scope="col">${message('board.time')}</th><th scope="col">${message('board.route')}</th><th scope="col">${message('board.destination')}</th></tr></thead><tbody>${departures.map((d,i)=>`<tr><td class="board-time" data-stop-time="${i}">${clock(d.departure)}</td><td>${routeLink(escape(d.route),{routeId:d.routeId,tripId:d.trip},'board-route')}</td><td>${escape(d.headsign)}</td></tr>`).join('')}</tbody></table></div>`:`<p>${message('board.none')}</p>`}`}`;
+  });detailViews.get(id).mount=()=>{mountMap(null,[place]);mountStopLive(id,stopRows,stopNow,place);};return link;
 }
-function mountStopLive(id,rows,at){
+function mountStopLive(id,rows,at,place){
   const button=$('stop-live');if(!button)return;
   const client=createLiveClient({baseURL:liveBaseURL,pageURL:import.meta.url});
-  let timer=null,sequence=0;
+  let timer=null,alertTimer=null,sequence=0;
   const caption=$('detail-body').querySelector('.departure-board caption'),scheduledCaption=caption?.textContent;
   const reset=()=>{if(caption)caption.textContent=scheduledCaption;document.querySelectorAll('[data-stop-time]').forEach((cell,i)=>{cell.textContent=clock(rows[i].departure);});};
-  detailViews.get(id).dispose=()=>{sequence++;clearTimeout(timer);client.cancel();};
+  detailViews.get(id).dispose=()=>{sequence++;clearTimeout(timer);clearTimeout(alertTimer);client.cancel();};
   button.onclick=async()=>{
-    const request=++sequence;clearTimeout(timer);reset();button.disabled=true;
+    const request=++sequence;clearTimeout(timer);clearTimeout(alertTimer);$('stop-alerts').replaceChildren();reset();button.disabled=true;
     $('stop-live-status').textContent='Checking current AT predictions…';
-    const feed=await client.read('predictions',{requested:true});
+    const [feed,alerts]=await Promise.all([client.read('predictions',{requested:true}),client.read('alerts',{requested:true})]);
     if(request!==sequence || !button.isConnected)return;
     button.disabled=false;
     let matched=0;
@@ -245,6 +247,18 @@ function mountStopLive(id,rows,at){
     });
     if(matched && caption)caption.textContent='Departures · scheduled and live';
     $('stop-live-status').textContent=!feed.available?'Current predictions unavailable. Showing scheduled departures.':matched?'Live information matched to '+matched+' departures. Other times remain scheduled.':'No live match for these departures. Times remain scheduled.';
+    const alertBox=$('stop-alerts');
+    if(alerts.available){
+      const relevant=contextualAlerts(alerts,stopAlertContexts(place,rows,at));
+      $('stop-live-status').textContent+=' '+relevant.length+' matching service update'+(relevant.length===1?'':'s')+'.';
+      if(relevant.length){
+        const disclosure=document.createElement('details'),summary=document.createElement('summary');
+        summary.textContent=relevant.length+' service update'+(relevant.length===1?'':'s')+' for this stop';disclosure.append(summary);
+        for(const alert of relevant){const article=document.createElement('article'),heading=document.createElement('h3'),body=document.createElement('p');article.className='alert-item';heading.textContent=alert.title;body.textContent=alert.description;article.append(heading,body);disclosure.append(article);}
+        alertBox.append(disclosure);
+      }else alertBox.textContent='No matching alerts returned for this stop and time.';
+      alertTimer=setTimeout(()=>{if(button.isConnected)alertBox.textContent='Service updates have expired. Check again for current information.';},Math.max(0,(alerts.updated+180-Date.now()/1000)*1000));
+    }else alertBox.textContent='Service alerts unavailable. Check AT for disruptions.';
     if(feed.available)timer=setTimeout(()=>{if(button.isConnected){reset();$('stop-live-status').textContent='Live information has expired. Showing scheduled departures.';}},Math.max(0,(feed.updated+180-Date.now()/1000)*1000));
   };
 }

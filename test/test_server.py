@@ -27,7 +27,7 @@ class ServerAssetsTests(unittest.TestCase):
         cls.thread.join(timeout=5)
 
     def test_current_modules_are_served_and_private_files_are_not(self):
-        for asset in ['i18n.js', 'locales.js', 'feedback.js', 'feedback-ui.js', 'live-client.js', 'live-context.js']:
+        for asset in ['i18n.js', 'locales.js', 'feedback.js', 'feedback-ui.js', 'live-client.js', 'live-context.js', 'live-predictions.js', 'live-time.js']:
             with self.subTest(asset=asset), urllib.request.urlopen(self.base+'/'+asset) as response:
                 self.assertEqual(response.status, 200)
                 self.assertIn('javascript', response.headers['Content-Type'])

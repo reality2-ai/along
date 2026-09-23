@@ -88,3 +88,32 @@ test('leaving a stop cancels its request and a late response cannot change anoth
   await expect(page.locator('#stop-live')).toBeEnabled();await expect(page.locator('#stop-live-status')).toBeEmpty();
  }finally{await context.close();}
 });
+
+test('stop alerts disclose only matching service and time scopes, then expire',async({browser})=>{
+ const {page,context,rows}=await openObservedStop(browser);
+ try{
+  const row=rows[0];expect(row).toBeTruthy();
+  await context.route('**/api/predictions',r=>r.fulfill({contentType:'application/json',body:JSON.stringify({available:false})}));
+  await context.route('**/api/alerts',async route=>{
+   const updated=await page.evaluate(()=>Math.floor(Date.now()/1000));
+   const selected={stop_id:row.stop.id,route_id:row.routeId,trip:{trip_id:row.trip,start_date:row.serviceDate}};
+   const alerts=[
+    {title:'Platform access changed',description:'<img src=x onerror=alert(1)> Use the signposted entrance.',informed_entity:[selected]},
+    {title:'Unrelated route',informed_entity:[{...selected,route_id:'not-this-route'}]},
+    {title:'Another service day',informed_entity:[{...selected,trip:{trip_id:row.trip,start_date:'20990101'}}]},
+    {title:'Expired disruption',informed_entity:[selected],active_period:[{end:updated-1}]},
+   ];
+   await route.fulfill({contentType:'application/json',body:JSON.stringify({available:true,updated,alerts})});
+  });
+  await expect(page.locator('#stop-alerts')).toBeEmpty();
+  await page.locator('#stop-live').click();
+  await expect(page.locator('#stop-alerts summary')).toHaveText('1 service update for this stop');
+  await expect(page.locator('#stop-alerts details')).not.toHaveAttribute('open','');
+  await page.locator('#stop-alerts summary').click();
+  await expect(page.locator('#stop-alerts')).toContainText('Platform access changed');
+  await expect(page.locator('#stop-alerts')).not.toContainText('Unrelated route');await expect(page.locator('#stop-alerts')).not.toContainText('Expired disruption');
+  await expect(page.locator('#stop-alerts img')).toHaveCount(0);
+  await expect(page.locator('.departure-board')).toBeVisible();
+  await page.clock.fastForward(181000);await expect(page.locator('#stop-alerts')).toContainText('expired');await expect(page.locator('#stop-alerts details')).toHaveCount(0);
+ }finally{await context.close();}
+});
