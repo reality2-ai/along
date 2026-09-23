@@ -511,3 +511,27 @@ synchronizer; overlapping requests fail quietly and can be retried. This does no
 solve discovery, remote connectivity, owner availability, or the interval between
 an owner response and a subsequent owner-side change. Public app wiring and
 physical-device tests remain incomplete; offline timetable planning is unaffected.
+
+## Owner device-access review
+
+`showOwnerDeviceAccess` presents one selected member's AT access as a focused
+allow/remove decision. The trusted device-selection flow supplies the member and
+certificate; a friendly name is display text only, with the exact identity under
+an expandable detail. Full-width action and Back buttons use the pairing styles.
+The view restores actual owner authority, displays the saved policy, and commits
+only against that reviewed revision. The existing policy updater verifies current
+membership evidence for a new grant. A recipient cannot use this view as an owner.
+
+Only a trusted user activation changes access. Back, Escape, replacement and
+disposal cancel pending work. Completed text distinguishes a local permission
+change from key delivery or receipt of removal by the other device, and explains
+that removing a grant does not invalidate a copied key at AT. No network send is
+performed by this view.
+
+The WebRTC browser scenario now grants and removes through real keyboard use of
+this view. Checks include Back without a write, ignored synthetic clicks, focus
+return, 320px layout at 200% root font size, axe checks, and refusal of a stale
+review after another policy change. The initial run found lost keyboard focus
+when disabling the action; focus is now captured before disabling it. Real
+TalkBack, physical-device operation, device selection and public integration
+remain unverified/incomplete. Provider key rotation has no user-facing flow yet.

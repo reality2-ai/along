@@ -6,7 +6,7 @@ import {join} from 'node:path';
 const {chromium} = await import(process.env.PLAYWRIGHT_MODULE || '@playwright/test');
 const sources = new Map();
 for (const name of ['storage.mjs', 'membership.mjs', 'certificate.mjs', 'peer-session.mjs', 'peer-link.mjs', 'challenge.mjs', 'session-statement.mjs']) sources.set('/' + name, await readFile(join(process.env.R2_BROWSER_DIR, name)));
-for (const name of ['../tg-pairing/initial-persona.mjs', '../tg-pairing/local-persona.mjs', 'local-owner.mjs', 'owner-policy.mjs', 'owner-policy-send.mjs', 'policy-sync.mjs', 'owner-delivery.mjs', 'delivery-history.mjs', 'delivery-recovery.mjs', 'remote-owner.mjs', 'policy-update.mjs', 'policy-update-message.mjs', 'remote-owner-view.mjs', 'settings-view.mjs', 'credential-view.mjs', '../tg-pairing/comparison.css', '../tg-pairing/local-persona-session.mjs', 'policy.mjs', 'policy-store.mjs', 'local-vault.mjs', 'delivery-ack.mjs', 'delivery-message.mjs']) sources.set('/' + name.split('/').pop(), await readFile(new URL(name, import.meta.url)));
+for (const name of ['../tg-pairing/initial-persona.mjs', '../tg-pairing/local-persona.mjs', 'local-owner.mjs', 'owner-policy.mjs', 'owner-access-view.mjs', 'owner-policy-send.mjs', 'policy-sync.mjs', 'owner-delivery.mjs', 'delivery-history.mjs', 'delivery-recovery.mjs', 'remote-owner.mjs', 'policy-update.mjs', 'policy-update-message.mjs', 'remote-owner-view.mjs', 'settings-view.mjs', 'credential-view.mjs', '../tg-pairing/comparison.css', '../tg-pairing/local-persona-session.mjs', 'policy.mjs', 'policy-store.mjs', 'local-vault.mjs', 'delivery-ack.mjs', 'delivery-message.mjs']) sources.set('/' + name.split('/').pop(), await readFile(new URL(name, import.meta.url)));
 for (const name of ['hive_wasm.js', 'hive_wasm_bg.wasm']) sources.set('/' + name, await readFile(join(process.env.R2_WASM_DIR, name)));
 for (const name of ['live-client.mjs', '../../public/at-client.js', '../../public/live-client.js']) sources.set('/' + name.split('/').pop(), await readFile(new URL(name, import.meta.url)));
 const server = createServer((req, res) => {
@@ -27,6 +27,15 @@ try {
     assert.deepEqual((await new AxeBuilder({page}).analyze()).violations.map(v => v.id), []);
     await page.evaluate(() => document.querySelector('.pairing-primary').click());
     await page.getByRole('heading', {name: 'Use your connected device’s AT key?'}).waitFor();
+    await page.keyboard.press('Tab'); await page.keyboard.press('Enter');
+  });
+  await page.exposeFunction('exerciseOwnerAccess', async action => {
+    if (action === 'cancel') { await page.keyboard.press('Escape'); return; }
+    await page.evaluate(() => document.documentElement.style.fontSize = '200%');
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+    assert.deepEqual((await new AxeBuilder({page}).analyze()).violations.map(v => v.id), []);
+    await page.evaluate(() => document.querySelector('.pairing-primary').click());
+    await page.getByRole('button', {name: action === 'remove' ? 'Remove AT access' : 'Allow AT access', exact: true}).waitFor();
     await page.keyboard.press('Tab'); await page.keyboard.press('Enter');
   });
   await page.evaluate(async () => {
@@ -66,8 +75,19 @@ try {
     const owner = await device('peer-key-owner'), receiver = await device('peer-key-receiver');
     check(hex(owner.subject) !== hex(receiver.subject), 'distinct identities');
     const {binding} = await (await import('./local-owner.mjs')).establishLocalATOwner({wasm, store: owner.store, expectedGroup: group});
-    await updateLocalATPolicy({wasm, store: owner.store, expectedGroup: group, expectedRevision: 1n,
-      devices: [hex(owner.subject), hex(receiver.subject)], certificates: [receiver.certificate]});
+    const {showOwnerDeviceAccess} = await import('./owner-access-view.mjs');
+    const ownerViewOptions = {wasm, store: owner.store, expectedGroup: group, peer: receiver.subject,
+      certificate: receiver.certificate, deviceName: 'Test phone', focus: true};
+    let ownerBacks = 0;
+    const cancelledOwnerView = showOwnerDeviceAccess(document.querySelector('#consent'), {...ownerViewOptions, onBack: () => ownerBacks++});
+    await cancelledOwnerView.ready; await window.exerciseOwnerAccess('cancel');
+    check(ownerBacks === 1, 'owner Back leaves review');
+    const ownerAccess = showOwnerDeviceAccess(document.querySelector('#consent'), ownerViewOptions);
+    await ownerAccess.ready; await window.exerciseOwnerAccess('allow');
+    const grantedReceipt = await ownerAccess.completed;
+    check(grantedReceipt.policy.revision === 2n && grantedReceipt.policy.devices.includes(hex(receiver.subject)), 'keyboard consent saves exact owner grant');
+    check(document.activeElement.textContent === 'Back' && document.querySelector('[role=status]').textContent.includes('has not been sent'), 'owner grant is not delivery');
+    ownerAccess.dispose();
     const ownerVault = openLocalATVault({wasm, store: owner.store, ...binding});
     await ownerVault.saveOwnerKey('synthetic-peer-delivery');
     const policyKey = binding.group + ':' + binding.credential, policyScope = 'along-at-policy:' + binding.owner;
@@ -276,7 +296,12 @@ try {
         'live request follows actual owner policy response');
       check(!policyCheckError, 'policy exchange completed without dispatch error');
       check(await denied(() => policySync.receive(lastPolicyResponse)), 'already consumed response refused');
-      await updateLocalATPolicy({wasm, store: owner.store, expectedGroup: group, expectedRevision: 4n, devices: [hex(owner.subject)]});
+      const removalView = showOwnerDeviceAccess(document.querySelector('#consent'), ownerViewOptions);
+      await removalView.ready; await window.exerciseOwnerAccess('remove');
+      const removalReceipt = await removalView.completed;
+      check(removalReceipt.policy.revision === 5n && !removalReceipt.policy.devices.includes(hex(receiver.subject)), 'owner removal saved from review');
+      check(document.querySelector('[role=status]').textContent.includes('must receive it'), 'removal does not claim remote completion');
+      removalView.dispose();
       // Do not push removal: the recipient must discover it before provider I/O.
       check(await receiverVault.getKey() === 'synthetic-peer-delivery', 'recipient has not yet learned removal');
       check(!(await guardedLive.read('vehicles', {requested: true})).available && gatedFetches === 1,
@@ -297,6 +322,16 @@ try {
       await updateLocalATPolicy({wasm, store: owner.store, expectedGroup: group, expectedRevision: 5n,
         devices: [hex(owner.subject), hex(receiver.subject)], certificates: [receiver.certificate]});
       await sendPolicy();
+      const staleView = showOwnerDeviceAccess(document.querySelector('#consent'), ownerViewOptions);
+      await staleView.ready;
+      await updateLocalATPolicy({wasm, store: owner.store, expectedGroup: group, expectedRevision: 6n,
+        devices: [hex(owner.subject), hex(receiver.subject)]});
+      await window.exerciseOwnerAccess('remove');
+      check(await denied(() => staleView.completed), 'stale owner review refuses to overwrite newer policy');
+      check(document.querySelector('[role=status]').textContent.includes('could not be confirmed'), 'stale review directs user to current access');
+      const latest = await (await import('./policy-store.mjs')).openCredentialPolicyStore({store: owner.store, ...binding}).read();
+      check(latest.policy.revision === 7n && latest.policy.devices.includes(hex(receiver.subject)), 'stale removal did not commit');
+      staleView.dispose();
 
     } finally { policySync?.close(); clearTimeout(timeout); request?.close(); sending?.close(); receiving?.close(); owner.store.close(); receiver.store.close(); }
   });
