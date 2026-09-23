@@ -1,7 +1,10 @@
+import {createLocalizer, setLocalizedText} from './i18n.js';
 import {setupUpdates} from './updates.js';
 import {aucklandNow} from './planner.js';
 import {readPreferences,writePreferences,recordJourney,suggestions,journeyRoutes,sameRoutes,routePreferenceLabel} from './preferences.js';
 const $=id=>document.getElementById(id);
+const language=createLocalizer();
+const translated=(id,key,values)=>setLocalizedText($(id),language,key,values);
 // Acknowledgement is local to this browser, separate from journey learning.
 function collapseCourseNotice(focus=false){
   const notice=$('course-notice');notice.open=false;
@@ -59,22 +62,44 @@ function renderUsual(){
 }
 function setNow(){const now=aucklandNow();$('date').value=now.date;$('time').value=now.time;updatePreferenceSummary();}
 function setPlace(field,stop){state[field==='origin'?'from':'to']=stop;$(field).value=stop?.name||'';$(field+'-options').hidden=true;$(field).setAttribute('aria-expanded','false');if(field==='origin'){state.location=null;if(stop){state.location={lat:stop.lat,lon:stop.lon};state.locationLabel=stop.name;}}}
+function renderFlowLanguage(){
+  const screen=state.screen;
+  translated('flow-title',`flow.${screen==='review'&&state.intent==='nearby'?'reviewNearby':screen}.title`);
+  translated('flow-progress',`flow.${screen}.progress`);
+  if(screen==='origin'&&state.to&&state.intent==='plan')translated('flow-context','flow.destinationSelected',{place:state.to.name});
+  else {$('flow-context').textContent=['options','follow','arrived'].includes(screen)&&state.lastSearch?`${state.lastSearch.from.name} → ${state.lastSearch.to.name}`:'';$('flow-context').lang='en-NZ';}
+  translated('origin-next',state.intent==='nearby'?'action.reviewNearby':'action.review');
+  translated('find',state.intent==='nearby'?'action.findNearby':'action.find');
+}
+function applyLanguage(){
+  document.documentElement.lang=language.tag;
+  // Unmigrated content remains explicitly English during catalogue expansion.
+  document.body.lang='en-NZ';
+  for(const element of document.querySelectorAll('[data-i18n]'))setLocalizedText(element,language,element.dataset.i18n);
+  for(const element of document.querySelectorAll('[data-i18n-aria]')){
+    const phrase=language.phrase(element.dataset.i18nAria);element.setAttribute('aria-label',phrase.text);element.lang=phrase.lang;
+  }
+  $('language-choice').value=language.language;
+  $('language-draft').hidden=language.language!=='mi';
+  $('language-notice').hidden=language.language!=='mi';
+  renderFlowLanguage();
+}
+$('language-choice').onchange=()=>{
+  const result=language.setLanguage($('language-choice').value);
+  applyLanguage();
+  translated('language-status',result.stored?'language.changed':'language.session',{language:language.language==='mi'?'Te reo Māori':'English'});
+};
 let navDepth=0;
 function showScreen(screen,{focus=true,historyEntry=true}={}){
   if(screen!=='options'&&state.screen==='options'){state.searchSequence++;$('find').disabled=false;}
   state.screen=screen;
   for(const section of document.querySelectorAll('[data-screen]'))section.hidden=section.dataset.screen!==screen;
   $('journey-form').hidden=!['destination','origin','review'].includes(screen);
-  const titles={destination:'Where would you like to go?',origin:'Where are you travelling from?',review:state.intent==='nearby'?'Review departure preferences':'Review your journey',options:'Choose your journey',follow:'Your next step',arrived:'You’re there.',nearby:'Your next ride nearby'};
-  $('flow-title').textContent=titles[screen];
-  $('flow-progress').textContent=({destination:'Plan a journey',origin:'Choose your starting place',review:'Time and travel needs',options:'Choose a route',follow:'Follow your journey',arrived:'Journey complete',nearby:'Compare nearby stops'})[screen];
-  $('flow-context').textContent=screen==='origin'&&state.to&&state.intent==='plan'?`Destination already selected: ${state.to.name}`:['options','follow','arrived'].includes(screen)&&state.lastSearch?`${state.lastSearch.from.name} → ${state.lastSearch.to.name}`:'';
+  renderFlowLanguage();
   $('new-journey').hidden=screen==='destination';$('flow-back').hidden=screen==='destination';
   $('review-origin').textContent=state.from?.name||'Choose a starting place';$('review-destination').textContent=state.to?.name||'';
   $('review-destination-row').hidden=state.intent==='nearby';$('swap').hidden=state.intent==='nearby';
-  $('origin-next').textContent=state.intent==='nearby'?'Review departure preferences →':'Review journey →';
   renderSavedPlaces();
-  $('find').textContent=state.intent==='nearby'?'Show nearby departures →':'Find my way →';
   $('try-britomart').hidden=state.intent!=='nearby';
   $('journey-notes').hidden=!['options','follow'].includes(screen);
   $('form-error').textContent='';
@@ -316,6 +341,6 @@ $('update-timetable').onclick=async()=>{$('update-timetable').disabled=true;$('o
 window.addEventListener('online',()=>{updateStatus();if(state.location)refreshNearby();});window.addEventListener('offline',()=>{predictions={available:false};updateStatus();if(state.location)refreshNearby();});
 // Departure updates are requested explicitly; avoid moving lists while people read.
 history.replaceState({alongScreen:'destination',depth:0,intent:'plan'},'');showScreen('destination',{focus:false,historyEntry:false});
-renderUsual();setNow();$('today').textContent=new Intl.DateTimeFormat('en-NZ',{timeZone:'Pacific/Auckland',weekday:'long',day:'numeric',month:'short'}).format(new Date());
+applyLanguage();renderUsual();setNow();$('today').textContent=new Intl.DateTimeFormat('en-NZ',{timeZone:'Pacific/Auckland',weekday:'long',day:'numeric',month:'short'}).format(new Date());
 if('serviceWorker' in navigator){navigator.serviceWorker.register(new URL('./sw.js',import.meta.url),{type:'module',updateViaCache:'none'}).then(registration=>{setupUpdates(registration);return navigator.serviceWorker.ready;}).then(()=>{state.shellReady=true;updateStatus();}).catch(()=>{});}
 ask('init').then(async result=>{ready(result);navigator.storage?.persist?.().catch(()=>{});await loadStreets();}).catch(error=>{$('data-status').textContent='Timetable unavailable';$('form-error').textContent=error.message;$('offline-info').textContent=error.message;});

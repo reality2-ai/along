@@ -1,9 +1,11 @@
 # English and te reo Māori implementation
 
 This is work in progress under [goal requirement 10](PROJECT_GOAL.md).
-The deployed version 28 interface remains English. The new localisation module
-and initial phrase catalogue are not yet connected to its screens. No phrase has
-received fluent-speaker review. Technical tests do not establish translation quality.
+The deployed version 28 interface remains English. The development build now
+connects the language selector to flow headings and shared controls, with explicit
+draft and English-fallback notices. Other content is still being migrated. No
+phrase has received fluent-speaker review. Technical tests do not establish
+translation quality.
 
 ## Implemented foundation
 
@@ -28,11 +30,14 @@ received fluent-speaker review. Technical tests do not establish translation qua
    loading and failure states, updates and recovery, installation guidance and
    screen-reader announcements. The initial catalogue covers flow headings and
    common actions only.
-2. Add the English / Te reo Māori selector with persistent draft labelling. Apply
-   language changes to the current screen and any open detail view without
-   restarting a search, losing input, changing a journey or resetting Back.
-3. Include language modules and both installation guides in the offline shell;
-   verify the static `/along/` build without a backend and installed-app updates.
+2. Extend the connected English / Te reo Māori selector to all dynamic content
+   and open detail views. Flow headings and shared controls already update without
+   navigation or a reload. Preserve input, searches, journey progress and Back
+   while extending coverage. The development interface explicitly marks remaining
+   English content as English, and shows a draft notice in Settings and the page.
+3. Language modules are included in the development offline shell. Add both
+   installation guides and verify the static `/along/` build and installed-app
+   upgrades. The current browser checks use a plain static host with no backend.
 4. Verify bilingual place lookup against names actually present in source data.
    Stop and address search already remove combining accents when matching; this
    alone does not establish bilingual alias support. Do not invent translations

@@ -21,7 +21,7 @@ this audit. Later public-hosting work supplements that brief.
 | 8. Course material | Thematic analysis, six lessons, exercises, assessment rubric and negative-case/contextual-map refinements | Course effectiveness has not been studied |
 | 9. Release checks and handover | 24 JavaScript and 4 Python tests; four real-data browser scenarios; static/update suites; source/archive/live asset comparison | Remaining physical and spoken screen-reader checks prevent claiming full goal completion |
 
-| 10. English / Te reo Māori | Device-local language module, 35-phrase initial catalogue and review sheet; five foundation tests pass | Screen integration, full catalogue/guides, offline browser checks, language/accessibility tests and fluent-speaker review |
+| 10. English / Te reo Māori | Device-local language module, 35-phrase initial catalogue and review sheet; flow selector connected in development; five foundation and two language-browser tests pass | Remaining screen text and full catalogue/guides, subpath/update checks, broader language/accessibility tests and fluent-speaker review |
 
 ## Evidence and reproduction
 
@@ -333,7 +333,13 @@ move to the public origin, and their local saved data is separate.
 
 
 Language work is tracked in [the implementation and review notes](LOCALIZATION.md).
-The language module is not yet connected to version 28; no bilingual release is
-claimed. The foundation has five unit tests in addition to the existing routing
+The language selector is connected in development, but is not deployed to the
+public version 28; no complete bilingual release is claimed. The foundation has five unit tests in addition to the existing routing
 suite. Existing macron-insensitive search is verified by a stop-search fixture;
 that is not proof of complete bilingual place-name aliases.
+
+The static development build passed all eight browser scenarios, including two
+new language scenarios: mid-flow switching, saved places, Back, explicit fallback
+language metadata, offline new address routing, narrow-screen axe/reflow and
+blocked preference storage. This evidence covers migrated headings and controls,
+not the still-incomplete whole-interface translation or human language quality.
