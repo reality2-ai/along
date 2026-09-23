@@ -8,7 +8,7 @@ const {chromium} = await import(process.env.PLAYWRIGHT_MODULE || '@playwright/te
 if (!process.env.R2_BROWSER_DIR) throw new Error('Set R2_BROWSER_DIR to the experimental Reality2 browser module directory');
 if (!process.env.R2_WASM_DIR) throw new Error('Set R2_WASM_DIR');
 const sources = new Map(await Promise.all(['peer-session', 'challenge', 'session-statement', 'membership', 'certificate', 'enrollment-session', 'storage', 'invitation-journal', 'enrollment-link', 'enrollment-exchange', 'enrollment-protection', 'peer-link', 'invitation'].map(async name => ['/' + name + '.mjs', await readFile(join(process.env.R2_BROWSER_DIR, name + '.mjs'))])));
-for (const name of ['enrollment-profile.mjs', 'enrollment-payloads.mjs', 'core-candidate-session.mjs', 'software-traffic.mjs', 'initial-persona.mjs', 'software-persona.mjs', 'software-invitation.mjs', 'invitation-proof.mjs', 'transfer-view.mjs', 'pairing-flow.mjs', 'comparison.mjs', 'comparison.css', 'receive-invitation-view.mjs', 'stored-claim.mjs', 'installation-receipt.mjs', 'local-persona.mjs', 'local-persona-session.mjs', 'receipt-recovery.mjs']) sources.set('/' + name, await readFile(new URL('./' + name, import.meta.url)));
+for (const name of ['enrollment-profile.mjs', 'enrollment-payloads.mjs', 'core-candidate-session.mjs', 'software-traffic.mjs', 'initial-persona.mjs', 'software-persona.mjs', 'software-invitation.mjs', 'invitation-proof.mjs', 'transfer-view.mjs', 'pairing-flow.mjs', 'comparison.mjs', 'comparison.css', 'receive-invitation-view.mjs', 'stored-claim.mjs', 'installation-receipt.mjs', 'local-persona.mjs', 'local-persona-session.mjs', 'receipt-recovery.mjs', 'recovery-flow.mjs']) sources.set('/' + name, await readFile(new URL('./' + name, import.meta.url)));
 if (process.env.RECOVERY_MODULE) sources.set('/receipt-recovery.mjs', await readFile(process.env.RECOVERY_MODULE));
 for (const name of ['hive_wasm.js', 'hive_wasm_bg.wasm']) sources.set('/' + name, await readFile(join(process.env.R2_WASM_DIR, name)));
 for (const name of ['qr-transfer.mjs', 'vendor/qrcode.mjs']) sources.set('/' + name, await readFile(new URL(name, import.meta.url)));
@@ -24,7 +24,7 @@ try {
   const pages = await Promise.all(contexts.map(c => c.newPage()));
   await Promise.all(pages.map(async (page, index) => {
     await page.goto(`http://127.0.0.1:${server.address().port}`);
-    await page.evaluate(async ({index, loseInstallReply, loseAckReply}) => {
+    await page.evaluate(async ({index, loseInstallReply, loseAckReply, recoverConnection}) => {
       window.wasm = await import('./hive_wasm.js'); await wasm.default();
       window.store = await (await import('./storage.mjs')).openBrowserStorage('pairing-flow');
       const initial = await (await import('./software-persona.mjs')).initializeSoftwarePersona({wasm, store});
@@ -40,9 +40,19 @@ try {
           return result;
         }};
       }
+      if (index === 1 && recoverConnection) {
+        flowStore = {...store, compareAndSwapMany: async (...args) => {
+          const result = await store.compareAndSwapMany(...args);
+          if (result.applied && args[0].some(write => write.scope === 'enrollment-installations')) {
+            window.receiptSaved = true;
+            await new Promise(resolve => { window.releaseReceipt = resolve; });
+          }
+          return result;
+        }};
+      }
       window.flow = (await import('./pairing-flow.mjs')).showPairingFlow(document.querySelector('#flow'),
         {wasm, store: flowStore, role: index ? 'provisioner' : 'candidate', expectedGroup: group, focus: true});
-    }, {index, loseInstallReply: process.env.LOSE_INSTALL_REPLY === '1', loseAckReply: process.env.LOSE_ACK_REPLY === '1'});
+    }, {index, loseInstallReply: process.env.LOSE_INSTALL_REPLY === '1', loseAckReply: process.env.LOSE_ACK_REPLY === '1', recoverConnection: process.env.RECOVER_CONNECTION === '1'});
   }));
   const [candidate, owner] = pages;
   await owner.getByRole('heading', {name: 'Invite your other device', exact: true}).waitFor();
@@ -79,7 +89,57 @@ try {
   await Promise.all(pages.map(async page => {
     await page.getByRole('button', {name: 'Both devices are here and the codes match', exact: true}).click();
   }));
-  if (process.env.LOSE_INSTALL_REPLY === '1' || process.env.LOSE_ACK_REPLY === '1') {
+  if (process.env.RECOVER_CONNECTION === '1') {
+    await owner.waitForFunction(() => window.receiptSaved === true);
+    await owner.evaluate(() => flow.dispose());
+    await owner.evaluate(() => releaseReceipt());
+    await candidate.getByRole('heading', {name: 'Device group saved locally', exact: true}).waitFor();
+    const before = await candidate.evaluate(async () => {
+      const saved = await store.read('candidate-persona', 'active');
+      return {member: [...saved.value.record.subject], revision: saved.revision, acknowledged: saved.value.peerAcknowledged};
+    });
+    assert.equal(before.acknowledged, false);
+    // Fresh documents restore real committed records; no fabricated membership or acknowledgment.
+    await Promise.all(pages.map(page => page.reload()));
+    const mountRecovery = async (page, index) => page.evaluate(async index => {
+      window.wasm = await import('./hive_wasm.js'); await wasm.default();
+      window.store = await (await import('./storage.mjs')).openBrowserStorage('pairing-flow');
+      const saved = await store.read('candidate-persona', 'active');
+      window.flow = (await import('./recovery-flow.mjs')).showRecoveryFlow(document.querySelector('#flow'),
+        {wasm, store, expectedGroup: saved.value.record.group, role: index ? 'provisioner' : 'candidate', focus: true});
+    }, index);
+    await Promise.all(pages.map(mountRecovery));
+    await candidate.getByRole('heading', {name: 'Recover installation confirmation', exact: true}).waitFor();
+    // Cancel before exchange and prove no confirmation write; then retry fresh sessions.
+    await candidate.getByRole('button', {name: 'Back', exact: true}).click();
+    assert.equal(await candidate.evaluate(async () => (await store.read('candidate-persona', 'active')).revision), before.revision);
+    await owner.evaluate(() => flow.dispose());
+    await Promise.all(pages.map(mountRecovery));
+    await candidate.getByRole('heading', {name: 'Recover installation confirmation', exact: true}).waitFor();
+    await owner.getByLabel('Recovery message from your other device', {exact: true}).fill('{"profile":"wrong"}');
+    await owner.getByRole('button', {name: 'Prepare recovery reply', exact: true}).click();
+    await owner.getByRole('heading', {name: 'Confirmation is still unverified', exact: true}).waitFor();
+    assert.equal(await candidate.evaluate(async () => (await store.read('candidate-persona', 'active')).revision), before.revision);
+    await owner.evaluate(() => flow.dispose());
+    await mountRecovery(owner, 1);
+    await move(candidate, owner, 'Recovery message from your other device', 'Prepare recovery reply');
+    await owner.getByRole('heading', {name: 'Send the recovery reply', exact: true}).waitFor();
+    for (const page of pages) {
+      await page.setViewportSize({width: 320, height: 640});
+      await page.evaluate(() => document.documentElement.style.fontSize = '200%');
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+      assert.deepEqual((await new AxeBuilder({page}).analyze()).violations.map(v => v.id), []);
+    }
+    await move(owner, candidate, 'Recovery reply from your other device', 'Check installation confirmation');
+    await candidate.getByRole('heading', {name: 'Installation confirmed', exact: true}).waitFor();
+    await owner.getByRole('heading', {name: 'Installation confirmation sent', exact: true}).waitFor();
+    const after = await candidate.evaluate(async () => {
+      const saved = await store.read('candidate-persona', 'active');
+      return {member: [...saved.value.record.subject], revision: saved.revision, acknowledged: saved.value.peerAcknowledged};
+    });
+    assert.deepEqual(after.member, before.member); assert.equal(after.acknowledged, true); assert.equal(after.revision, before.revision + 1);
+    console.log('PASS: lost confirmation recovered through visible transfer controls in fresh documents; authenticated saved receipt, same identity, cancellation without writes, narrow-screen reflow and axe checks.');
+  } else if (process.env.LOSE_INSTALL_REPLY === '1' || process.env.LOSE_ACK_REPLY === '1') {
     await candidate.waitForFunction(() => window.commitSaved === true);
     await owner.evaluate(() => flow.dispose());
     await candidate.getByRole('heading', {name: 'Checking saved device state', exact: true}).waitFor();
@@ -107,5 +167,5 @@ try {
   }
   }
   await Promise.all(pages.map(page => page.evaluate(() => flow.dispose())));
-  if (process.env.CANCEL_FLOW !== '1' && process.env.LOSE_INSTALL_REPLY !== '1' && process.env.LOSE_ACK_REPLY !== '1') console.log('PASS: both complete pairing flows exchange public messages through fields, compare codes, enroll over real WebRTC, acknowledge installation and restore encrypted traffic keys. Harness transfers text and confirms codes; no physical-device usability claim.');
+  if (process.env.RECOVER_CONNECTION !== '1' && process.env.CANCEL_FLOW !== '1' && process.env.LOSE_INSTALL_REPLY !== '1' && process.env.LOSE_ACK_REPLY !== '1') console.log('PASS: both complete pairing flows exchange public messages through fields, compare codes, enroll over real WebRTC, acknowledge installation and restore encrypted traffic keys. Harness transfers text and confirms codes; no physical-device usability claim.');
 } finally { await browser?.close(); await new Promise(resolve => server.close(resolve)); }

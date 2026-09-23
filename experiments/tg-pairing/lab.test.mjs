@@ -81,6 +81,11 @@ try {
   await Promise.all(pages.map(page => page.reload()));
   await Promise.all(pages.map(page => page.getByRole('button', {name: 'Restore saved test device', exact: true}).click()));
   await candidate.getByText('This device has joined a group and received installation confirmation.', {exact: true}).waitFor();
+  assert.equal(await candidate.getByRole('button', {name: 'Recover installation confirmation', exact: true}).count(), 0);
+  await owner.getByRole('button', {name: 'Confirm an interrupted connection', exact: true}).click();
+  await owner.getByRole('heading', {name: 'Confirm an interrupted connection', exact: true}).waitFor();
+  await owner.getByRole('button', {name: 'Back', exact: true}).click();
+  await owner.getByRole('button', {name: 'Restore saved test device', exact: true}).click();
   await candidate.getByRole('button', {name: 'Back', exact: true}).click();
   await candidate.getByRole('button', {name: 'Remove this test device data…', exact: true}).click();
   assert.deepEqual((await new AxeBuilder({page: candidate}).analyze()).violations.map(v => v.id), []);

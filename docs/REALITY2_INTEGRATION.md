@@ -30,6 +30,11 @@ and a conflict with an older explicit PolyForm Noncommercial change. The ownerâ€
 licensing clarification is pending; registry notice texts have been collected
 without assigning R2 a licence. The [device-test guide](PAIRING_DEVICE_CHECK.md) is
 ready for a verified test URL.
+The lab also exposes interrupted-installation confirmation recovery using saved
+identities and an authenticated receipt exchange. A browser test interrupts the
+original connection after the inviterâ€™s receipt commit, then recovers confirmation
+in fresh documents without changing the member identity. It cannot recover a
+receipt the inviter never retained. Physical recovery remains unverified.
 Manual transfer is currently cumbersome, and the one-minute invitation lifetime
 needs real usability assessment. Public deployment, simpler transfer, group epoch
 updates/removal, saved-journey sync and physical-device validation remain work.

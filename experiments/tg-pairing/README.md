@@ -724,3 +724,27 @@ blocking database connection, successful removal, fresh setup, and preservation
 of Along local preferences and a separate offline database. The other device’s
 identity remains usable. This is local test cleanup, not distributed revocation,
 provider credential revocation, secure erasure or interrupted-pairing recovery.
+
+
+### Visible interrupted-installation recovery
+
+`recovery-flow.mjs` exposes the saved-receipt recovery protocol through explicit
+message transfer controls. The lab offers it to an enrolled identity without
+confirmation and offers the answering action on the original inviting device.
+Both restore their existing identity. The responder treats the incoming member ID
+as a routing hint: actual installed-key authentication, local membership and the
+saved installation receipt must validate before it answers. No invitation, new
+certificate, AT credential or sharing permission is created.
+
+`RECOVER_CONNECTION=1 node experiments/tg-pairing/pairing-flow.test.mjs` holds the
+real inviting device’s receipt-write result after commit and closes the connection
+before its acknowledgment is sent. Fresh documents reopen the databases and
+complete recovery through visible controls. The test checks the same member ID,
+exactly one confirmation write, cancellation without writes, malformed-message
+refusal, narrow-screen reflow at 200% text size, and axe checks. It does not fabricate
+membership or clear an acknowledgment flag to produce the interrupted state.
+
+The sender reports confirmation **sent**; only the joining device reports it saved.
+If the inviting device never saved the receipt, this path cannot confirm the
+installation. Physical-device behavior, broader repair and epoch catch-up remain
+unverified or unfinished. The public Along app still does not load this lab.

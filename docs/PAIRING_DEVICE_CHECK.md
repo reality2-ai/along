@@ -19,7 +19,8 @@ supplied with the URL. A camera is optional: copy/paste remains available.
 Do not clear the whole site's storage to restart this test; that could remove
 Along's saved journeys as well. If either lab already reports membership in a
 group, restore that state and report it instead of trying to enroll again.
-Recovery navigation is not finished in this lab.
+A recovery path is available for an installation whose receipt was retained by
+the inviting device; it is not a general repair or group-management tool.
 
 ## Pair the devices
 
@@ -58,7 +59,17 @@ small or dense to read. Unsupported camera scanning should leave copy/paste usab
 
 After cancellation, start a new invitation only if the receiving device still has
 its initial identity. If the screen says its group was saved locally but confirmation
-failed, preserve the saved state and report it; do not keep trying to enroll it.
+failed, preserve the saved state; do not keep trying to enroll it. Return home and
+restore both saved devices. On the joining device, choose **Recover installation
+confirmation**. On the device that invited it, choose **Confirm an interrupted
+connection**. Transfer the recovery message and reply, then choose **Check
+installation confirmation** on the joining device. Keep both screens open.
+
+The joining device should say **Installation confirmed**; the inviting device says
+**Installation confirmation sent**, which alone does not prove receipt. If the
+original installation receipt was never saved on the inviting device, this recovery
+cannot confirm it. Preserve the data and report the result. Recovery does not
+replace identities, enroll devices or grant AT-key access.
 
 TalkBack is a separate check. If tested, enable it through Android Settings →
 Accessibility → TalkBack (menu labels may vary; see

@@ -1,4 +1,4 @@
-.pairing-comparison{font-family:system-ui,sans-serif;max-width:30rem;margin:auto;color:#203e37;background:#fcfcf9;border:1px solid #ccd6cb;border-radius:1rem;padding:1.25rem;box-sizing:border-box}
+.pairing-comparison{font-family:system-ui,sans-serif;overflow-wrap:anywhere;max-width:30rem;margin:auto;color:#203e37;background:#fcfcf9;border:1px solid #ccd6cb;border-radius:1rem;padding:1.25rem;box-sizing:border-box}
 .pairing-comparison h2{font-size:1.35rem;line-height:1.35;margin:0 0 1rem}
 .pairing-comparison p{line-height:1.6;margin:1rem 0;overflow-wrap:anywhere}
 .pairing-comparison .pairing-code{font-family:ui-monospace,monospace;font-size:clamp(1.3rem,6vw,2rem);font-weight:700;letter-spacing:.04em;text-align:center;padding:1rem .25rem;background:#edf2e6;border-radius:.5rem}
