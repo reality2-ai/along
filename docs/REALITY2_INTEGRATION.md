@@ -59,7 +59,10 @@ with synthetic feeds. These panels are not mounted in the public app yet. A sepa
 now connects the actual journey app’s existing contextual UI to saved local-owner
 AT settings. Its generated-app test covers visible setup, address-to-address
 bus/ferry routing, explicit mocked AT requests and offline reopening/routing.
-The public build is untouched; shared-owner reconnection and deployment remain
+Optional runtime restoration now has a bounded startup wait; stalled WASM and a
+newer unreadable IndexedDB schema are tested without blocking the scheduled
+planner or replacing saved lab records. The public build is untouched;
+shared-owner reconnection and deployment remain
 outstanding. See the [experimental build instructions](../experiments/at-credentials/README.md#actual-journey-app-integration-build-local-only).
 Manual transfer is currently cumbersome, and the one-minute invitation lifetime
 needs real usability assessment. Public deployment, simpler transfer, group epoch

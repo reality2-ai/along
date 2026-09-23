@@ -1,23 +1,33 @@
 import {configureAppLiveConnection} from './app-live-bridge.mjs';
-// The isolated app uses the pairing lab's explicitly created local identity.
-// Missing/unreadable state leaves scheduled planning usable. No first-use identity
-// is created, no key is read, and no provider request is made during bootstrap.
-let store;
-try {
-  const wasm = await import('../tg-pairing/hive_wasm.js'); await wasm.default();
-  const {openBrowserStorage} = await import('../tg-pairing/storage.mjs');
-  store = await openBrowserStorage('along-pairing-lab-v1');
-  const saved = await store.read('candidate-persona', 'active');
-  const group = saved?.value?.record?.group;
-  if (group instanceof Uint8Array && group.length === 32) {
-    const {loadATBinding} = await import('./local-owner.mjs');
-    const binding = await loadATBinding({wasm, store, expectedGroup: group});
-    if (binding) {
-      const {createSavedATClient} = await import('./saved-client.mjs');
-      // Shared-key reads remain refused without the separately authenticated
-      // owner-session controller; the connection UI must supply that next.
-      configureAppLiveConnection(() => createSavedATClient({wasm, store, expectedGroup: group}));
-    }
-  }
-} catch { configureAppLiveConnection(undefined); }
-window.addEventListener('pagehide', () => { configureAppLiveConnection(undefined); store?.close(); }, {once: true});
+// Restore optional lab settings only. A stalled runtime/storage operation cannot
+// hold the scheduled planner indefinitely or enable live access after timeout.
+let store, timer;
+const lifetime = new AbortController();
+const current = () => { if (lifetime.signal.aborted) throw new Error('Optional restore ended'); };
+const stop = () => { lifetime.abort(); configureAppLiveConnection(undefined); store?.close(); };
+window.addEventListener('pagehide', stop, {once: true});
+export const restoration = (async () => {
+  try {
+    const {openBrowserStorage} = await import('../tg-pairing/storage.mjs'); current();
+    const opened = await openBrowserStorage('along-pairing-lab-v1');
+    if (lifetime.signal.aborted) { opened.close(); return; }
+    store = opened;
+    const saved = await store.read('candidate-persona', 'active'); current();
+    const group = saved?.value?.record?.group;
+    if (!(group instanceof Uint8Array) || group.length !== 32) { store.close(); return; }
+    // First use without a saved identity does not need to compile WASM.
+    const wasm = await import('../tg-pairing/hive_wasm.js'); current();
+    await wasm.default(); current();
+    const {loadATBinding} = await import('./local-owner.mjs'); current();
+    const binding = await loadATBinding({wasm, store, expectedGroup: group, signal: lifetime.signal}); current();
+    if (!binding) { store.close(); return; }
+    const {createSavedATClient} = await import('./saved-client.mjs'); current();
+    // Shared-key reads remain refused without the separately authenticated
+    // owner-session controller; its app connection UI is still pending.
+    configureAppLiveConnection(() => createSavedATClient({wasm, store, expectedGroup: group}));
+  } catch { stop(); }
+})();
+await Promise.race([restoration, new Promise(resolve => {
+  timer = setTimeout(() => { stop(); resolve(); }, 3000);
+})]);
+clearTimeout(timer);

@@ -86,7 +86,70 @@ try {
   await page.locator('#journey-alert-check').click();
   await expect(page.locator('#journey-prediction-results')).toContainText('unavailable');
   assert.equal(requests.length, 2);
+  // Optional WASM can stall even with a saved identity. Planning must start,
+  // and a late runtime result must not silently enable live access afterwards.
+  await context.setOffline(false); offlineMode = false;
+  await page.addInitScript(() => {
+    const original = window.fetch;
+    window.fetch = (input, options) => {
+      const url = typeof input === 'string' ? input : input.url || String(input);
+      if (url.includes('/experiments/tg-pairing/hive_wasm_bg.wasm')) {
+        return new Promise((resolve, reject) => { window.releaseOptionalRuntime = () => original(input, options).then(resolve, reject); });
+      }
+      return original(input, options);
+    };
+  });
+  await page.reload({waitUntil: 'domcontentloaded', timeout: 15000});
+  await expect(page.locator('#data-status')).toContainText('offline ready', {timeout: 15000});
+  assert.equal(await page.evaluate(() => typeof releaseOptionalRuntime), 'function');
+  assert.equal(await page.evaluate(async () => (await import('../experiments/at-credentials/app-live-bridge.mjs')).createLiveClient().configured), false);
+  await choose('destination', '10 Victoria Road Devonport'); await page.locator('#destination-next').click();
+  await choose('origin', '277 Broadway Newmarket'); await page.locator('#origin-next').click();
+  await page.locator('#journey-preferences > summary').click();
+  await page.locator('#date').fill('2026-09-23'); await page.locator('#time').fill('09:00'); await page.locator('#find').click();
+  await expect(page.locator('.journey-card').first()).toContainText('Ferry', {timeout: 30000});
+  await page.locator('[data-follow]').first().click();
+  await expect(page.locator('#journey-live')).toBeHidden();
+  await page.evaluate(async () => { releaseOptionalRuntime(); await (await import('../experiments/at-credentials/app-bootstrap.mjs')).restoration; });
+  assert.equal(await page.evaluate(async () => (await import('../experiments/at-credentials/app-live-bridge.mjs')).createLiveClient().configured), false);
+  assert.equal(requests.length, 2);
+  // A newer, unreadable lab schema must not be reset or hold up the planner.
+  await page.goto(origin + 'public/install.html');
+  const futureCount = await page.evaluate(() => new Promise((resolve, reject) => {
+    const request = indexedDB.open('r2-browser:along-pairing-lab-v1', 2);
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => {
+      const db = request.result, count = db.transaction('records').objectStore('records').count();
+      count.onsuccess = () => { const value = count.result; db.close(); resolve(value); };
+    };
+  }));
+  assert.ok(futureCount > 0);
+  await page.addInitScript(() => {
+    window.r2WriteAttempts = 0;
+    for (const method of ['put', 'add', 'delete', 'clear']) {
+      const original = IDBObjectStore.prototype[method];
+      IDBObjectStore.prototype[method] = function(...args) {
+        if (this.transaction.db.name === 'r2-browser:along-pairing-lab-v1') r2WriteAttempts++;
+        return original.apply(this, args);
+      };
+    }
+  });
+  await page.goto(origin + 'public/');
+  await expect(page.locator('#data-status')).toContainText('offline ready', {timeout: 15000});
+  assert.equal(await page.evaluate(() => r2WriteAttempts), 0);
+  assert.equal(await page.evaluate(async () => (await import('../experiments/at-credentials/app-live-bridge.mjs')).createLiveClient().configured), false);
+  assert.deepEqual(await page.evaluate(() => new Promise((resolve, reject) => {
+    const request = indexedDB.open('r2-browser:along-pairing-lab-v1');
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => {
+      const db = request.result, version = db.version, count = db.transaction('records').objectStore('records').count();
+      count.onsuccess = () => { const value = count.result; db.close(); resolve({version, count: value}); };
+    };
+  })), {version: 2, count: futureCount});
+  assert.equal(requests.length, 2);
   assert.deepEqual(errors, []);
+  console.log('PASS: unreadable newer lab schema leaves the planner ready and preserves the actual database version and record count.');
+  console.log('PASS: stalled optional WASM cannot block actual bus/ferry planning; late restore cannot enable live access after its startup deadline.');
   console.log('Offline evidence:', JSON.stringify({uncachedRequestFailed: true, reportedOnline, blockedMockProviderAttempts: offlineAttempts}));
   console.log('PASS: actual static journey app -> real device/key setup -> address-to-address bus/ferry journey -> explicit direct mocked AT reads using encrypted key; no startup request or displayed key; offline reopen includes experimental runtime and address routing; offline live check falls back quietly without a provider response. Local-only, owner key; shared-owner reconnection not wired.');
 } finally { await browser?.close(); await new Promise(resolve => server.close(resolve)); }

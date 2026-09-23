@@ -751,3 +751,21 @@ attempts under every kind of network loss. Bridge checks cover late responses af
 screen cancellation. This is a local-owner path; shared-key owner-session
 reconnection still needs its app interface. Physical devices, real provider feeds
 and installed-app update behavior are not established by this build/test.
+
+
+### Optional startup cannot hold the planner indefinitely
+
+The experimental bootstrap checks for a saved local identity before compiling
+WASM and bounds restoration to three seconds. Missing/unreadable settings or an
+expired deadline leave live access unconfigured while scheduled planning starts.
+A late storage handle is closed, and every later restore step checks cancellation
+before it can configure a client. Fetch/compilation may still finish internally;
+a timeout is not a claim that the browser cancelled those operations.
+
+The generated-app test holds the optional WASM response indefinitely, completes
+an actual bus/ferry search without it, then releases it and confirms live access
+stays disabled. It also advances the actual test IndexedDB schema beyond the
+runtime’s supported version: the planner starts, no lab record write is attempted,
+and the database version and record count remain unchanged. No reset or migration
+is inferred from unreadable state. Normal key setup/provider-mock and offline
+routing checks continue to run in the same test.
