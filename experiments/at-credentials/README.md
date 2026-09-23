@@ -233,3 +233,26 @@ must still verify the recipient's current held membership and explicit grant.
 Advancing Along's generation does not invalidate a key at Auckland Transport.
 The owner review UI, provider-side rotation guidance and peer delivery remain open;
 these checks use synthetic keys and do not contact AT.
+
+## Credential delivery message
+
+`delivery-message.mjs` defines an Along application message, not an R2 normative
+format. Its owner signature covers the whole message: a domain tag, fresh request
+nonce, exact recipient, canonical signed policy and credential bytes. Verification
+uses caller-pinned group/owner/credential, policy floors and request context, and
+requires the recipient's explicit device grant. Lengths are exact and bounded;
+the largest supported policy and key fit the peer channel's application limit.
+
+These bytes contain plaintext secret material. They belong only inside the
+encrypted, mutually authenticated owner/device channel, never in invitations,
+logs, browser caches or feedback. A signature authenticates this payload; it does
+not encrypt it. Temporary internal buffers are cleared where possible, but the
+returned packet and decoded string remain the trusted caller's responsibility.
+
+`node experiments/at-credentials/delivery-message.test.mjs` passes real-signature
+checks for binding, tampering, missing grants, floors, malformed lengths, maximum
+sizes and asynchronous input mutation, using synthetic credentials. This codec
+does not consume a nonce, establish owner trust, check fresh peer possession or
+install a credential. A matching packet can still be verified twice: the pending
+request must be consumed atomically with receiver installation. That installer,
+the channel adapter and end-user device-sharing flow remain unfinished.
