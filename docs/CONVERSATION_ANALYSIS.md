@@ -1141,3 +1141,14 @@ reopen. The record explicitly retains the missing boundary: the authenticated
 composer's final submission was not exercised. This is an example of improving
 evidence without upgrading a partial result into a broader claim. The synthetic
 issue was closed and distinguished from commuter feedback needing product triage.
+
+The reconnection review exposes a tension between two desired outcomes: seamless
+device discovery and independence from any server except original information
+providers. Rechecking Notekeeper showed that its convenience depends on a relay;
+using its interface as inspiration does not authorize copying that dependency.
+The AI therefore surfaced the concrete transport choice while continuing the
+independent membership-removal work. A restored software issuer can now sign
+removal evidence accepted by the actual verifier, including persistent removal
+and refusal tests. The evidence still does not prove a finished removal screen,
+delivery to offline devices or key rotation. This illustrates separating a
+cryptographic operation, a durable local effect and a complete user outcome.

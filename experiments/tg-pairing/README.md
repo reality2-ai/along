@@ -776,3 +776,18 @@ journey data, tests and credentials. `lab.test.mjs` now follows actual enrollmen
 with visible key setup, synthetic key save and reload/restore; it verifies a
 nonextractable wrapping key, encrypted saved bytes, no displayed plaintext and no
 external requests. Local lab reset also removes these test credentials.
+## Signed membership-removal evidence
+
+`loadSoftwareIssuer().issueRevocation({subject, sequence, reason})` produces
+public signed evidence using the current profile's epoch zero and the actual
+R2 revocation signing bytes. It validates the unsigned 64-bit positive sequence
+before calling WASM, bounds the reason to 0–3, copies the subject and checks
+issuer custody before and after signing. It refuses after cancellation, closure
+or a changed issuer record.
+
+Producing evidence does not apply it or prove delivery. The caller must establish
+the reviewed target and sequence policy, persist the removal and distribute it.
+`software-persona.test.mjs` uses the real membership verifier and IndexedDB to
+check valid removal, tamper refusal, replay and reopening. It also cancels during
+signing. User-facing removal, distribution and epoch/key rotation remain pending;
+journey-sharing permission removal is a different operation.

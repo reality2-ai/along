@@ -11,6 +11,15 @@ storage names and explicit software-security limits. See the
 
 ## Current status
 
+The restored software issuer now produces epoch-zero signed revocation evidence
+using the runtime's actual signing bytes. The browser check applies this evidence
+through the membership verifier, rejects tampering, deduplicates replay and checks
+that removal survives a storage reopen. Invalid sequence/reason bounds, closed or
+changed issuer custody and cancellation during signing refuse. This is a tested
+building block, **not a deployed group-removal control**: durable issuance policy,
+review UI, distribution to other members and epoch/key rotation remain unfinished.
+The existing 3801 preview bundle is unchanged by this source addition.
+
 The experimental existing-device reconnect screen now exchanges public connection
 messages through visible controls, authenticates saved identities and hands the
 controller to its parent after an explicit press. Browser integration checks

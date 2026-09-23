@@ -73,7 +73,49 @@ try {
       }
       check(!material.payloadKey.every((v, i) => v === material.integrityKey[i]), 'purpose separation');
       material.destroy(); check(!material.payloadKey.some(Boolean) && !material.integrityKey.some(Boolean), 'material destruction');
+      const {establishMembership, openMembership} = await import('./membership.mjs');
+      const recipientStore = await openBrowserStorage('software-revoked-member');
+      let membership;
+      try {
+        membership = await establishMembership(recipientStore, wasm, {group, subject: member,
+          current: 0n, depth: 0n, certificate});
+        const request = {subject: member, sequence: 1n, reason: 0};
+        for (const sequence of [0n, -1n, 0x10000000000000000n, 1, '1']) {
+          check(await denied(() => issuer.issueRevocation({...request, sequence})), 'invalid sequence refuses before WASM conversion');
+        }
+        for (const reason of [-1, 4, 0.5, '0']) {
+          check(await denied(() => issuer.issueRevocation({...request, reason})), 'invalid reason refuses');
+        }
+        check(await denied(() => issuer.issueRevocation({...request, subject: member.slice(1)})), 'invalid subject refuses');
+        const evidence = await issuer.issueRevocation(request);
+        check(await membership.status() === 'current', 'signing alone does not claim removal');
+        for (const field of ['subject', 'signature']) {
+          const tampered = structuredClone(evidence); tampered[field][0] ^= 1;
+          check(await denied(() => membership.applyRevocation(tampered)), 'tampered revocation refuses');
+        }
+        check(await membership.status() === 'current', 'invalid evidence preserves membership');
+        await membership.applyRevocation(evidence);
+        check(await membership.status() === 'revoked', 'restored issuer revokes real membership');
+        await membership.applyRevocation(evidence);
+        check((await recipientStore.read('membership', groupHex)).value.revocations.length === 1, 'replay is deduplicated');
+        membership.close(); recipientStore.close();
+        const reopenedStore = await openBrowserStorage('software-revoked-member');
+        try {
+          membership = openMembership(reopenedStore, wasm, group, member);
+          check(await membership.status() === 'revoked', 'revocation survives storage reopen');
+          membership.close();
+        } finally { reopenedStore.close(); }
+      } finally { membership?.close(); recipientStore.close(); }
       issuer.close(); check(await denied(() => issuer.issueCertificate(member)), 'closed custody refuses');
+      check(await denied(() => issuer.issueRevocation({subject: member, sequence: 1n, reason: 0})), 'closed revocation custody refuses');
+      const duringSigning = new AbortController();
+      const cancelledIssuer = await loadSoftwareIssuer({wasm, store, expectedGroup: group, signal: duringSigning.signal});
+      const originalSign = crypto.subtle.sign.bind(crypto.subtle);
+      crypto.subtle.sign = async (...args) => { const signature = await originalSign(...args); duringSigning.abort(); return signature; };
+      try {
+        check(await denied(() => cancelledIssuer.issueRevocation({subject: member, sequence: 2n, reason: 0})),
+          'cancellation while signing prevents evidence from escaping');
+      } finally { crypto.subtle.sign = originalSign; cancelledIssuer.close(); }
       const aborted = new AbortController(); aborted.abort();
       check(await denied(() => loadSoftwareIssuer({wasm, store, expectedGroup: group, signal: aborted.signal})), 'cancelled restore refuses');
       const other = group.slice(); other[0] ^= 1;
@@ -84,10 +126,11 @@ try {
       const record = await store.read('along-browser-issuer', groupHex);
       const damaged = structuredClone(record.value); damaged.ciphertext[0] ^= 1;
       await store.compareAndSwap('along-browser-issuer', groupHex, record.revision, damaged);
-      check(await denied(() => held.issueCertificate(member)), 'changed custody invalidates held issuer'); held.close();
+      check(await denied(() => held.issueCertificate(member)), 'changed custody invalidates held issuer');
+      check(await denied(() => held.issueRevocation({subject: member, sequence: 1n, reason: 0})), 'changed custody refuses revocation'); held.close();
       check(await denied(() => loadSoftwareIssuer({wasm, store, expectedGroup: group})), 'tampered ciphertext refuses restore');
       return true;
     } finally { store.close(); }
   }, group), true);
-  console.log('PASS: browser software issuer persists encrypted, restores in a fresh document and signs actual R2 certificates; concurrent/aborted writes, wrong group, missing/tampered records, changed custody and cancellation refuse. No hardware-sealing or completed enrollment claim.');
+  console.log('PASS: browser software issuer restores encrypted custody and signs actual R2 certificates and revocations; real membership rejects tampering, retains revocation on storage reopen and deduplicates replay. Invalid inputs, closed/changed custody and interrupted initialization refuse. Revocation UI, distribution and epoch rotation are not covered.');
 } finally { await browser?.close(); await new Promise(resolve => server.close(resolve)); }

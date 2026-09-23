@@ -91,6 +91,21 @@ export async function loadSoftwareIssuer({wasm, store, expectedGroup, signal}) {
       };
     return Object.freeze({group: groupId, member: persona.member, custody: 'encrypted-browser-software', close,
       issueCertificate,
+      // Produces public signed evidence only. The caller must durably apply it
+      // and deliver it to remaining members before claiming group-wide removal.
+      // This profile currently enrols at epoch zero; rotation remains unfinished.
+      issueRevocation: async ({subject, sequence, reason}) => {
+        try {
+          if (!bytes(subject, 32) || typeof sequence !== 'bigint' || sequence < 1n
+              || sequence > 0xffffffffffffffffn || !Number.isInteger(reason) || reason < 0 || reason > 3) throw fail();
+          const member = subject.slice(), epoch = 0n;
+          await check();
+          const statement = wasm.tg_revocation_signing_bytes(member, epoch, sequence, reason);
+          const signature = new Uint8Array(await crypto.subtle.sign('Ed25519', key, statement));
+          await check();
+          return {subject: member, epoch, sequence, reason, signature};
+        } catch { throw fail(); }
+      },
       enrollmentMaterial: async subject => {
         let payloadKey, integrityKey;
         try {
