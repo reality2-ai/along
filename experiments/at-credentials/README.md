@@ -1161,3 +1161,28 @@ This verifies the composed app's enforcement of learned group removal. It cannot
 erase an AT key already copied or revoke that key at AT; provider replacement is
 still needed for an exposed key. Automatic removal propagation, key/epoch rotation
 and physical-device acceptance remain unfinished.
+
+### Removal catch-up before AT reconnection (next candidate)
+
+`policy-connection-view.mjs` now uses `along-at-reconnect-v2`. The key-owning
+device supplies the first message, containing the saved binding and retained
+signed removals. The recipient verifies the expected binding and merges the
+removals before creating its peer session and connection request. The owner then
+merges the recipient's removal set before opening its answering session. The
+existing mutual identity and application-permission checks still gate live access.
+Messages contain public identities, removal signatures and connection metadata,
+never an AT key. Both devices must use the new profile; v1 is refused instead of
+silently skipping catch-up. Published preview 3802 still uses the older flow.
+
+Starting with the owner's message adds one transfer step but avoids invalidating
+an existing session while applying membership changes. This is catch-up during an
+explicit connection, not automatic discovery, continuous propagation or proof
+that no newer group update exists elsewhere.
+
+The two-app test starts each device with a different authentic removal for an
+unrelated synthetic subject, reconnects through Settings, and verifies both sets
+before allowing use. It then exercises contextual mocked AT reads and group
+removal, retained journey state and offline reopening. The component fixture also
+checks wrong-owner and v1 downgrade refusal before a valid reconnect, with keyboard,
+narrow/zoom and automated accessibility checks. No provider requests occur during
+connection setup. Group-key rotation remains unfinished.

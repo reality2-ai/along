@@ -192,8 +192,9 @@ The full generated-app check starts each device with a different authentic
 removal for an unrelated synthetic subject, then connects through visible controls
 and verifies that both retain both removals before sharing journeys. The component
 and browser-custody tests also cover the new framing and tampered-final-signature
-refusal without partial state. AT-key reconnection does not yet exchange this set;
-the existing manual removal flow remains available.
+refusal without partial state. The next candidate's AT-key reconnection now also
+exchanges this set before opening its session; the existing manual removal flow
+remains available. Neither flow establishes automatic peer discovery.
 
 Incoming changes refresh the saved-service button without rebuilding the selected
 journey or its steps. If keyboard focus is inside the saved-journey shortcuts,

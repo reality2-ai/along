@@ -51,7 +51,13 @@ The next candidate additionally catches up retained removal sets in both initial
 journey-connection messages before opening the peer session. A full-app test with
 different signed removals on each side verifies bidirectional merge before journey
 sharing. This uses a new Along connection profile requiring both devices to update;
-it does not add discovery, background propagation or catch-up to AT-key reconnection.
+it does not add discovery or background propagation. AT-key reconnection now also
+uses a v2 profile: the owner sends its saved binding and removals first, the recipient
+applies them before creating an offer, and the owner applies the request's removal
+set before opening its session. This additional initial message avoids updating
+membership underneath an already-created recipient session. The two-app check
+verifies bidirectional catch-up before live access, with zero provider requests
+during setup; the component check rejects an altered owner and v1 downgrade.
 Public preview 3802 still uses the earlier journey profile and manual removal flow.
 The separate AT two-app `REMOVE_GROUP_MEMBER=1` check now verifies that group
 removal closes an active shared-key live connection after two expected mocked

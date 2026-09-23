@@ -92,14 +92,18 @@ try {
   });
   await page.exposeFunction('exerciseReconnect', async () => {
     const recipient = page.locator('#recipient-connect'), owner = page.locator('#owner-connect');
+    await recipient.getByLabel('AT-key device message', {exact: true}).fill(await owner.locator('textarea[readonly]').inputValue());
+    await recipient.getByRole('button', {name: 'Review AT-key device', exact: true}).click();
+    await recipient.getByRole('heading', {name: 'Send your AT connection request', exact: true}).waitFor();
     const request = await recipient.locator('textarea[readonly]').inputValue();
     assert.ok(!request.includes('synthetic-peer-delivery'));
-    const wrong = JSON.parse(request); wrong.owner = '00'.repeat(32);
-    await owner.getByLabel('Connection request', {exact: true}).fill(JSON.stringify(wrong));
-    await owner.getByRole('button', {name: 'Prepare connection reply', exact: true}).click();
-    await owner.getByRole('heading', {name: 'Connection unavailable', exact: true}).waitFor();
-    assert.equal(await page.evaluate(() => Boolean(window.reconnectOwner)), false);
-    await page.evaluate(() => window.retryOwnerConnection());
+    for (const wrong of [{...JSON.parse(request), profile: 'along-at-reconnect-v1'}, {...JSON.parse(request), owner: '00'.repeat(32)}]) {
+      await owner.getByLabel('Connection request', {exact: true}).fill(JSON.stringify(wrong));
+      await owner.getByRole('button', {name: 'Prepare connection reply', exact: true}).click();
+      await owner.getByRole('heading', {name: 'Connection unavailable', exact: true}).waitFor();
+      assert.equal(await page.evaluate(() => Boolean(window.reconnectOwner)), false);
+      await page.evaluate(() => window.retryOwnerConnection());
+    }
     await owner.getByLabel('Connection request', {exact: true}).fill(request);
     await owner.getByRole('button', {name: 'Prepare connection reply', exact: true}).click();
     await owner.getByRole('heading', {name: 'Reply to your other device', exact: true}).waitFor();
