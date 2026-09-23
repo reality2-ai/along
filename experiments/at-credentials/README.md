@@ -200,3 +200,26 @@ replaced views, axe and enlarged narrow text. Use the same browser/R2 environmen
 as the other browser tests. All keys are synthetic. This combined flow remains
 experimental and is not linked from public Along; device discovery, peer delivery,
 freshness policy and integration with contextual journey requests remain open.
+
+## Owner policy actions
+
+`updateLocalATPolicy` signs explicit grant changes and optional credential-generation
+advancement using the restored owner's actual member key. Callers supply the policy
+revision they reviewed; a stale review cannot silently overwrite newer choices.
+The write also checks owner, persona, membership and installation-evidence revisions
+atomically. It refuses missing state rather than establishing a replacement owner.
+The returned policy-saved receipt reflects the actual commit, including cancellation
+which arrives after that commit completed.
+
+The browser test covers grant snapshots, removal of every grant, refusal of local
+key reads after removal, generation advancement and encrypted replacement, stale
+reviews, changing owner evidence, malformed grants, cancellation and concurrent
+reviews. Application ownership remains distinct from a device's permission to use
+the key: the verified owner can restore grants after removing its own read access.
+Run `owner-policy.test.mjs` with the same browser/R2 environment as the vault tests.
+
+A device ID in this policy is not a TG membership proof. Authenticated delivery
+must separately verify the recipient's current held membership and explicit grant.
+Advancing Along's generation does not invalidate a key at Auckland Transport.
+The owner review UI, provider-side rotation guidance and peer delivery remain open;
+these checks use synthetic keys and do not contact AT.
