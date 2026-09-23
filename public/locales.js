@@ -1208,3 +1208,50 @@ Object.assign(messages, {
     "mi": "Kāore i taea te tīmata te pūnaha rapu ara. Utaina anō a Along hei whakamātau anō."
   }
 });
+
+Object.assign(messages, {
+  "usual.from": {
+    "en": "From {place}",
+    "mi": "Mai i {place}"
+  },
+  "usual.saved": {
+    "en": "Saved",
+    "mi": "Kua tiakina"
+  },
+  "usual.savedJourney": {
+    "en": "Saved journey",
+    "mi": "Haerenga kua tiakina"
+  },
+  "usual.searches": {
+    "en": "{count} searches · one tap to plan",
+    "mi": "{count} rapunga · pā kotahi hei whakamahere"
+  },
+  "usual.begin": {
+    "en": "Your routine starts with a journey.",
+    "mi": "Ka tīmata tō ritenga ki tētahi haerenga."
+  },
+  "usual.different": {
+    "en": "Somewhere different? You’re in the right place.",
+    "mi": "He wāhi kē? Kei te wāhi tika koe."
+  },
+  "usual.learnHelp": {
+    "en": "Search a route a few times, or save one, and it will appear here.",
+    "mi": "Rapua tētahi ara kia maha ngā wā, tiakina rānei tētahi, ā, ka puta mai ki konei."
+  },
+  "usual.pausedHelp": {
+    "en": "Learning is paused. You can still save journeys yourself.",
+    "mi": "Kua whakatā te ako. Ka taea tonu e koe te tiaki haerenga."
+  },
+  "usual.preference": {
+    "en": "Saved preference:",
+    "mi": "Manakohanga kua tiakina:"
+  },
+  "usual.match": {
+    "en": "Matching services shown first, using the timetable for this search.",
+    "mi": "Ka whakaaturia tuatahitia ngā ratonga e ōrite ana, mā te wātaka mō tēnei rapunga."
+  },
+  "usual.noMatch": {
+    "en": "No match found in the next four hours with these travel preferences. Other options are shown when available.",
+    "mi": "Kāore he ratonga ōrite i kitea i ngā hāora e whā e whai ake nei mō ēnei manakohanga haere. Ka whakaaturia ētahi atu kōwhiringa mēnā e wātea ana."
+  }
+});

@@ -1,6 +1,6 @@
 # Release evidence and remaining gates
 
-Current deployed app: **version 28**, reviewed 23 September 2026. The static ZIP
+Current release candidate: **version 29**, reviewed 23 September 2026. The static ZIP
 is prepared and the private server is retired. GitHub Pages is published at `reality2.ai/along/`; no AWS deployment has been made.
 This register separates automated evidence, user observations and remaining checks.
 
@@ -21,7 +21,7 @@ this audit. Later public-hosting work supplements that brief.
 | 8. Course material | Thematic analysis, six lessons, exercises, assessment rubric and negative-case/contextual-map refinements | Course effectiveness has not been studied |
 | 9. Release checks and handover | 24 JavaScript and 4 Python tests; four real-data browser scenarios; static/update suites; source/archive/live asset comparison | Remaining physical and spoken screen-reader checks prevent claiming full goal completion |
 
-| 10. English / Te reo Māori | Device-local language module, 319-phrase draft catalogue and review sheet; flow selector connected in development; five foundation and two language-browser tests pass | Remaining screen text and full catalogue/guides, subpath/update checks, broader language/accessibility tests and fluent-speaker review |
+| 10. English / Te reo Māori | Device-local language module, 330-phrase draft catalogue and review sheet; flow selector available as an explicitly labelled draft; six localisation unit checks pass; targeted browser evidence is recorded below | Remaining screen text and full catalogue/guides, subpath/update checks, broader language/accessibility tests and fluent-speaker review |
 
 | 11. Contextual repository feedback | Added to goal; not implemented | Accessible bilingual feedback UI, explicit public submission, minimal disclosed context, offline drafts, receipt/duplicate checks and next-round issue review |
 
@@ -334,6 +334,11 @@ authentication. Existing installations from that origin do not automatically
 move to the public origin, and their local saved data is separate.
 
 
+### Historical language implementation checks (before version 29)
+
+The following entries record incremental checks while version 28 remained public.
+See the version 29 section below for the current release evidence.
+
 Language work is tracked in [the implementation and review notes](LOCALIZATION.md).
 The language selector is connected in development, but is not deployed to the
 public version 28; no complete bilingual release is claimed. The foundation has five unit tests in addition to the existing routing
@@ -421,3 +426,28 @@ browser scenarios passed: failed manual refresh retains offline data, and an
 out-of-timetable date error translates in place then clears when corrected to a
 successful search. Fluent-speaker review and full interface/guide coverage remain
 outstanding. There were no open repository feedback issues in this round.
+
+## Version 29: public language draft
+
+Released for user testing before complete translation, at the user's request.
+Settings → Language → Te reo Māori selects the draft. The interface and README
+state that the wording is AI-generated, may contain mistakes and lacks fluent
+review. Installation guidance and some interface text remain English. This is
+not completion of goal 10.
+
+Saved/learned journey cards and preferred service explanations now translate
+in place. The browser regression covers offline reopening, preserving the same
+card control across switches, and retaining each saved service sequence. Waiting
+for offline readiness matters: visible saved cards do not mean street data has
+finished loading after a reopen. Journey reuse may change the learned order.
+
+Verified before publication: 30 JavaScript and four Python tests; update/recovery
+regressions including Māori and missing-module fallback; static subpath
+installability, keyboard/AX semantics, contrast, 200% zoom, 320px reflow, dataset
+refresh and offline address routing. [Static measurements](evidence/language-draft-v29-static.json)
+are from desktop Chromium, not a physical phone.
+
+All 14 browser scenarios passed for this candidate, including the eight language
+scenarios. The local deployment smoke check also passed the version marker,
+installation eligibility, offline planning/guide and persistent Māori selection.
+Physical Android, TalkBack and fluent-speaker review are not covered by these tests.

@@ -614,3 +614,17 @@ the GitHub repository for the next AI development round. This extends the
 iterative design process beyond the original chat. Feedback should be available
 at the point of difficulty while keeping travel primary. Public submission must
 remain an informed user action, distinct from the app's private local history.
+
+## Language preview and feedback loop (23 September 2026)
+
+The request for contextual feedback extends progressive disclosure into product
+development: a person should be able to report a problem from its context, while
+reviewing what becomes public. The next development round must inspect repository
+feedback, rather than treating a submission button as the complete feedback loop.
+
+“When can I test the maori language version?” followed by permission to publish
+while the audience is small shifts the immediate release priority to an honest,
+usable draft. This supports iterative evaluation without implying linguistic
+validation. The implementation must preserve explicit AI-translation warnings,
+English fallbacks and the outstanding fluent-speaker review requirement. Human
+participation remains testing and ordinary-language feedback, not coding.

@@ -85,6 +85,29 @@ test('draft language switch preserves current task, saved places, Back and offli
   await switchTo(page,'en');
   await expect(page.locator('#step-count')).toHaveText(step);
   await expect(page.locator('#full-itinerary')).toHaveAttribute('open','');
+  // Saved cards and their service sequence remain usable after offline reopening.
+  await page.reload();
+  await expect(page.locator('#data-status')).toHaveText(/^(Along · offline ready|Offline · journeys ready)$/,{timeout:90000});
+  const card=page.locator('[data-usual]').filter({hasText:'1 Queen Street'}).first();
+  await expect(card).toBeVisible();
+  await expect(card).toContainText('Saved ·');
+  await card.evaluate(node=>{window.savedCardNode=node;});
+  await switchTo(page,'mi');
+  await expect(card).toContainText('Kua tiakina');
+  await expect(card).toContainText('Mai i');
+  expect(await card.evaluate(node=>node===window.savedCardNode)).toBe(true);
+  await card.click();
+  await expect(page.locator('#saved-route-context')).toBeVisible({timeout:30000});
+  await expect(page.locator('#saved-route-context')).toContainText('Manakohanga kua tiakina:');
+  const services=await page.locator('#saved-route-context').textContent();
+  await switchTo(page,'en');
+  await expect(page.locator('#saved-route-context')).toContainText('Saved preference:');
+  await switchTo(page,'mi');
+  await expect(page.locator('#saved-route-context')).toHaveText(services);
+  const after=await page.evaluate(()=>JSON.parse(localStorage.getItem('along-journeys-v1')));
+  const before=JSON.parse(savedServices);
+  const savedRoutes=data=>Object.fromEntries(data.journeys.filter(j=>j.saved).map(j=>[JSON.stringify([j.from.id,j.to.id]),j.savedRoutes]));
+  expect(savedRoutes(after)).toEqual(savedRoutes(before));
   expect(errors).toEqual([]);
 });
 
