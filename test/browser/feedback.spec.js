@@ -59,3 +59,41 @@ test('route feedback returns to its detail and shares only a general screen cate
   await expect(page.locator('#information')).toBeVisible();await expect(page.locator('#detail-title')).toHaveText(title);
   await page.locator('#detail-back').click();await expect(page.locator('#route-search')).toHaveValue('70');
 });
+
+test('blocked feedback storage keeps the in-memory draft and explains the limitation',async({page})=>{
+  await page.addInitScript(()=>{
+    for(const method of ['setItem','removeItem']){
+      const original=Storage.prototype[method];Storage.prototype[method]=function(key,...args){if(key==='along-feedback-v1')throw Error('blocked');return original.call(this,key,...args);};
+    }
+  });
+  await page.goto('/');await page.locator('#settings-open').click();await page.locator('#settings [data-feedback-open]').click();
+  await page.locator('#feedback-message').fill('Keep this draft in this session.');
+  await expect(page.locator('#feedback-storage')).toContainText('Storage is unavailable');
+  await page.locator('#feedback-clear').click();await expect(page.locator('#feedback')).toBeVisible();
+  await expect(page.locator('#feedback-message')).toHaveValue('Keep this draft in this session.');
+  await page.locator('#feedback-close').click();await page.locator('#settings [data-feedback-open]').click();
+  await expect(page.locator('#feedback-message')).toHaveValue('Keep this draft in this session.');
+});
+
+test('late receipt cannot mark a new draft received and retry controls reset',async({page})=>{
+  const {newFeedback,markHandoff}=await import('../../public/feedback.js');
+  const draft=markHandoff({...newFeedback({version:30,screen:'settings'}),message:'Old test report'});
+  await page.addInitScript(d=>localStorage.setItem('along-feedback-v1',JSON.stringify(d)),draft);
+  let pendingRoute;const requested=new Promise(resolve=>{pendingRoute=resolve;});
+  await page.route('https://api.github.com/repos/reality2-ai/along/issues/456',route=>{pendingRoute(route);});
+  await page.goto('/');await page.locator('#settings-open').click();await page.locator('#settings [data-feedback-open]').click();
+  await page.locator('#feedback-retry summary').click();await page.locator('#feedback-not-submitted').check();
+  await expect(page.locator('#feedback-reopen')).toBeVisible();
+  const url='https://github.com/reality2-ai/along/issues/456';await page.locator('#feedback-url').fill(url);await page.locator('#feedback-check').click();
+  const route=await requested;
+  await page.locator('#feedback-clear').click();await page.locator('#settings [data-feedback-open]').click();
+  await page.locator('#feedback-message').fill('New unrelated draft');
+  const response=page.waitForResponse('https://api.github.com/repos/reality2-ai/along/issues/456');
+  await route.fulfill({json:{html_url:url,body:draft.handoff.body}});await response;
+  await expect(page.locator('#feedback-message')).toHaveValue('New unrelated draft');
+  await expect(page.locator('#feedback-confirmed')).toBeHidden();
+  await expect(page.locator('#feedback-status')).toBeEmpty();
+  await expect(page.locator('#feedback-not-submitted')).not.toBeChecked();
+  await expect(page.locator('#feedback-url')).toHaveValue('');
+  expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('along-feedback-v1')).receipt)).toBeNull();
+});

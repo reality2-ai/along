@@ -37,12 +37,12 @@ export function setupFeedback(language,getContext){
   }
   document.addEventListener('click',event=>{
     const button=event.target.closest('[data-feedback-open]');if(!button)return;
-    opener=button;$('feedback-check').disabled=false;if(!draft)draft=newFeedback({...getContext(),screen:button.dataset.feedbackOpen||getContext().screen});
+    opener=button;$('feedback-check').disabled=false;if(!draft){draft=newFeedback({...getContext(),screen:button.dataset.feedbackOpen||getContext().screen});$('feedback-url').value='';$('feedback-not-submitted').checked=false;$('feedback-reopen').hidden=true;$('feedback-retry').open=false;}
     $('feedback-message').value=draft.message;$('feedback-context').checked=draft.shareContext;
     $('feedback-context-preview').textContent=`Along ${draft.context.version} · ${draft.context.language} · ${draft.context.screen}`;
     $('feedback-context-preview').lang='en-NZ';
     reviewing=false;statusKey=draft.receipt?'feedback.received':draft.handoff?'feedback.unverified':'';render();dialog.showModal();
-    (draft.handoff?$('feedback-url'):$('feedback-message')).focus();
+    (draft.receipt?$('feedback-confirmed'):draft.handoff?$('feedback-url'):$('feedback-message')).focus();
   });
   $('feedback-close').onclick=()=>dialog.close();
   dialog.addEventListener('close',()=>{request++;opener?.focus({preventScroll:true});});

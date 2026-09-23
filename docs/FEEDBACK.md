@@ -48,3 +48,25 @@ body, offline persistence, opt-in context, deferred offline handoff, focus retur
 public-disclosure controls and receipt UI against a fixture. It does not prove
 that a real report reached GitHub. Real submission verification remains a release
 gate. Closing the dialog does not discard the draft; Clear this draft is explicit.
+
+## Real repository receipt check
+
+[Recorded evidence](evidence/feedback-delivery.json) verifies an actual synthetic
+report in [issue 1](https://github.com/reality2-ai/along/issues/1). The exact
+reviewed body was submitted through authenticated GitHub CLI. The app's browser
+dialog then verified the issue through an anonymous GitHub API request, retained
+the receipt, and reopened the existing issue action instead of offering a new
+submission. The test issue was closed afterwards.
+
+This establishes repository acceptance and browser receipt verification. It does
+not exercise GitHub's interactive sign-in and Submit new issue button, which
+still need a user check. The normal browser regression intercepts handoff URLs
+and therefore creates no public issues. To deliberately repeat the real check,
+use `TEST_BASE_URL=... node test/check_feedback_delivery.mjs --send-test-report`;
+this requires authenticated `gh` and explicitly creates/closes one public test
+issue. It is not part of the normal automated suite.
+
+Four feedback browser scenarios pass, including blocked-storage disclosure,
+retaining the in-memory draft, nested detail Back/focus, and ignoring a late
+receipt after a new draft begins. New drafts clear the previous issue URL and
+retry confirmation. Physical assistive-technology checks remain outstanding.

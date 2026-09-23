@@ -23,7 +23,7 @@ this audit. Later public-hosting work supplements that brief.
 
 | 10. English / Te reo Māori | Device-local language module, 389-phrase source draft catalogue and review sheet; flow selector available as an explicitly labelled draft; six localisation unit checks pass; targeted browser evidence is recorded below | Remaining generated text and alias verification, physical language/accessibility tests and fluent-speaker review |
 
-| 11. Contextual repository feedback | [Local draft/handoff/receipt foundation](FEEDBACK.md); three fixture-based unit checks pass; bilingual dialog connected in source, not yet deployed | Real GitHub submission/receipt, broader failure/retry and device checks, versioned deployment and next-round outcome tracking |
+| 11. Contextual repository feedback | [Local draft/handoff/receipt foundation](FEEDBACK.md); three fixture-based unit checks pass; bilingual dialog connected in source, not yet deployed | Interactive GitHub sign-in/submission check, physical device checks, versioned deployment and next-round outcome tracking |
 
 ## Evidence and reproduction
 
@@ -529,3 +529,13 @@ of actual delivery. Axe and narrow-screen checks passed in the dialog. A final
 request-sequencing guard prevents late checks from affecting a reopened dialog;
 broader failure/race tests and actual submission remain outstanding. Public
 version 30 is unchanged.
+
+## Feedback delivery and late-response checks
+
+Four feedback browser scenarios pass. New drafts clear stale issue/retry fields;
+a late receipt cannot mark a new draft received. Blocked storage is disclosed
+and the session draft remains usable. A [real synthetic report](evidence/feedback-delivery.json)
+was accepted by the repository, verified through the app's anonymous browser
+receipt check, and closed. Submission used GitHub CLI; the interactive GitHub
+composer/sign-in step is explicitly not claimed as tested. These changes remain
+in source pending a versioned public deployment.

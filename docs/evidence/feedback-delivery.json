@@ -1,0 +1,12 @@
+{
+  "checkedAt": "2026-09-23T04:56:39.179Z",
+  "app": "http://127.0.0.1:3081/",
+  "issue": "https://github.com/reality2-ai/along/issues/1",
+  "reportId": "9c820769-35fa-44b8-b642-08b0954121ae",
+  "submission": "Authenticated GitHub CLI with exact reviewed body",
+  "receipt": "Browser UI with anonymous GitHub API request",
+  "verified": true,
+  "existingIssueReopened": true,
+  "interactiveGitHubComposerTested": false,
+  "testIssueClosed": true
+}
