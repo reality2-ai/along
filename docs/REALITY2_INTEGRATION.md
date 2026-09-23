@@ -19,6 +19,10 @@ Optional locally generated QR display and browser-native camera scanning now fee
 the same reviewed fields; unsupported browsers and oversized messages retain
 copy/paste. Independent decoding verifies generated images, while camera tests
 use mocks. Physical QR transfer remains unverified.
+A separate static device lab now provides first-use setup, explicit saved-state
+restore and both roles. Its generated-bundle test completes pairing through the
+UI and restores membership after reload. It is not yet published; runtime notices
+and physical-device testing remain necessary.
 Manual transfer is currently cumbersome, and the one-minute invitation lifetime
 needs real usability assessment. Public deployment, simpler transfer, group epoch
 updates/removal, saved-journey sync and physical-device validation remain work.

@@ -640,3 +640,44 @@ create a Python virtual environment with `zxing-cpp` and `pillow`, and point
 `QR_PYTHON` at its interpreter (default: `python3`). The browser uses neither Python
 nor these test-only dependencies. The complete pairing regression still succeeds
 through its manual text transport, and view checks exercise actual QR rendering.
+
+### Standalone device lab
+
+`lab.html`/`lab.mjs` provide a runnable development entry point for setup, saved
+state restoration and both pairing roles. The user performs no coding. The page
+states the course-exercise risk, browser-software custody limits, one-minute
+invitation lifetime and likely same-network constraint. It takes no AT key and
+syncs no journeys. Its database is `along-pairing-lab-v1`; this separates test data
+from app data, but is not isolation from other scripts on the same origin.
+
+Restoration is an explicit user action. This development entry point trusts the
+origin's persisted local group choice and then checks actual persona, certificate,
+journal and membership consistency. It does not acquire a trust root from incoming
+network data or promise resistance to wholesale local-storage rollback. Missing,
+partial or unreadable existing state never triggers automatic replacement.
+A joined device is shown as installed/acknowledged according to durable evidence;
+it is not offered fresh enrollment as if it were an initial device.
+
+Build after producing the experimental R2 WASM/runtime artifacts documented above:
+
+```sh
+python3 scripts/build_pairing_lab.py --browser "$R2_BROWSER_DIR" --wasm "$R2_WASM_DIR"
+```
+
+Output is `releases/along-pairing-lab/`. The builder follows only local module
+imports, copies the required WASM/CSS/HTML and QR license, and hashes all payload
+files into `build-info.json`. It does not traverse the project tree for data or
+credentials. The generated folder can be served by an ordinary static server over
+HTTPS (localhost also works for desktop checks). No service worker or Along
+backend is involved. It is not included in `npm run build` or the public Pages app.
+Distribution/hosting of this lab still needs the runtime dependency-notice audit
+and real-device instructions; it has not been published as a supported feature.
+
+Run `node experiments/tg-pairing/lab.test.mjs` after building, with the usual
+`CHROMIUM_PATH` if required. `PAIRING_LAB_DIR` can select another generated folder.
+The test checks payload hashes, absence of test/data/credential filenames, then
+uses the built page for both devices: actual first-use setup, visible pairing,
+acknowledgment, encrypted-key restore, reload and restored membership display.
+No membership fixture or direct controller invocation starts this test flow.
+The harness still transfers public text and confirms the physical comparison;
+that is not evidence of camera usability or phone-to-desktop reachability.

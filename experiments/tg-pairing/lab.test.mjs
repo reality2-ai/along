@@ -1,0 +1,85 @@
+// Actual browser-software issuer and core enrollment; harness supplies initial trust and signaling.
+import assert from 'node:assert/strict';
+import {createHash} from 'node:crypto';
+import AxeBuilder from '@axe-core/playwright';
+import {createServer} from 'node:http';
+import {readFile} from 'node:fs/promises';
+import {join} from 'node:path';
+const {chromium} = await import(process.env.PLAYWRIGHT_MODULE || '@playwright/test');
+const root = process.env.PAIRING_LAB_DIR || new URL('../../releases/along-pairing-lab/', import.meta.url).pathname;
+const manifest = JSON.parse(await readFile(join(root, 'build-info.json'), 'utf8'));
+assert.equal(manifest.profile, 'along-pairing-lab-v1');
+assert.equal(Object.keys(manifest.files).some(name => /APIKey|\.test\.|data\//.test(name)), false);
+const sources = new Map(await Promise.all(Object.entries(manifest.files).map(async ([name, hash]) => {
+  const bytes = await readFile(join(root, name));
+  assert.equal(createHash('sha256').update(bytes).digest('hex'), hash);
+  return ['/' + name, bytes];
+}))); 
+const server = createServer((req, res) => {
+  const path = req.url === '/' ? '/index.html' : req.url;
+  const body = sources.get(path);
+  if (!body) { res.writeHead(404); res.end(); return; }
+  res.setHeader('Content-Type', path.endsWith('.wasm') ? 'application/wasm' : path.endsWith('.css') ? 'text/css' : path.endsWith('.html') ? 'text/html' : 'text/javascript');
+  res.end(body);
+});
+await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+let browser;
+try {
+  browser = await chromium.launch({headless: true, executablePath: process.env.CHROMIUM_PATH});
+  const contexts = await Promise.all([browser.newContext({viewport: {width: 360, height: 780}}), browser.newContext({viewport: {width: 360, height: 780}})]);
+  const pages = await Promise.all(contexts.map(c => c.newPage()));
+  await Promise.all(pages.map(async (page, index) => {
+    await page.goto(`http://127.0.0.1:${server.address().port}`);
+    await page.getByRole('button', {name: 'Set up this test device', exact: true}).click();
+    await page.getByRole('button', {name: 'Create my device group', exact: true}).click();
+    await page.getByRole('button', {name: 'Restore saved test device', exact: true}).click();
+    await page.getByRole('button', {name: index ? 'Invite my other device' : 'Join my other device', exact: true}).click();
+  }));
+  const [candidate, owner] = pages;
+  await owner.getByRole('heading', {name: 'Invite your other device', exact: true}).waitFor();
+  const move = async (from, to, label, action) => {
+    const text = await from.getByLabel('Device message to copy').inputValue();
+    await to.getByLabel(label, {exact: true}).fill(text);
+    await to.getByRole('button', {name: action, exact: true}).click();
+  };
+  await move(owner, candidate, 'Invitation text', 'Review invitation');
+  await candidate.getByRole('button', {name: 'Use invitation from my other device', exact: true}).click();
+  await candidate.getByRole('heading', {name: 'Check your other device', exact: true}).waitFor();
+  await move(candidate, owner, 'Challenge from your other device', 'Create device reply');
+  await owner.getByRole('heading', {name: 'Send your device reply', exact: true}).waitFor();
+  await move(owner, candidate, 'Reply from your other device', 'Check reply');
+  await candidate.getByRole('heading', {name: 'Send connection details', exact: true}).waitFor();
+  await move(candidate, owner, 'Connection details from your other device', 'Prepare connection');
+  await owner.getByRole('heading', {name: 'Send the connection reply', exact: true}).waitFor();
+  await move(owner, candidate, 'Connection reply from your other device', 'Compare device codes');
+  await owner.getByRole('button', {name: 'Compare device codes', exact: true}).click();
+  await Promise.all(pages.map(page => page.getByRole('heading', {name: 'Do both devices show this code?', exact: true}).waitFor()));
+  for (const page of pages) {
+    await page.setViewportSize({width: 320, height: 640});
+    await page.evaluate(() => document.documentElement.style.fontSize = '200%');
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+    assert.deepEqual((await new AxeBuilder({page}).analyze()).violations.map(v => v.id), []);
+  }
+  assert.equal(await candidate.locator('.pairing-code').textContent(), await owner.locator('.pairing-code').textContent());
+
+  await Promise.all(pages.map(async page => {
+    await page.getByRole('button', {name: 'Both devices are here and the codes match', exact: true}).click();
+  }));
+  await candidate.getByRole('heading', {name: 'Device connected', exact: true}).waitFor();
+  await owner.getByRole('heading', {name: 'Other device installed', exact: true}).waitFor();
+  const target = await owner.evaluate(async () => {
+    const store = await (await import('./storage.mjs')).openBrowserStorage('along-pairing-lab-v1');
+    try { return [...(await store.read('candidate-persona', 'active')).value.record.group]; } finally { store.close(); }
+  });
+  assert.equal(await candidate.evaluate(async group => {
+    const wasm = await import('./hive_wasm.js'); await wasm.default();
+    const store = await (await import('./storage.mjs')).openBrowserStorage('along-pairing-lab-v1');
+    const restored = await (await import('./local-persona.mjs')).loadLocalPersona({wasm, store, expectedGroup: new Uint8Array(group)});
+    const traffic = await (await import('./software-traffic.mjs')).loadSoftwareTraffic({wasm, store, expectedGroup: new Uint8Array(group)});
+    traffic.destroy(); store.close(); return restored.origin === 'enrolled' && restored.peerAcknowledged;
+  }, target), true);
+  await Promise.all(pages.map(page => page.reload()));
+  await Promise.all(pages.map(page => page.getByRole('button', {name: 'Restore saved test device', exact: true}).click()));
+  await candidate.getByText('This device has joined a group and received installation confirmation.', {exact: true}).waitFor();
+  console.log('PASS: standalone static lab setup, pairing and reload/restore; both complete pairing flows exchange public messages through fields, compare codes, enroll over real WebRTC, acknowledge installation and restore encrypted traffic keys. Harness transfers text and confirms codes; no physical-device usability claim.');
+} finally { await browser?.close(); await new Promise(resolve => server.close(resolve)); }
