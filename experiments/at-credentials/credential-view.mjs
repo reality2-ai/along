@@ -72,6 +72,9 @@ export function showCredentialSetup(container, {vault, focus = false, onBack = (
     if (state?.status === 'saved-unverified') {
       heading.textContent = 'AT key saved on this device';
       status.textContent = 'The saved key can be opened locally. It has not been checked with AT. Return to your stop or journey to choose live information.';
+    } else if (state?.canSave === false && ['missing', 'replacement-needed'].includes(state.status)) {
+      heading.textContent = state.status === 'missing' ? 'Receive your AT key' : 'Receive the replacement AT key';
+      status.textContent = 'Reconnect to the device that shared its AT connection to receive the key. Your downloaded journeys still work.';
     } else if (state?.canSave === true && ['missing', 'replacement-needed'].includes(state.status)) {
       form.hidden = false;
       if (state.status === 'replacement-needed') {

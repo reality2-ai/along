@@ -1,5 +1,5 @@
 import {loadLocalPersona} from '../tg-pairing/local-persona.mjs';
-import {establishLocalATOwner, loadLocalATOwner} from './local-owner.mjs';
+import {establishLocalATOwner, loadATBinding} from './local-owner.mjs';
 import {openLocalATVault} from './local-vault.mjs';
 import {showCredentialSetup} from './credential-view.mjs';
 const mounted = new WeakMap();
@@ -57,7 +57,7 @@ export function showATSettings(container, {wasm, store, expectedGroup, focus = f
       const identity = await loadLocalPersona({wasm, store, expectedGroup: group});
       if (disposed) return;
       if (!identity) throw new Error('Device identity unavailable');
-      const owner = await loadLocalATOwner({wasm, store, expectedGroup: group, signal: lifetime.signal});
+      const owner = await loadATBinding({wasm, store, expectedGroup: group, signal: lifetime.signal});
       if (disposed) return;
       if (owner) await open(owner.binding);
       else {

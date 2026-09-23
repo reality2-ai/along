@@ -92,6 +92,12 @@ try {
   assert.equal(await page.getByRole('button', {name: 'Save key on this device'}).count(), 0);
   // Exercise the same consent screen with actual WASM identity and encrypted storage.
   await page.evaluate(async () => {
+    window.view = mount({inspect: async () => ({status: 'missing', canSave: false}), saveOwnerKey: async () => { throw new Error('Recipient must not save'); }});
+    await view.ready;
+  });
+  await page.getByRole('heading', {name: 'Receive your AT key'}).waitFor();
+  assert.equal(await page.getByRole('button', {name: 'Save key on this device'}).count(), 0);
+  await page.evaluate(async () => {
     const wasm = await import('./hive_wasm.js'); await wasm.default();
     window.realStore = await (await import('./storage.mjs')).openBrowserStorage('credential-view-real');
     const initial = await (await import('./initial-persona.mjs')).initializeLocalPersona({wasm, store: realStore}); initial.close();

@@ -342,3 +342,25 @@ signed delivery and encrypted receiver installation. It is still a one-host test
 with a synthetic issuer and reviewed descriptor; no physical TalkBack check or
 public integration is claimed. The enclosing descriptor/discovery flow and
 connected-device settings after acceptance remain unfinished.
+
+## Reopening on a receiving device
+
+Remote acceptance now saves the verified public owner certificate alongside the
+owner pin. `loadATBinding` restores either an owner or recipient role, checking
+the saved policy and, for a remote owner, the certificate against held membership.
+It rechecks storage revisions before returning. `loadLocalATOwner` remains the
+owner-only wrapper used by signing/sending operations; a recipient cannot use it
+to obtain owner controls. Missing remote-owner evidence refuses rather than being
+silently repaired or adopted from a message.
+
+Settings now use this role-aware restore. A received key can be shown as saved
+after reopening in a fresh document without exposing a key-entry or setup action.
+A recipient awaiting its first key or a replacement is directed to reconnect,
+rather than being told that its saved settings necessarily failed. This is local
+evidence only: it does not establish globally current access after a partition.
+
+The distinct-member browser test passes recipient-role restoration, refusal of
+owner-only restoration and missing certificate evidence, and fresh-document
+settings reopening. Owner, policy and consent/settings regression checks pass.
+The enclosing reconnect/discovery flow, policy propagation and public activation
+remain unfinished; older experimental pins without certificate evidence refuse.

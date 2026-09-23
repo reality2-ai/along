@@ -6,7 +6,7 @@ import {join} from 'node:path';
 const {chromium} = await import(process.env.PLAYWRIGHT_MODULE || '@playwright/test');
 const sources = new Map();
 for (const name of ['storage.mjs', 'membership.mjs', 'certificate.mjs', 'peer-session.mjs', 'peer-link.mjs', 'challenge.mjs', 'session-statement.mjs']) sources.set('/' + name, await readFile(join(process.env.R2_BROWSER_DIR, name)));
-for (const name of ['../tg-pairing/initial-persona.mjs', '../tg-pairing/local-persona.mjs', 'local-owner.mjs', 'owner-policy.mjs', 'owner-delivery.mjs', 'remote-owner.mjs', 'remote-owner-view.mjs', '../tg-pairing/comparison.css', '../tg-pairing/local-persona-session.mjs', 'policy.mjs', 'policy-store.mjs', 'local-vault.mjs', 'delivery-message.mjs']) sources.set('/' + name.split('/').pop(), await readFile(new URL(name, import.meta.url)));
+for (const name of ['../tg-pairing/initial-persona.mjs', '../tg-pairing/local-persona.mjs', 'local-owner.mjs', 'owner-policy.mjs', 'owner-delivery.mjs', 'remote-owner.mjs', 'remote-owner-view.mjs', 'settings-view.mjs', 'credential-view.mjs', '../tg-pairing/comparison.css', '../tg-pairing/local-persona-session.mjs', 'policy.mjs', 'policy-store.mjs', 'local-vault.mjs', 'delivery-message.mjs']) sources.set('/' + name.split('/').pop(), await readFile(new URL(name, import.meta.url)));
 for (const name of ['hive_wasm.js', 'hive_wasm_bg.wasm']) sources.set('/' + name, await readFile(join(process.env.R2_WASM_DIR, name)));
 for (const name of ['live-client.mjs', '../../public/at-client.js', '../../public/live-client.js']) sources.set('/' + name.split('/').pop(), await readFile(new URL(name, import.meta.url)));
 const server = createServer((req, res) => {
@@ -129,11 +129,35 @@ try {
       const receivedRecord = await receiver.store.read('along-at-secret:' + binding.owner, policyKey);
       check(receivedRecord.value.member === hex(receiver.subject), 'ciphertext bound to receiver');
       check(receivedRecord.value.wrappingKey.extractable === false, 'receiver wrapping key nonextractable');
+      const owners = await import('./local-owner.mjs');
+      const restored = await owners.loadATBinding({wasm, store: receiver.store, expectedGroup: group});
+      check(restored.role === 'recipient' && restored.binding.owner === binding.owner, 'recipient role restored');
+      check(await owners.loadLocalATOwner({wasm, store: receiver.store, expectedGroup: group}).then(() => false, () => true), 'recipient cannot restore as owner');
+      const damaged = {...receiver.store, read: async (...args) => {
+        const value = await receiver.store.read(...args);
+        if (args[0] === 'along-at-owners') delete value.value.ownerCertificate;
+        return value;
+      }};
+      check(await owners.loadATBinding({wasm, store: damaged, expectedGroup: group}).then(() => false, () => true), 'missing remote certificate refuses restore');
+      window.restoreGroup = Array.from(group);
       await updateLocalATPolicy({wasm, store: owner.store, expectedGroup: group, expectedRevision: 2n, devices: [hex(owner.subject)]});
       check(await sendOwnerCredential({wasm, store: owner.store, expectedGroup: group, peer: receiver.subject,
         peerCertificate: receiver.certificate, nonce: crypto.getRandomValues(new Uint8Array(16)), connection: sending}).then(() => false, () => true), 'removed peer receives no further delivery');
       check(messages === 1, 'no removed-peer message sent');
     } finally { clearTimeout(timeout); request?.close(); sending?.close(); receiving?.close(); owner.store.close(); receiver.store.close(); }
   });
+  const restoredGroup = await page.evaluate(() => restoreGroup);
+  const reopened = await context.newPage(); await reopened.goto(page.url());
+  await reopened.evaluate(async expectedGroup => {
+    const wasm = await import('./hive_wasm.js'); await wasm.default();
+    window.store = await (await import('./storage.mjs')).openBrowserStorage('peer-key-receiver');
+    const {showATSettings} = await import('./settings-view.mjs');
+    window.view = showATSettings(document.querySelector('#consent'), {wasm, store, expectedGroup: new Uint8Array(expectedGroup), focus: true});
+    await view.ready;
+  }, restoredGroup);
+  await reopened.getByRole('heading', {name: 'AT key saved on this device'}).waitFor();
+  assert.equal(await reopened.getByRole('button', {name: 'Save key on this device'}).count(), 0);
+  assert.equal(await reopened.getByRole('button', {name: 'Set up live information'}).count(), 0);
+  await reopened.evaluate(() => { view.dispose(); store.close(); });
   console.log('PASS: distinct real browser identities mutually authenticate over direct WebRTC, owner grant gates signed delivery, receiver encrypts/consumes request, removed peer is refused. Synthetic issuer, reviewed-descriptor fixture and keys; checked receiver acceptance; one browser host, not physical-device reachability or public release.');
 } finally { await browser?.close(); await new Promise(resolve => server.close(resolve)); }

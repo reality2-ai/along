@@ -3,11 +3,12 @@
 import {loadLocalPersona} from '../tg-pairing/local-persona.mjs';
 import {credentialPolicyBytes} from './policy.mjs';
 import {openCredentialPolicyStore} from './policy-store.mjs';
+import {openMembership} from '../tg-pairing/membership.mjs';
 const hex = value => Array.from(value, b => b.toString(16).padStart(2, '0')).join('');
 const fail = () => new Error('Local AT owner unavailable');
-// Restore only this device's previously established application-owner binding.
-// This does not adopt an owner from a peer or automatically initialize absence.
-export async function loadLocalATOwner({wasm, store, expectedGroup, signal}) {
+// Restore an already accepted local/remote binding without adopting an owner
+// from an incoming message or automatically initializing absent state.
+export async function loadATBinding({wasm, store, expectedGroup, signal}) {
   try {
     if (!(expectedGroup instanceof Uint8Array) || expectedGroup.length !== 32) throw fail();
     const groupBytes = expectedGroup.slice(), group = hex(groupBytes);
@@ -24,11 +25,19 @@ export async function loadLocalATOwner({wasm, store, expectedGroup, signal}) {
     if (!evidence) throw fail();
     const identity = await loadLocalPersona({wasm, store, expectedGroup: groupBytes}); current();
     if (!identity || !persona || !membership || anchor.value?.format !== 1
-        || anchor.value.group !== group || anchor.value.owner !== identity.member
+        || anchor.value.group !== group
         || hex(persona.value.record.subject) !== identity.member) throw fail();
-    const binding = Object.freeze({group, owner: identity.member, credential: anchor.value.credential});
+    const binding = Object.freeze({group, owner: anchor.value.owner, credential: anchor.value.credential});
     const policy = await openCredentialPolicyStore({store, ...binding}).read({signal}); current();
     if (policy.status !== 'policy-loaded') throw fail();
+    const role = binding.owner === identity.member ? 'owner' : 'recipient';
+    if (role === 'recipient') {
+      const membership = openMembership(store, wasm, groupBytes, persona.value.record.subject);
+      try {
+        const owner = Uint8Array.from(binding.owner.match(/../g), v => parseInt(v, 16));
+        if (await membership.peerStatus(anchor.value.ownerCertificate, owner) !== 'current') throw fail();
+      } finally { membership.close(); }
+    }
     for (const [scope, key, revision] of [
       ['along-at-owners', group, anchor.revision],
       ['candidate-persona', 'active', persona.revision],
@@ -39,8 +48,14 @@ export async function loadLocalATOwner({wasm, store, expectedGroup, signal}) {
       current(); const saved = await store.read(scope, key); current();
       if (saved?.revision !== revision) throw fail();
     }
-    return Object.freeze({status: 'local-owner-loaded', binding});
+    return Object.freeze({status: 'at-binding-loaded', binding, role});
   } catch { throw fail(); }
+}
+export async function loadLocalATOwner(options) {
+  const saved = await loadATBinding(options);
+  if (!saved) return null;
+  if (saved.role !== 'owner') throw fail();
+  return Object.freeze({status: 'local-owner-loaded', binding: saved.binding});
 }
 export async function establishLocalATOwner({wasm, store, expectedGroup, signal}) {
   if (store.capabilities?.transactionChecks !== true || !(expectedGroup instanceof Uint8Array) || expectedGroup.length !== 32) throw fail();

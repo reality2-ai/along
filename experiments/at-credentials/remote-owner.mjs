@@ -46,7 +46,7 @@ export async function acceptRemoteATOwner({wasm, store, expected, ownerCertifica
     ];
     const guarded = {...store, compareAndSwapMany: (changes, options) => store.compareAndSwapMany([
       ...changes,
-      {scope: 'along-at-owners', key: binding.group, expectedRevision: 0, value: {format: 1, ...binding}},
+      {scope: 'along-at-owners', key: binding.group, expectedRevision: 0, value: {format: 1, ...binding, ownerCertificate: proof}},
     ], {...options, checks})};
     const receipt = await openCredentialPolicyStore({store: guarded, ...binding}).establish(bytes, signature, {signal: lifetime});
     return Object.freeze({status: 'remote-owner-accepted', binding, policyStorageRevision: receipt.storageRevision});
