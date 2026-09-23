@@ -24,8 +24,14 @@ verifies the retained records. It refuses self removal and reports only local
 completion. A reviewed removal component now verifies the selected member,
 supports keyboard/Back/Escape and distinguishes saved-local evidence from
 delivery. Browser checks cover its real commit and cancellation boundaries,
-narrow/zoom layout and axe. It still needs a device directory and Settings
-integration; distribution to other members and epoch/key rotation remain unfinished.
+narrow/zoom layout and axe. The local experimental app now exposes **Review group
+devices** in device setup. The software issuer retains each public certificate
+before releasing it, so interrupted enrollment also leaves a reviewable target.
+The actual two-profile app test pairs devices, opens that list, removes a member
+offline and reopens its saved removal after reload, retaining local journeys.
+This is an issued-certificate list, not an online roster or proof of completed
+installation. Older preview enrollments lack this index; no migration is claimed.
+Distribution to other members and epoch/key rotation remain unfinished.
 The existing 3801 preview bundle is unchanged by this source addition.
 
 The experimental existing-device reconnect screen now exchanges public connection

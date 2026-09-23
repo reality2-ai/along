@@ -821,5 +821,26 @@ An already removed member is shown without a second removal action.
 issuer/membership storage: trusted keyboard activation, synthetic-click refusal,
 invalid proof, repeated removal, replaced views, cancellation on both sides of
 commit, and 320px/200% layout plus axe. It does not establish physical TalkBack
-acceptance. The component is not yet reachable from app Settings; a durable
-device directory and selection flow still need integration before deployment.
+acceptance. The local experimental app now reaches this component through
+**Device and AT-key setup → Connect or recover another device → Review group
+devices**. This source change is not yet in the published 3801 preview.
+
+`member-devices-view.mjs` lists public certificates retained by the software
+issuer in `along-issued-members-v1`. Issuance saves the index with guarded
+compare-and-swap before releasing a certificate or enrollment material. Concurrent
+issuances retain all targets and repeat issuance does not duplicate them. The
+issuer also checks held membership before issuance and guards its revision at
+commit; a locally removed member cannot receive a new certificate or enrollment
+material through this path. This does not rotate material it already received.
+The list is bounded at 256 entries; unknown/damaged records refuse rather than reset.
+It is deliberately labelled as issued membership: an interrupted candidate may
+never have installed it. Older preview enrollment records are not migrated into
+this index, so the UI discloses that older devices may be missing. Complete older
+device recovery remains necessary before treating it as a full group directory.
+
+The generated-app journey test now enrolls two browser profiles using Settings,
+then selects the issued device, backs out without removal, confirms through the
+keyboard while offline and reloads to see the saved removal. Local saved journeys
+remain. The software-custody test additionally covers concurrent/repeated issuance
+and directory persistence in a fresh document. Delivery to other members and
+epoch rotation remain unfinished.

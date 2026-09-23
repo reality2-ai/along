@@ -6,6 +6,7 @@ import {loadATBinding} from './local-owner.mjs';
 import {showATSettings} from './settings-view.mjs';
 import {showKeySharingFlow} from './key-sharing-flow.mjs';
 import {showOwnerDevices} from './owner-devices-view.mjs';
+import {showMemberDevices} from '../tg-pairing/member-devices-view.mjs';
 
 // Lazy, explicit setup inside the journey app. This owns its storage handle;
 // onChanged may borrow it until disposal. No automatic identity or key creation.
@@ -86,6 +87,7 @@ export function mountAppDeviceSettings({onChanged}) {
         if (identity.origin === 'initial' || !identity.peerAcknowledged) panel.append(details);
         if (identity.origin === 'initial') {
           action(details, 'Invite my other device', () => show(showPairingFlow, {role: 'provisioner'}));
+          action(details, 'Review group devices', () => show(showMemberDevices));
           action(details, 'Join my other device', () => show(showPairingFlow, {role: 'candidate'}));
           action(details, 'Confirm an interrupted connection', () => show(showRecoveryFlow, {role: 'provisioner'}));
         } else if (!identity.peerAcknowledged) action(details, 'Recover installation confirmation', () => show(showRecoveryFlow, {role: 'candidate'}));

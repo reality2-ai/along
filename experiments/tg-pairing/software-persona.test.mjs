@@ -111,6 +111,13 @@ try {
         const subject = crypto.getRandomValues(new Uint8Array(32));
         return {subject, certificate: await issuer.issueCertificate(subject)};
       }));
+      const {readIssuedMembers} = await import('./software-persona.mjs');
+      const issued = await readIssuedMembers({wasm, store, expectedGroup: group});
+      check(issued.length === 3 && peers.every(peer => issued.some(entry => entry.subject.every((b, i) => b === peer.subject[i]))),
+        'concurrent certificate issuance retains all directory entries');
+      const directoryBefore = await store.read('along-issued-members-v1', groupHex);
+      await issuer.issueCertificate(member);
+      check((await store.read('along-issued-members-v1', groupHex)).revision === directoryBefore.revision, 'repeated certificate does not duplicate directory');
       const base = {wasm, store, expectedGroup: group};
       const originalMembership = await store.read('membership', groupHex);
       const abortedRemoval = new AbortController(); abortedRemoval.abort();
@@ -131,6 +138,8 @@ try {
       const removed = await Promise.all(peers.map(peer => removeSoftwareMember({...base, ...peer})));
       check(removed.every(result => result.status === 'removed-locally' && result.delivered === false), 'local commit does not claim delivery');
       const persisted = await store.read('membership', groupHex);
+      check(await denied(() => issuer.issueCertificate(peers[0].subject)), 'removed member cannot be reissued a certificate');
+      check(await denied(() => issuer.enrollmentMaterial(peers[0].subject)), 'removed member cannot receive fresh enrollment material');
       check(persisted.value.revocations.length === 2 && new Set(persisted.value.revocations.map(r => r.sequence)).size === 2,
         'concurrent removals retain both records with unique sequences');
       const repeated = await removeSoftwareMember({...base, ...peers[0]});
@@ -180,9 +189,10 @@ try {
     const store = await (await import('./storage.mjs')).openBrowserStorage('software-persona');
     const group = Uint8Array.from(groupHex.match(/../g), b => parseInt(b, 16));
     const saved = await store.read('membership', groupHex);
+    const issued = await (await import('./software-persona.mjs')).readIssuedMembers({wasm, store, expectedGroup: group});
     const membership = (await import('./membership.mjs')).openMembership(store, wasm, group, saved.value.subject);
     try {
-      return saved.value.revocations.length === 3 && await membership.status() === 'current';
+      return issued.length === 4 && saved.value.revocations.length === 3 && await membership.status() === 'current';
     } finally { membership.close(); store.close(); }
   }, group), true);
   console.log('PASS: restored software issuer signs verified revocations; durable removals survive a fresh document, serialize concurrent sequences and retry idempotently. Tampering, invalid targets, failed writes and early cancellation refuse; late cancellation retains the committed result. Revocation UI, distribution and epoch rotation are not covered.');

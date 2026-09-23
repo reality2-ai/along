@@ -249,6 +249,28 @@ try {
   await candidate.getByRole('heading', {name: 'Journey-sharing permission removed', exact: true}).waitFor();
   assert.deepEqual((await stored(candidate)).permission.value.peers, [], 'permission can be removed offline after reopening');
   assert.equal((await saved(owner)).length, 1, 'stopping sharing preserves the already shared copy');
+  // Group removal is a separate reviewed action, available without the peer.
+  await contexts[1].setOffline(true); await owner.reload();
+  const openGroupDevices = async () => {
+    await owner.locator('#settings-open').click();
+    await owner.getByRole('button', {name: 'Device and AT-key setup', exact: true}).click();
+    await owner.getByText('Connect or recover another device', {exact: true}).click();
+    await owner.getByRole('button', {name: 'Review group devices', exact: true}).click();
+    await owner.getByRole('button', {name: /^Device [0-9a-f]{8}…[0-9a-f]{8}$/}).click();
+  };
+  await openGroupDevices();
+  await owner.getByRole('button', {name: 'Save device removal here', exact: true}).waitFor();
+  await owner.getByRole('button', {name: 'Back', exact: true}).click();
+  await owner.getByRole('button', {name: /^Device [0-9a-f]{8}…[0-9a-f]{8}$/}).click();
+  const groupRemove = owner.getByRole('button', {name: 'Save device removal here', exact: true});
+  await groupRemove.focus(); await owner.keyboard.press('Enter');
+  await owner.getByRole('heading', {name: 'Device removal saved here', exact: true}).waitFor();
+  await owner.getByRole('status').filter({hasText: 'has not been delivered'}).waitFor();
+  await expect(owner.getByRole('button', {name: 'Back', exact: true})).toBeFocused();
+  assert.equal((await saved(owner)).length, 1);
+  await owner.reload(); await openGroupDevices();
+  await owner.getByRole('heading', {name: 'Device removal already saved here', exact: true}).waitFor();
+  assert.equal(await owner.getByRole('button', {name: 'Save device removal here', exact: true}).count(), 0);
   assert.equal(providerRequests.length, 0); assert.deepEqual(errors, []);
-  console.log('PASS: actual Settings enrollment/connection, saved places and service preferences, local history, current-step preservation, focused shortcut preservation and deferred refresh, service-control refresh without route replacement, narrow/zoom accessibility, offline edits and convergence; permission review/removal, retained copies and offline removal. Two browser profiles on one host; manual transfer, not physical reachability or automatic discovery.');
+  console.log('PASS: actual Settings enrollment/connection, saved places and service preferences, local history, current-step preservation, focused shortcut preservation and deferred refresh, service-control refresh without route replacement, narrow/zoom accessibility, offline edits and convergence; permission review/removal, retained copies, issued-device selection and offline group removal/reload. Two browser profiles on one host; manual transfer, not physical reachability or automatic discovery.');
 } finally { await browser?.close(); await new Promise(resolve => server.close(resolve)); }
