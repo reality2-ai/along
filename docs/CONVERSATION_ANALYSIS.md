@@ -8,6 +8,7 @@ result**. It is intended for an AI-assisted coding course, not as a transcript o
 usability research or a claim that the design is universally usable.
 
 The corpus is the available design conversation, reviewed on 23 September 2026,
+with development observations updated on 24 September 2026,
 including the requests for public hosting, installation guidance, privacy, course
 status, consistent screenshots with a real map, and this README summary of the
 original drivers, followed by the contextual live-data, independent hosting and
@@ -815,6 +816,39 @@ stages into “paired”; that label hides the recovery action the person needs 
 actual task. Component completion must therefore be checked against the original
 outcome: optional contextual AT information, accessible device connection and
 continued offline planning without human coding. The current public app has not
-received TG credential access. Initial setup, issuer custody, discovery and
-interrupted-session recovery remain gaps, even though local installation and
-reconnection have useful browser evidence.
+received TG credential access. Interrupted-receipt recovery now has browser
+evidence, including a fresh document and refusal to overwrite a newer record.
+First-use identity and its local setup screen now have local browser evidence;
+the matching runtime increment passed its full local gate. Usable
+discovery, issuer custody across restarts and application-secret access remain
+gaps; these component advances do not establish the end-user outcome.
+
+
+### Local ownership includes refusing silent replacement
+
+**Development observation, not an additional participant quotation:** first-use
+work distinguishes creating an identity now, restoring its member key, and having
+issuer custody available. Tests exercise unreadable storage, missing claims,
+concurrent tabs and cancellation on either side of a storage commit. The setup
+screen requires an explicit local action; it does not offer identity replacement
+when prior data exists or cannot be read. Its browser checks cover keyboard
+activation, focus after saving, Back/Escape, narrow enlarged text and automated
+accessibility findings. They do not substitute for TalkBack or disabled-commuter
+observations.
+
+**Interpretation:** the privacy and ownership theme concerns continuity as well
+as where bytes are stored. Silently creating a new identity after a read failure
+would keep the data local yet sever the person's relationship with other devices.
+The calm-design theme therefore supports a short explanation and a recoverable
+next action rather than a reassuring but inaccurate success label. A missing
+store can mean first use or deleted browser data; without external evidence the
+app cannot distinguish those histories.
+
+**Alternative reading and limit:** automatically repairing missing state could
+reduce setup friction. That reading is attractive for a travel app, but cannot
+justify replacing an established identity or claiming that a member key proves
+issuer authority. The current implementation preserves member custody and
+reports issuer custody unavailable after reopening; a seamless, durable TG
+experience still requires that outstanding lifecycle work. The AI must complete
+it before treating the primitive as delivery of the user's goal. No human code
+contribution is required by this exercise or by the implementation process.

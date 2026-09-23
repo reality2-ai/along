@@ -330,3 +330,35 @@ Explain which actions are implemented and which recovery paths still need work.
 Assess whether the proposed screen keeps the commuter's journey primary while
 making the relevant device action clear. Distinguish tested technical evidence
 from assumptions requiring real-device and accessibility observation.
+
+
+### Exercise: first use is different from recovery
+
+Ask the AI to run the experimental [first-use storage checks](../experiments/tg-pairing/initial-persona.test.mjs)
+and [local setup screen checks](../experiments/tg-pairing/setup-view.test.mjs),
+using the runtime dependency and commands documented in the
+[experiment notes](../experiments/tg-pairing/README.md). These tests require the initial-persona runtime increment named in the experiment
+notes; an earlier runtime is not evidence that the new constructor exists. Use synthetic identities only.
+The learner supplies scenarios and evaluates the result; the AI performs all
+code changes and test execution.
+
+Compare these outcomes:
+
+| Situation | Evidence to inspect | What the screen may claim |
+| --- | --- | --- |
+| No local record | Successful read returning absence | No identity found; first use and cleared data are indistinguishable |
+| Existing data cannot be read | Storage refusal, with no replacement write | Setup cannot read device data; it has not replaced it |
+| Two tabs initialize together | One atomic winner; loser preserves it | Only the winning save created the current identity |
+| Cancel before commit | Rolled-back persona, membership and initialization marker | This attempt did not save an identity |
+| Cancel after commit | Completed transaction and closed volatile handle | Identity saved; cancellation ended the current operation |
+| Reopen after saving | Verified restored member signature; no retained issuer handle | Member identity restored; issuer availability is not established |
+
+Ask the AI to make the next action explicit without overwhelming the journey
+screen. Review keyboard focus when the create button disappears, and how Back
+preserves saved data while ending volatile custody. Request a real-device check
+only for a usable screen; do not claim one from an automated browser result.
+
+Assessment: identify a misleading automatic-repair proposal, explain why a
+private-key export refusal is not proof of hardware sealing, and name the
+remaining work needed for optional contextual AT access. A passing component
+test earns no credit as evidence of a completed public TG feature.

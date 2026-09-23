@@ -18,7 +18,7 @@ sequence of findings, so earlier source-only/version statements are historical.
 | Area | Evidence now available | What remains before an end-user claim |
 | --- | --- | --- |
 | Direct AT access | Authenticated browser reads and strict timetable matching | Connect each user's authorized credential to contextual UI; verify actual installed devices |
-| Local installation | Published core ceremony, candidate-generated key, atomic persona/claim/invitation commit; rollback and reload checks | Real initial persona/claim lifecycle, qualified custody and application-secret policy |
+| Local installation | Core ceremony, candidate-generated key and atomic installation; real initial group-of-one, first-use storage, reopen and cancellation checks | Local setup integration, reset, issuer custody across restarts and application-secret policy |
 | Membership | Core certificates, local epoch policy, signed revocations; restored signing refuses revoked identity | Freshness after partition, epoch advancement and removal propagation |
 | Receipts | Published encrypted receipt/acknowledgment exchange and durable records; authenticated recovery passes fresh-document, mismatch, cancellation and concurrent-write checks | Group announcement and end-user integration |
 | Reconnection | Installed-key mutual peer authentication, revocation closure and screen-cancellation checks | End-user signaling, actual device/network reachability and operation-specific authorization |
@@ -39,23 +39,31 @@ is not yet established.
 
 ### Next integration boundary: starting a device
 
-The recovery tests start from explicit synthetic initial trust and claim state.
-They do not yet establish a real first-use flow. Before exposing “Connect my
-devices”, initialization must create the actual group-of-one required by L5
-4.3.1–4.3.4, and keep the distinction between a newly created persona and one
-restored from storage. An absent store cannot establish whether this is first
+The integrated recovery test now starts with a real initial persona and atomic
+claim/membership storage. Trust in the target group and provisioner platform facts
+remain synthetic. The first-use constructor now creates the actual group-of-one required by L5
+4.3.1–4.3.4, and Along's atomic initialization/restore paths distinguish a newly
+created persona from a restored member. The setup screen remains isolated from
+the public app; reset and complete device navigation remain unfinished. An absent store cannot establish whether this is first
 use or whether the browser previously deleted its data; report that limitation.
 
 A stored persona with a missing claim, an unreadable record, and a valid OPEN
 persona need distinct reports. Only the last can begin enrollment. A read failure
 must never trigger automatic identity replacement or turn OWNER into OPEN.
 L5 4.4.1–4.4.6 require persisted claim state, local reset and preservation across
-updates. The current test's explicit OPEN fixture is not that lifecycle.
+updates. The test now uses actual first-use storage; it does not establish the missing
+local reset lifecycle.
 
 The browser also needs an honest custody policy for its initial issuer and derived
 keys. A nonextractable member signing handle does not establish hardware-rooted
 sealing for those other secrets. Implement that lifecycle before presenting a TG
 as durable AT-key storage; retain ordinary offline planning throughout.
+
+The first-use constructor is published at
+[`407a78d5`](https://github.com/reality2-ai/r2-standard/commit/407a78d5673c858b74c2f6735112ae27cfcada7c)
+after full local verification and repository commit checks. Its matching Along
+initialization, restore and setup-screen checks pass. This does not establish
+hosted success, complete device setup or credential access.
 
 ## Historical implementation evidence
 
@@ -371,6 +379,10 @@ access where possible. A copied AT key cannot be recalled through TG revocation;
 a suspected compromise requires rotation at AT. Test enrollment, use on two
 devices, restart, disconnection, lost-device removal and AT-key replacement.
 No claim of secure synchronization is justified until these have been observed.
+
+The [AT credential policy](AT_CREDENTIAL_POLICY.md) records the separate
+application-owner/grant boundary and the evidence required before public
+enablement. It is an implementation contract, not an implemented secret store.
 
 ## Direct AT browser verification
 

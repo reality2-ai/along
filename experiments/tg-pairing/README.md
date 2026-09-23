@@ -326,3 +326,55 @@ retains an explicit reader to exercise changes and delayed reads.
 This closes the reporting boundary, not initial persona creation: a recorded OPEN
 flag alone is not proof of a valid group-of-one. Initial trust, platform facts and
 local first-use/reset integration remain experimental.
+
+### Real first-use persona
+
+Runtime dependency: [R2 407a78d5](https://github.com/reality2-ai/r2-standard/commit/407a78d5673c858b74c2f6735112ae27cfcada7c),
+published on the draft browser-TG branch after full local verification and commit
+checks. Earlier runtime builds do not export `BrowserInitialPersona`.
+
+`initial-persona.mjs` uses the new R2 `BrowserInitialPersona` constructor and
+atomically saves the member record, OPEN claim, public initial membership and a
+local initialization marker. It refuses any previous record, tombstone or partial
+initialization; an unreadable store never causes identity replacement. Concurrent
+initializers have a single transaction winner. Cancellation before commit rolls
+back all records; cancellation delivered after commit reports the actual saved
+identity with volatile issuer custody closed.
+
+The fresh-document test restores and verifies the member key, reports
+`loaded-from-storage`, and explicitly reports issuer custody unavailable. No group
+issuer or derived traffic key is persisted. Absence is reported as first-use or
+cleared storage: this browser cannot distinguish those histories by itself.
+The main enrollment/recovery test now starts from this real group-of-one instead
+of writing an OPEN flag fixture. Target-group trust, provisioner platform/custody
+facts and confirmation remain synthetic; local UI activation and reset are not
+yet implemented. The constructor passed the full runtime gate against its unchanged recorded
+snapshot. Status prose was refreshed afterwards.
+
+### Local setup screen
+
+`showLocalSetup` mounts the explicit first-use action and calls real initialization
+only after a trusted button activation. This is a UI boundary, not protection
+against arbitrary same-origin JavaScript. Missing storage is explained as first
+use or cleared data; existing or unreadable state never presents a replacement
+button. The screen distinguishes saved local identity from connecting to a peer.
+Back, Escape and replacement cancel pending work and close retained volatile
+custody. Late work cannot update a successor view. After the create action
+finishes, keyboard focus moves to Back if it would otherwise be lost.
+
+The browser test exercises actual keyboard creation, programmatic-click refusal,
+repeat creation refusal, disposal, failed reads and delayed replacement. Axe and
+narrow/enlarged-text checks pass; the existing comparison suite also passes with
+the shared hidden-control rule. These do not establish TalkBack behavior or
+physical-device usability. The component remains outside the public static build;
+restoration/recovery navigation, invitations and the enclosing device settings
+flow still need integration.
+
+Initial-persona restoration also rejects missing or mismatched initialization
+markers, missing/changed claim state, an altered epoch or certificate, and a
+substituted nonextractable private key. The fresh-document test independently
+verifies the returned signature against the saved public member key. An actual
+initialization-marker revision change then invalidates the previously returned
+signing handle; these reads do not rewrite the persona or turn a failure into
+first-use initialization. These focused checks pass, and the frozen runtime increment also passed its full
+verification gate.

@@ -7,7 +7,7 @@ const {chromium} = await import(process.env.PLAYWRIGHT_MODULE || '@playwright/te
 if (!process.env.R2_BROWSER_DIR) throw new Error('Set R2_BROWSER_DIR to the experimental Reality2 browser module directory');
 if (!process.env.R2_WASM_DIR) throw new Error('Set R2_WASM_DIR');
 const sources = new Map(await Promise.all(['peer-session', 'challenge', 'session-statement', 'membership', 'certificate', 'enrollment-session', 'storage', 'invitation-journal', 'enrollment-link', 'enrollment-exchange', 'enrollment-protection', 'peer-link', 'invitation'].map(async name => ['/' + name + '.mjs', await readFile(join(process.env.R2_BROWSER_DIR, name + '.mjs'))])));
-for (const name of ['enrollment-profile.mjs', 'enrollment-payloads.mjs', 'core-candidate-session.mjs', 'stored-claim.mjs', 'installation-receipt.mjs', 'local-persona.mjs', 'local-persona-session.mjs', 'receipt-recovery.mjs']) sources.set('/' + name, await readFile(new URL('./' + name, import.meta.url)));
+for (const name of ['enrollment-profile.mjs', 'enrollment-payloads.mjs', 'core-candidate-session.mjs', 'initial-persona.mjs', 'stored-claim.mjs', 'installation-receipt.mjs', 'local-persona.mjs', 'local-persona-session.mjs', 'receipt-recovery.mjs']) sources.set('/' + name, await readFile(new URL('./' + name, import.meta.url)));
 if (process.env.RECOVERY_MODULE) sources.set('/receipt-recovery.mjs', await readFile(process.env.RECOVERY_MODULE));
 for (const name of ['hive_wasm.js', 'hive_wasm_bg.wasm']) sources.set('/' + name, await readFile(join(process.env.R2_WASM_DIR, name)));
 const server = createServer((req, res) => {
@@ -26,6 +26,7 @@ try {
       window.wasm = await import('./hive_wasm.js'); await wasm.default();
       window.module = await import('./enrollment-session.mjs');
       window.coreModule = await import('./core-candidate-session.mjs');
+      window.initialModule = await import('./initial-persona.mjs');
       window.restoreModule = await import('./local-persona.mjs');
       window.receiptModule = await import('./installation-receipt.mjs');
       window.personaSession = await import('./local-persona-session.mjs');
@@ -77,9 +78,10 @@ try {
       window.raceInstall = false;
       store.close();
       window.store = await storageModule.openBrowserStorage('install-fixture-' + evidence.code[0]);
-      const previous = await store.read('candidate-persona', 'active');
-      // Explicit synthetic local initialization/reset, not a public reset API.
-      await store.compareAndSwap('candidate-persona', 'active', previous?.revision || 0, {format: 1, claim: 'open'});
+      // Real group/member creation and atomic first-use storage. Initial trust
+      // in the target provisioner's group is still supplied by this fixture.
+      const initialized = await initialModule.initializeLocalPersona({wasm, store});
+      initialized.close();
       window.reservationWaiting = false;
       const candidateStore = {...store, compareAndSwapMany: async (changes, options) => {
         if (window.raceInstall && changes.some(change => change.scope === 'candidate-persona')) {
@@ -526,5 +528,5 @@ try {
   ]);
   assert.equal(lateAcknowledgment[0].peerAcknowledged, true);
   assert.equal(await pages[0].evaluate(async () => (await store.read('candidate-persona', 'active')).value.peerAcknowledged), true);
-  console.log('PASS: actual peer bundle installs requested candidate custody with claim and invitation consumption; restoration rejects corrupted evidence, mismatched keys and replacement before/during signing; existing group evidence survives refusal; signed revocation blocks restored signing; a competing revision wins without overwrite; pending cancellation rolls back; cancellation after commit still returns the durable local receipt. Synthetic initial trust, platform/initialization facts and consent; matching acknowledgment persists on both devices; aborted receipt writes cannot fabricate success and cancellation after completed acknowledgment preserves it; mismatched acknowledgment preserves local installation without claiming peer agreement; installed custody reconnects through mutual membership authentication and signed local revocation closes it; fresh-document receipt recovery uses persisted custody and rejects mismatched evidence; recovery cancellation respects the commit boundary; no hardware seal or AT credential authority.');
+  console.log('PASS: actual peer bundle installs requested candidate custody with claim and invitation consumption; restoration rejects corrupted evidence, mismatched keys and replacement before/during signing; existing group evidence survives refusal; signed revocation blocks restored signing; a competing revision wins without overwrite; pending cancellation rolls back; cancellation after commit still returns the durable local receipt. Real initial local persona; synthetic target-group trust, platform facts and consent; matching acknowledgment persists on both devices; aborted receipt writes cannot fabricate success and cancellation after completed acknowledgment preserves it; mismatched acknowledgment preserves local installation without claiming peer agreement; installed custody reconnects through mutual membership authentication and signed local revocation closes it; fresh-document receipt recovery uses persisted custody and rejects mismatched evidence; recovery cancellation respects the commit boundary; no hardware seal or AT credential authority.');
 } finally { await browser?.close(); if (server.listening) await new Promise(resolve => server.close(resolve)); }
