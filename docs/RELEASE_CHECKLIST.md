@@ -1,23 +1,25 @@
 # Release evidence and remaining gates
 
-Current regular app: **version 37**. The separate [device preview 3802](https://reality2.ai/along/preview/public/)
+Current regular app: **version 37**. The separate [device preview 3803](https://reality2.ai/along/preview/public/)
 is published for [physical checks](PREVIEW_DEVICE_CHECK.md); see its release record below.
 The version-37 static ZIP
 is prepared and the private server is retired. GitHub Pages is published at `reality2.ai/along/`; no AWS deployment has been made.
 This register separates automated evidence, user observations and remaining checks.
 
-Preview 3802 includes the issued-device list, reviewed group removal, signed
+Preview 3803 includes the issued-device list, reviewed group removal, signed
 removal transfer and recipient rechecks during enrollment-key derivation.
-[Qualification](evidence/device-preview-3802-qualification.json) records five
+[Qualification](evidence/device-preview-3803-qualification.json) records six
 passing checks against the exact candidate manifest, including an upgrade from
-the byte-verified published 3801 bundle. The upgrade preserves saved places,
+the byte-verified published 3802 bundle and separate recovery of completed 3801
+enrollments. Reconnection catches up signed removal sets before shared access. The upgrade preserves saved places,
 identity and encrypted test-key bytes, and leaves regular Along's shell cache
 unchanged. Group removal closes a tested active shared-key connection without
 further mocked AT requests; signed removal receipt and offline reopening pass.
-See the [HTTPS check](evidence/device-preview-3802-public.json) and
-[release record](evidence/device-preview-3802-release.json).
+See the [HTTPS check](evidence/device-preview-3803-public.json) and
+[release record](evidence/device-preview-3803-release.json).
 
-Older enrollments lack the new issued-device index. Automatic propagation,
+Older interrupted enrollments without installation receipts can remain absent
+from the issued-device index. Automatic propagation,
 receipt tracking for removal messages, epoch/key rotation, physical-device and
 TalkBack acceptance remain unfinished. Historical evidence below retains its
 original version and scope.

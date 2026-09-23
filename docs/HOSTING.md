@@ -148,13 +148,13 @@ The lab's build identifier is separate from the installed app's version.
 
 ### Full device preview
 
-[Along Device Preview 3802](https://reality2.ai/along/preview/public/) is deployed in
+[Along Device Preview 3803](https://reality2.ai/along/preview/public/) is deployed in
 the separate `preview/` directory on `site-preview`. It includes journey planning,
 optional device/key setup and saved-journey sharing. It has its own preferences,
 device/timetable databases, manifest name and shell-cache prefix. This prevents
 ordinary data mixing with regular Along; same-origin scripts are not isolated.
 
-The [preview release](https://github.com/reality2-ai/along/releases/tag/device-preview-3802)
+The [preview release](https://github.com/reality2-ai/along/releases/tag/device-preview-3803)
 contains a static ZIP/checksum, runtime provenance and licence notices. Serve its
 whole extracted directory over HTTPS and open `public/`; no Along proxy is needed.
 Use dummy keys for the current [physical-device checks](PREVIEW_DEVICE_CHECK.md).

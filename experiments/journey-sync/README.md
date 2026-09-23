@@ -192,7 +192,7 @@ The full generated-app check starts each device with a different authentic
 removal for an unrelated synthetic subject, then connects through visible controls
 and verifies that both retain both removals before sharing journeys. The component
 and browser-custody tests also cover the new framing and tampered-final-signature
-refusal without partial state. The next candidate's AT-key reconnection now also
+refusal without partial state. Preview 3803’s AT-key reconnection also
 exchanges this set before opening its session; the existing manual removal flow
 remains available. Neither flow establishes automatic peer discovery.
 

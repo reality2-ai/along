@@ -1170,3 +1170,19 @@ against a working shared AT connection. Testing uncovered a recipient-removal
 race during asynchronous key derivation; the fix rechecks membership and clears
 derived bytes on refusal. This connects deployment and privacy claims to the
 specific state transitions that could invalidate them.
+
+
+### Preview 3803: recovering history without inventing trust
+
+Older completed enrollments predated the device index. Recovery now verifies
+retained installation receipts, certificates and consumed invitation journals
+before adding public records to that index. It preserves identities and encrypted
+keys; an incomplete record does not become a trusted device by inference.
+
+Journey and AT reconnection also exchange signed removals before shared access.
+The AT flow adds an initial owner message because applying membership changes
+after opening a session would invalidate it. This illustrates a real tension
+between fewer interaction steps and verified state: the added step is explicit,
+and is not presented as seamless automatic reconnection. Both devices must update.
+Six release checks cover the exact candidate, including published 3802 upgrade
+and 3801 enrollment recovery. Physical-device acceptance remains a separate claim.

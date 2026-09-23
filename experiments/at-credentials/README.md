@@ -1162,7 +1162,7 @@ erase an AT key already copied or revoke that key at AT; provider replacement is
 still needed for an exposed key. Automatic removal propagation, key/epoch rotation
 and physical-device acceptance remain unfinished.
 
-### Removal catch-up before AT reconnection (next candidate)
+### Removal catch-up before AT reconnection (preview 3803)
 
 `policy-connection-view.mjs` now uses `along-at-reconnect-v2`. The key-owning
 device supplies the first message, containing the saved binding and retained
@@ -1172,7 +1172,7 @@ merges the recipient's removal set before opening its answering session. The
 existing mutual identity and application-permission checks still gate live access.
 Messages contain public identities, removal signatures and connection metadata,
 never an AT key. Both devices must use the new profile; v1 is refused instead of
-silently skipping catch-up. Published preview 3802 still uses the older flow.
+silently skipping catch-up. Published preview 3803 includes this flow; both devices must update.
 
 Starting with the owner's message adds one transfer step but avoids invalidating
 an existing session while applying membership changes. This is catch-up during an

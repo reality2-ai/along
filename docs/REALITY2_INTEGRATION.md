@@ -3,11 +3,11 @@
 Along should contact AT directly and keep each person's AT key within their own
 trust group, without requiring an Along-operated central server. Offline planning
 must continue without a key, a peer connection or a portal. The implementation described here is experimental and is not yet enabled in
-the regular version-37 app. A separate [device preview, version 3802](https://reality2.ai/along/preview/public/),
+the regular version-37 app. A separate [device preview, version 3803](https://reality2.ai/along/preview/public/),
 is now published for S23/desktop testing with dummy AT keys. It includes the
 experimental Settings flows and saved-journey sharing, with separate ordinary
 storage names and explicit software-security limits. See the
-[device-check guide](PREVIEW_DEVICE_CHECK.md) and [HTTPS evidence](evidence/device-preview-3802-public.json).
+[device-check guide](PREVIEW_DEVICE_CHECK.md) and [HTTPS evidence](evidence/device-preview-3803-public.json).
 
 ## Current status
 
@@ -16,7 +16,7 @@ using the runtime's actual signing bytes. The browser check applies this evidenc
 through the membership verifier, rejects tampering, deduplicates replay and checks
 that removal survives a storage reopen. Invalid sequence/reason bounds, closed or
 changed issuer custody and cancellation during signing refuse. This is a tested
-building block, **not a deployed group-removal control**. A removal controller now
+building block used by the preview’s reviewed group-removal control. A removal controller now
 verifies the target certificate and atomically retains signed evidence, assigning
 sequences with compare-and-swap and guarding issuer/persona revisions. Concurrent
 removals survive together, retries reuse their evidence and a fresh-document check
@@ -30,8 +30,7 @@ before releasing it, so interrupted enrollment also leaves a reviewable target.
 The actual two-profile app test pairs devices, opens that list, removes a member
 offline and reopens its saved removal after reload, retaining local journeys.
 This is an issued-certificate list, not an online roster or proof of completed
-installation. The published 3802 preview lacks recovery for older enrollments.
-The next candidate recovers retained public installation receipts into the list,
+installation. Preview 3803 recovers retained public installation receipts into the list,
 checking signatures, receipt bindings and consumed journals with guarded writes.
 Its `LEGACY_ENROLLMENT=1` app check pairs devices using the exact published 3801
 bundle before upgrading, verifies unchanged identities/key ciphertext and tests
@@ -47,7 +46,7 @@ receipt are covered by the browser custody test. The test harness transfers the
 text; this is not automatic propagation, proof of every peer receiving it or
 physical-device acceptance. Automatic distribution and epoch/key rotation remain
 unfinished; removal cannot recall an AT key already copied.
-The next candidate additionally catches up retained removal sets in both initial
+Preview 3803 additionally catches up retained removal sets in both initial
 journey-connection messages before opening the peer session. A full-app test with
 different signed removals on each side verifies bidirectional merge before journey
 sharing. This uses a new Along connection profile requiring both devices to update;
@@ -58,7 +57,7 @@ set before opening its session. This additional initial message avoids updating
 membership underneath an already-created recipient session. The two-app check
 verifies bidirectional catch-up before live access, with zero provider requests
 during setup; the component check rejects an altered owner and v1 downgrade.
-Public preview 3802 still uses the earlier journey profile and manual removal flow.
+Both connection profiles require updated devices; the manual removal flow remains available.
 The separate AT two-app `REMOVE_GROUP_MEMBER=1` check now verifies that group
 removal closes an active shared-key live connection after two expected mocked
 provider reads and causes no further provider request. The recipient accepts the
@@ -66,7 +65,7 @@ signed removal and reopens to route offline. A targeted custody race test also
 removes a recipient during either key-derivation step: issuance now rechecks the
 recipient and wipes derived buffers before refusing. These are software-profile
 enforcement checks, not revocation of the subscription key at Auckland Transport.
-These changes are included in preview 3802. The regular version-37 app is unchanged.
+These changes are included in preview 3803. The regular version-37 app is unchanged.
 
 The experimental existing-device reconnect screen now exchanges public connection
 messages through visible controls, authenticates saved identities and hands the
