@@ -1,5 +1,11 @@
 # Along — your Auckland commute
 
+> **Course exercise — use at your own risk.** Along was created as an exercise
+> for an AI-assisted coding course. It is an experimental educational webapp,
+> not an official Auckland Transport service. Routes, times, walking directions
+> and accessibility information may be incomplete, outdated or incorrect.
+> Check your journey and access requirements with AT before travelling.
+
 An independent, installable webapp for finding a useful next ride and planning
 street-address-to-street-address journeys across walking, buses, trains and ferries.
 After the first download, address search and scheduled routing run in your browser,

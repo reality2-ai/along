@@ -17,6 +17,7 @@ def render():
             if heading.startswith(('Chrome —','Edge —','Brave —','Safari —','Edge or Brave —')):
                 parts.append('<details class="install-platform"><summary>'+inline(heading)+'</summary>');platform_open=True
             else:parts.append('<h2>'+inline(heading)+'</h2>')
+        elif block.startswith('> '):parts.append('<blockquote>'+inline(' '.join(line.removeprefix('> ') for line in block.splitlines()))+'</blockquote>')
         elif block.startswith('1. '):
             items=re.split(r'\n(?=\d+\. )',block)
             parts.append('<ol>'+''.join('<li>'+inline(re.sub(r'^\d+\. ','',i).replace('\n',' '))+'</li>' for i in items)+'</ol>')

@@ -1,5 +1,9 @@
 # Teaching AI-assisted coding with Along
 
+Along was created as a course exercise. It is an experimental educational app,
+provided for use at the user’s own risk; it is not an official AT service or a
+claim of production readiness. The verification work is part of the lesson.
+
 ## Aim and audience
 
 Use a working commuter app to practise turning evolving human intentions into

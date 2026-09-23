@@ -116,3 +116,5 @@ button,.secondary-button,.tab,.setting,select,input[type=date],input[type=time]{
 .install-platform{border-top:1px solid var(--line);padding:12px 0}.install-platform summary{cursor:pointer;font-size:17px;font-weight:600;min-height:44px;padding:10px 0}
 
 .guide-table:focus-visible{outline:3px solid #214e40;outline-offset:3px}
+
+.guided-app .course-notice{margin:8px 0 20px;padding:12px 14px;border:1px solid #bac5b2;border-radius:10px;background:#edf1e7;color:#30482d;font-size:13px;line-height:1.6}.guided-app .course-notice strong{font-size:14px}.guided-app .course-notice p{margin-top:4px}

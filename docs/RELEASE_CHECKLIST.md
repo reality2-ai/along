@@ -1,6 +1,6 @@
 # Release evidence and remaining gates
 
-Current candidate: **version 20**, reviewed 23 September 2026. The private site and
+Current candidate: **version 21**, reviewed 23 September 2026. The private site and
 static ZIP are prepared. GitHub Pages is published at `reality2.ai/along/`; no AWS deployment has been made.
 This register separates automated evidence, user observations and remaining checks.
 
@@ -110,3 +110,12 @@ persistent Chromium profile: version 20, `/along/` worker scope, installability,
 visible Settings About link, new address journey after network disconnection and
 offline installation help. No page JavaScript errors were recorded. Physical
 installation and screen-reader observations remain separate from this result.
+
+## Version 21: course exercise and use-at-own-risk notice
+
+The README begins with an explicit educational/experimental notice. The same
+message is visible on the app's task screens, with fuller wording in Settings,
+installation guidance and the downloadable hosting README. It states that Along
+was built as an AI-assisted coding course exercise, is not an official AT service,
+and may contain incorrect or outdated route/access information. It does not
+claim that a disclaimer establishes safety, suitability or production readiness.
