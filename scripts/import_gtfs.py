@@ -29,6 +29,7 @@ def ingest(source, target):
       CREATE TABLE exceptions(service TEXT, date TEXT, type INTEGER);
       CREATE TABLE transfers(origin TEXT, destination TEXT, type INTEGER, seconds INTEGER);
       CREATE TABLE connections(trip TEXT, origin TEXT, destination TEXT, departure INTEGER, arrival INTEGER, pickup INTEGER, dropoff INTEGER);
+      CREATE TABLE connection_sequences(connection_rowid INTEGER PRIMARY KEY, origin_sequence INTEGER);
       CREATE TABLE metadata(value TEXT);
       CREATE TABLE accessibility(kind TEXT, id TEXT, value INTEGER);
     ''')
@@ -58,14 +59,21 @@ def ingest(source, target):
         db.execute('CREATE INDEX times_order ON times(trip,seq)')
         previous = None
         batch = []
-        for row in db.execute('SELECT trip,stop,arrival,departure,pickup,dropoff FROM times ORDER BY trip,seq'):
+        sequences = []
+        connection_id = 0
+        for row in db.execute('SELECT trip,stop,arrival,departure,pickup,dropoff,seq FROM times ORDER BY trip,seq'):
             if previous and previous[0] == row[0] and row[2] >= previous[3]:
+                connection_id += 1
+                sequences.append((connection_id, previous[6]))
                 batch.append((row[0], previous[1], row[1], previous[3], row[2], previous[4], row[5]))
             previous = row
             if len(batch) >= 10000:
                 db.executemany('INSERT INTO connections VALUES (?,?,?,?,?,?,?)', batch)
+                db.executemany('INSERT INTO connection_sequences VALUES (?,?)', sequences)
                 batch.clear()
+                sequences.clear()
         db.executemany('INSERT INTO connections VALUES (?,?,?,?,?,?,?)', batch)
+        db.executemany('INSERT INTO connection_sequences VALUES (?,?)', sequences)
         db.execute('DROP TABLE times')
         db.execute('CREATE INDEX departures ON connections(departure)')
         db.execute('CREATE INDEX trip_connections ON connections(trip,arrival)')

@@ -224,9 +224,9 @@ Unmatched or offline results remain scheduled. No public proxy is enabled yet.
 
 `live-predictions.js` checks trip ID, service date, any supplied route/start time,
 unique stop identity and schedule relationships. `stopDetails` supplies the dated
-trip and visit count from the downloaded timetable. Repeated stop visits retain
-scheduled information because the compact data lacks original stop_sequence;
-loop predictions require extending the data import before they can be supported.
+trip and visit count from the downloaded timetable. New imports also preserve
+the original stop sequence to distinguish repeated visits. Older installed
+bundles retain scheduled information for those visits until their data is updated.
 No-data, replacement/unscheduled trips and changed platform assignments are not
 silently treated as ordinary departure predictions. The basis is the
 [GTFS StopTimeUpdate reference](https://gtfs.org/documentation/realtime/reference/#message-stoptimeupdate).
@@ -283,8 +283,8 @@ checks do not establish authenticated public live availability.
 
 The same explicit check now fetches predictions alongside alerts. Each remaining
 transit leg is matched by dated trip, route, start time and boarding stop. The
-planner retains full-trip stop visit counts; repeated visits remain scheduled
-rather than guessing which visit a prediction refers to. Matched expected times,
+planner retains full-trip stop visit counts and, with newly imported bundles,
+the original boarding sequence. Ambiguous visits remain scheduled. Matched expected times,
 cancellations and skipped boarding stops appear beside the scheduled itinerary.
 Unmatched legs retain their schedule. Expected departures do not imply predicted
 arrival times or guaranteed transfers, and do not change journey progress.

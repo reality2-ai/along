@@ -122,3 +122,22 @@ evidence of individual-measurement freshness. Snapshot totals vary with time.
 The current source checks include expiry while alerts remain current, unchanged
 chosen-journey content, and nearby fallback without another AT request. These
 source changes do not enable the public live connection or supply TG credentials.
+
+### Original stop sequences (source and local data)
+
+The importer/exporter now retains each boarding call's original GTFS sequence;
+planner legs, nearby comparisons and stop boards carry it into the strict matcher.
+This enables exact matching on loop routes when a corresponding live sequence is
+supplied. Conflicting sequence/stop identities and ambiguous legacy records remain
+scheduled. No sequence is guessed from display order.
+
+The local reimport contains 1,453,215 connection sequences. All existing timetable
+fields compare equal to the previous bundle, excluding the expected import-time
+provenance change. An independent sample of 200 records matches original GTFS
+stop IDs, departure times and non-inferred sequence numbers. The compressed
+network grew from 12,331,056 to 13,534,220 bytes. See [validation evidence](evidence/stop-sequences.json).
+New data is local only; public version 35 still carries its earlier bundle.
+
+Regression tests cover unsorted input, non-consecutive sequence numbers, repeated
+stops, legacy database export, propagation to journey/stop results, and conflicting
+live identities. A full data/app release and direct TG-connected UI remain pending.

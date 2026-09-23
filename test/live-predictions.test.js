@@ -38,3 +38,19 @@ test('fresh feed headers do not renew stale trip progress predictions',()=>{
  const cancelled=entity({schedule_relationship:'CANCELED'});cancelled.trip_update.timestamp=1;
  assert.equal(predict([cancelled]).status,'cancelled');
 });
+
+test('source sequence distinguishes repeated stop visits and rejects contradictory identities',()=>{
+ const dep={...d,stopVisits:2,stopSequence:80};
+ const e=entity();e.trip_update.stop_time_update=[{stop_id:'s',stop_sequence:10,departure:{delay:10}},{stop_id:'s',stop_sequence:80,departure:{delay:90}}];
+ assert.equal(predict([e],dep).delay,90);
+ assert.equal(predict([e],{...dep,stopSequence:10}).delay,10);
+ assert.equal(predict([e],{...dep,stopSequence:81}).status,'scheduled');
+ e.trip_update.stop_time_update=[{stop_id:'s',stop_sequence:80,departure:{delay:90}},{stop_id:'wrong',stop_sequence:80,departure:{delay:90}}];
+ assert.equal(predict([e],dep).status,'scheduled');
+ e.trip_update.stop_time_update=[{stop_id:'wrong',stop_sequence:80,departure:{delay:90}}];
+ assert.equal(predict([e],dep).status,'scheduled');
+ e.trip_update.stop_time_update=[{stop_sequence:80,departure:{delay:90}}];
+ assert.equal(predict([e],dep).delay,90);
+ e.trip_update.stop_time_update=[{stop_id:'s',departure:{delay:90}}];
+ assert.equal(predict([e],dep).status,'scheduled');
+});

@@ -73,3 +73,20 @@ called by `import_gtfs.py`. For an existing timetable import, run
 Use the matching ZIP: shape references use exact trip IDs. The geometry bundle is
 approximately 2.53 MiB compressed and is downloaded into IndexedDB. If unavailable,
 route lists remain usable and maps show stop positions without an invented path.
+
+
+## Original stop visit identities
+
+New GTFS imports retain each connection's original boarding `stop_sequence` in a
+separate SQLite `connection_sequences` table. The browser export adds an optional
+`connectionSequences` array aligned one-to-one with the seven-value connection
+records. Sequence values come from GTFS; they are not row numbers or inferred
+positions. Existing connection fields and the version-1 format remain intact.
+Old databases export without this optional field, and old downloaded bundles
+continue to plan journeys normally.
+
+The planner carries the source sequence into nearby departures, stop boards and
+journey legs. Live matching can distinguish repeated visits using that sequence,
+while also checking the stop ID when the live record supplies it. Without a
+verified sequence, a repeated stop still retains its scheduled time. A sequence
+conflict is not silently retried as a stop-ID-only match.

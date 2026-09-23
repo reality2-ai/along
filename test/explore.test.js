@@ -12,3 +12,11 @@ test('route exploration retains branches, active service dates, complete stops a
 test('stop times exclude unavailable pickup and include only upcoming active services',()=>{
  const result=stopDetails(fixture(),{id:'a',now:{date:'2026-09-23',seconds:30000}});assert.deepEqual(result.map(r=>r.trip),['two']);assert.equal(result[0].serviceDate,'20260923');assert.equal(result[0].startTime,'09:00:00');assert.equal(result[0].stopVisits,1);
 });
+
+test('original boarding sequence reaches journey legs and stop departures',()=>{
+ const p=fixture();p.data.metadata={};p.data.connectionSequences=[10,30,80,120];
+ const rows=stopDetails(p,{id:'a',now:{date:'2026-09-23',seconds:30000}});
+ assert.equal(rows[0].stopSequence,30);
+ const journeys=p.plan({from:'a',to:'b',date:'2026-09-23',time:'08:30',modes:['bus']});
+ assert.equal(journeys[0].legs.find(l=>l.trip).stopSequence,30);
+});

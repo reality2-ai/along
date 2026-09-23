@@ -1,0 +1,13 @@
+{
+  "connections": 1453215,
+  "sampled_original_records": 200,
+  "all_existing_timetable_fields_unchanged": true,
+  "provenance_change": {
+    "previous_imported_at": "2026-09-22T06:13:28.206794+00:00",
+    "new_imported_at": "2026-09-23T06:42:58.839909+00:00"
+  },
+  "old_compressed_bytes": 12331056,
+  "new_compressed_bytes": 13534220,
+  "network_sha256": "89651d2268a4c26e55a610c4f44897f6756625689b891d95ee1f9f64785a2f1e",
+  "public_dataset_updated": false
+}

@@ -18,10 +18,15 @@ def export(db_path, output):
         trips = [(tid,route_index[route],service,headsign,access.get(('trip',tid),0)) for tid,route,service,headsign in db.execute('SELECT * FROM trips')]
         trip_index = {t[0]:i for i,t in enumerate(trips)}
         connections = []
-        for trip,a,b,dep,arr,pickup,dropoff in db.execute('SELECT * FROM connections ORDER BY departure,arrival'):
+        sequences = []
+        has_sequences=db.execute("SELECT 1 FROM sqlite_master WHERE name='connection_sequences'").fetchone()
+        query=('SELECT c.*,s.origin_sequence FROM connections c LEFT JOIN connection_sequences s ON c.rowid=s.connection_rowid ORDER BY c.departure,c.arrival,c.rowid' if has_sequences else 'SELECT *,NULL FROM connections ORDER BY departure,arrival,rowid')
+        for trip,a,b,dep,arr,pickup,dropoff,sequence in db.execute(query):
             if a in stop_index and b in stop_index:
+                sequences.append(sequence)
                 connections.extend((trip_index[trip],stop_index[a],stop_index[b],dep,arr,pickup,dropoff))
         network = dict(version=1,accessibilityVersion=1 if has_access else 0,metadata=json.loads(db.execute('SELECT value FROM metadata').fetchone()[0]),stops=stops,routes=routes,trips=trips,calendar=list(db.execute('SELECT * FROM calendar')),exceptions=list(db.execute('SELECT * FROM exceptions')),transfers=list(db.execute('SELECT * FROM transfers')),connections=connections)
+        if has_sequences: network['connectionSequences']=sequences
     temporary = output.with_suffix('.building.gz')
     with gzip.open(temporary,'wt',encoding='utf-8',compresslevel=6) as stream:
         json.dump(network,stream,separators=(',',':'))
