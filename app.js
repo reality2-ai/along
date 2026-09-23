@@ -53,13 +53,14 @@ function showScreen(screen,{focus=true,historyEntry=true}={}){
   state.screen=screen;
   for(const section of document.querySelectorAll('[data-screen]'))section.hidden=section.dataset.screen!==screen;
   $('journey-form').hidden=!['destination','origin','review'].includes(screen);
-  const titles={destination:'Where would you like to go?',origin:'Starting where?',review:state.intent==='nearby'?'Ready to find a departure?':'Ready to find your way?',options:'Choose your journey',follow:'Your next step',arrived:'You’re there.',nearby:'Your next ride nearby'};
+  const titles={destination:'Where would you like to go?',origin:'Where are you travelling from?',review:state.intent==='nearby'?'Review departure preferences':'Review your journey',options:'Choose your journey',follow:'Your next step',arrived:'You’re there.',nearby:'Your next ride nearby'};
   $('flow-title').textContent=titles[screen];
   $('flow-progress').textContent=({destination:'Plan a journey',origin:'Choose your starting place',review:'Time and travel needs',options:'Choose a route',follow:'Follow your journey',arrived:'Journey complete',nearby:'Compare nearby stops'})[screen];
-  $('flow-context').textContent=screen==='origin'&&state.to&&state.intent==='plan'?`To ${state.to.name}`:['options','follow','arrived'].includes(screen)&&state.lastSearch?`${state.lastSearch.from.name} → ${state.lastSearch.to.name}`:'';
+  $('flow-context').textContent=screen==='origin'&&state.to&&state.intent==='plan'?`Destination already selected: ${state.to.name}`:['options','follow','arrived'].includes(screen)&&state.lastSearch?`${state.lastSearch.from.name} → ${state.lastSearch.to.name}`:'';
   $('new-journey').hidden=screen==='destination';$('flow-back').hidden=screen==='destination';
   $('review-origin').textContent=state.from?.name||'Choose a starting place';$('review-destination').textContent=state.to?.name||'';
   $('review-destination-row').hidden=state.intent==='nearby';$('swap').hidden=state.intent==='nearby';
+  $('origin-next').textContent=state.intent==='nearby'?'Review departure preferences →':'Review journey →';
   $('find').textContent=state.intent==='nearby'?'Show nearby departures →':'Find my way →';
   $('try-britomart').hidden=state.intent!=='nearby';
   $('journey-notes').hidden=!['options','follow'].includes(screen);
