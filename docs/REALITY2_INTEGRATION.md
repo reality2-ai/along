@@ -10,7 +10,9 @@ architecture, not an implemented feature.
 The user has approved developing the missing browser TG capability. The public
 Along app remains on version 37 with scheduled offline planning; its live-data
 connection and trusted-device enrollment are not enabled. Runtime work is in an
-isolated, unpublished development branch. The sections below preserve the
+isolated development branch, published as
+[Reality2 draft PR #1](https://github.com/reality2-ai/r2-standard/pull/1).
+The sections below preserve the
 sequence of findings, so earlier source-only/version statements are historical.
 
 | Area | Evidence now available | What remains before an end-user claim |
@@ -22,7 +24,16 @@ sequence of findings, so earlier source-only/version statements are historical.
 | Enrollment comparison | Committed X25519 exchange, canonical invitation fields and connection-bound core comparison strings | Connect initial trust, invitation validity/custody, person confirmation, protected bundle delivery and the core ceremony |
 | Invitation use | Durable reservation, decline/consumption, restart refusal and atomic write-set tests | Connect the journal to a validated OPEN-to-OWNER install and resolve interrupted distributed receipts |
 | Comparison UI | [Isolated component](../experiments/tg-pairing/README.md), keyboard/reflow/axe and cancellation tests | Bind it to the live ceremony, test actual TalkBack and physical co-presence; it is not loaded by Along |
-| Complete runtime gate | Both full runs passed; the second matched the recorded unchanged snapshot, committed locally as `4d4977141f3b9b35023e00a8d36c6e463fe6c06c` | Finish repository publication checks, then publish reviewable runtime source; this does not establish complete enrollment |
+| Complete runtime gate | Both full runs passed; the second matched the recorded unchanged snapshot at `4d4977141f3b9b35023e00a8d36c6e463fe6c06c`. Repository commit checks passed with the Composer GUI prerequisites built; source and verification notes are published in draft PR #1 | Complete enrollment and application integration; passing the component and repository checks does not establish those features |
+
+The published runtime branch currently ends at
+[`641e51c9`](https://github.com/reality2-ai/r2-standard/commit/641e51c9e084c90eb08358b77e0fb29482759c3d),
+which adds verification notes to the tested implementation. The later repository
+commit check ran the previously unavailable GUI controls successfully; no
+“REFUSED TO RUN” entries remained. This is a draft development contribution, not
+a merged runtime release or a public Along feature. The next functional work is
+binding person confirmation to the live exchange and durable invitation lifecycle,
+followed by protected bundle delivery and validated persona installation.
 
 ### Notekeeper reference inspection
 
