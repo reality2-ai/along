@@ -6,7 +6,7 @@ export function showLabReset(container, {store, onBack, onRemoved, focus = false
   const element = (tag, text) => { const node = document.createElement(tag); node.textContent = text; return node; };
   const panel = element('section', ''); panel.className = 'pairing-comparison';
   const heading = element('h2', 'Remove this test device?'); heading.tabIndex = -1;
-  const explanation = element('p', 'This removes only this browser’s pairing-lab identity, group keys and membership. Along’s saved journeys are not removed. You will lose this test identity and may lose the ability to invite devices to its group.');
+  const explanation = element('p', 'This removes only this browser’s pairing-lab identity, group keys, membership and local AT-key settings. Along’s saved journeys are not removed. You will lose this test identity and may lose the ability to invite devices to its group.');
   const limits = element('p', 'Other devices keep their data. This does not revoke group membership elsewhere or revoke an AT key. Close other pairing-lab tabs first. Once removal starts, it cannot be cancelled.');
   const remove = element('button', 'Remove this test device data'); remove.type = 'button';
   const back = element('button', 'Keep this test device'); back.type = 'button'; back.className = 'pairing-primary';

@@ -5,8 +5,9 @@ has not yet been published: use the HTTPS test URL supplied with a verified lab
 build when it is available. Do not substitute the normal Along URL. No coding,
 terminal commands or AT key are required from the tester.
 
-The test creates encrypted software group keys in this browser. It does not sync
-journeys or enable live AT information. It is a course experiment used at your own
+The test creates encrypted software group keys in this browser. It also offers
+local AT-key storage testing with dummy text only. It does not sync journeys,
+contact AT or enable live AT information. It is a course experiment used at your own
 risk, without hardware-backed storage protection. Site code can use the keys.
 
 ## Before starting
@@ -76,6 +77,18 @@ Accessibility → TalkBack (menu labels may vary; see
 [Google’s TalkBack guide](https://support.google.com/accessibility/answer/6007100?hl=en)), then try field labels, status
 announcements, review, Back and code comparison. Report TalkBack as **not tested**
 if you only used ordinary touch interaction.
+
+## Check local AT-key storage with dummy text
+
+After pairing, return home, restore the device, and choose **Test optional AT-key
+storage** → **Set up live information**. Enter `along-test-key` as dummy text and
+choose **Save key on this device**. Do not use a real AT key in this experiment.
+Saving should report that the key has not been checked with AT.
+
+Reload, restore the device, and reopen the same settings. It should report that
+an AT key is saved without displaying its value or asking you to create settings
+again. This does not share the key with the other device or fetch live information.
+The reset below also removes these local test credentials and settings.
 
 ## Restart only the lab test
 

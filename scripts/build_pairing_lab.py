@@ -2,14 +2,16 @@
 import argparse
 import hashlib
 import json
+import posixpath
 from pathlib import Path
 import re
 import shutil
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
-LOCAL = ROOT / 'experiments' / 'tg-pairing'
-IMPORT = re.compile(r'''(?:from\s*|import\s*\()\s*['"](\./[^'"]+)['"]''')
+EXPERIMENTS = ROOT / 'experiments'
+LOCAL = EXPERIMENTS / 'tg-pairing'
+IMPORT = re.compile(r'''(?:from\s*|import\s*\()\s*['"](\.{1,2}/[^'"]+)['"]''')
 
 
 def build(browser, wasm):
@@ -18,18 +20,19 @@ def build(browser, wasm):
     output.parent.mkdir(exist_ok=True)
     with tempfile.TemporaryDirectory(dir=output.parent) as scratch:
         stage = Path(scratch)
-        queue = ['lab.mjs']
+        queue = ['tg-pairing/lab.mjs']
         copied = set()
         while queue:
             name = queue.pop()
             if name in copied:
                 continue
             relative = Path(name)
-            if relative.is_absolute() or '..' in relative.parts or relative.suffix not in ('.mjs', '.js'):
+            if (relative.is_absolute() or '..' in relative.parts or relative.suffix not in ('.mjs', '.js')
+                    or relative.parts[0] not in ('tg-pairing', 'at-credentials')):
                 raise ValueError('Unexpected module path')
-            source = wasm / name if name == 'hive_wasm.js' else LOCAL / name
-            if not source.is_file():
-                source = browser / name
+            source = wasm / relative.name if name == 'tg-pairing/hive_wasm.js' else EXPERIMENTS / relative
+            if not source.is_file() and relative.parts[0] == 'tg-pairing':
+                source = browser / Path(*relative.parts[1:])
             if not source.is_file():
                 raise FileNotFoundError(f'Missing module: {name}')
             target = stage / name
@@ -37,11 +40,12 @@ def build(browser, wasm):
             shutil.copy2(source, target)
             copied.add(name)
             for specifier in IMPORT.findall(source.read_text()):
-                queue.append(str(relative.parent / specifier[2:]))
-        for source, name in [(LOCAL / 'lab.html', 'index.html'), (LOCAL / 'comparison.css', 'comparison.css'),
-                             (LOCAL / 'vendor/qrcode.LICENSE', 'vendor/qrcode.LICENSE'),
-                             (LOCAL / 'vendor/README.md', 'vendor/README.md'),
-                             (wasm / 'hive_wasm_bg.wasm', 'hive_wasm_bg.wasm')]:
+                queue.append(posixpath.normpath(str(relative.parent / specifier)))
+        for source, name in [(LOCAL / 'lab.html', 'index.html'), (LOCAL / 'comparison.css', 'tg-pairing/comparison.css'),
+                             (EXPERIMENTS / 'at-credentials/credential-view.css', 'at-credentials/credential-view.css'),
+                             (LOCAL / 'vendor/qrcode.LICENSE', 'tg-pairing/vendor/qrcode.LICENSE'),
+                             (LOCAL / 'vendor/README.md', 'tg-pairing/vendor/README.md'),
+                             (wasm / 'hive_wasm_bg.wasm', 'tg-pairing/hive_wasm_bg.wasm')]:
             (stage / name).parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(source, stage / name)
         files = {str(p.relative_to(stage)): hashlib.sha256(p.read_bytes()).hexdigest()

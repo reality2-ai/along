@@ -748,3 +748,20 @@ The sender reports confirmation **sent**; only the joining device reports it sav
 If the inviting device never saved the receipt, this path cannot confirm the
 installation. Physical-device behavior, broader repair and epoch catch-up remain
 unverified or unfinished. The public Along app still does not load this lab.
+
+
+### AT settings reached from the saved device
+
+The built lab now offers **Test optional AT-key storage** after restoring either
+an initial or an enrolled identity. It composes the existing AT settings, explicit
+local owner establishment and encrypted vault, rather than using a fabricated
+identity or separate test store. The lab asks for dummy text only and makes no
+provider request. Saving a key is not enabling live feeds or peer sharing.
+
+The static builder preserves the `tg-pairing/` and `at-credentials/` directories,
+resolves relative module imports only inside those roots, and includes their
+explicit stylesheets. It still hashes the complete bundle and excludes normal
+journey data, tests and credentials. `lab.test.mjs` now follows actual enrollment
+with visible key setup, synthetic key save and reload/restore; it verifies a
+nonextractable wrapping key, encrypted saved bytes, no displayed plaintext and no
+external requests. Local lab reset also removes these test credentials.

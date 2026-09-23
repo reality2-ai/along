@@ -5,6 +5,7 @@ import {openBrowserStorage} from './storage.mjs';
 import {showLocalSetup} from './setup-view.mjs';
 import {showPairingFlow} from './pairing-flow.mjs';
 import {showRecoveryFlow} from './recovery-flow.mjs';
+import {showATSettings} from '../at-credentials/settings-view.mjs';
 import {loadLocalPersona} from './local-persona.mjs';
 import {loadSoftwareIssuer} from './software-persona.mjs';
 import {LAB_DATABASE, showLabReset} from './lab-reset.mjs';
@@ -73,6 +74,7 @@ const showHome = async () => {
         const recover = role => { clear(); view = showRecoveryFlow(container, {wasm, store, role, expectedGroup: group, focus: true, onBack: showHome}); };
         if (identity.origin === 'enrolled' && !identity.peerAcknowledged) button('Recover installation confirmation', () => recover('candidate'));
         if (identity.origin === 'initial') button('Confirm an interrupted connection', () => recover('provisioner'));
+        button('Test optional AT-key storage', () => { clear(); view = showATSettings(container, {wasm, store, expectedGroup: group, focus: true, onBack: showHome}); });
         button('Back', showHome);
       } catch {
         if (!closed && generation === restoringGeneration) { clear(); const note = element('p', 'Saved device data could not be restored. It has not been replaced. Recovery needs separate development. Use the lab’s remove option only if you intend to lose this test identity.'); note.setAttribute('role', 'status'); container.append(note); const back = element('button', 'Back'); back.type = 'button'; back.addEventListener('click', showHome); container.append(back); }

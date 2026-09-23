@@ -35,6 +35,11 @@ identities and an authenticated receipt exchange. A browser test interrupts the
 original connection after the inviter’s receipt commit, then recovers confirmation
 in fresh documents without changing the member identity. It cannot recover a
 receipt the inviter never retained. Physical recovery remains unverified.
+The restored-device lab now exposes optional local AT-key settings. Its static
+bundle test uses an actually enrolled identity to establish the credential owner,
+save a synthetic key encrypted, reload and restore it with no external requests.
+The lab asks for dummy key text only; provider reads and peer key delivery are
+not connected to this screen.
 Manual transfer is currently cumbersome, and the one-minute invitation lifetime
 needs real usability assessment. Public deployment, simpler transfer, group epoch
 updates/removal, saved-journey sync and physical-device validation remain work.

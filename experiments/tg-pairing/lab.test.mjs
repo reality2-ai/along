@@ -28,6 +28,11 @@ try {
   browser = await chromium.launch({headless: true, executablePath: process.env.CHROMIUM_PATH});
   const contexts = await Promise.all([browser.newContext({viewport: {width: 360, height: 780}}), browser.newContext({viewport: {width: 360, height: 780}})]);
   const pages = await Promise.all(contexts.map(c => c.newPage()));
+  const externalRequests = [];
+  await Promise.all(contexts.map(context => context.route('**/*', route => {
+    if (new URL(route.request().url()).hostname === '127.0.0.1') return route.continue();
+    externalRequests.push(route.request().url()); return route.abort();
+  })));
   await Promise.all(pages.map(async (page, index) => {
     await page.goto(`http://127.0.0.1:${server.address().port}`);
     await page.getByRole('button', {name: 'Set up this test device', exact: true}).click();
@@ -68,14 +73,14 @@ try {
   await candidate.getByRole('heading', {name: 'Device connected', exact: true}).waitFor();
   await owner.getByRole('heading', {name: 'Other device installed', exact: true}).waitFor();
   const target = await owner.evaluate(async () => {
-    const store = await (await import('./storage.mjs')).openBrowserStorage('along-pairing-lab-v1');
+    const store = await (await import('./tg-pairing/storage.mjs')).openBrowserStorage('along-pairing-lab-v1');
     try { return [...(await store.read('candidate-persona', 'active')).value.record.group]; } finally { store.close(); }
   });
   assert.equal(await candidate.evaluate(async group => {
-    const wasm = await import('./hive_wasm.js'); await wasm.default();
-    const store = await (await import('./storage.mjs')).openBrowserStorage('along-pairing-lab-v1');
-    const restored = await (await import('./local-persona.mjs')).loadLocalPersona({wasm, store, expectedGroup: new Uint8Array(group)});
-    const traffic = await (await import('./software-traffic.mjs')).loadSoftwareTraffic({wasm, store, expectedGroup: new Uint8Array(group)});
+    const wasm = await import('./tg-pairing/hive_wasm.js'); await wasm.default();
+    const store = await (await import('./tg-pairing/storage.mjs')).openBrowserStorage('along-pairing-lab-v1');
+    const restored = await (await import('./tg-pairing/local-persona.mjs')).loadLocalPersona({wasm, store, expectedGroup: new Uint8Array(group)});
+    const traffic = await (await import('./tg-pairing/software-traffic.mjs')).loadSoftwareTraffic({wasm, store, expectedGroup: new Uint8Array(group)});
     traffic.destroy(); store.close(); return restored.origin === 'enrolled' && restored.peerAcknowledged;
   }, target), true);
   await Promise.all(pages.map(page => page.reload()));
@@ -86,6 +91,32 @@ try {
   await owner.getByRole('heading', {name: 'Confirm an interrupted connection', exact: true}).waitFor();
   await owner.getByRole('button', {name: 'Back', exact: true}).click();
   await owner.getByRole('button', {name: 'Restore saved test device', exact: true}).click();
+  await candidate.getByRole('button', {name: 'Test optional AT-key storage', exact: true}).click();
+  await candidate.getByRole('button', {name: 'Set up live information', exact: true}).click();
+  await candidate.getByLabel('Personal AT API key', {exact: true}).fill('synthetic-built-lab-key');
+  await candidate.getByRole('button', {name: 'Save key on this device', exact: true}).click();
+  await candidate.getByRole('heading', {name: 'AT key saved on this device', exact: true}).waitFor();
+  assert.equal((await candidate.locator('body').textContent()).includes('synthetic-built-lab-key'), false);
+  assert.deepEqual((await new AxeBuilder({page: candidate}).analyze()).violations.map(v => v.id), []);
+  await candidate.reload();
+  await candidate.getByRole('button', {name: 'Restore saved test device', exact: true}).click();
+  await candidate.getByRole('button', {name: 'Test optional AT-key storage', exact: true}).click();
+  await candidate.getByRole('heading', {name: 'AT key saved on this device', exact: true}).waitFor();
+  assert.equal(await candidate.evaluate(async () => {
+    const wasm = await import('./tg-pairing/hive_wasm.js'); await wasm.default();
+    const store = await (await import('./tg-pairing/storage.mjs')).openBrowserStorage('along-pairing-lab-v1');
+    try {
+      const persona = await store.read('candidate-persona', 'active');
+      const {binding, role} = await (await import('./at-credentials/local-owner.mjs')).loadATBinding({wasm, store, expectedGroup: persona.value.record.group});
+      const vault = (await import('./at-credentials/local-vault.mjs')).openLocalATVault({wasm, store, ...binding});
+      const saved = await store.read('along-at-secret:' + binding.owner, binding.group + ':' + binding.credential);
+      return role === 'owner' && saved.value.wrappingKey.extractable === false
+        && saved.value.ciphertext instanceof Uint8Array
+        && !JSON.stringify(saved.value, (_, value) => typeof value === 'bigint' ? value.toString() : value).includes('synthetic-built-lab-key')
+        && await vault.getKey() === 'synthetic-built-lab-key';
+    } finally { store.close(); }
+  }), true);
+  assert.deepEqual(externalRequests, []);
   await candidate.getByRole('button', {name: 'Back', exact: true}).click();
   await candidate.getByRole('button', {name: 'Remove this test device data…', exact: true}).click();
   assert.deepEqual((await new AxeBuilder({page: candidate}).analyze()).violations.map(v => v.id), []);
@@ -133,6 +164,8 @@ try {
   await candidate.getByRole('button', {name: 'Return to setup', exact: true}).click();
   await candidate.getByRole('button', {name: 'Set up this test device', exact: true}).waitFor();
   assert.equal(await owner.getByRole('button', {name: 'Invite my other device', exact: true}).count(), 1);
+  assert.deepEqual(externalRequests, []);
+  console.log('PASS: actual enrolled device -> AT settings -> encrypted synthetic key save -> reload/restore; no external requests or displayed key.');
   console.log('PASS: explicit lab reset, cancel, synthetic-click refusal, blocked deletion and completed removal; Along journey preferences and offline database preserved.');
   console.log('PASS: standalone static lab setup, pairing and reload/restore; both complete pairing flows exchange public messages through fields, compare codes, enroll over real WebRTC, acknowledge installation and restore encrypted traffic keys. Harness transfers text and confirms codes; no physical-device usability claim.');
 } finally { await browser?.close(); await new Promise(resolve => server.close(resolve)); }

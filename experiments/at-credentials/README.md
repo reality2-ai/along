@@ -596,3 +596,14 @@ persistence as part of the candidate installation transaction. The dedicated
 enrollment test covers reopening those keys and rollback of an interrupted write.
 Earlier traffic-key-persistence limitations describe the previous increment;
 epoch rotation, invitation/device UX and physical connectivity remain open.
+
+
+### Standalone lab integration
+
+The [pairing lab](../tg-pairing/README.md) now mounts `showATSettings` from a
+restored real software identity. Its built-bundle test pairs two devices, uses the
+enrolled identity for explicit AT-owner setup, saves a synthetic key, reloads and
+restores it. The test checks encrypted storage and no external requests. This is
+local credential setup only; cross-device delivery and contextual provider reads
+are not connected to that lab screen or the public app yet. Lab testers use dummy
+text, not a real AT key.
