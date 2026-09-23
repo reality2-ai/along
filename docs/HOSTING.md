@@ -23,8 +23,8 @@ it does not expose arbitrary source files or `.env`.
 
 The standard-library server is suitable for local/private use. For a public live
 proxy, place it behind an appropriate HTTPS deployment, review upstream API terms
-and traffic limits, and retain server-side secret handling. The static build
-expects optional same-origin `api/predictions` and `api/alerts` endpoints.
+and traffic limits, and retain server-side secret handling. The static build can use an explicitly configured live base URL with
+`predictions`, `alerts` and `vehicles` endpoints.
 
 ## Test on a phone over Tailscale
 
@@ -90,7 +90,7 @@ CloudFront's cache policy must permit revalidation of HTML, `sw.js` and the
 unversioned app assets when publishing a release; invalidate that app prefix when
 needed. See [AWS static hosting guidance](https://docs.aws.amazon.com/AmazonS3/latest/userguide/WebsiteHosting.html).
 
-The optional AT backend uses same-origin `api/predictions` and `api/alerts`.
+The optional AT backend exposes `api/predictions`, `api/alerts` and `api/vehicles`.
 CloudFront can route those paths to a protected backend. GitHub Pages cannot run
 that backend: the current static-only build gracefully uses scheduled information.
 Changing hostname creates a different browser storage origin; existing saved
@@ -306,3 +306,41 @@ the run or leaving the detail clears the marker and cancels pending requests.
 No automatic polling, street-tile loading or location permission is involved.
 The browser test uses a real downloaded route with synthetic vehicle records;
 public hosting remains unconfigured, and public version 34 is unchanged.
+
+### Feed-only service for a separate host
+
+`live_proxy:application` is a WSGI entry point that does not import the planner or
+serve files. It exposes only GET `/api/predictions`, `/api/alerts` and
+`/api/vehicles`. Requests cannot select an upstream URL or include query parameters.
+It reuses the server-side AT credential loader and 60-second upstream cache;
+stale data and failures retain the client's scheduled fallback.
+
+Configure the service environment with `AT_API_KEY` through the hosting provider's
+secret mechanism and `ALONG_ALLOWED_ORIGINS=https://reality2.ai`. Additional trusted
+HTTPS origins can be space-separated; paths, wildcards and credentials are not
+accepted. The browser origin is `https://reality2.ai`, not its `/along/` path.
+Responses allow that exact origin, vary on Origin and never enable cookies or
+browser credentials. GET preflights are supported. CORS is browser access control,
+not authentication: other clients can call a public feed proxy. See
+[MDN's CORS guide](https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CORS).
+
+The host must provide HTTPS, a production WSGI server, request/concurrency limits,
+and edge rate limiting suited to the AT subscription allowance. Each worker has
+its own cache, so worker counts and replica counts affect upstream usage. Configure
+proxy access-log retention deliberately; this module does not log requests but
+the hosting stack may. No user addresses, journey choices or GPS positions are
+needed by these endpoints. This is a prepared entry point, not a deployed service
+or a completed load/security review of a hosting stack.
+
+After selecting and deploying the host, set the public `live-config.js` base URL
+to its HTTPS `/api/` location (never a key), allow that host in `connect-src` if
+applying a content-security policy, then test from the actual Pages origin before
+publishing an app update. Validate all three feeds, CORS, expiry, offline fallback,
+AT usage limits and the absence of secrets from the public bundle. The current
+public config remains empty.
+
+A WebAssembly server running in the browser would not protect a shared AT key:
+the code and its inputs are on the user's device. It also cannot provide current
+AT data offline. WASM may help local computation where justified, but it does not
+replace the remote secret-holding role of this proxy. A personal-key mode would
+be a separate feature requiring verification of AT's browser access and terms.
