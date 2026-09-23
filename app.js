@@ -1,3 +1,6 @@
+import {vehiclePosition} from './live-vehicles.js';
+import {contextualAlerts} from './live-context.js';
+import {stopAlertContexts,journeyAlertContexts,aucklandWallEpoch} from './live-time.js';
 import {departurePrediction} from './live-predictions.js';
 import {createLiveClient} from './live-client.js';
 import {liveBaseURL} from './live-config.js';
@@ -9,6 +12,8 @@ import {readPreferences,writePreferences,recordJourney,suggestions,journeyRoutes
 const $=id=>document.getElementById(id);
 const language=createLocalizer({storage:null});
 const liveClient=createLiveClient({baseURL:liveBaseURL,pageURL:import.meta.url});
+const journeyAlertClient=createLiveClient({baseURL:liveBaseURL,pageURL:import.meta.url});
+let journeyAlertSequence=0,journeyAlertTimer=null,journeyPredictionTimer=null;
 $('nearby-live').hidden=!liveClient.configured;
 $('nearby-live-help').hidden=!liveClient.configured;
 const textBindings=new Map();
@@ -110,6 +115,7 @@ function applyLanguage(){
 
 let navDepth=0;
 function showScreen(screen,{focus=true,historyEntry=true}={}){
+  if(state.screen==='follow' && screen!=='follow')resetJourneyAlerts();
   if(screen!=='options'&&state.screen==='options'){state.searchSequence++;$('find').disabled=false;}
   if(state.screen==='nearby' && screen!=='nearby'){state.nearbySequence++;liveClient.cancel();$('nearby-live').disabled=false;$('refresh').disabled=false;}
   state.screen=screen;
@@ -212,20 +218,20 @@ function placeDetail(place){
   const link=detailLink(label,place.name,async()=>{
     const now=explorationTime(),departures=place.placeType==='address'?[]:await ask('stopDetails',{id:place.id,now});
     stopRows=departures;stopNow=now;
-    return `<p>${message(place.placeType==='address'?'place.addressType':'explore.stationStop')}${place.code?' · '+message('place.stopType',{code:place.code}):''}</p>${mapMarkup()}<p>${message('explore.access')}</p>${place.placeType==='address'?'':`<h3>${message('board.heading',{time:clock(now.seconds),date:now.date})}</h3><p>${message('board.limit')}</p><p><a href="https://at.govt.nz/atmobile/" target="_blank" rel="noopener noreferrer">${message('board.at')}</a> <small>${message('board.online')}</small></p>${liveClient.configured?'<button type="button" class="secondary-button" id="stop-live">Check live departures at this stop</button><p class="field-help">Optional online check. Your journey details stay on this device; the server receives your IP address.</p><p id="stop-live-status" class="field-help" role="status"></p>':''}${departures.length?`<div class="departure-board"><table><caption>${message('board.caption')}</caption><thead><tr><th scope="col">${message('board.time')}</th><th scope="col">${message('board.route')}</th><th scope="col">${message('board.destination')}</th></tr></thead><tbody>${departures.map((d,i)=>`<tr><td class="board-time" data-stop-time="${i}">${clock(d.departure)}</td><td>${routeLink(escape(d.route),{routeId:d.routeId,tripId:d.trip},'board-route')}</td><td>${escape(d.headsign)}</td></tr>`).join('')}</tbody></table></div>`:`<p>${message('board.none')}</p>`}`}`;
-  });detailViews.get(id).mount=()=>{mountMap(null,[place]);mountStopLive(id,stopRows,stopNow);};return link;
+    return `<p>${message(place.placeType==='address'?'place.addressType':'explore.stationStop')}${place.code?' · '+message('place.stopType',{code:place.code}):''}</p>${mapMarkup()}<p>${message('explore.access')}</p>${place.placeType==='address'?'':`<h3>${message('board.heading',{time:clock(now.seconds),date:now.date})}</h3><p>${message('board.limit')}</p><p><a href="https://at.govt.nz/atmobile/" target="_blank" rel="noopener noreferrer">${message('board.at')}</a> <small>${message('board.online')}</small></p>${liveClient.configured?'<button type="button" class="secondary-button" id="stop-live">Check live times and alerts</button><p class="field-help">Optional online check. Your journey details stay on this device; the server receives your IP address.</p><p id="stop-live-status" class="field-help" role="status"></p><div id="stop-alerts"></div>':''}${departures.length?`<div class="departure-board"><table><caption>${message('board.caption')}</caption><thead><tr><th scope="col">${message('board.time')}</th><th scope="col">${message('board.route')}</th><th scope="col">${message('board.destination')}</th></tr></thead><tbody>${departures.map((d,i)=>`<tr><td class="board-time" data-stop-time="${i}">${clock(d.departure)}</td><td>${routeLink(escape(d.route),{routeId:d.routeId,tripId:d.trip},'board-route')}</td><td>${escape(d.headsign)}</td></tr>`).join('')}</tbody></table></div>`:`<p>${message('board.none')}</p>`}`}`;
+  });detailViews.get(id).mount=()=>{mountMap(null,[place]);mountStopLive(id,stopRows,stopNow,place);};return link;
 }
-function mountStopLive(id,rows,at){
+function mountStopLive(id,rows,at,place){
   const button=$('stop-live');if(!button)return;
   const client=createLiveClient({baseURL:liveBaseURL,pageURL:import.meta.url});
-  let timer=null,sequence=0;
+  let timer=null,alertTimer=null,sequence=0;
   const caption=$('detail-body').querySelector('.departure-board caption'),scheduledCaption=caption?.textContent;
   const reset=()=>{if(caption)caption.textContent=scheduledCaption;document.querySelectorAll('[data-stop-time]').forEach((cell,i)=>{cell.textContent=clock(rows[i].departure);});};
-  detailViews.get(id).dispose=()=>{sequence++;clearTimeout(timer);client.cancel();};
+  detailViews.get(id).dispose=()=>{sequence++;clearTimeout(timer);clearTimeout(alertTimer);client.cancel();};
   button.onclick=async()=>{
-    const request=++sequence;clearTimeout(timer);reset();button.disabled=true;
+    const request=++sequence;clearTimeout(timer);clearTimeout(alertTimer);$('stop-alerts').replaceChildren();reset();button.disabled=true;
     $('stop-live-status').textContent='Checking current AT predictions…';
-    const feed=await client.read('predictions',{requested:true});
+    const [feed,alerts]=await Promise.all([client.read('predictions',{requested:true}),client.read('alerts',{requested:true})]);
     if(request!==sequence || !button.isConnected)return;
     button.disabled=false;
     let matched=0;
@@ -245,6 +251,18 @@ function mountStopLive(id,rows,at){
     });
     if(matched && caption)caption.textContent='Departures · scheduled and live';
     $('stop-live-status').textContent=!feed.available?'Current predictions unavailable. Showing scheduled departures.':matched?'Live information matched to '+matched+' departures. Other times remain scheduled.':'No live match for these departures. Times remain scheduled.';
+    const alertBox=$('stop-alerts');
+    if(alerts.available){
+      const relevant=contextualAlerts(alerts,stopAlertContexts(place,rows,at));
+      $('stop-live-status').textContent+=' '+relevant.length+' matching service update'+(relevant.length===1?'':'s')+'.';
+      if(relevant.length){
+        const disclosure=document.createElement('details'),summary=document.createElement('summary');
+        summary.textContent=relevant.length+' service update'+(relevant.length===1?'':'s')+' for this stop';disclosure.append(summary);
+        for(const alert of relevant){const article=document.createElement('article'),heading=document.createElement('h3'),body=document.createElement('p');article.className='alert-item';heading.textContent=alert.title;body.textContent=alert.description;article.append(heading,body);disclosure.append(article);}
+        alertBox.append(disclosure);
+      }else alertBox.textContent='No matching alerts returned for this stop and time.';
+      alertTimer=setTimeout(()=>{if(button.isConnected)alertBox.textContent='Service updates have expired. Check again for current information.';},Math.max(0,(alerts.updated+180-Date.now()/1000)*1000));
+    }else alertBox.textContent='Service alerts unavailable. Check AT for disruptions.';
     if(feed.available)timer=setTimeout(()=>{if(button.isConnected){reset();$('stop-live-status').textContent='Live information has expired. Showing scheduled departures.';}},Math.max(0,(feed.updated+180-Date.now()/1000)*1000));
   };
 }
@@ -329,11 +347,38 @@ function routeLink(label,args,className='detail-link'){
 }
 function routeVariantMarkup(data,v){
   const run=v.runs.find(r=>r.trip===v.selectedTrip)||v.runs[0];
-  return `<p>${escape(data.date)} · ${message('explore.scheduled')}</p>${mapMarkup()}<p>${message(v.shape?'explore.geometry':'explore.noGeometry')}</p><label class="preference-field">${message('explore.run')}<select id="route-run">${v.runs.map(r=>`<option value="${escape(r.trip)}" ${r.trip===run.trip?'selected':''}>${clock(r.departure)}</option>`).join('')}</select></label><label class="preference-field">${message('explore.filter')}<input id="route-stop-filter" data-i18n-placeholder="explore.filterHint" type="search" placeholder="For example, Symonds"></label><p class="field-help">${message('explore.filterHelp')}</p><p id="route-match-status" role="status"></p><ol class="route-stop-list">${run.stops.map((s,i)=>`<li data-stop-name="${escape(s.stop.name.toLowerCase())}"><span class="stop-schedule">${clock(s.time)}</span> ${placeDetail(s.stop)}${i===run.stops.length-1?message('explore.lastStop'):!s.pickup?message('explore.noPickup'):''}</li>`).join('')}</ol>`;
+  return `<p>${escape(data.date)} · ${message('explore.scheduled')}</p>${mapMarkup()}${liveClient.configured?'<button type="button" class="secondary-button" id="route-vehicle">Check this service’s current position</button><p class="field-help">Optional online check for the selected departure. Your route selection stays on this device; the server receives your IP address.</p><p id="route-vehicle-status" class="field-help" role="status"></p>':''}<p>${message(v.shape?'explore.geometry':'explore.noGeometry')}</p><label class="preference-field">${message('explore.run')}<select id="route-run">${v.runs.map(r=>`<option value="${escape(r.trip)}" ${r.trip===run.trip?'selected':''}>${clock(r.departure)}</option>`).join('')}</select></label><label class="preference-field">${message('explore.filter')}<input id="route-stop-filter" data-i18n-placeholder="explore.filterHint" type="search" placeholder="For example, Symonds"></label><p class="field-help">${message('explore.filterHelp')}</p><p id="route-match-status" role="status"></p><ol class="route-stop-list">${run.stops.map((s,i)=>`<li data-stop-name="${escape(s.stop.name.toLowerCase())}"><span class="stop-schedule">${clock(s.time)}</span> ${placeDetail(s.stop)}${i===run.stops.length-1?message('explore.lastStop'):!s.pickup?message('explore.noPickup'):''}</li>`).join('')}</ol>`;
+}
+function mountVehicle(view){
+  const button=$('route-vehicle'),status=$('route-vehicle-status'),map=contextMap;
+  if(!button||!map)return;
+  const client=createLiveClient({baseURL:liveBaseURL,pageURL:import.meta.url});
+  let sequence=0,timer=null,marker=null;
+  const clear=()=>{clearTimeout(timer);if(marker){map.removeLayer(marker);marker=null;}};
+  view.dispose=()=>{sequence++;client.cancel();clear();};
+  button.onclick=async()=>{
+    const request=++sequence;clear();client.cancel();button.disabled=true;status.textContent='Checking this service’s current position…';
+    const run=view.variant.runs.find(r=>r.trip===view.variant.selectedTrip)||view.variant.runs[0];
+    const startTime=[Math.floor(run.departure/3600),Math.floor(run.departure%3600/60),run.departure%60].map(n=>String(n).padStart(2,'0')).join(':');
+    const feed=await client.read('vehicles',{requested:true});
+    if(request!==sequence||!button.isConnected||contextMap!==map)return;
+    button.disabled=false;
+    const position=vehiclePosition(feed,{trip:run.trip,routeId:view.routeData.id,serviceDate:view.routeData.date.replaceAll('-',''),startTime});
+    if(!position.available){status.textContent='No current position could be matched to this departure. The scheduled route is still shown.';return;}
+    const label='Vehicle position reported at '+clock(aucklandNow(new Date(position.updated*1000)).seconds);
+    marker=L.circleMarker([position.lat,position.lon],{radius:10,color:'#fff',weight:3,fillColor:'#884400',fillOpacity:1}).addTo(map).bindTooltip(label,{permanent:true,direction:'top'});
+    const nearest=run.stops.map(({stop})=>({stop,distance:map.distance([position.lat,position.lon],[stop.lat,stop.lon])})).sort((a,b)=>a.distance-b.distance)[0];
+    const location=nearest?' About '+Math.round(nearest.distance)+' metres in a straight line from '+nearest.stop.name+'.':'';
+    status.textContent=label+'.'+location+' This is a reported location, not an arrival prediction.';
+    // The check is explicit: include the marker without discarding route context.
+    map.fitBounds(map.getBounds().extend([position.lat,position.lon]),{animate:false,padding:[25,25]});
+    timer=setTimeout(()=>{if(request===sequence){clear();status.textContent='The vehicle position has expired. Check again for a current position.';}},Math.max(0,(position.expires-Date.now()/1000)*1000));
+  };
 }
 function mountVariant(view){
   const v=view.variant;if(!v)return;
   mountMap(v.shape,v.stops.map(s=>s.stop));
+  mountVehicle(view);
   $('route-run').onchange=()=>{v.selectedTrip=$('route-run').value;view.markup=routeVariantMarkup(view.routeData,v);displayDetail(activeDetail);$('route-run')?.focus();};
   const filter=()=>{const q=$('route-stop-filter').value.toLowerCase().trim();let count=0;document.querySelectorAll('.route-stop-list li').forEach(li=>{li.hidden=!li.dataset.stopName.includes(q);if(!li.hidden)count++;});if(q)translated('route-match-status','explore.matches',{count});else $('route-match-status').textContent='';view.filter=q;};
   $('route-stop-filter').value=view.filter||'';$('route-stop-filter').oninput=filter;filter();
@@ -359,7 +404,9 @@ function renderJourneys(){
   document.querySelectorAll('[data-follow]').forEach(button=>button.onclick=()=>{state.selectedJourney=journeys[Number(button.dataset.follow)];state.legIndex=0;$('full-itinerary').open=false;renderFollow();showScreen('follow');});
 }
 function renderFollow(){
+  resetJourneyAlerts();
   const journey=state.selectedJourney,leg=journey.legs[state.legIndex];
+  $('journey-live').hidden=!journeyAlertClient.configured || !journey.legs.slice(state.legIndex).some(l=>l.trip);
   translated('step-count','follow.step',{step:state.legIndex+1,total:journey.legs.length});
   $('current-step').innerHTML=legMarkup(leg);
   $('itinerary-legs').innerHTML=journey.legs.map(legMarkup).join('');
@@ -369,6 +416,52 @@ function renderFollow(){
   const saved=!!previousSave&&sameRoutes(previousSave.savedRoutes,journeyRoutes(journey));
   translated('prefer-services',saved?'service.preferred':previousSave?.savedRoutes?'service.instead':'service.prefer');$('prefer-services').setAttribute('aria-pressed',String(saved));
 }
+function resetJourneyAlerts(){
+  journeyAlertSequence++;clearTimeout(journeyAlertTimer);clearTimeout(journeyPredictionTimer);journeyAlertClient.cancel();
+  $('journey-prediction-results').replaceChildren();
+  $('journey-alert-check').disabled=false;$('journey-alert-status').textContent='';$('journey-alert-results').replaceChildren();
+}
+$('journey-alert-check').onclick=async()=>{
+  resetJourneyAlerts();const sequence=journeyAlertSequence;
+  const legs=state.selectedJourney.legs.slice(state.legIndex),date=state.lastSearch.date;
+  const contexts=journeyAlertContexts(legs,date);
+  $('journey-alert-check').disabled=true;$('journey-alert-status').textContent='Checking relevant service updates…';
+  const [feed,predictions]=await Promise.all([journeyAlertClient.read('alerts',{requested:true}),journeyAlertClient.read('predictions',{requested:true})]);
+  if(sequence!==journeyAlertSequence||state.screen!=='follow')return;
+  $('journey-alert-check').disabled=false;
+  const predictionBox=$('journey-prediction-results');
+  let matched=0;
+  for(const leg of legs.filter(l=>l.trip)){
+    const prediction=departurePrediction(predictions,{...leg,stop:leg.from});
+    if(prediction.status==='scheduled')continue;
+    let label=prediction.status==='cancelled'?'Cancelled':prediction.status==='skipped'?'Not stopping at your boarding stop':'';
+    if(prediction.status==='predicted'){
+      const scheduled=aucklandWallEpoch(date,leg.departure);
+      const epoch=prediction.epoch??(scheduled===null?null:scheduled+prediction.delay);
+      if(epoch===null)continue;
+      const expected=aucklandNow(new Date(epoch*1000));
+      label='Expected '+clock(expected.seconds)+(expected.date!==date?' · '+expected.date:'');
+    }
+    matched++;
+    const item=document.createElement('p');
+    item.textContent=leg.route+' from '+leg.from.name+': '+label+'. Scheduled '+clock(leg.departure)+'.';
+    predictionBox.append(item);
+  }
+  if(matched){
+    const stamp=document.createElement('p');stamp.className='field-help';
+    stamp.textContent='Live feed updated '+clock(aucklandNow(new Date(predictions.updated*1000)).seconds)+'. Your scheduled itinerary has not changed.';predictionBox.append(stamp);
+    journeyPredictionTimer=setTimeout(()=>{if(sequence===journeyAlertSequence)predictionBox.textContent='Live predictions have expired. Your scheduled itinerary is still here.';},Math.max(0,(predictions.updated+180-Date.now()/1000)*1000));
+  }else predictionBox.textContent=predictions.available?'No live departure match for the remaining steps. Times remain scheduled.':'Live departure predictions unavailable. Times remain scheduled.';
+  if(!feed.available){$('journey-alert-status').textContent='Service updates unavailable. Your scheduled journey is still here.';return;}
+  const alerts=contextualAlerts(feed,contexts);
+  $('journey-alert-status').textContent=alerts.length?alerts.length+' matching service update'+(alerts.length===1?'':'s')+'. Your chosen journey has not changed.':'No matching service updates returned. This does not confirm that every service is running normally.';
+  if(alerts.length){
+    const details=document.createElement('details'),summary=document.createElement('summary');summary.textContent='Service updates for your remaining journey';details.append(summary);
+    for(const alert of alerts){const article=document.createElement('article'),h=document.createElement('h3'),p=document.createElement('p');article.className='alert-item';h.textContent=alert.title;p.textContent=alert.description;article.append(h,p);details.append(article);}
+    $('journey-alert-results').append(details);
+  }
+  journeyAlertTimer=setTimeout(()=>{if(sequence===journeyAlertSequence){$('journey-alert-results').replaceChildren();$('journey-alert-status').textContent='Service updates have expired. Check again for current information.';}},Math.max(0,(feed.updated+180-Date.now()/1000)*1000));
+};
 $('next-leg').onclick=()=>{if(state.legIndex===state.selectedJourney.legs.length-1){showScreen('arrived');return;}state.legIndex++;renderFollow();$('flow-title').focus();};
 $('previous-leg').onclick=()=>{if(state.legIndex>0)state.legIndex--;renderFollow();$('flow-title').focus();};
 function renderSavedPlaces(){

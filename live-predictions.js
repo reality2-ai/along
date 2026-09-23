@@ -35,6 +35,7 @@ export function departurePrediction(feed,departure,{now=Date.now()/1000}={}){
 // (including the final arrival), never only the current two-hour search window.
 export function tripStopMetadata(data,stops,tripIds){
   const wanted=new Map([...tripIds].map(id=>[id,{visits:new Map(),first:Infinity,last:-Infinity,end:null}]));
+  if(!wanted.size)return wanted;
   const c=data.connections;
   for(let i=0;i<c.length;i+=7){
     const run=wanted.get(data.trips[c[i]][0]);if(!run)continue;
