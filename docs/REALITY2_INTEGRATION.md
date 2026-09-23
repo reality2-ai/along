@@ -42,8 +42,11 @@ The lab asks for dummy key text only; provider reads and peer key delivery are
 not connected to this screen. A restored-settings provider adapter now connects
 the accepted AT binding to the vault, requiring a fresh owner-policy callback for
 recipient use. Actual authenticated peer tests cover simultaneous feed checks and
-removal before provider I/O; provider responses remain mocked. The contextual
-public UI still needs this controller wired in.
+removal before provider I/O; provider responses remain mocked. A saved-owner connection controller now derives the recipient’s peer from its
+accepted binding, establishes authenticated transport and dispatches policy replies
+internally. Browser peer checks cover parallel feeds, owner substitution refusal,
+remote removal before fetching and peer closure. The contextual public UI still
+needs this controller wired in.
 Manual transfer is currently cumbersome, and the one-minute invitation lifetime
 needs real usability assessment. Public deployment, simpler transfer, group epoch
 updates/removal, saved-journey sync and physical-device validation remain work.

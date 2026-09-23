@@ -632,3 +632,24 @@ missing-synchronizer refusal without fetching, simultaneous predictions/alerts,
 queued cancellation, and learning owner removal before another provider request.
 Provider responses are mocked. These checks do not enable public live information
 or establish physical-device reachability.
+
+
+### Saved-owner connection controller
+
+`policy-session.mjs` now composes saved identity restore, authenticated peer
+transport, nonce-bound policy exchange and `createSavedATClient`. A recipient
+cannot supply a replacement peer ID: the controller derives the owner from its
+previously accepted AT binding and checks that binding on each read. The owner
+selects an existing group member; the peer session authenticates the member key.
+The controller accepts only policy-check messages for its role and closes with
+the peer or caller signal. It does not enroll, grant access, transfer an AT key,
+or create an authorization lease.
+
+The real-peer browser check creates fresh owner/recipient controllers from the
+stored records, exchanges their connection descriptions and authenticates both.
+Parallel predictions/alerts each receive an actual owner reply before mocked AT
+I/O. It checks recipient owner-substitution refusal, wrong-role refusal, no fetch
+merely because the connection authenticated, discovery of owner removal before
+another fetch, and loss of provider access when the owner connection closes.
+Manual signaling and physical-device reachability remain separate work. This
+controller is still experimental and is not loaded by the public journey app.

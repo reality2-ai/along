@@ -8,7 +8,7 @@ const sources = new Map();
 for (const name of ['storage.mjs', 'membership.mjs', 'certificate.mjs', 'peer-session.mjs', 'peer-link.mjs', 'challenge.mjs', 'session-statement.mjs', 'enrollment-session.mjs', 'invitation-journal.mjs', 'enrollment-link.mjs', 'enrollment-exchange.mjs', 'enrollment-protection.mjs', 'invitation.mjs']) sources.set('/' + name, await readFile(join(process.env.R2_BROWSER_DIR, name)));
 for (const name of ['../tg-pairing/initial-persona.mjs', '../tg-pairing/software-persona.mjs', '../tg-pairing/core-candidate-session.mjs', '../tg-pairing/software-traffic.mjs', '../tg-pairing/enrollment-payloads.mjs', '../tg-pairing/enrollment-profile.mjs', '../tg-pairing/installation-receipt.mjs', '../tg-pairing/stored-claim.mjs', '../tg-pairing/local-persona.mjs', 'local-owner.mjs', 'owner-policy.mjs', 'owner-access-view.mjs', 'owner-policy-send.mjs', 'policy-sync.mjs', 'owner-delivery.mjs', 'delivery-history.mjs', 'delivery-recovery.mjs', 'remote-owner.mjs', 'policy-update.mjs', 'policy-update-message.mjs', 'remote-owner-view.mjs', 'settings-view.mjs', 'key-replacement-view.mjs', 'credential-view.mjs', '../tg-pairing/comparison.css', '../tg-pairing/local-persona-session.mjs', 'policy.mjs', 'policy-store.mjs', 'local-vault.mjs', 'delivery-ack.mjs', 'delivery-message.mjs']) sources.set('/' + name.split('/').pop(), await readFile(new URL(name, import.meta.url)));
 for (const name of ['hive_wasm.js', 'hive_wasm_bg.wasm']) sources.set('/' + name, await readFile(join(process.env.R2_WASM_DIR, name)));
-for (const name of ['saved-client.mjs', 'live-client.mjs', '../../public/at-client.js', '../../public/live-client.js']) sources.set('/' + name.split('/').pop(), await readFile(new URL(name, import.meta.url)));
+for (const name of ['policy-session.mjs', 'saved-client.mjs', 'live-client.mjs', '../../public/at-client.js', '../../public/live-client.js']) sources.set('/' + name.split('/').pop(), await readFile(new URL(name, import.meta.url)));
 const server = createServer((req, res) => {
   const path = '/' + req.url.split('/').pop();
   res.setHeader('Content-Type', req.url.endsWith('.wasm') ? 'application/wasm' : req.url.endsWith('.css') ? 'text/css' : sources.has(path) ? 'text/javascript' : 'text/html');
@@ -365,6 +365,22 @@ try {
       check(concurrent.every(result => result.available) && gatedFetches === 3, 'parallel feeds each perform a fresh serialized owner check');
       check(!policyCheckError, 'policy exchange completed without dispatch error');
       check(await denied(() => policySync.receive(lastPolicyResponse)), 'already consumed response refused');
+      const {openATPolicySession} = await import('./policy-session.mjs');
+      check(await denied(() => openATPolicySession({wasm, store: receiver.store, expectedGroup: group, role: 'recipient', peer: receiver.subject})), 'recipient cannot substitute an incoming owner ID');
+      check(await denied(() => openATPolicySession({wasm, store: receiver.store, expectedGroup: group, role: 'owner', peer: owner.subject})), 'recipient cannot open owner controller');
+      let controllerFetches = 0;
+      const ownerController = await openATPolicySession({wasm, store: owner.store, expectedGroup: group, role: 'owner', peer: receiver.subject});
+      const recipientController = await openATPolicySession({wasm, store: receiver.store, expectedGroup: group, role: 'recipient', now: () => 1001,
+        fetcher: async (url, options) => {
+          controllerFetches++; check(options.headers['Ocp-Apim-Subscription-Key'] === 'synthetic-peer-delivery', 'controller obtains locally encrypted key after actual owner check');
+          return {ok: true, json: async () => ({header: {timestamp: 1000}, entity: []})};
+        }});
+      const reconnectOffer = await recipientController.offer();
+      await recipientController.accept(await ownerController.accept(reconnectOffer));
+      await Promise.all([ownerController.authenticated(), recipientController.authenticated()]);
+      check(!(await recipientController.read('alerts')).available && controllerFetches === 0, 'authenticated connection is not automatic provider consent');
+      const controllerResults = await Promise.all(['alerts', 'predictions'].map(kind => recipientController.read(kind, {requested: true})));
+      check(controllerResults.every(result => result.available) && controllerFetches === 2, 'controller routes authenticated nonce-bound policy replies for parallel feeds');
       const removalView = showOwnerDeviceAccess(document.querySelector('#consent'), ownerViewOptions);
       await removalView.ready; await window.exerciseOwnerAccess('remove');
       const removalReceipt = await removalView.completed;
@@ -373,10 +389,19 @@ try {
       removalView.dispose();
       // Do not push removal: the recipient must discover it before provider I/O.
       check(await receiverVault.getKey() === 'synthetic-peer-delivery', 'recipient has not yet learned removal');
+      check(!(await recipientController.read('vehicles', {requested: true})).available && controllerFetches === 2, 'controller learns owner removal before provider fetch');
       check(!(await guardedLive.read('vehicles', {requested: true})).available && gatedFetches === 3,
-        'catch-up learns removal before sending another provider request');
+        'restored adapter preserves learned removal before another provider request');
       check(await denied(() => receiverVault.getKey()), 'catch-up saved owner removal');
       guardedLive.close();
+      check(!(await recipientController.read('vehicles', {requested: true})).available && controllerFetches === 2, 'controller refuses locally removed recipient before provider fetch');
+      ownerController.close();
+      await new Promise(resolve => {
+        if (recipientController.signal.aborted) resolve();
+        else recipientController.signal.addEventListener('abort', resolve, {once: true});
+      });
+      check(!(await recipientController.read('alerts', {requested: true})).available && controllerFetches === 2, 'peer closure ends controller provider access');
+      recipientController.close();
       holdPolicyChecks = true;
       const abortCheck = new AbortController();
       const waitingCheck = policySync.check({signal: abortCheck.signal});
