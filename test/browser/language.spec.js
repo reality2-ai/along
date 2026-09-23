@@ -163,3 +163,19 @@ test('Māori Settings retains privacy explanations and working learning controls
   await expect(page.locator('#storage-message')).toHaveText('Your journey history and saved routes have been cleared.');
   await expect(page.locator('#learning-enabled')).not.toBeChecked();
 });
+
+test('nearby comparisons retain scheduled labels and controls in Māori offline',async({page,context})=>{
+  await page.goto('/');await expect(page.locator('#data-status')).toContainText('offline ready',{timeout:90000});
+  await switchTo(page,'mi');await context.setOffline(true);
+  await page.locator('#nearby-start').click();await choose(page,'origin','Waitemata Train');
+  await page.locator('#origin-next').click();await page.locator('#find').click();
+  await expect(page.locator('#departures .stop-card').first()).toBeVisible({timeout:30000});
+  await expect(page.locator('#departures')).toContainText('Kua whakaritea');
+  await expect(page.locator('#departures')).not.toContainText('● Matapae o nāianei');
+  await page.locator('#nearby-panel .journey-notes > summary').click();
+  await expect(page.locator('#nearby-note')).toContainText('kāore ngā whakahoutanga wā-tūturu e hono ana');
+  await switchTo(page,'en');await expect(page.locator('#departures')).toContainText('Scheduled');
+  await expect(page.locator('#nearby-note')).toContainText('live updates are not connected');
+  await page.locator('#refresh').click();await expect(page.locator('#refresh')).toBeEnabled();
+  await expect(page.locator('#departures .stop-card').first()).toBeVisible();
+});

@@ -784,3 +784,150 @@ Object.assign(messages, {
     "mi": "Kua mukua tō hītori haerenga me ō ara kua tiakina."
   }
 });
+
+Object.assign(messages, {
+  "nearby.heading": {
+    "en": "Which stop should I head to?",
+    "mi": "Me haere ahau ki tēhea tūnga?"
+  },
+  "nearby.refresh": {
+    "en": "Refresh nearby departures",
+    "mi": "Whakahoutia ngā wehenga e tata ana"
+  },
+  "nearby.filter": {
+    "en": "Filter departures",
+    "mi": "Tātarihia ngā wehenga"
+  },
+  "nearby.show": {
+    "en": "Show",
+    "mi": "Whakaaturia"
+  },
+  "nearby.all": {
+    "en": "All transport",
+    "mi": "Ngā momo waka katoa"
+  },
+  "nearby.buses": {
+    "en": "Buses",
+    "mi": "Ngā pahi"
+  },
+  "nearby.trains": {
+    "en": "Trains",
+    "mi": "Ngā tereina"
+  },
+  "nearby.ferries": {
+    "en": "Ferries",
+    "mi": "Ngā waka kōpiko"
+  },
+  "nearby.direct": {
+    "en": "Direct to my destination",
+    "mi": "Haere tōtika ki tōku ūnga"
+  },
+  "nearby.about": {
+    "en": "About these departures",
+    "mi": "Mō ēnei wehenga"
+  },
+  "nearby.more": {
+    "en": "Show more nearby stops",
+    "mi": "Whakaaturia ētahi atu tūnga e tata ana"
+  },
+  "nearby.fewer": {
+    "en": "Show fewer stops",
+    "mi": "Whakaaturia kia iti ake ngā tūnga"
+  },
+  "nearby.context": {
+    "en": "Within 800 m of {place}. Earliest departures with estimated time to walk are shown first.",
+    "mi": "Kei roto i te 800 m o {place}. Ka whakaaturia tuatahitia ngā wehenga wawe me te wā hīkoi kua whakatau tatahia."
+  },
+  "nearby.loading": {
+    "en": "Checking the stops around you…",
+    "mi": "Kei te tirotiro i ngā tūnga e tata ana ki a koe…"
+  },
+  "nearby.chooseDestination": {
+    "en": "Choose a destination to compare direct services heading there.",
+    "mi": "Kōwhiria he ūnga hei whakataurite i ngā ratonga e haere tōtika ana ki reira."
+  },
+  "nearby.start": {
+    "en": "Start with where you are.",
+    "mi": "Tīmata ki tō wāhi o nāianei."
+  },
+  "nearby.startHelp": {
+    "en": "Choose a starting stop, or use your location to compare services from stops around you.",
+    "mi": "Kōwhiria he tūnga tīmatanga, whakamahia rānei tō tauwāhi hei whakataurite i ngā ratonga mai i ngā tūnga e tata ana ki a koe."
+  },
+  "nearby.checked": {
+    "en": "Checked at {time}.",
+    "mi": "I tirohia i te {time}."
+  },
+  "nearby.liveNote": {
+    "en": "Live predictions where available.",
+    "mi": "Ngā matapae o nāianei ina wātea."
+  },
+  "nearby.scheduledNote": {
+    "en": "Scheduled departures · live updates are not connected.",
+    "mi": "Ngā wehenga kua whakaritea · kāore ngā whakahoutanga wā-tūturu e hono ana."
+  },
+  "nearby.refreshNote": {
+    "en": "Refresh when you need updated departure estimates.",
+    "mi": "Whakahoutia ina hiahia koe ki ngā whakatau tata wehenga hou."
+  },
+  "nearby.directNote": {
+    "en": "Showing direct services to your selected destination.",
+    "mi": "Kei te whakaaturia ngā ratonga tōtika ki tō ūnga kua kōwhiria."
+  },
+  "nearby.mapped": {
+    "en": "Walking times follow mapped paths at your selected pace, with estimated access links.",
+    "mi": "Ka whai ngā wā hīkoi i ngā ara kua maherehia i tō tere kua kōwhiria, me ngā ara urunga kua whakatau tatahia."
+  },
+  "nearby.estimated": {
+    "en": "Walking times use distance estimates at your selected pace, not walking directions.",
+    "mi": "Ka whakamahia ngā whakatau tata tawhiti i tō tere kua kōwhiria mō ngā wā hīkoi, ehara i ngā tohutohu hīkoi."
+  },
+  "nearby.buffer": {
+    "en": "Check crossings and station access. “Tight” allows a two-minute boarding buffer.",
+    "mi": "Tirohia ngā whakawhitinga me te urunga ki te teihana. Mō te “Poto te wā”, ka tāpirihia he rua meneti mō te ekenga."
+  },
+  "nearby.none": {
+    "en": "No upcoming services found.",
+    "mi": "Kāore i kitea he ratonga e whai ake nei."
+  },
+  "nearby.noneDirect": {
+    "en": "No upcoming direct services found.",
+    "mi": "Kāore i kitea he ratonga tōtika e whai ake nei."
+  },
+  "nearby.try": {
+    "en": "Try another stop, a different transport mode.",
+    "mi": "Whakamātauria he tūnga kē, he momo waka kē rānei."
+  },
+  "nearby.tryDirect": {
+    "en": "Try another stop, a different transport mode or switch off the direct-service filter.",
+    "mi": "Whakamātauria he tūnga kē, he momo waka kē rānei, whakawetohia rānei te tātari ratonga tōtika."
+  },
+  "nearby.window": {
+    "en": "We look up to two hours ahead within 800 metres, and up to 20 minutes along mapped walking paths when downloaded.",
+    "mi": "Ka tirohia ngā hāora e rua e whai ake nei i roto i te 800 mita, ā, tae atu ki te 20 meneti mā ngā ara hīkoi kua maherehia ina kua tikiakehia."
+  },
+  "nearby.first": {
+    "en": "First stop to consider",
+    "mi": "Te tūnga tuatahi hei whakaaro māu"
+  },
+  "nearby.distance": {
+    "en": "Stop {code} · {metres} m away",
+    "mi": "Tūnga {code} · {metres} m te tawhiti"
+  },
+  "nearby.walk": {
+    "en": "↗ {minutes} min walk est.",
+    "mi": "↗ {minutes} meneti hīkoi, whakatau tata"
+  },
+  "nearby.tight": {
+    "en": " · Tight on estimated walking time",
+    "mi": " · Poto te wā mō te hīkoi kua whakatau tatahia"
+  },
+  "nearby.live": {
+    "en": "● Live prediction",
+    "mi": "● Matapae o nāianei"
+  },
+  "nearby.scheduled": {
+    "en": "Scheduled",
+    "mi": "Kua whakaritea"
+  }
+});

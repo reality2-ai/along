@@ -21,7 +21,7 @@ this audit. Later public-hosting work supplements that brief.
 | 8. Course material | Thematic analysis, six lessons, exercises, assessment rubric and negative-case/contextual-map refinements | Course effectiveness has not been studied |
 | 9. Release checks and handover | 24 JavaScript and 4 Python tests; four real-data browser scenarios; static/update suites; source/archive/live asset comparison | Remaining physical and spoken screen-reader checks prevent claiming full goal completion |
 
-| 10. English / Te reo Māori | Device-local language module, 216-phrase draft catalogue and review sheet; flow selector connected in development; five foundation and two language-browser tests pass | Remaining screen text and full catalogue/guides, subpath/update checks, broader language/accessibility tests and fluent-speaker review |
+| 10. English / Te reo Māori | Device-local language module, 252-phrase draft catalogue and review sheet; flow selector connected in development; five foundation and two language-browser tests pass | Remaining screen text and full catalogue/guides, subpath/update checks, broader language/accessibility tests and fluent-speaker review |
 
 | 11. Contextual repository feedback | Added to goal; not implemented | Accessible bilingual feedback UI, explicit public submission, minimal disclosed context, offline drafts, receipt/duplicate checks and next-round issue review |
 
@@ -389,3 +389,10 @@ and five localisation unit tests passed. The Settings check covers 320-pixel
 reflow, axe, expanded course links, clear-history feedback and preserving paused
 learning when switching back to English. AI-generated wording remains explicitly
 unreviewed. There were no open repository issues in this round's feedback check.
+
+Nearby comparisons now have draft Māori headings, filters, walking estimates,
+tight-connection explanations, empty states and scheduled/live labels. The English
+mobile nearby scenario and Māori offline comparison scenario passed, as did the
+five localisation unit tests. Offline refresh retains scheduled departures and
+does not display a live-prediction label. Switching back to English preserves the
+displayed comparison. No open repository feedback issues were present this round.
