@@ -73,7 +73,7 @@ try {
     const receiverVault = openLocalATVault({wasm, store: receiver.store, ...binding});
     let sending, receiving, request, resolve, reject, messages = 0, policyReply, policyError;
     const installed = new Promise((yes, no) => { resolve = yes; reject = no; });
-    let timeout, acknowledgmentContext, confirm, rejectConfirmation;
+    let timeout, acknowledgmentContext, confirm, rejectConfirmation, dropAcknowledgment = true;
     const confirmed = new Promise((yes, no) => { confirm = yes; rejectConfirmation = no; });
     void confirmed.catch(() => {});
     try {
@@ -97,6 +97,7 @@ try {
         role: 'answer', onMessage: async nonce => {
           try {
             if (acknowledgmentContext) {
+              if (dropAcknowledgment) { dropAcknowledgment = false; return; }
               const context = acknowledgmentContext; acknowledgmentContext = undefined;
               await verifyDeliveryAck(nonce, context);
               confirm(await history.confirm(nonce, {signal: sending.signal})); return;
@@ -151,6 +152,11 @@ try {
       await receiving.send(request.nonce);
       const result = await Promise.race([installed, new Promise((_, no) => { timeout = setTimeout(() => no(new Error('Delivery timeout')), 15000); })]);
       check(result.status === 'credential-saved' && messages === 1, 'one authenticated delivery installed');
+      const pendingStatus = await history.read();
+      check(pendingStatus.status === 'pending', 'lost acknowledgment leaves owner uncertain');
+      // Harness supplies the saved owner's request context. Full reconnect
+      // request framing/dispatch is separate from this storage-recovery check.
+      await receiving.send(await receiverVault.recoverAcknowledgment(pendingStatus.context, {signal: receiving.signal}));
       clearTimeout(timeout);
       const acknowledgment = await Promise.race([confirmed, new Promise((_, no) => {
         timeout = setTimeout(() => no(new Error('Acknowledgment timeout')), 15000);

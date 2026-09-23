@@ -409,7 +409,8 @@ and input-snapshot checks; receiver tests distinguish committed from interrupted
 cancelled and superseded installations. This is a recipient's authenticated report
 of a local commit, not proof of hardware sealing or resistance to physical power
 loss. The durable sender journal below preserves the latest result;
-lost-acknowledgment recovery and public status presentation remain unfinished.
+local receipt recovery is described below; reconnect dispatch and public status
+presentation remain unfinished.
 
 ## Durable sender status
 
@@ -425,5 +426,22 @@ The owner sender and WebRTC test now use this journal, including confirmation
 reopening in a fresh document. `delivery-history.test.mjs` passes unsolicited,
 tampered, stale and replayed receipt refusal, concurrent confirmation, cancellation
 and stored-signature corruption checks. These are historical delivery facts,
-never current grants or evidence of provider acceptance. Lost-acknowledgment
-recovery and user-facing delivery-status presentation remain open.
+never current grants or evidence of provider acceptance.
+
+## Recovering a lost acknowledgment
+
+`vault.recoverAcknowledgment(context)` can recreate a public receipt after the
+recipient document reopens. It requires the exact consumed request journal and
+matching encrypted record, signs with the restored local member, and rechecks
+storage revisions before returning. It neither decrypts nor rewrites the key,
+and does not grant or restore permission to use it.
+
+The receiver test verifies recovery in a fresh document, unchanged secret storage,
+and refusal for a wrong nonce, missing journal, cancellation or a record changing
+during recovery. The WebRTC test deliberately drops the first acknowledgment,
+checks that the owner remains pending, then confirms a recovered receipt through
+the authenticated channel. That test supplies the public recovery context through
+the harness and uses the existing connection: it does not yet implement recovery
+request framing or dispatch over a newly established session. The reconnect
+controller must authenticate the owner and match the receipt to its saved pending
+delivery. User-facing recovery and physical-device reconnection remain open.

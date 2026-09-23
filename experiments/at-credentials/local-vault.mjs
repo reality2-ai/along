@@ -5,7 +5,7 @@ import {openCredentialPolicyStore} from './policy-store.mjs';
 import {openMembership} from '../tg-pairing/membership.mjs';
 import {credentialPolicyBytes} from './policy.mjs';
 import {verifyCredentialDelivery} from './delivery-message.mjs';
-import {signDeliveryAck} from './delivery-ack.mjs';
+import {signDeliveryAck, deliveryAckBytes} from './delivery-ack.mjs';
 const fail = () => new Error('Local AT credential unavailable');
 const hex = value => Array.from(value, b => b.toString(16).padStart(2, '0')).join('');
 const token = value => typeof value === 'string' && /^[\x21-\x7e]{1,512}$/.test(value);
@@ -86,7 +86,31 @@ export function openLocalATVault({wasm, store, group, owner, credential}) {
       return value; // Trusted direct provider client only; never log or cache it.
     } catch { throw fail(); } finally { plaintext?.fill(0); }
   };
+  const acknowledgeSaved = async (expected, signal) => {
+    try {
+      const context = {...expected}; deliveryAckBytes(context);
+      if (context.group !== group || context.owner !== owner || context.credential !== credential) throw fail();
+      checkSignal(signal);
+      const requestScope = 'along-at-request:' + owner;
+      const journal = await store.read(requestScope, key), saved = await store.read(scope, key);
+      const value = journal?.value, record = saved?.value;
+      if (value?.format !== 1 || value.state !== 'consumed' || !bytes(value.nonce, 16) || hex(value.nonce) !== context.nonce
+          || value.member !== context.recipient || value.generation !== context.generation
+          || value.policyRevision !== context.policyRevision || !validStored(record)
+          || record.member !== context.recipient || record.generation !== context.generation
+          || record.policyRevision !== context.policyRevision) throw fail();
+      const identity = await loadLocalPersona({wasm, store, expectedGroup: groupBytes});
+      if (identity?.member !== context.recipient) throw fail();
+      const receipt = await signDeliveryAck(context, identity.sign);
+      await unchanged([{scope: requestScope, key, expectedRevision: journal.revision},
+        {scope, key, expectedRevision: saved.revision}], signal);
+      return receipt;
+    } catch { throw fail(); }
+  };
   return Object.freeze({
+    // Historical public receipt only. The reconnect controller must authenticate
+    // the owner and match this context to its existing pending delivery.
+    recoverAcknowledgment: (expected, {signal} = {}) => acknowledgeSaved(expected, signal),
     // Caller must first establish owner trust, accept the granting policy and
     // authenticate the owner channel. This only supplies local installation.
     prepareDelivery: async ({ownerCertificate, signal} = {}) => {
@@ -124,24 +148,9 @@ export function openLocalATVault({wasm, store, group, owner, credential}) {
         current();
         return Object.freeze({nonce: nonce.slice(), close,
           acknowledgment: async ({signal: ackSignal} = {}) => {
-            try {
-              if (!consumed) throw fail();
-              checkSignal(ackSignal);
-              const journal = await store.read(requestScope, key), saved = await store.read(scope, key);
-              const value = journal?.value, record = saved?.value;
-              if (value?.state !== 'consumed' || !bytes(value.nonce, 16) || hex(value.nonce) !== hex(nonce)
-                  || value.member !== context.member || value.generation !== context.policy.generation
-                  || value.policyRevision !== context.policy.revision || !validStored(record)
-                  || record.member !== context.member || record.generation !== context.policy.generation
-                  || record.policyRevision !== context.policy.revision) throw fail();
-              const identity = await loadLocalPersona({wasm, store, expectedGroup: groupBytes});
-              if (identity?.member !== context.member) throw fail();
-              const receipt = await signDeliveryAck({group, owner, credential, recipient: context.member,
-                nonce: hex(nonce), generation: context.policy.generation, policyRevision: context.policy.revision}, identity.sign);
-              await unchanged([{scope: requestScope, key, expectedRevision: journal.revision},
-                {scope, key, expectedRevision: saved.revision}], ackSignal);
-              return receipt;
-            } catch { throw fail(); }
+            if (!consumed) throw fail();
+            return acknowledgeSaved({group, owner, credential, recipient: context.member, nonce: hex(nonce),
+              generation: context.policy.generation, policyRevision: context.policy.revision}, ackSignal);
           },
           install: async packet => {
             let plaintext, snapshot;

@@ -21,7 +21,7 @@ Its full local gate passed, and its
 [hosted Rust verification](https://github.com/reality2-ai/r2-standard/actions/runs/35868467158)
 has now passed. The separate
 [repository gate](https://github.com/reality2-ai/r2-standard/actions/runs/35868467283)
-is still running at this update; the draft remains unmerged.
+has also passed; the draft remains unmerged.
 
 | Area | Evidence now available | What remains before an end-user claim |
 | --- | --- | --- |

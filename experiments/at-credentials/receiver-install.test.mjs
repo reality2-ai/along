@@ -93,7 +93,31 @@ try {
     try {
       const vault = (await import('./local-vault.mjs')).openLocalATVault({wasm, store, ...binding});
       const journal = await store.read('along-at-request:' + binding.owner, binding.group + ':' + binding.credential);
-      return await vault.getKey() === 'synthetic-received-key' && journal.value.state === 'consumed';
+      const expected = {...binding, recipient: journal.value.member,
+        nonce: Array.from(journal.value.nonce, b => b.toString(16).padStart(2, '0')).join(''),
+        policyRevision: journal.value.policyRevision, generation: journal.value.generation};
+      const before = await store.read('along-at-secret:' + binding.owner, binding.group + ':' + binding.credential);
+      const ack = await vault.recoverAcknowledgment(expected);
+      const verified = await (await import('./delivery-ack.mjs')).verifyDeliveryAck(ack, expected);
+      if (await vault.recoverAcknowledgment({...expected, nonce: '00'.repeat(16)}).then(() => true, () => false)) throw new Error('Wrong recovery nonce accepted');
+      const damaged = (await import('./local-vault.mjs')).openLocalATVault({wasm, ...binding, store: {...store, read: async (...args) => {
+        const result = await store.read(...args);
+        if (args[0].startsWith('along-at-request:')) return null;
+        return result;
+      }}});
+      if (await damaged.recoverAcknowledgment(expected).then(() => true, () => false)) throw new Error('Missing consumed journal accepted');
+      const cancelled = new AbortController(); cancelled.abort();
+      if (await vault.recoverAcknowledgment(expected, {signal: cancelled.signal}).then(() => true, () => false)) throw new Error('Cancelled recovery accepted');
+      let secretReads = 0;
+      const changed = (await import('./local-vault.mjs')).openLocalATVault({wasm, ...binding, store: {...store, read: async (...args) => {
+        const result = await store.read(...args);
+        if (args[0].startsWith('along-at-secret:') && ++secretReads > 1) return {...result, revision: result.revision + 1};
+        return result;
+      }}});
+      if (await changed.recoverAcknowledgment(expected).then(() => true, () => false)) throw new Error('Changed storage accepted during recovery');
+      const after = await store.read('along-at-secret:' + binding.owner, binding.group + ':' + binding.credential);
+      return verified.status === 'recipient-confirmed-saved' && before.revision === after.revision
+        && await vault.getKey() === 'synthetic-received-key' && journal.value.state === 'consumed';
     } finally { store.close(); }
   }, binding), true);
   console.log('PASS: actual signed message to encrypted IndexedDB installation with atomic nonce consumption; replay, concurrent install, interrupted writes, cancellation, supersession and policy revision changes. Self-recipient fixture; no authenticated peer transport or owner-consent bootstrap claim.');
