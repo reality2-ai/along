@@ -94,3 +94,16 @@ timetable when live information cannot be obtained. Match live records to verifi
 trip identities rather than guessing. Preserve local journey history and user
 control. A successful AT credential check does not mean the public live connection
 has been deployed.
+
+
+## Contextual online information
+
+Online information must follow the current task and the user's likely next
+action. Show live departures for the stop being inspected, relevant delays and
+cancellations for the selected journey, and vehicle positions only when they help
+with the route or leg currently being explored. Filter by verified trip, service
+date, route, stop and applicable alert scope/time; do not present an unrelated
+network feed as journey advice. Broad network information remains available on
+explicit request. Clearly label freshness and uncertainty, preserve the offline
+schedule when no relevant current information is available, and never interrupt
+or reorder the user's chosen journey merely because a background update arrived.

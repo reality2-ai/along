@@ -598,3 +598,10 @@ and agency themes: connection adds freshness, not permission to function. Copy
 and behaviour must distinguish downloaded schedules from live observations, keep
 choice with the commuter and preserve planning when connections fail. Credential
 availability is separate from deployment and from matching every live trip.
+
+
+The user further required online information to be completely contextual. The
+recurring next-action principle therefore applies to live data as well as layout:
+a successful feed request is not enough. Relevance to the current stop, journey or
+leg must be established before showing a prediction or alert. Wider network
+information is a deliberate exploration path, not a competing default feed.

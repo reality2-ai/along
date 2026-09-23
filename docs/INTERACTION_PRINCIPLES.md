@@ -63,3 +63,16 @@ A stop list provides the same navigation without relying on map markers. Maps ar
 inside details, not another competing panel on the destination screen. Back and
 Escape restore the parent layer, focus, filter and scroll without advancing the
 journey. A persistent Back control stays available while scrolling long details.
+
+
+## Contextual online information
+
+Online information must follow the current task and the user's likely next
+action. Show live departures for the stop being inspected, relevant delays and
+cancellations for the selected journey, and vehicle positions only when they help
+with the route or leg currently being explored. Filter by verified trip, service
+date, route, stop and applicable alert scope/time; do not present an unrelated
+network feed as journey advice. Broad network information remains available on
+explicit request. Clearly label freshness and uncertainty, preserve the offline
+schedule when no relevant current information is available, and never interrupt
+or reorder the user's chosen journey merely because a background update arrived.
