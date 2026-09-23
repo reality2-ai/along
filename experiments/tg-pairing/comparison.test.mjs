@@ -20,10 +20,10 @@ try {
   await page.goto(`http://127.0.0.1:${server.address().port}`);
   await page.evaluate(async () => {
     const {showComparison} = await import('/comparison.mjs');
-    window.setup = () => {
-      window.controller?.abort(); window.controller = new AbortController(); window.calls = [];
+    window.setup = (abortPrevious = true) => {
+      if (abortPrevious) window.controller?.abort(); window.controller = new AbortController(); window.calls = [];
       window.view = showComparison(document.querySelector('#comparison'), {code: new Uint8Array([0xA1, 0xB2, 0xC3, 0xD4]), focus: true, signal: controller.signal,
-        onDecision: matched => { calls.push(matched); return new Promise((resolve, reject) => { window.complete = resolve; window.fail = reject; }); }});
+        onDecision: (matched, signal) => { window.decisionSignal = signal; calls.push(matched); return new Promise((resolve, reject) => { window.complete = resolve; window.fail = reject; }); }});
     };
     setup();
   });
@@ -50,10 +50,24 @@ try {
   await page.getByRole('button', {name: 'Both devices are here and the codes match'}).click();
   await page.evaluate(() => fail(new Error('synthetic')));
   await page.getByRole('status').filter({hasText: 'Could not finish'}).waitFor();
+  await page.evaluate(() => setup());
+  await page.getByRole('button', {name: 'Both devices are here and the codes match'}).click();
+  const replacement = await page.evaluate(async () => {
+    const previousSignal = decisionSignal, previousExternal = controller.signal, previousComplete = complete;
+    const previousButton = document.querySelector('.pairing-primary');
+    setup(false); previousButton.click(); previousComplete(); await Promise.resolve();
+    return {cancelled: previousSignal.aborted, externalUnchanged: !previousExternal.aborted,
+      calls: [...calls], newStatus: document.querySelector('[role=status]').textContent};
+  });
+  assert.deepEqual(replacement, {cancelled: true, externalUnchanged: true, calls: [], newStatus: ''});
+  await page.getByRole('button', {name: 'Both devices are here and the codes match'}).click();
+  const disposed = await page.evaluate(() => { view.dispose(); complete(); return decisionSignal.aborted; });
+  assert.equal(disposed, true);
+  await page.getByRole('status').filter({hasText: 'comparison has ended'}).waitFor();
   await page.evaluate(() => { setup(); document.documentElement.style.fontSize = '200%'; });
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
   assert.deepEqual((await new AxeBuilder({page}).analyze()).violations.map(v => v.id), []);
   await page.evaluate(() => { document.documentElement.style.fontSize = ''; setup(); });
   await page.screenshot({path: '/tmp/along-pairing-comparison.png', fullPage: true});
-  console.log('PASS: narrow-screen comparison has full-width actions, readable code text, keyboard match/cancel, one decision only, expiration overriding a pending result, recoverable failure, 200% text reflow and no automated axe violations. Spoken screen-reader use is not established.');
+  console.log('PASS: narrow-screen comparison has full-width actions, readable code text, keyboard match/cancel, one decision only, expiration/replacement/disposal cancelling pending work, recoverable failure, 200% text reflow and no automated axe violations. Spoken screen-reader use is not established.');
 } finally { await browser?.close(); await new Promise(resolve => server.close(resolve)); }

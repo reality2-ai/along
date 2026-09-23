@@ -421,3 +421,11 @@ layout, enlarged-text reflow and automated axe checks. The phone-sized rendering
 was inspected. These are component observations, not actual TalkBack, co-presence
 or completed enrollment. The runtime must independently bind the decision to a
 verified ceremony and honor cancellation before any protected operation.
+
+The isolated comparison component now provides a per-view cancellation signal to
+its decision handler. Replacing the view automatically disposes the previous one;
+external expiry, replacement and disposal all cancel pending work. The browser
+fixture confirms that an old button cannot submit again and a late result cannot
+overwrite the replacement screen. Controllers still have to observe the signal
+before protected operations; UI cancellation does not undo an already-committed
+operation. The component remains outside the released app.
