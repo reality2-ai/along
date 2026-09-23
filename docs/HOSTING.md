@@ -158,3 +158,18 @@ explicit anonymous GitHub receipt check. Local HTTP tests verify those modules
 and rejection of credential-file paths. Credential-loader tests use dummy values
 and verify environment precedence, explicit disable and non-disclosing errors.
 This does not restart the retired Alfred service or deploy a public live proxy.
+
+
+### Live adapter progress after version 32
+
+The server adapter rechecks feed freshness on cache hits, so its 60-second cache
+cannot extend the 180-second freshness window. The alert response now retains
+`informed_entity`, `active_period`, feed timestamp and alert identifiers, without
+truncating the feed before contextual filtering. Restrictions are preserved,
+including unknown selector fields, to avoid accidentally broadening their scope.
+The endpoint does not require the local Python timetable planner.
+
+These changes prepare contextual live integration; they do not enable live data
+on GitHub Pages. Client filtering, explicit opt-in, secure public proxy hosting
+and end-to-end live journey/stop checks remain to be completed. Reference:
+[GTFS Realtime alert and selector definitions](https://gtfs.org/documentation/realtime/reference/#message-alert).

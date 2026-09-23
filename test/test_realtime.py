@@ -2,6 +2,7 @@ import io
 import json
 import time
 import unittest
+from unittest.mock import patch
 from lib.realtime import Realtime
 
 
@@ -38,6 +39,42 @@ class RealtimeTests(unittest.TestCase):
         self.assertNotIn(('trip1', ''), updates)
         self.assertIsNone(updates[('trip1', '20260923')])
         self.assertIsNotNone(updates[('trip1', '20260924')])
+
+    def test_cache_does_not_extend_feed_freshness(self):
+        calls = []
+        def fetch(*args, **kwargs):
+            calls.append(1)
+            return io.StringIO(json.dumps({'header': {'timestamp': 1000}, 'entity': []}))
+        client = Realtime('test-key', fetch)
+        with patch('lib.realtime.time.time', return_value=1170):
+            self.assertTrue(client.get('tripupdates')['available'])
+        with patch('lib.realtime.time.time', return_value=1181):
+            self.assertFalse(client.get('tripupdates')['available'])
+        self.assertEqual(len(calls), 2)
+        with patch('lib.realtime.time.time', return_value=1182):
+            self.assertFalse(client.get('tripupdates')['available'])
+        self.assertEqual(len(calls), 2)  # Failure caching still limits requests.
+
+    def test_alerts_retain_scope_dates_and_all_records(self):
+        selector = {'route_id': 'route-70', 'stop_id': 'stop-1',
+                    'trip': {'trip_id': 'trip-1', 'start_date': '20260923'},
+                    'future_restriction': 'must-not-be-discarded'}
+        period = {'start': 1000, 'end': 2000}
+        alert = {'header_text': {'translation': [{'language': 'en-NZ', 'text': 'Stop closed'}]},
+                 'description_text': {'translation': [{'text': 'Use next stop'}]},
+                 'informed_entity': [selector], 'active_period': [period], 'effect': 9}
+        entities = [{'id': str(i), 'alert': alert} for i in range(35)]
+        entities += [None, {}, {'is_deleted': True, 'alert': alert}]
+        client = Realtime('test-key')
+        client.get = lambda _: {'available': True, 'updated': 1000, 'entities': entities}
+        result = client.alerts()
+        self.assertEqual(len(result['alerts']), 35)
+        self.assertEqual(result['updated'], 1000)
+        self.assertEqual(result['alerts'][-1]['informed_entity'], [selector])
+        self.assertEqual(result['alerts'][-1]['active_period'], [period])
+        self.assertEqual(result['alerts'][-1]['title'], 'Stop closed')
+        client.get = lambda _: {'available': False, 'reason': 'Unavailable'}
+        self.assertEqual(client.alerts()['alerts'], [])
 
 
 class CredentialTests(unittest.TestCase):

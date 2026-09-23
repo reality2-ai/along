@@ -53,6 +53,8 @@ class Handler(BaseHTTPRequestHandler):
             elif url.path == '/api/predictions':
                 feed = realtime.get('tripupdates')
                 self.json(feed)
+            elif url.path == '/api/alerts':
+                self.json(realtime.alerts())
             elif url.path.startswith('/api/') and not planner:
                 self.json({'error':'Download and import the AT timetable first. See README.md.'},503)
             elif url.path == '/api/stops':
@@ -73,17 +75,6 @@ class Handler(BaseHTTPRequestHandler):
                 if mode not in {'all','bus','train','ferry'}:
                     raise ValueError('Unknown transport mode.')
                 self.json(nearby(planner,realtime,lat,lon,query.get('to'),mode))
-            elif url.path == '/api/alerts':
-                feed = realtime.get('servicealerts')
-                alerts = []
-                if feed['available']:
-                    for entity in feed['entities']:
-                        alert = entity.get('alert',{})
-                        def english(field):
-                            items = alert.get(field,{}).get('translation',[])
-                            return next((i.get('text','') for i in items if i.get('language','en') == 'en'),items[0].get('text','') if items else '')
-                        alerts.append({'title':english('header_text'),'description':english('description_text')})
-                self.json({'available':feed['available'],'message':feed.get('reason'),'alerts':alerts[:30]})
             elif url.path.startswith('/api/'):
                 self.json({'error':'Not found'},404)
             else:

@@ -41,8 +41,11 @@ class Realtime:
             return {'available': False, 'reason': 'Live updates need an AT subscription key.'}
         with self.lock:
             cached = self.cache.get(endpoint)
-            if cached and time.time()-cached[0] < 60:
-                return cached[1]
+            if cached and 0 <= time.time()-cached[0] < 60:
+                result = cached[1]
+                # A cache TTL must never extend the feed's freshness window.
+                if not result['available'] or abs(time.time()-result['updated']) <= 180:
+                    return result
             try:
                 request = urllib.request.Request('https://api.at.govt.nz/realtime/legacy/'+endpoint,
                     headers={'Ocp-Apim-Subscription-Key': self.key, 'Accept': 'application/json'})
@@ -73,3 +76,37 @@ class Realtime:
                     key = (trip_id, day)
                     updates[key] = None if key in updates else update
         return feed, updates
+
+    def alerts(self):
+        """Preserve scope/time metadata for contextual filtering by clients.
+
+        Do not truncate before filtering: a relevant stop alert may be last.
+        Network-wide presentation remains an explicit UI action.
+        """
+        feed = self.get('servicealerts')
+        alerts = []
+        if feed['available']:
+            for entity in feed['entities']:
+                if not isinstance(entity, dict) or entity.get('is_deleted'):
+                    continue
+                alert = entity.get('alert')
+                if not isinstance(alert, dict):
+                    continue
+                def english(field):
+                    value = alert.get(field, {})
+                    items = value.get('translation', []) if isinstance(value, dict) else []
+                    items = [i for i in items if isinstance(i, dict) and isinstance(i.get('text'), str)] if isinstance(items, list) else []
+                    return next((i['text'] for i in items if str(i.get('language', 'en')).lower().split('-')[0] == 'en'), items[0]['text'] if items else '')
+                alerts.append({
+                    'id': entity.get('id'),
+                    'title': english('header_text'),
+                    'description': english('description_text'),
+                    # Keep original selectors, including unknown fields. Dropping
+                    # a restriction could incorrectly broaden an alert's scope.
+                    'informed_entity': alert.get('informed_entity', []),
+                    'active_period': alert.get('active_period', []),
+                    'effect': alert.get('effect'),
+                    'cause': alert.get('cause'),
+                })
+        return {'available': feed['available'], 'updated': feed.get('updated'),
+                'message': feed.get('reason'), 'alerts': alerts}

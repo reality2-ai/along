@@ -1,5 +1,6 @@
 """Local HTTP regression checks; no upstream AT requests or real credentials."""
 import importlib
+import json
 import os
 import threading
 import unittest
@@ -39,6 +40,15 @@ class ServerAssetsTests(unittest.TestCase):
                 self.assertEqual(failure.exception.code, 404)
             finally:
                 failure.exception.close()
+
+    def test_scoped_alert_response_does_not_require_local_planner(self):
+        module = importlib.import_module('server')
+        expected = {'available': True, 'updated': 1234, 'alerts': [{
+            'title': 'Stop closed', 'informed_entity': [{'stop_id': 'stop-1'}],
+            'active_period': [{'start': 1000, 'end': 2000}]}]}
+        with patch.object(module, 'planner', None), patch.object(module.realtime, 'alerts', return_value=expected):
+            with urllib.request.urlopen(self.base+'/api/alerts') as response:
+                self.assertEqual(json.load(response), expected)
 
 
 if __name__ == '__main__':
