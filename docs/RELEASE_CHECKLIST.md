@@ -21,7 +21,7 @@ this audit. Later public-hosting work supplements that brief.
 | 8. Course material | Thematic analysis, six lessons, exercises, assessment rubric and negative-case/contextual-map refinements | Course effectiveness has not been studied |
 | 9. Release checks and handover | 24 JavaScript and 4 Python tests; four real-data browser scenarios; static/update suites; source/archive/live asset comparison | Remaining physical and spoken screen-reader checks prevent claiming full goal completion |
 
-| 10. English / Te reo Māori | Device-local language module, 353-phrase source draft catalogue and review sheet (330 in deployed v29); flow selector available as an explicitly labelled draft; six localisation unit checks pass; targeted browser evidence is recorded below | Remaining screen text and full catalogue/guides, subpath/update checks, broader language/accessibility tests and fluent-speaker review |
+| 10. English / Te reo Māori | Device-local language module, 356-phrase source draft catalogue and review sheet (330 in deployed v29); flow selector available as an explicitly labelled draft; six localisation unit checks pass; targeted browser evidence is recorded below | Remaining screen text and full catalogue/guides, subpath/update checks, broader language/accessibility tests and fluent-speaker review |
 
 | 11. Contextual repository feedback | Added to goal; not implemented | Accessible bilingual feedback UI, explicit public submission, minimal disclosed context, offline drafts, receipt/duplicate checks and next-round issue review |
 
@@ -472,3 +472,14 @@ service announcement re-resolved on each language switch (`Train S-C` →
 `Tereina S-C` → the original English announcement). Saved routes, open journey
 steps and offline reopening remain intact. This is source evidence for the next
 release, not a change to the deployed version 29.
+
+### Post-v29 source: bilingual offline installation guidance
+
+The full Māori guide is an unreviewed AI translation alongside the English source.
+Two browser checks passed: offline opening from the app's stored language, all
+nine platform groups, retained disclosure/focus, matching external links, 320px
+reflow and axe checks, return to the app with the same language, and readable
+English fallback when the guide script fails. Six localisation unit checks and
+the static subpath suite also passed. Both guides are bundled in the static build;
+public deployment awaits the next version. Human linguistic/platform validation
+remains outstanding.

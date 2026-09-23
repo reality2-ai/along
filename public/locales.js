@@ -1350,3 +1350,18 @@ Object.assign(messages, {
     "mi": "Mō Along ↗"
   }
 });
+
+Object.assign(messages, {
+  "guide.title": {
+    "en": "Install Along · Offline and private",
+    "mi": "Tāutahia a Along · Tuimotu, tūmataiti hoki"
+  },
+  "guide.back": {
+    "en": "← Open Along",
+    "mi": "← Huakina a Along"
+  },
+  "guide.open": {
+    "en": "Open Along and prepare this device",
+    "mi": "Huakina a Along, ka whakarite i tēnei pūrere"
+  }
+});

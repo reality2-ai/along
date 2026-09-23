@@ -29,7 +29,7 @@ translation quality.
 1. Complete the phrase catalogue for static markup, generated journey and stop
    details, walking instructions, saved-service labels, accessibility information,
    loading and failure states, updates and recovery, installation guidance and
-   screen-reader announcements. The current 353-phrase catalogue covers flow headings, common actions, place
+   screen-reader announcements. The current 356-phrase catalogue covers flow headings, common actions, place
    entry help, travel preferences, journey result cards, saved-place/service
    controls and step counts. Walking guidance, place-selection validation and location failures are now
    connected too. Route/stop exploration, map controls and scheduled departure-board labels are
@@ -95,3 +95,18 @@ changes. In particular, the saved-service announcement translates transport name
 while keeping route identifiers unchanged, instead of reusing an English label
 inside a Māori sentence. Cleared or replaced status messages still remain cleared.
 This change does not alter the stored preferred service sequence.
+
+## Bilingual installation guide (source after version 29)
+
+[The Māori guide](INSTALL.mi.md) is a full AI-generated draft of the English
+installation guide. Both cover the same nine browser/platform instruction groups,
+preparation and offline checks, scheduled-versus-live information, privacy, storage
+and installation limits. Browser menu names stay recognisable. Both sets of text
+and the selector are cached with the app. The guide follows the device language,
+can change it, and retains the open platform section through a switch. If its
+script fails, the complete English guide remains readable.
+
+Review both Markdown guides side by side; long guide paragraphs are maintained
+there, while shared selector/navigation phrases are in the catalogue and CSV.
+This is not fluent-speaker review. The public version 29 guide remains English
+until the next versioned deployment.

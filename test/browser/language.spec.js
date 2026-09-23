@@ -252,3 +252,44 @@ test('worker validation translates across language switches and a corrected sear
   await expect(page.locator('.journey-card').first()).toBeVisible({timeout:30000});
   await expect(page.locator('#form-error')).toBeEmpty();
 });
+
+test('installation guide follows the offline language choice and preserves platform disclosure',async({page,context})=>{
+  await page.goto('/');
+  await expect(page.locator('#data-status')).toContainText('offline ready',{timeout:90000});
+  await switchTo(page,'mi');
+  await context.setOffline(true);
+  await page.goto('/install.html');
+  await expect(page.locator('h1:visible')).toHaveText('Tāutahia a Along, ka whakamahi tuimotu');
+  await expect(page.locator('#guide-draft')).toBeVisible();
+  const mi=page.locator('[data-guide-language=mi]');
+  await expect(mi).toContainText('Kāore e whakaatu i ngā tauwāhi pahi');
+  await expect(mi).toContainText('Ka noho ō rapunga haerenga');
+  await expect(mi.locator('details')).toHaveCount(9);
+  const android=mi.locator('details').filter({has:page.locator('summary', {hasText:'Chrome — waea, papa rānei Android'})});
+  await android.locator('summary').click();
+  await expect(android).toContainText('Install and create shortcut');
+  await page.setViewportSize({width:320,height:800});
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  expect((await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa']).analyze()).violations).toEqual([]);
+  await page.locator('#guide-language-choice').focus();
+  await page.locator('#guide-language-choice').selectOption('en');
+  await expect(page.locator('#guide-language-choice')).toBeFocused();
+  await expect(page.locator('h1:visible')).toHaveText('Install Along and use it offline');
+  const en=page.locator('[data-guide-language=en]');
+  await expect(en.locator('details').filter({hasText:'Chrome — Android phone or tablet'})).toHaveAttribute('open','');
+  expect(await mi.locator('a').evaluateAll(els=>els.map(el=>el.getAttribute('href')).sort())).toEqual(await en.locator('a').evaluateAll(els=>els.map(el=>el.getAttribute('href')).sort()));
+  await page.locator('#guide-language-choice').selectOption('mi');
+  await page.reload();
+  await expect(page.locator('h1:visible')).toContainText('Tāutahia');
+  await page.locator('#guide-back').click();
+  await expect(page.locator('#flow-title')).toHaveText('Kei te hiahia haere koe ki hea?');
+});
+
+test('installation help remains readable if its language script fails',async({page})=>{
+  await page.route('**/install-guide.js',route=>route.abort());
+  await page.goto('/install.html');
+  await expect(page.locator('h1:visible')).toHaveText('Install Along and use it offline');
+  await expect(page.locator('#guide-language')).toBeHidden();
+  await expect(page.locator('[data-guide-language=en] details')).toHaveCount(9);
+  await expect(page.locator('#guide-back')).toHaveAttribute('href','./');
+});
