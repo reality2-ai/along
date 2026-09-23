@@ -32,6 +32,13 @@ test('draft language switch preserves current task, saved places, Back and offli
   await expect(page.locator('#flow-context')).toContainText(destination);
   await expect(page.locator('#flow-context')).toHaveAttribute('lang','mi-NZ');
   await expect(page.locator('#origin-help')).toHaveAttribute('lang','mi-NZ');
+  await expect(page.locator('[data-screen=origin]')).toHaveAttribute('aria-label','Kōwhiria he wāhi tīmatanga');
+  await expect(page.locator('.flow-nav')).toHaveAttribute('aria-label','Whakatere haerenga');
+  await expect(page.locator('#course-notice > summary')).toContainText('He mahi akoranga');
+  await page.locator('#course-notice > summary').click();
+  await expect(page.locator('#course-notice a')).toHaveAttribute('href','https://at.govt.nz/bus-train-ferry/journey-planner');
+  await expect(page.locator('#course-notice a')).toContainText('Tirohia ki AT');
+  await page.locator('#course-notice > summary').click();
   await expect(page.locator('label[for=origin]')).toContainText('Wāhi tīmatanga');
   await expect(page.locator('#language-notice')).toBeVisible();
   await choose(page,'origin','277 Broadway Newmarket');
@@ -39,6 +46,8 @@ test('draft language switch preserves current task, saved places, Back and offli
   await expect(page.locator('#flow-title')).toHaveText('Arotakengia tō haerenga');
   await page.locator('#journey-preferences > summary').click();
   await expect(page.locator('.modes')).toContainText('Waka kōpiko');
+  await expect(page.locator('#access-help')).toContainText('Kāore ngā raraunga AT');
+  await expect(page.locator('#access-help a')).toHaveAttribute('href','https://at.govt.nz/bus-train-ferry/accessible-travel');
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   expect((await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa']).analyze()).violations).toEqual([]);
   await page.screenshot({path:'test-results/maori-review-draft.png',fullPage:true});

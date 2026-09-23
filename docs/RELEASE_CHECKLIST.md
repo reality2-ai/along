@@ -21,7 +21,7 @@ this audit. Later public-hosting work supplements that brief.
 | 8. Course material | Thematic analysis, six lessons, exercises, assessment rubric and negative-case/contextual-map refinements | Course effectiveness has not been studied |
 | 9. Release checks and handover | 24 JavaScript and 4 Python tests; four real-data browser scenarios; static/update suites; source/archive/live asset comparison | Remaining physical and spoken screen-reader checks prevent claiming full goal completion |
 
-| 10. English / Te reo Māori | Device-local language module, 330-phrase draft catalogue and review sheet; flow selector available as an explicitly labelled draft; six localisation unit checks pass; targeted browser evidence is recorded below | Remaining screen text and full catalogue/guides, subpath/update checks, broader language/accessibility tests and fluent-speaker review |
+| 10. English / Te reo Māori | Device-local language module, 353-phrase source draft catalogue and review sheet (330 in deployed v29); flow selector available as an explicitly labelled draft; six localisation unit checks pass; targeted browser evidence is recorded below | Remaining screen text and full catalogue/guides, subpath/update checks, broader language/accessibility tests and fluent-speaker review |
 
 | 11. Contextual repository feedback | Added to goal; not implemented | Accessible bilingual feedback UI, explicit public submission, minimal disclosed context, offline drafts, receipt/duplicate checks and next-round issue review |
 
@@ -457,3 +457,12 @@ passed on `https://reality2.ai/along/`: version and scope, installation eligibil
 offline new address routing, installation guidance, language switching and
 persistent Māori selection after offline reopening. Pages deployment
 [35818573316](https://github.com/reality2-ai/along/actions/runs/35818573316) succeeded.
+
+### Post-v29 source: remaining static labels
+
+Added 23 draft phrases for course/accessibility notices, journey-region names,
+service-update controls and attribution text. Six localisation unit checks and
+two targeted browser scenarios passed. They verify translated region labels,
+retained AT links, narrow-screen layout and axe checks, plus offline switching
+and saved-service preservation. These source changes are awaiting the next
+versioned deployment; public version 29 remains unchanged.
