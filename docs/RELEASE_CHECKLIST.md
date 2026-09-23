@@ -577,3 +577,13 @@ new-address planning, installation guidance and feedback draft recovery. The
 [Pages deployment](https://github.com/reality2-ai/along/actions/runs/35820916394)
 succeeded, and the [downloadable prerelease](https://github.com/reality2-ai/along/releases/tag/v0.31.0)
 assets have [verified digests](evidence/release-v31.json).
+
+## Live backend preparation after version 31
+
+The local Python server can load the user-supplied ignored `APIKey` file; explicit
+`AT_API_KEY` values take precedence and an empty value disables live access.
+Credential errors do not echo file contents. Missing current UI module routes
+were restored, and GitHub receipt requests are allowed by the local CSP. Five
+focused Python tests pass for credentials, authenticated adapter behaviour,
+current HTTP assets and rejecting private-file URLs. No public live backend has
+been deployed and the retired private service remains untouched.

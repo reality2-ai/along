@@ -1,8 +1,31 @@
 """AT's documented subscription-header authentication; never send keys to clients."""
 import json
+import os
+from pathlib import Path
 import threading
 import time
 import urllib.request
+
+
+def load_api_key(root, environ=None):
+    """Server-only credential loading. Explicit environment values take precedence.
+
+    An explicitly empty AT_API_KEY disables live access even if APIKey exists.
+    Never include the credential or file contents in errors or responses.
+    """
+    environ = os.environ if environ is None else environ
+    if 'AT_API_KEY' in environ:
+        value = environ['AT_API_KEY'].strip()
+    else:
+        try:
+            value = (Path(root)/'APIKey').read_text().strip()
+        except FileNotFoundError:
+            return ''
+        except (OSError, UnicodeError):
+            raise ValueError('Could not read the local AT credential file.') from None
+    if len(value) > 4096 or any(c.isspace() for c in value):
+        raise ValueError('The AT credential must be a single key.')
+    return value
 
 
 class Realtime:

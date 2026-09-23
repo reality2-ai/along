@@ -8,7 +8,7 @@ from urllib.parse import parse_qs, urlparse
 from zoneinfo import ZoneInfo
 from lib.planner import Planner
 from lib.departures import nearby
-from lib.realtime import Realtime
+from lib.realtime import Realtime, load_api_key
 
 ROOT = Path(__file__).resolve().parent
 if (ROOT/'.env').exists():
@@ -17,7 +17,7 @@ if (ROOT/'.env').exists():
             key,value = line.split('=',1)
             os.environ.setdefault(key.strip(),value.strip().strip('"').strip("'"))
 planner = Planner(ROOT/'data/transit.sqlite') if (ROOT/'data/transit.sqlite').exists() else None
-realtime = Realtime(os.environ.get('AT_API_KEY',''))
+realtime = Realtime(load_api_key(ROOT))
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -106,6 +106,8 @@ class Handler(BaseHTTPRequestHandler):
                 allowed['/update.html']='update.html'
                 allowed['/install.html']='install.html'
                 allowed['/updates.js']='updates.js'
+                for module in ['i18n.js','locales.js','feedback.js','feedback-ui.js']:
+                    allowed['/'+module]=module
                 for icon in ['icon-192.png','icon-512.png','maskable-512.png','apple-touch-icon.png','favicon-32.png']:
                     allowed['/icons/'+icon] = 'icons/'+icon
                 if url.path not in allowed:
@@ -117,7 +119,7 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_header('Content-Type',{'html':'text/html; charset=utf-8','js':'text/javascript; charset=utf-8','css':'text/css; charset=utf-8','webmanifest':'application/manifest+json','svg':'image/svg+xml','png':'image/png'}[file.suffix[1:]])
                 self.send_header('Cache-Control','no-cache')
                 self.send_header('X-Content-Type-Options','nosniff')
-                self.send_header('Content-Security-Policy',"default-src 'self'; style-src 'self'; script-src 'self'; img-src 'self' data: https://tile.openstreetmap.org; connect-src 'self'; frame-ancestors 'none'")
+                self.send_header('Content-Security-Policy',"default-src 'self'; style-src 'self'; script-src 'self'; img-src 'self' data: https://tile.openstreetmap.org; connect-src 'self' https://api.github.com; frame-ancestors 'none'")
                 self.send_header('Content-Length',str(len(body)))
                 self.end_headers()
                 self.wfile.write(body)

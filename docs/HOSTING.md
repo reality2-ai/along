@@ -128,8 +128,11 @@ will not automatically move to the public origin.
 
 ## AT subscription credentials
 
-The adapter accepts one subscription credential in `AT_API_KEY`, held on the
-backend. Its request uses the `Ocp-Apim-Subscription-Key` header documented by
+The Python server accepts one subscription credential in `AT_API_KEY`, held on
+the backend, or reads the ignored root-level `APIKey` file when the environment
+variable is absent. An explicitly empty `AT_API_KEY` disables live access even if
+the file exists. The file must contain only the key; it is never served by the
+HTTP asset routes or copied into the static build. Its request uses the `Ocp-Apim-Subscription-Key` header documented by
 [AT's developer portal](https://dev-portal.at.govt.nz/), keeping credentials out of
 request URLs. A public GitHub Pages build cannot hold this secret: connecting live
 data requires a separately hosted proxy and client endpoint configuration. That
@@ -146,3 +149,12 @@ AT documents English-only text for realtime alert descriptions and headings in
 [its realtime guide](https://dev-portal.at.govt.nz/realtime-api). Preserve the
 source language and label it explicitly in a Māori interface; translating the
 interface does not establish a reviewed translation of changing service alerts.
+
+### Local backend readiness after version 31
+
+The Python asset allowlist now includes the phrase and feedback modules, so the
+current interface can run against the local backend again. Its CSP permits the
+explicit anonymous GitHub receipt check. Local HTTP tests verify those modules
+and rejection of credential-file paths. Credential-loader tests use dummy values
+and verify environment precedence, explicit disable and non-disclosing errors.
+This does not restart the retired Alfred service or deploy a public live proxy.

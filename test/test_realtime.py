@@ -30,6 +30,26 @@ class RealtimeTests(unittest.TestCase):
             raise OSError('No connection')
         self.assertFalse(Realtime('key', fail).get('tripupdates')['available'])
 
+class CredentialTests(unittest.TestCase):
+    def test_local_file_environment_override_and_explicit_disable(self):
+        import tempfile
+        from pathlib import Path
+        from lib.realtime import load_api_key
+        with tempfile.TemporaryDirectory() as directory:
+            self.assertEqual(load_api_key(directory, {}), '')
+            file = Path(directory)/'APIKey'
+            file.write_text('local-test-key\n')
+            self.assertEqual(load_api_key(directory, {}), 'local-test-key')
+            self.assertEqual(load_api_key(directory, {'AT_API_KEY':'environment-test-key'}), 'environment-test-key')
+            self.assertEqual(load_api_key(directory, {'AT_API_KEY':''}), '')
+            file.write_text('private-test-key\nsecond-line')
+            with self.assertRaises(ValueError) as failure:
+                load_api_key(directory, {})
+            self.assertNotIn('private-test-key', str(failure.exception))
+            file.write_bytes(b'\xff')
+            with self.assertRaisesRegex(ValueError, 'Could not read'):
+                load_api_key(directory, {})
+
 
 if __name__ == '__main__':
     unittest.main()
