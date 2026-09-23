@@ -1,15 +1,65 @@
-# Reality2 integration investigation
+# Reality2 browser integration: status and evidence
 
 Along should contact AT directly and keep each person's AT key within their own
 trust group, without requiring an Along-operated central server. Offline planning
 must continue without a key, a peer connection or a portal. This is the intended
 architecture, not an implemented feature.
 
-## What the inspected runtime actually provides
+## Current status
+
+The user has approved developing the missing browser TG capability. The public
+Along app remains on version 37 with scheduled offline planning; its live-data
+connection and trusted-device enrollment are not enabled. Runtime work is in an
+isolated, unpublished development branch. The sections below preserve the
+sequence of findings, so earlier source-only/version statements are historical.
+
+| Area | Evidence now available | What remains before an end-user claim |
+| --- | --- | --- |
+| Direct AT access | Authenticated browser reads and strict timetable matching, with aggregate evidence below | Connect a user's authorized credential to the contextual UI; verify lifecycle cancellation and actual installed devices |
+| Browser persistence | Identity restart tests, revisioned atomic writes, concurrent-tab and injected-failure checks | Complete persona installation and application-secret policy; browser restart is not a physical power-loss test |
+| Existing membership | Core certificate/evidence verification, signed revocation persistence, expiring single-use challenges | Freshness after partition, epoch advancement, device removal propagation and integration with credential access |
+| Peer transport | Direct ordered channel and mutual proof tests with the asset host stopped | End-user signaling, actual device/network reachability, reconnect and operation-specific authorization |
+| Enrollment comparison | Committed X25519 exchange, canonical invitation fields and connection-bound core comparison strings | Connect initial trust, invitation validity/custody, person confirmation, protected bundle delivery and the core ceremony |
+| Invitation use | Durable reservation, decline/consumption, restart refusal and atomic write-set tests | Connect the journal to a validated OPEN-to-OWNER install and resolve interrupted distributed receipts |
+| Comparison UI | [Isolated component](../experiments/tg-pairing/README.md), keyboard/reflow/axe and cancellation tests | Bind it to the live ceremony, test actual TalkBack and physical co-presence; it is not loaded by Along |
+| Complete runtime gate | One full run passed; a second is running against a recorded unchanged snapshot | Inspect the terminal result and source hashes, run repository commit checks, then publish reviewable runtime source |
+
+### Next integration boundaries
+
+The next runtime increment must connect these boundaries, not turn a comparison
+callback into a direct write or secret-access grant:
+
+1. Establish the candidate's initial trust through the actual invitation/exchange
+   ceremony. The member-side invitation helper requires an existing persona and
+   cannot be reused as proof that an OPEN candidate already trusts the issuer.
+2. Bind person confirmation to the exact invitation and live connection. Decline,
+   mismatch, expiry, changed membership and a replaced UI must invalidate pending
+   work. A stale callback must not authorize a later session.
+3. Deliver the validated persona bundle under the verified ephemeral session and
+   retain the core ceremony's stage order. A signed member invitation alone does
+   not demonstrate custody of the group issuer key.
+4. Recheck OPEN state and identity revision in the same transaction that installs
+   membership and consumes the invitation. Report completion from durable commit
+   evidence, with explicit handling of a lost peer receipt.
+5. Add application-specific AT credential access, restart, removal and rotation.
+   Keep provider credentials separate from TG issuer and derived traffic keys.
+   Qualify any claimed hardware-rooted sealing; where unavailable, do not persist
+   TG material that the standard requires to remain volatile.
+6. Connect the validated runtime to the contextual AT client, then release and test
+   installation, offline fallback, real device pairing and accessible confirmation.
+
+These are outstanding implementation requirements, not a replacement or reduction
+of the [project goal](PROJECT_GOAL.md). There is no Along-operated central backend
+in the chosen architecture. Tests that copy signaling in a harness do not prove
+seamless device discovery or reachability across arbitrary networks.
+
+## Initial runtime inspection (historical)
+
 
 Inspected `reality2-ai/r2-standard` main revision
 `fa35fba863e682b8af12cd32db0b380891facbdb`; the local checkout and GitHub main
-matched at inspection on 23 September 2026. No files in that repository were changed.
+matched at inspection on 23 September 2026. No files were changed during that
+initial inspection; the approved development described above began afterwards.
 
 | Component | Evidence | Implication for Along |
 | --- | --- | --- |
