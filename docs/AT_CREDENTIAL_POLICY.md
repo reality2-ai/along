@@ -5,7 +5,9 @@ currently stores or shares AT keys. The public app still uses downloaded schedul
 The owner performs no coding; the AI implements and verifies this contract.
 The [signed-policy experiment](../experiments/at-credentials/README.md) now checks
 owner signatures, explicit grants and context/revision binding with synthetic
-material. It is not a credential store or a deployed access-control system.
+material. Durable policy acceptance additionally checks signatures on reopening
+and rejects replay, generation regression and conflicting concurrent writes.
+It is not a credential store or a deployed access-control system.
 
 ## Separate authorities
 

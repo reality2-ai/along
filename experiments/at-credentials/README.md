@@ -28,6 +28,31 @@ node experiments/at-credentials/policy.test.mjs
 
 Passing checks cover real Ed25519 signatures, explicit grant/removal, context and
 counter binding, malformed/cross-application messages, and caller mutation while
-crypto is pending. Still required: owner establishment, atomic policy acceptance,
+crypto is pending. Durable public-policy acceptance is described below. Still required: owner establishment,
 current TG standing, storage encryption, request-time authority, device delivery,
 removal propagation, rotation and the contextual live-client integration.
+
+## Durable policy acceptance
+
+`openCredentialPolicyStore` binds a storage view to caller-established group,
+owner and credential identifiers. It does not learn a new owner from a message.
+`establish` is an explicit first-policy path; ordinary `update` refuses an absent
+or damaged local record. Both revalidate signatures, and updates require higher
+policy revisions and nondecreasing credential generations. Stored signatures are
+checked again on load. IndexedDB revision comparison prevents concurrent writers
+from overwriting the winning update. A saved-policy result is a commit receipt,
+not a lasting access grant.
+
+The real Chromium/IndexedDB check passes for initial establishment, update refusal
+on absence, replay and generation regression, racing updates, removal of all
+grants, cancellation before/after commit, damaged saved signatures and a fresh
+document reopening the policy. Run with `R2_BROWSER_DIR` pointing to the verified
+R2 browser directory and the browser environment described in the pairing notes:
+
+```sh
+node experiments/at-credentials/policy-store.test.mjs
+```
+
+This stores public policies only. It does not establish the owner's authority,
+check current TG standing, prevent rollback of an entire browser profile, or
+implement credential storage/delivery. Those remain required before public use.
