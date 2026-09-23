@@ -1,6 +1,6 @@
 # Release evidence and remaining gates
 
-Current deployed app: **version 35**, reviewed 23 September 2026. The static ZIP
+Current deployed app: **version 36**, reviewed 23 September 2026. The static ZIP
 is prepared and the private server is retired. GitHub Pages is published at `reality2.ai/along/`; no AWS deployment has been made.
 This register separates automated evidence, user observations and remaining checks.
 
@@ -16,10 +16,10 @@ this audit. Later public-hosting work supplements that brief.
 | 3. Inclusion | Keyboard, axe, contrast, zoom, narrow screens, touch emulation, reduced motion and forced colours; text alternatives to maps | Spoken TalkBack/desktop-reader check; no disabled-commuter participant study |
 | 4. Installation and updates | Icons/manifest/installability; offline reopening; old-tab migration; quiet offline pull; failed/successful dataset refresh with saved journeys retained; Android update repair accepted after v23 | Exact Android installation browser not recorded; latest contextual interface needs physical checks |
 | 5. Browser independence | Static `/along/` host with no Python API; offline new address routes; stored route geometry; measured download/storage/time | Low-memory phone performance not characterised; no evidence requiring WASM |
-| 6. Distribution | About 38 MiB ZIP/checksum, four data bundles, import scripts, MIT/data/Leaflet notices, AWS/Pages hosting instructions | Public Pages deployment is live; authenticated feeds now verified; direct browser feed access verified; TG credential integration remains incomplete |
+| 6. Distribution | About 39.2 MiB ZIP/checksum, four data bundles, import scripts, MIT/data/Leaflet notices, AWS/Pages hosting instructions | Public Pages deployment is live; authenticated feeds now verified; direct browser feed access verified; TG credential integration remains incomplete |
 | 7. GitHub documentation | README, architecture, data, hosting, privacy, limits and contribution guidance; v21 course notice and current design-driver/goal summaries | Public source repository: [reality2-ai/along](https://github.com/reality2-ai/along); app hosted at [reality2.ai/along](https://reality2.ai/along/) |
 | 8. Course material | Thematic analysis, six lessons, exercises, assessment rubric and negative-case/contextual-map refinements | Course effectiveness has not been studied |
-| 9. Release checks and handover | Version 35: 63 JavaScript and 17 Python tests; 19 active browser scenarios; static/update suites; source/archive/live asset comparison | Remaining physical and spoken screen-reader checks prevent claiming full goal completion |
+| 9. Release checks and handover | Version 36: 68 JavaScript and 18 Python tests; 20 active browser scenarios; static/update suites; source/archive/live asset comparison | Remaining physical and spoken screen-reader checks prevent claiming full goal completion |
 
 | 10. English / Te reo Māori | Deferred by user instruction; version 31 removes the selector and ignores earlier saved Māori choices | Re-enable only with renewed direction; draft review remains incomplete |
 
@@ -673,9 +673,9 @@ credential integration are the intended architecture; no Along proxy is deployed
 Installed launchers may refresh their cached icon independently of the app shell;
 actual Android and desktop launcher appearance still needs observation.
 
-## Version 36 release candidate
+## Version 36 release
 
-This candidate retains original GTFS boarding sequences, operator IDs and trip
+This release retains original GTFS boarding sequences, operator IDs and trip
 directions for contextual live matching. Repeated-stop identities are verified
 against real AT data; wrong operators/directions remain excluded. Predictions
 expire using their individual measurement time, including nearby comparisons.
@@ -689,3 +689,11 @@ remain open; automated Chromium checks cannot substitute for those observations.
 Candidate validation: 68 JavaScript and 18 Python tests, all 20 browser scenarios,
 static subpath/offline/accessibility checks and installed-app update checks passed.
 The archive matches dist byte-for-byte and contains no local AT credential.
+
+Version 36 [Pages deployment](https://github.com/reality2-ai/along/actions/runs/35829786257)
+succeeded. [Public-site checks](evidence/public-site-v36.json) confirm version 36,
+installability, offline new-address routing, installation guidance and feedback
+draft recovery with no page errors. [Release evidence](evidence/release-v36.json)
+records verified GitHub asset hashes and public shell/build metadata comparisons.
+The enriched dataset is now published; existing devices can fetch it through
+Settings → Update downloaded timetable.

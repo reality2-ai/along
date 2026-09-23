@@ -175,3 +175,10 @@ raw feed, vehicle coordinates or personal journey is recorded.
 Run `scripts/check_at_browser.mjs` explicitly with a local AT credential to repeat
 this verification; it consumes provider requests and is excluded from routine
 tests. Public live access and trust-group credential integration remain pending.
+
+### Version 36 publication
+
+The source and enriched timetable described above are now included in
+[version 36](evidence/release-v36.json). Earlier “local only” statements record
+their status at the time of those investigations. Public live access remains
+disabled, and the Reality2 credential-storage gap remains unresolved.
