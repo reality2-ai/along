@@ -14,7 +14,7 @@ this audit. Later public-hosting work supplements that brief.
 | 1. Contextual interaction | Guided destination/origin/review/options/follow flow; route → direction/branch → stops/map → stop departures; Back/Escape and focus/filter restoration tested | Physical assessment of new contextual maps |
 | 2. Real journeys | Address-based train/ferry, bus and walking examples; independent raw GTFS validation; nearby and transfer fixtures; route 70/Symonds browser check | Snapshot correctness does not establish on-street conditions |
 | 3. Inclusion | Keyboard, axe, contrast, zoom, narrow screens, touch emulation, reduced motion and forced colours; text alternatives to maps | Spoken TalkBack/desktop-reader check; no disabled-commuter participant study |
-| 4. Installation and updates | Icons/manifest/installability; offline reopening; old-tab migration; quiet offline pull; failed/successful dataset refresh with saved journeys retained | Exact Android installation browser not recorded; latest contextual interface needs physical checks |
+| 4. Installation and updates | Icons/manifest/installability; offline reopening; old-tab migration; quiet offline pull; failed/successful dataset refresh with saved journeys retained; Android update repair accepted after v23 | Exact Android installation browser not recorded; latest contextual interface needs physical checks |
 | 5. Browser independence | Static `/along/` host with no Python API; offline new address routes; stored route geometry; measured download/storage/time | Low-memory phone performance not characterised; no evidence requiring WASM |
 | 6. Distribution | About 38 MiB ZIP/checksum, four data bundles, import scripts, MIT/data/Leaflet notices, AWS/Pages hosting instructions | Public Pages deployment is live; authenticated live verification needs an AT key |
 | 7. GitHub documentation | README, architecture, data, hosting, privacy, limits and contribution guidance; v21 course notice and current design-driver/goal summaries | Public source repository: [reality2-ai/along](https://github.com/reality2-ai/along); app hosted at [reality2.ai/along](https://reality2.ai/along/) |
@@ -58,7 +58,8 @@ no-pickup services. Stop-name filtering does not prove street traversal.
 | Desktop installation, icon and standalone window worked | Version 11, explicitly reported |
 | Android address journey, steps/save, flight-mode reopen, new offline search, quiet pull and touch all passed | User report, exact app version not supplied |
 | Desktop keyboard-only navigation and 200% zoom worked | User report before the guided redesign |
-| Android update page appeared to update, though app was already latest | User report; exact browser/version not recorded |
+| Android update page appeared to update, though app was already latest | Earlier user report; exact browser/version not recorded |
+| Version 21 update loop, followed by “that worked nicely” after version 23 recovery instructions | User confirmation that the reported Android update failure was resolved; browser identity and TalkBack remain unconfirmed |
 | “Yes, looking good” in response to the version 15 device/flow question | Positive acceptance of the guided flow; not an explicit TalkBack result |
 | “Looking good” in response to the version 21 route 70 / Symonds / Back checklist | Positive flow feedback; device-specific, offline and TalkBack results were not individually confirmed |
 
@@ -186,7 +187,7 @@ HTML's app version before installation succeeds. A mismatch discards only the ne
 shell cache and leaves the old app, saved journeys and datasets available. The
 regression covers HTTP-cached old assets, held-open windows, saved data, quiet
 offline refresh and a mismatched deployment retaining the working offline app.
-An Android confirmation is still needed after deployment.
+The user subsequently confirmed that the version 23 recovery “worked nicely.”
 
 
 Version 23 is deployed to both the existing private site and GitHub Pages. Core
@@ -197,4 +198,6 @@ The [public-site check](evidence/public-site-v23.json) confirms version 23,
 installation eligibility and offline new-address routing without page errors.
 To recover an older installed copy, use its Settings → Check for an app update →
 Check for updates → Open Along. No uninstall or site-data deletion is required.
-The phone's successful update still needs a user observation.
+The user confirmed the recovery worked after receiving the version 23 update
+instructions. This closes the reported repeated-update incident; it does not
+establish a TalkBack result or identify the installation browser.

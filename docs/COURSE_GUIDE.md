@@ -114,6 +114,14 @@ survives, and an offline refresh stays quiet. Introduce a failed map download an
 verify that existing planning remains possible. Discuss when an automatic reload
 would interrupt the user's task.
 
+Use the version 23 cache incident as a second case. The original test host sent
+`no-store`; the public host allowed ten minutes of HTTP caching. Ask the assistant
+to explain how a new worker could cache old HTML, and what evidence distinguishes
+a successful worker update from a successful interface update. Inspect the
+regression that retains the old offline app when published versions disagree.
+Compare the automated results with the user's later confirmation that recovery
+worked; explain what neither observation establishes about assistive technology.
+
 Deliverable: a causal explanation supported by observable states, not a generic
 recommendation to clear all browser storage.
 

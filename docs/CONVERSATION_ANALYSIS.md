@@ -467,3 +467,12 @@ what was in the user's phone cache; it supplies a demonstrated failure and a fix
 to verify on the device. For the course, the important question is which production
 condition a passing test omitted, rather than whether the user pressed the update
 button correctly.
+
+
+The user subsequently replied “that worked nicely” to the version 23 recovery
+instructions. This adds real-device acceptance to the reproduced failure and
+passing regression. It supports closing that reported update incident, while
+leaving the exact browser and unrelated screen-reader checks unconfirmed. The
+case now spans reported failure → test-environment correction → implementation
+fix → automated verification → user confirmation, with no code changes required
+from the human.
