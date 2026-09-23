@@ -516,3 +516,13 @@ explains the condition without adding another panel. The privacy/offline choice
 remains intact: the app still waits for a request before contacting OpenStreetMap.
 This extends contextual affordance from choosing a task to explaining an optional
 part of the current view.
+
+
+## Refinement: useful secondary actions still need to be discoverable
+
+The request to move “Save this journey” higher and make it more prominent shows
+that progressive disclosure must not make a useful action feel absent. Saving
+now appears beside the step count at the top of the selected journey, with a
+clear button boundary and saved-state text. The current travel instruction and
+Next step remain the main task. This balances remembering a future routine with
+following the present journey, rather than making every action equally dominant.

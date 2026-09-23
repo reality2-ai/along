@@ -1,6 +1,6 @@
 # Release evidence and remaining gates
 
-Current candidate: **version 25**, reviewed 23 September 2026. The private site and
+Current candidate: **version 26**, reviewed 23 September 2026. The private site and
 static ZIP are prepared. GitHub Pages is published at `reality2.ai/along/`; no AWS deployment has been made.
 This register separates automated evidence, user observations and remaining checks.
 
@@ -245,3 +245,11 @@ selection and offline; street tiles are still requested only by explicit action.
 The route exploration, nested Back, fixture tile rendering and offline regression
 passed. A mobile layout check confirms the button is centred; axe checks cover
 the route dialog with the button visible.
+
+
+## Version 26: saving at the top of the journey
+
+“Save this journey” now sits beside the step count, above the current travel
+instruction, as an outlined 48-pixel-minimum-height button. The filled primary
+Next step action remains below the travel instruction. Saved state still uses
+text and `aria-pressed`; the header wraps on narrow screens rather than clipping.
