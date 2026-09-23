@@ -8,6 +8,7 @@ import {join} from 'node:path';
 const {chromium} = await import(process.env.PLAYWRIGHT_MODULE || '@playwright/test');
 const root = process.env.PAIRING_LAB_DIR || new URL('../../releases/along-pairing-lab/', import.meta.url).pathname;
 const manifest = JSON.parse(await readFile(join(root, 'build-info.json'), 'utf8'));
+const prefix = '/along/pairing-lab/';
 assert.equal(manifest.profile, 'along-pairing-lab-v1');
 assert.equal(Object.keys(manifest.files).some(name => /APIKey|\.test\.|data\//.test(name)), false);
 const sources = new Map(await Promise.all(Object.entries(manifest.files).map(async ([name, hash]) => {
@@ -16,8 +17,9 @@ const sources = new Map(await Promise.all(Object.entries(manifest.files).map(asy
   return ['/' + name, bytes];
 }))); 
 const server = createServer((req, res) => {
-  const path = req.url === '/' ? '/index.html' : req.url;
-  const body = sources.get(path);
+  const url = new URL(req.url, 'http://localhost');
+  const path = url.pathname.startsWith(prefix) ? '/' + (url.pathname.slice(prefix.length) || 'index.html') : '';
+  const body = path === '/build-info.json' ? JSON.stringify(manifest) : sources.get(path);
   if (!body) { res.writeHead(404); res.end(); return; }
   res.setHeader('Content-Type', path.endsWith('.wasm') ? 'application/wasm' : path.endsWith('.css') ? 'text/css' : path.endsWith('.html') ? 'text/html' : 'text/javascript');
   res.end(body);
@@ -25,7 +27,8 @@ const server = createServer((req, res) => {
 await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
 let browser;
 try {
-  browser = await chromium.launch({headless: true, executablePath: process.env.CHROMIUM_PATH});
+  browser = await chromium.launch({headless: true, executablePath: process.env.CHROMIUM_PATH,
+    ...(process.env.CHECK_BFCACHE === '1' ? {ignoreDefaultArgs: ['--disable-back-forward-cache']} : {})});
   const contexts = await Promise.all([browser.newContext({viewport: {width: 360, height: 780}}), browser.newContext({viewport: {width: 360, height: 780}})]);
   const pages = await Promise.all(contexts.map(c => c.newPage()));
   const externalRequests = [];
@@ -34,7 +37,8 @@ try {
     externalRequests.push(route.request().url()); return route.abort();
   })));
   await Promise.all(pages.map(async (page, index) => {
-    await page.goto(`http://127.0.0.1:${server.address().port}`);
+    await page.goto(`http://127.0.0.1:${server.address().port}${prefix}`);
+    assert.equal(await page.locator('#lab-build').textContent(), 'Lab build ' + manifest.build_id);
     await page.getByRole('button', {name: 'Set up this test device', exact: true}).click();
     await page.getByRole('button', {name: 'Create my device group', exact: true}).click();
     await page.getByRole('button', {name: 'Restore saved test device', exact: true}).click();
@@ -164,6 +168,21 @@ try {
   await candidate.getByRole('button', {name: 'Return to setup', exact: true}).click();
   await candidate.getByRole('button', {name: 'Set up this test device', exact: true}).waitFor();
   assert.equal(await owner.getByRole('button', {name: 'Invite my other device', exact: true}).count(), 1);
+  if (process.env.CHECK_BFCACHE === '1') {
+    const token = await owner.evaluate(() => {
+      window.documentToken = crypto.randomUUID();
+      window.cachedReturn = false;
+      window.addEventListener('pageshow', event => { if (event.persisted) window.cachedReturn = true; });
+      return window.documentToken;
+    });
+    await owner.goto(`http://127.0.0.1:${server.address().port}${prefix}build-info.json`);
+    await owner.goBack({waitUntil: 'commit'});
+    await owner.waitForFunction(() => window.cachedReturn || !window.documentToken);
+    assert.deepEqual(await owner.evaluate(() => [window.documentToken, window.cachedReturn]), [token, true]);
+    await owner.getByRole('button', {name: 'Restore saved test device', exact: true}).click();
+    await owner.getByRole('button', {name: 'Invite my other device', exact: true}).waitFor();
+    console.log('PASS: real browser Back revives the same cached lab document and restores usable saved-device controls.');
+  }
   assert.deepEqual(externalRequests, []);
   console.log('PASS: actual enrolled device -> AT settings -> encrypted synthetic key save -> reload/restore; no external requests or displayed key.');
   console.log('PASS: explicit lab reset, cancel, synthetic-click refusal, blocked deletion and completed removal; Along journey preferences and offline database preserved.');

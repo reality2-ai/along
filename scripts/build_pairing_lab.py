@@ -55,7 +55,11 @@ def build(browser, wasm, notices=None, runtime=None):
             shutil.copy2(source, stage / name)
         files = {str(p.relative_to(stage)): hashlib.sha256(p.read_bytes()).hexdigest()
                  for p in sorted(stage.rglob('*')) if p.is_file()}
-        (stage / 'build-info.json').write_text(json.dumps({'profile': 'along-pairing-lab-v1', 'files': files}, indent=2) + '\n')
+        build_id = hashlib.sha256(json.dumps(files, sort_keys=True).encode()).hexdigest()[:12]
+        index = stage / 'index.html'
+        index.write_text(index.read_text().replace('Development source', 'Lab build ' + build_id))
+        files['index.html'] = hashlib.sha256(index.read_bytes()).hexdigest()
+        (stage / 'build-info.json').write_text(json.dumps({'profile': 'along-pairing-lab-v1', 'build_id': build_id, 'files': files}, indent=2) + '\n')
         if output.exists():
             marker = output / 'build-info.json'
             if not marker.is_file() or json.loads(marker.read_text()).get('profile') != 'along-pairing-lab-v1':

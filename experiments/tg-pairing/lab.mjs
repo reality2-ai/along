@@ -85,8 +85,20 @@ const showHome = async () => {
     action('Remove this test device data…', reset);
   } catch { if (!closed && selected === generation) status.textContent = 'Device storage could not be read. Nothing has been replaced.'; }
 };
-try {
-  if (!isSecureContext) throw new Error('Secure origin required');
-  await wasm.default(); store = await openBrowserStorage(LAB_DATABASE); await showHome();
-} catch { container.replaceChildren(element('p', 'This test could not start. Use HTTPS or localhost with browser storage enabled.')); }
+const start = async () => {
+  closed = false;
+  const selected = clear();
+  try {
+    if (!isSecureContext) throw new Error('Secure origin required');
+    await wasm.default();
+    if (closed || selected !== generation) return;
+    const opened = await openBrowserStorage(LAB_DATABASE);
+    if (closed || selected !== generation) { opened.close(); return; }
+    store = opened; await showHome();
+  } catch {
+    if (!closed && selected === generation) container.replaceChildren(element('p', 'This test could not start. Use HTTPS or localhost with browser storage enabled.'));
+  }
+};
 window.addEventListener('pagehide', () => { closed = true; clear(); store?.close(); });
+window.addEventListener('pageshow', event => { if (event.persisted && closed) void start(); });
+void start();
