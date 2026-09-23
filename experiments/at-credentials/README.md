@@ -752,7 +752,7 @@ Chromium check `navigator.onLine` remained true: two attempted mock requests wer
 aborted, and the app still fell back quietly. This does not establish zero request
 attempts under every kind of network loss. Bridge checks cover late responses after context change and separate
 screen cancellation. This test uses a local-owner key; the Settings reconnect
-interface is now mounted, but full two-device app verification remains outstanding. Physical devices, real provider feeds
+interface is now mounted; the separate two-app test below covers shared-key use. Physical devices, real provider feeds
 and installed-app update behavior are not established by this build/test.
 
 
@@ -824,6 +824,40 @@ The generated-app test covers the actual Settings entry, message step, progressi
 Escape/Back behavior and focus return, 320px/200% dialog reflow and axe checks,
 connection-dependent selected-journey
 controls, and the existing offline/startup checks. The peer test covers real
-reconnection separately. A complete shared-key journey through two instances of
-the generated app remains to be verified, as do physical devices and real AT
-responses. Neither test implies automatic background device discovery.
+reconnection separately. The additional two-app test below covers the generated
+app across isolated browser profiles. Physical devices and real AT responses
+remain unverified. None of these tests establishes automatic background discovery.
+
+
+### Shared-key journey across two generated app instances
+
+`two-app-integration.test.mjs` serves the generated app on a static subpath and
+checks each manifest hash. Two isolated browser profiles create groups, enroll
+through the actual lab controls, compare codes and acknowledge installation.
+The setup harness then grants AT access and supplies the explicitly reviewed
+owner descriptor/consent to the existing runtime APIs. The synthetic key travels
+over an actual authenticated WebRTC connection and is encrypted in recipient
+storage; the test does not seed a recipient key or fabricate membership.
+
+Additional setup-only modules are served for this fixture and disabled before
+opening the app. From that point both profiles use only the generated payload:
+Settings reconnection, explicit connection handoff, closing Settings, recipient
+address-to-address bus/ferry planning and an explicit contextual AT check. The
+provider is mocked with empty timestamped feeds, and the request handler checks
+the synthetic subscription header. There is no provider request during startup,
+pairing or reconnect, and no claim of real AT service accuracy.
+
+The test also changes signed owner policy without pushing it. The recipient's
+next check must learn removal before another provider request. Disconnecting
+from Settings preserves the selected journey step. The recipient then reloads
+with its browser context offline, searches different addresses and obtains a
+scheduled journey without a live connection. First-use sharing consent/grant
+and removal are still harness operations; their complete application workflow,
+physical devices, cross-network reachability and real provider acceptance remain
+separate work.
+
+Run after building the experimental app:
+
+```sh
+CHROMIUM_PATH=/path/to/chromium node experiments/at-credentials/two-app-integration.test.mjs
+```

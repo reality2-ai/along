@@ -917,3 +917,21 @@ relicensed. It extends the themes of reusable course outputs and selective
 framework adoption. Implementation evidence must still include the exact source
 scope, retained attribution and bundled notices; a licence choice alone is not a
 completed distribution audit. No human coding is required.
+
+
+### Development evidence: test the assembled commuter workflow
+
+The shared-key integration check now runs two isolated browser profiles through
+the generated app, after actual enrollment and encrypted credential delivery.
+It connects through Settings, closes the dialogs, plans an address-to-address
+bus/ferry journey and requests contextual information. It also checks that a
+withheld removal prevents further provider requests and that offline planning
+survives disconnection and reload. This supports the themes of offline autonomy,
+contextual information and preserving the commuter's current task.
+
+The limits belong beside the result: first-use grant/consent and removal still
+use harness calls, AT responses are mocked, and both profiles run on one host.
+For the course, distinguish this evidence from component tests, a fully composed
+setup experience, physical-device usability and provider acceptance. Passing one
+does not establish the others. This is new development evidence, not a new user
+acceptance report; the human still performs no coding.

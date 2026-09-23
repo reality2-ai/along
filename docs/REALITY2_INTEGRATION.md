@@ -11,8 +11,14 @@ The experimental existing-device reconnect screen now exchanges public connectio
 messages through visible controls, authenticates saved identities and hands the
 controller to its parent after an explicit press. Browser integration checks
 cover owner substitution refusal, cancellation, accessible reflow, contextual
-mocked AT reads and removal before further requests. The experimental app now mounts this flow in Settings. Full two-device app
-acceptance and physical phone/desktop connectivity remain outstanding; this is not seamless
+mocked AT reads and removal before further requests. The experimental app mounts
+this flow in Settings. A generated-app test now passes across two isolated browser
+profiles: actual lab enrollment, encrypted key delivery, Settings reconnection,
+recipient bus/ferry planning and contextual mocked AT reads. A withheld owner
+removal is learned before further provider I/O; disconnect preserves the journey,
+and the recipient reopens and routes offline. Initial grant/consent and removal
+use harness calls to the real runtime, not a completed first-use app workflow.
+Physical phone/desktop connectivity remains unverified; this is not seamless
 background reconnection or a public release.
 
 The selected profile is a **browser-only R2 subset with encrypted software
@@ -72,8 +78,9 @@ bus/ferry routing, explicit mocked AT requests and offline reopening/routing.
 Optional runtime restoration now has a bounded startup wait; stalled WASM and a
 newer unreadable IndexedDB schema are tested without blocking the scheduled
 planner or replacing saved lab records. The public build is untouched;
-full two-device app reconnection verification and deployment remain
-outstanding. See the [experimental build instructions](../experiments/at-credentials/README.md#actual-journey-app-integration-build-local-only).
+the two-profile generated-app test now covers shared-key reconnection and journey
+use as described above. Public deployment, first-use sharing UI and physical
+verification remain outstanding. See the [experimental build instructions](../experiments/at-credentials/README.md#actual-journey-app-integration-build-local-only).
 Manual transfer is currently cumbersome, and the one-minute invitation lifetime
 needs real usability assessment. Public deployment, simpler transfer, group epoch
 updates/removal, saved-journey sync and physical-device validation remain work.

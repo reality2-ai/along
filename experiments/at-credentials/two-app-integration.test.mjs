@@ -1,0 +1,219 @@
+// Actual generated journey app on a static subpath, with a real local software
+// identity/vault and mocked provider. No production key or proxy is involved.
+import assert from 'node:assert/strict';
+import {createHash} from 'node:crypto';
+import {createServer} from 'node:http';
+import {readFile} from 'node:fs/promises';
+import {join, extname} from 'node:path';
+const {chromium, expect} = await import(process.env.PLAYWRIGHT_MODULE || '@playwright/test');
+const root = new URL('../../releases/along-experimental-app/', import.meta.url).pathname;
+const manifest = JSON.parse(await readFile(join(root, 'build-info.json'), 'utf8'));
+assert.equal(manifest.profile, 'along-experimental-app-v1');
+assert.equal(Object.keys(manifest.files).some(name => /APIKey|\.test\./.test(name)), false);
+const sources = new Map(await Promise.all(Object.entries(manifest.files).map(async ([name, hash]) => {
+  const bytes = await readFile(join(root, name));
+  assert.equal(createHash('sha256').update(bytes).digest('hex'), hash); return [name, bytes];
+})));
+// First-use grant/consent composition is still a fixture. These extra modules
+// serve only during setup and are disabled before the generated app is opened.
+let allowSetupModules = true;
+const setupSources = new Map();
+for (const name of ['owner-delivery.mjs', 'remote-owner.mjs', 'delivery-history.mjs']) {
+  setupSources.set('experiments/at-credentials/' + name, await readFile(new URL(name, import.meta.url)));
+}
+const prefix = '/along-exp/';
+const server = createServer((req, res) => {
+  const path = new URL(req.url, 'http://localhost').pathname;
+  const name = path.startsWith(prefix) ? path.slice(prefix.length) + (path.endsWith('/') ? 'index.html' : '') : '';
+  const body = sources.get(name) || (allowSetupModules ? setupSources.get(name) : undefined);
+  if (!body) { res.writeHead(404); res.end(); return; }
+  res.setHeader('Content-Type', ({'.js': 'text/javascript', '.mjs': 'text/javascript', '.wasm': 'application/wasm', '.html': 'text/html', '.css': 'text/css', '.gz': 'application/gzip', '.json': 'application/json', '.webmanifest': 'application/manifest+json', '.png': 'image/png', '.svg': 'image/svg+xml'})[extname(name)] || 'text/plain');
+  res.end(body);
+});
+await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+let browser;
+try {
+  browser = await chromium.launch({headless: true, executablePath: process.env.CHROMIUM_PATH});
+  const contexts = await Promise.all([browser.newContext(), browser.newContext()]);
+  const pages = await Promise.all(contexts.map(context => context.newPage()));
+  const origin = `http://127.0.0.1:${server.address().port}${prefix}`;
+  const providerRequests = [], errors = [];
+  for (const page of pages) page.on('pageerror', error => errors.push(error.message));
+  for (const context of contexts) await context.route('https://api.at.govt.nz/**', async route => {
+    assert.equal(route.request().headers()['ocp-apim-subscription-key'], 'synthetic-two-app-key');
+    providerRequests.push(new URL(route.request().url()).pathname);
+    await route.fulfill({status: 200, contentType: 'application/json', body: JSON.stringify({header: {timestamp: Math.floor(Date.now()/1000)}, entity: []})});
+  });
+  await Promise.all(pages.map(async (page, index) => {
+    await page.goto(origin + 'experiments/');
+    await page.getByRole('button', {name: 'Set up this test device', exact: true}).click();
+    await page.getByRole('button', {name: 'Create my device group', exact: true}).click();
+    await page.getByRole('button', {name: 'Restore saved test device', exact: true}).click();
+    await page.getByRole('button', {name: index ? 'Invite my other device' : 'Join my other device', exact: true}).click();
+  }));
+  const [candidate, owner] = pages;
+  await owner.getByRole('heading', {name: 'Invite your other device', exact: true}).waitFor();
+  const move = async (from, to, label, action) => {
+    const text = await from.getByLabel('Device message to copy').inputValue();
+    await to.getByLabel(label, {exact: true}).fill(text);
+    await to.getByRole('button', {name: action, exact: true}).click();
+  };
+  await move(owner, candidate, 'Invitation text', 'Review invitation');
+  await candidate.getByRole('button', {name: 'Use invitation from my other device', exact: true}).click();
+  await candidate.getByRole('heading', {name: 'Check your other device', exact: true}).waitFor();
+  await move(candidate, owner, 'Challenge from your other device', 'Create device reply');
+  await owner.getByRole('heading', {name: 'Send your device reply', exact: true}).waitFor();
+  await move(owner, candidate, 'Reply from your other device', 'Check reply');
+  await candidate.getByRole('heading', {name: 'Send connection details', exact: true}).waitFor();
+  await move(candidate, owner, 'Connection details from your other device', 'Prepare connection');
+  await owner.getByRole('heading', {name: 'Send the connection reply', exact: true}).waitFor();
+  await move(owner, candidate, 'Connection reply from your other device', 'Compare device codes');
+  await owner.getByRole('button', {name: 'Compare device codes', exact: true}).click();
+  await Promise.all(pages.map(page => page.getByRole('heading', {name: 'Do both devices show this code?', exact: true}).waitFor()));
+  assert.equal(await candidate.locator('.pairing-code').textContent(), await owner.locator('.pairing-code').textContent());
+
+  await Promise.all(pages.map(async page => {
+    await page.getByRole('button', {name: 'Both devices are here and the codes match', exact: true}).click();
+  }));
+  await candidate.getByRole('heading', {name: 'Device connected', exact: true}).waitFor();
+  await owner.getByRole('heading', {name: 'Other device installed', exact: true}).waitFor();
+
+  // Restore real enrolled identities. The harness supplies reviewed descriptors
+  // and explicit setup consent; credentials themselves travel only over WebRTC.
+  const records = await Promise.all(pages.map(page => page.evaluate(async () => {
+    const wasm = await import('./tg-pairing/hive_wasm.js'); await wasm.default();
+    const store = await (await import('./tg-pairing/storage.mjs')).openBrowserStorage('along-pairing-lab-v1');
+    const record = (await store.read('candidate-persona', 'active')).value.record;
+    window.setup = {wasm, store, group: record.group};
+    return {subject: [...record.subject], certificate: [...record.certificate]};
+  })));
+  const descriptor = await owner.evaluate(async receiver => {
+    const {wasm, store, group} = setup;
+    const {binding} = await (await import('./at-credentials/local-owner.mjs')).establishLocalATOwner({wasm, store, expectedGroup: group});
+    const hex = bytes => bytes.map(value => value.toString(16).padStart(2, '0')).join('');
+    await (await import('./at-credentials/owner-policy.mjs')).updateLocalATPolicy({wasm, store, expectedGroup: group, expectedRevision: 1n,
+      devices: [binding.owner, hex(receiver.subject)], certificates: [new Uint8Array(receiver.certificate)]});
+    const vault = (await import('./at-credentials/local-vault.mjs')).openLocalATVault({wasm, store, ...binding});
+    await vault.saveOwnerKey('synthetic-two-app-key');
+    setup.binding = binding;
+    const signed = await store.read('along-at-policy:' + binding.owner, binding.group + ':' + binding.credential);
+    return {binding, bytes: [...signed.value.bytes], signature: [...signed.value.signature]};
+  }, records[0]);
+  const offer = await candidate.evaluate(async owner => {
+    const {wasm, store, group} = setup;
+    setup.session = await (await import('./tg-pairing/local-persona-session.mjs')).openLocalPersonaSession({wasm, store, expectedGroup: group,
+      peer: new Uint8Array(owner.subject), role: 'offer', onMessage: async packet => {
+        try {
+          setup.receipt = await setup.request.install(packet);
+          await setup.session.send(await setup.request.acknowledgment({signal: setup.session.signal}));
+        } catch (error) { setup.error = error.message; }
+      }});
+    return setup.session.offer();
+  }, records[1]);
+  const answer = await owner.evaluate(async ({offer, receiver}) => {
+    const {wasm, store, group, binding} = setup;
+    const hex = bytes => bytes.map(value => value.toString(16).padStart(2, '0')).join('');
+    setup.session = await (await import('./tg-pairing/local-persona-session.mjs')).openLocalPersonaSession({wasm, store, expectedGroup: group,
+      peer: new Uint8Array(receiver.subject), role: 'answer', onMessage: async packet => {
+        try {
+          if (setup.sent) {
+            const history = (await import('./at-credentials/delivery-history.mjs')).openDeliveryHistory({store, ...binding, recipient: hex(receiver.subject)});
+            setup.ack = await history.confirm(packet, {signal: setup.session.signal});
+          } else {
+            setup.sent = await (await import('./at-credentials/owner-delivery.mjs')).sendOwnerCredential({wasm, store, expectedGroup: group,
+              peer: new Uint8Array(receiver.subject), peerCertificate: new Uint8Array(receiver.certificate), nonce: packet, connection: setup.session});
+          }
+        } catch (error) { setup.error = error.message; }
+      }});
+    return setup.session.accept(offer);
+  }, {offer, receiver: records[0]});
+  await candidate.evaluate(answer => setup.session.accept(answer), answer);
+  await Promise.all(pages.map(page => page.evaluate(() => setup.session.authenticated())));
+  await candidate.evaluate(async ({descriptor, owner}) => {
+    const {wasm, store, group} = setup;
+    await (await import('./at-credentials/remote-owner.mjs')).acceptRemoteATOwner({wasm, store, expected: descriptor.binding,
+      ownerCertificate: new Uint8Array(owner.certificate), policyBytes: new Uint8Array(descriptor.bytes), policySignature: new Uint8Array(descriptor.signature), connection: setup.session});
+    const vault = (await import('./at-credentials/local-vault.mjs')).openLocalATVault({wasm, store, ...descriptor.binding});
+    setup.request = await vault.prepareDelivery({ownerCertificate: new Uint8Array(owner.certificate), signal: setup.session.signal});
+    await setup.session.send(setup.request.nonce);
+  }, {descriptor, owner: records[1]});
+  await candidate.waitForFunction(() => setup.receipt || setup.error);
+  await owner.waitForFunction(() => setup.ack || setup.error);
+  assert.equal(await candidate.evaluate(() => setup.error), undefined);
+  assert.equal(await owner.evaluate(() => setup.error), undefined);
+  assert.equal(await candidate.evaluate(() => setup.receipt.status), 'credential-saved');
+  await Promise.all(pages.map(page => page.evaluate(() => { setup.request?.close(); setup.session.close(); setup.store.close(); delete window.setup; })));
+  assert.equal(providerRequests.length, 0);
+  allowSetupModules = false;
+  await Promise.all(pages.map(page => page.goto(origin + 'public/')));
+  await Promise.all(pages.map(page => expect(page.locator('#data-status')).toContainText('offline ready', {timeout: 90000})));
+  for (const page of pages) {
+    await page.locator('#settings-open').click();
+    await page.getByRole('button', {name: 'Connect an existing AT-key device', exact: true}).click();
+    await page.getByRole('button', {name: 'Connect devices', exact: true}).click();
+  }
+  await candidate.getByRole('heading', {name: 'Connect to your AT-key device', exact: true}).waitFor();
+  await move(candidate, owner, 'Connection request', 'Prepare connection reply');
+  await owner.getByRole('heading', {name: 'Reply to your other device', exact: true}).waitFor();
+  await move(owner, candidate, 'Connection reply', 'Connect devices');
+  for (const page of pages) {
+    await page.getByRole('button', {name: 'Use this connection', exact: true}).click();
+    await page.getByRole('heading', {name: 'Your devices are connected', exact: true}).waitFor();
+    await page.getByRole('button', {name: 'Back to settings', exact: true}).click();
+    await page.getByRole('button', {name: 'Close settings', exact: true}).click();
+  }
+  assert.equal(providerRequests.length, 0);
+  const choose = async (field, query) => {
+    const input = candidate.locator('#' + field); await input.fill(query);
+    await expect(candidate.locator('#' + field + '-options [data-index]').first()).toBeVisible();
+    await input.press('ArrowDown'); await input.press('Enter');
+  };
+  await choose('destination', '10 Victoria Road Devonport'); await candidate.locator('#destination-next').click();
+  await choose('origin', '277 Broadway Newmarket'); await candidate.locator('#origin-next').click();
+  await candidate.locator('#journey-preferences > summary').click();
+  await candidate.locator('#date').fill('2026-09-23'); await candidate.locator('#time').fill('09:00'); await candidate.locator('#find').click();
+  await expect(candidate.locator('.journey-card').first()).toBeVisible({timeout: 30000});
+  await expect(candidate.locator('.journey-card').first()).toContainText('Ferry');
+  await candidate.locator('[data-follow]').first().click();
+  const step = await candidate.locator('#current-step').textContent();
+  await candidate.locator('#journey-alert-check').click();
+  await expect(candidate.locator('#journey-prediction-results')).toContainText('No live departure match', {timeout: 15000});
+  assert.deepEqual(providerRequests.sort(), ['/realtime/legacy/servicealerts', '/realtime/legacy/tripupdates']);
+  assert.equal((await candidate.locator('body').textContent()).includes('synthetic-two-app-key'), false);
+  // Withhold a removal push: the next contextual read must learn the signed
+  // owner change before AT receives another request. Removal UI remains separate.
+  await owner.evaluate(async () => {
+    const wasm = await import('../experiments/tg-pairing/hive_wasm.js');
+    const store = await (await import('../experiments/tg-pairing/storage.mjs')).openBrowserStorage('along-pairing-lab-v1');
+    try {
+      const record = (await store.read('candidate-persona', 'active')).value.record;
+      const {binding} = await (await import('../experiments/at-credentials/local-owner.mjs')).loadATBinding({wasm, store, expectedGroup: record.group});
+      const loaded = await (await import('../experiments/at-credentials/policy-store.mjs')).openCredentialPolicyStore({store, ...binding}).read();
+      await (await import('../experiments/at-credentials/owner-policy.mjs')).updateLocalATPolicy({wasm, store, expectedGroup: record.group,
+        expectedRevision: loaded.policy.revision, devices: [binding.owner]});
+    } finally { store.close(); }
+  });
+  await candidate.locator('#journey-alert-check').click();
+  await expect(candidate.locator('#journey-prediction-results')).toContainText('Live departure predictions unavailable', {timeout: 15000});
+  assert.equal(providerRequests.length, 2);
+  await owner.locator('#settings-open').click();
+  await owner.getByRole('button', {name: 'Connect an existing AT-key device', exact: true}).click();
+  await owner.getByRole('button', {name: 'Disconnect devices', exact: true}).click();
+  await expect(candidate.locator('#journey-live')).toBeHidden({timeout: 15000});
+  assert.equal(await candidate.locator('#current-step').textContent(), step);
+  assert.equal(providerRequests.length, 2);
+  await candidate.evaluate(async () => { await navigator.serviceWorker.ready; });
+  await candidate.waitForFunction(() => navigator.serviceWorker.controller !== null);
+  await contexts[0].setOffline(true);
+  await candidate.reload();
+  await expect(candidate.locator('#data-status')).toContainText('offline ready', {timeout: 90000});
+  await choose('destination', '1 Queen Street Auckland Central'); await candidate.locator('#destination-next').click();
+  await choose('origin', '277 Broadway Newmarket'); await candidate.locator('#origin-next').click();
+  await candidate.locator('#find').click();
+  await expect(candidate.locator('.journey-card').first()).toBeVisible({timeout: 30000});
+  await candidate.locator('[data-follow]').first().click();
+  await expect(candidate.locator('#journey-live')).toBeHidden();
+  assert.equal(providerRequests.length, 2);
+  assert.deepEqual(errors, []);
+  console.log('PASS: two isolated browser app instances restore actual enrollment and encrypted WebRTC-delivered key, reconnect through Settings, close Settings, request contextual mocked AT feeds for a real bus/ferry journey, learn withheld removal before further provider I/O, disconnect without changing the selected step, and reopen/route offline. Setup grant/consent uses harness descriptors; one host, not physical devices or real provider verification.');
+} finally { await browser?.close(); await new Promise(resolve => server.close(resolve)); }
