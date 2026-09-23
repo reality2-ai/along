@@ -27,9 +27,10 @@ database in the browser test. It does not revoke other devices. It is not yet pu
 and physical-device testing remain necessary. The
 [runtime notice audit](PAIRING_LICENSE_AUDIT.md) records missing local R2 texts
 and a conflict with an older explicit PolyForm Noncommercial change. The owner selected MIT, matching Along, for the included R2 subset on
-24 September 2026. Scoped source metadata and complete distribution notices still
-need updating; dependency licences and the wider standard are not changed.
-Registry notice texts have been collected verbatim. The [device-test guide](PAIRING_DEVICE_CHECK.md) is
+24 September 2026. A scoped MIT grant and verbatim dependency/Rust notices are now included in both
+experimental builds. Dependency licences and the wider standard are not changed.
+The cached runtime still needs a rebuild with recorded compiler provenance before
+publication. The [device-test guide](PAIRING_DEVICE_CHECK.md) is
 ready for a verified test URL.
 The lab also exposes interrupted-installation confirmation recovery using saved
 identities and an authenticated receipt exchange. A browser test interrupts the

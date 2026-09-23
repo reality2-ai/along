@@ -724,7 +724,10 @@ live-client import to `app-live-bridge.mjs`. The normal public build is untouche
 The experimental worker uses a separate cache prefix and includes the runtime
 modules for offline reopening. It does not delete the public app’s shell cache.
 Every generated payload is hashed in `build-info.json`; no test or credential file
-is copied. **Do not publish this build:** the R2 licence/notice question is pending.
+is copied. **Do not publish this build yet:** matching runtime source/compiler provenance
+to the collected notices remains pending. The owner has selected MIT for the
+included R2 subset. The builder now requires the notice collection described in
+[the audit](../../docs/PAIRING_LICENSE_AUDIT.md) and includes it in the output.
 
 ```sh
 python3 scripts/build_experimental_app.py --browser "$R2_BROWSER_DIR" --wasm "$R2_WASM_DIR"

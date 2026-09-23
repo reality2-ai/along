@@ -8,18 +8,21 @@ import re
 import shutil
 import tempfile
 
+from runtime_notices import copy_runtime_notices
+
 ROOT = Path(__file__).resolve().parents[1]
 EXPERIMENTS = ROOT / 'experiments'
 LOCAL = EXPERIMENTS / 'tg-pairing'
 IMPORT = re.compile(r'''(?:from\s*|import\s*\()\s*['"](\.{1,2}/[^'"]+)['"]''')
 
 
-def build(browser, wasm):
+def build(browser, wasm, notices=None):
     browser, wasm = browser.resolve(), wasm.resolve()
     output = ROOT / 'releases' / 'along-pairing-lab'
     output.parent.mkdir(exist_ok=True)
     with tempfile.TemporaryDirectory(dir=output.parent) as scratch:
         stage = Path(scratch)
+        copy_runtime_notices(notices or ROOT / 'releases/along-pairing-notices', stage / 'runtime-notices')
         queue = ['tg-pairing/lab.mjs']
         copied = set()
         while queue:
@@ -64,5 +67,6 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--browser', type=Path, required=True)
     parser.add_argument('--wasm', type=Path, required=True)
+    parser.add_argument('--notices', type=Path, help='Collected runtime notices (defaults to releases/along-pairing-notices)')
     args = parser.parse_args()
-    build(args.browser, args.wasm)
+    build(args.browser, args.wasm, args.notices)

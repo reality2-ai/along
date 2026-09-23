@@ -3,9 +3,10 @@
 Status: incomplete. The standalone lab is built and tested locally; this audit
 has not established that its runtime distribution notices are complete. The project
 owner has selected MIT, matching Along, for the R2 subset used
-in Along. Applying that direction to the exact runtime sources and assembling
-their notices remains distribution work; it does not relicense dependencies or
-the wider R2 standard.
+in Along. The scoped distribution grant is now included as
+[MIT text](licenses/R2-MIT.txt) and an [explicit scope](licenses/R2-SCOPE.md).
+It does not relicense dependencies or the wider R2 standard. Matching the final
+binary to recorded source and compiler provenance remains distribution work.
 
 ## Owner direction (24 September 2026)
 
@@ -46,8 +47,9 @@ The cache build log also explicitly reports missing package LICENSE files.
 
 The inventory preserves registry-package licence declarations and hashes of found
 licence/copyright/notice files, including BSD and Unicode notices alongside MIT
-and Apache declarations. These files still need assembling into the distributable
-bundle; inventory hashes alone are not redistributed licence texts.
+and Apache declarations. The collector now copies these texts into both experimental build bundles,
+alongside a manifest checked by each builder. Inventory hashes alone would not
+be redistributed licence texts.
 
 ## Conflicting source declaration
 
@@ -65,10 +67,19 @@ now selected MIT for the subset included in Along. The proposed
 dual declaration. Align the scoped source notices with the new direction before
 distribution; preserve dependency terms and existing ownership attribution.
 
-The registry notice collection can proceed independently: `--collect` copies 89
-existing files verbatim into `releases/along-pairing-notices`, with the inventory
-and an explicit incomplete-status README. Byte hashes were checked against the
-inventory. These texts are not a substitute for resolving R2's own declarations.
+The collector preserves 89 existing dependency notice files verbatim, adds the
+scoped R2 MIT grant and Along's MIT notice, and accepts `--rust-doc` for the
+compiler's standard-library copyright document and licence texts. This includes
+notices for other Rust targets; it is not a claim that all those components are
+in the WASM binary. A generated `notice-manifest.json` hashes every collected
+file. Both experimental builders require that collection and verify its exact
+file set and bytes before copying it into `runtime-notices/` in the output.
+
+The collection used here includes the installed stable toolchain's library
+notices. The cached WASM's build log does not identify its exact rustc version;
+a reproducible rebuild with recorded compiler provenance is still needed before
+calling the distribution audit complete. Upstream metadata gaps remain visible
+in the inventory; they are not silently rewritten by the Along collector.
 
 ## Gaps and source history
 
@@ -88,11 +99,9 @@ repairing the missing declaration, not evidence that today's missing notices hav
 already been repaired. Preserve existing declarations and copyright attribution;
 do not invent a new owner or silently relicense framework material.
 
-Remaining work: apply the owner’s scoped MIT direction to runtime metadata and
-notices using the source history under the
-R2 repository's normal review/gate process, collect applicable dependency texts,
-and make the lab builder include them with provenance. Then verify the final
-static payload and publish a specific test URL with the
+Remaining work: rebuild and record the runtime source, dependency and compiler
+provenance against the included notice collection, then verify the final static
+payload and publish a specific test URL with the
 [device-check guide](PAIRING_DEVICE_CHECK.md).
 
 ## Reproduce the inventory
@@ -107,12 +116,12 @@ In Along:
 
 ```sh
 python3 scripts/audit_pairing_licenses.py /tmp/along-wasm-metadata.json
-python3 scripts/audit_pairing_licenses.py /tmp/along-wasm-metadata.json --collect
+python3 scripts/audit_pairing_licenses.py /tmp/along-wasm-metadata.json --collect --rust-doc "$(rustc +stable --print sysroot)/share/doc/rust"
 ```
 
 The script follows only non-development edges from `hive-wasm`, reports missing
-declarations/texts, and omits local filesystem paths from its output. It inventories
-files rather than synthesizing permission statements. Review the source revision,
+declarations/texts, and omits local filesystem paths from its output. It preserves package files and separately includes the owner-approved scoped
+grant; it does not rewrite upstream declarations. Review the source revision,
 lockfile and built binary together when regenerating the evidence.
 
 
@@ -129,5 +138,18 @@ on the larger filesystem. No hardware was flashed.
 This is technical verification of the draft metadata, not a determination of the
 applicable licence. The declaration remains uncommitted. The owner has since
 selected MIT for the
-subset used in Along; runtime distribution still requires aligned source metadata
-and a complete notice bundle. This earlier gate does not verify those future edits.
+subset used in Along; runtime distribution still requires verified source/compiler provenance against
+the collected notice bundle. This earlier gate does not verify those future edits.
+
+
+## Notice packaging verification
+
+The collection was included in rebuilt standalone-lab and full-app experimental
+bundles. Every payload hash in each build manifest matched the output. Packaging
+tests preserve byte-for-byte attribution and reject missing, changed or unexpected
+notice files before creating an output directory. The browser lab test still
+completed real WebRTC enrollment, reload/restore and isolated reset. The full-app
+test still completed address-to-address planning, mocked contextual AT reads,
+offline reopening and quiet fallback; startup timeout and unreadable-storage
+checks also passed. These checks establish packaging and behavioral regression
+evidence, not real-provider or physical-device acceptance.

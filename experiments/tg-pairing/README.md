@@ -661,11 +661,13 @@ it is not offered fresh enrollment as if it were an initial device.
 Build after producing the experimental R2 WASM/runtime artifacts documented above:
 
 ```sh
+# First collect runtime notices using docs/PAIRING_LICENSE_AUDIT.md.
 python3 scripts/build_pairing_lab.py --browser "$R2_BROWSER_DIR" --wasm "$R2_WASM_DIR"
 ```
 
 Output is `releases/along-pairing-lab/`. The builder follows only local module
-imports, copies the required WASM/CSS/HTML and QR license, and hashes all payload
+imports, copies the required WASM/CSS/HTML, QR license and verified runtime notice
+collection, and hashes all payload
 files into `build-info.json`. It does not traverse the project tree for data or
 credentials. The generated folder can be served by an ordinary static server over
 HTTPS (localhost also works for desktop checks). No service worker or Along
