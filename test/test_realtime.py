@@ -62,7 +62,8 @@ class RealtimeTests(unittest.TestCase):
         period = {'start': 1000, 'end': 2000}
         alert = {'header_text': {'translation': [{'language': 'en-NZ', 'text': 'Stop closed'}]},
                  'description_text': {'translation': [{'text': 'Use next stop'}]},
-                 'informed_entity': [selector], 'active_period': [period], 'effect': 9}
+                 'informed_entity': [selector], 'active_period': [period], 'effect': 9,
+                 'communication_period': [{'start': 900}], 'impact_period': [period]}
         entities = [{'id': str(i), 'alert': alert} for i in range(35)]
         entities += [None, {}, {'is_deleted': True, 'alert': alert}]
         client = Realtime('test-key')
@@ -73,6 +74,8 @@ class RealtimeTests(unittest.TestCase):
         self.assertEqual(result['alerts'][-1]['informed_entity'], [selector])
         self.assertEqual(result['alerts'][-1]['active_period'], [period])
         self.assertEqual(result['alerts'][-1]['title'], 'Stop closed')
+        self.assertEqual(result['alerts'][-1]['communication_period'], [{'start': 900}])
+        self.assertEqual(result['alerts'][-1]['impact_period'], [period])
         client.get = lambda _: {'available': False, 'reason': 'Unavailable'}
         self.assertEqual(client.alerts()['alerts'], [])
 

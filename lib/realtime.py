@@ -105,6 +105,7 @@ class Realtime:
                     # a restriction could incorrectly broaden an alert's scope.
                     'informed_entity': alert.get('informed_entity', []),
                     'active_period': alert.get('active_period', []),
+                    **{field: alert[field] for field in ('communication_period', 'impact_period') if field in alert},
                     'effect': alert.get('effect'),
                     'cause': alert.get('cause'),
                 })

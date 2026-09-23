@@ -173,3 +173,12 @@ These changes prepare contextual live integration; they do not enable live data
 on GitHub Pages. Client filtering, explicit opt-in, secure public proxy hosting
 and end-to-end live journey/stop checks remain to be completed. Reference:
 [GTFS Realtime alert and selector definitions](https://gtfs.org/documentation/realtime/reference/#message-alert).
+
+The tested `public/live-context.js` matcher is now available for client integration.
+It matches all selector restrictions against a single verified stop/leg context,
+accepts alternative selectors, checks dated trip identities and feed freshness,
+and respects half-open active/communication/impact periods. Missing context and
+unknown restrictions do not become generic journey advice. Its functions have no
+network, storage or journey-state side effects. Five focused JavaScript scenarios
+cover these contracts; the adapter tests also verify preservation of the newer
+communication/impact fields. This module is not yet connected to the public UI.
