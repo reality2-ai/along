@@ -1152,3 +1152,12 @@ removal evidence accepted by the actual verifier, including persistent removal
 and refusal tests. The evidence still does not prove a finished removal screen,
 delivery to offline devices or key rotation. This illustrates separating a
 cryptographic operation, a durable local effect and a complete user outcome.
+
+The removal flow subsequently reached Settings through a retained certificate
+list, then gained explicit signed-message transfer between devices. Its wording
+distinguishes issued membership from completed enrollment, saving a removal from
+delivering it, and delivery from erasing data previously copied. The browser test
+now follows the real app from enrollment to offline removal transfer and recipient
+reopening. Automatic delivery and replacement of compromised keys remain separate
+unfinished requirements. For teaching, this is a useful example of testing the
+meaning of a success message across devices rather than only testing its appearance.

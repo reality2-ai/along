@@ -31,7 +31,16 @@ The actual two-profile app test pairs devices, opens that list, removes a member
 offline and reopens its saved removal after reload, retaining local journeys.
 This is an issued-certificate list, not an online roster or proof of completed
 installation. Older preview enrollments lack this index; no migration is claimed.
-Distribution to other members and epoch/key rotation remain unfinished.
+Manual distribution is now available in the local experimental app: **Share this
+removal** produces a bounded signed message, and **Receive a group removal**
+verifies it against the receiving device's established group before committing.
+The actual two-profile app test transfers this message through the visible fields
+while offline, verifies the recipient's self-removal notice and reopens without
+journey-sharing access. Forged/wrong-group/truncated messages, replay and cancelled
+receipt are covered by the browser custody test. The test harness transfers the
+text; this is not automatic propagation, proof of every peer receiving it or
+physical-device acceptance. Automatic distribution and epoch/key rotation remain
+unfinished; removal cannot recall an AT key already copied.
 The existing 3801 preview bundle is unchanged by this source addition.
 
 The experimental existing-device reconnect screen now exchanges public connection

@@ -5,7 +5,7 @@ import {join} from 'node:path';
 const {chromium} = await import(process.env.PLAYWRIGHT_MODULE || '@playwright/test');
 const sources = new Map();
 for (const name of ['storage.mjs', 'membership.mjs', 'certificate.mjs']) sources.set('/' + name, await readFile(join(process.env.R2_BROWSER_DIR, name)));
-for (const name of ['software-persona.mjs', 'local-persona.mjs', 'member-removal.mjs']) sources.set('/' + name, await readFile(new URL(name, import.meta.url)));
+for (const name of ['software-persona.mjs', 'local-persona.mjs', 'member-removal.mjs', 'removal-message.mjs']) sources.set('/' + name, await readFile(new URL(name, import.meta.url)));
 for (const name of ['hive_wasm.js', 'hive_wasm_bg.wasm']) sources.set('/' + name, await readFile(join(process.env.R2_WASM_DIR, name)));
 const server = createServer((req, res) => {
   res.setHeader('Content-Type', req.url.endsWith('.wasm') ? 'application/wasm' : sources.has(req.url) ? 'text/javascript' : 'text/html');
@@ -138,6 +138,32 @@ try {
       const removed = await Promise.all(peers.map(peer => removeSoftwareMember({...base, ...peer})));
       check(removed.every(result => result.status === 'removed-locally' && result.delivered === false), 'local commit does not claim delivery');
       const persisted = await store.read('membership', groupHex);
+      const {encodeRemoval, receiveRemoval} = await import('./removal-message.mjs');
+      const receivingStore = await openBrowserStorage('removal-transfer');
+      let receivingMembership;
+      try {
+        receivingMembership = await establishMembership(receivingStore, wasm, {group, subject: member, certificate, current: 0n, depth: 0n});
+        const message = encodeRemoval(group, removed[0].evidence);
+        const receive = (text, options = {}) => receiveRemoval({wasm, store: receivingStore, expectedGroup: group, text, ...options});
+        const initial = await receivingStore.read('membership', groupHex);
+        const invalid = JSON.parse(message); invalid.signature = (invalid.signature[0] === '0' ? '1' : '0') + invalid.signature.slice(1);
+        check(await denied(() => receive(JSON.stringify(invalid))), 'forged remote removal refuses');
+        invalid.group = '00'.repeat(32);
+        check(await denied(() => receive(JSON.stringify(invalid))), 'wrong group refuses');
+        check(await denied(() => receive(message.slice(0, -1))), 'truncated message refuses');
+        const cancelled = new AbortController(); cancelled.abort();
+        check(await denied(() => receive(message, {signal: cancelled.signal})), 'cancelled receive refuses');
+        check((await receivingStore.read('membership', groupHex)).revision === initial.revision, 'invalid remote messages do not write');
+        check((await receive(message)).thisDeviceRemoved === false, 'peer removal does not remove receiver');
+        const committed = await receivingStore.read('membership', groupHex);
+        check((await receive(message)).alreadyKnown === true
+          && (await receivingStore.read('membership', groupHex)).revision === committed.revision, 'remote replay does not rewrite');
+        check(await receivingMembership.peerStatus(peers[0].certificate, peers[0].subject) === 'revoked', 'remote removal enforced');
+        const self = encodeRemoval(group, await issuer.issueRevocation({subject: member, sequence: 99n, reason: 0}));
+        check((await receive(self)).thisDeviceRemoved === true, 'receiver accepts signed self removal');
+        check(await receivingMembership.status() === 'revoked', 'receiver membership revoked');
+        check((await receive(self)).alreadyKnown === true, 'revoked receiver can verify replay');
+      } finally { receivingMembership?.close(); receivingStore.close(); }
       check(await denied(() => issuer.issueCertificate(peers[0].subject)), 'removed member cannot be reissued a certificate');
       check(await denied(() => issuer.enrollmentMaterial(peers[0].subject)), 'removed member cannot receive fresh enrollment material');
       check(persisted.value.revocations.length === 2 && new Set(persisted.value.revocations.map(r => r.sequence)).size === 2,
@@ -195,5 +221,5 @@ try {
       return issued.length === 4 && saved.value.revocations.length === 3 && await membership.status() === 'current';
     } finally { membership.close(); store.close(); }
   }, group), true);
-  console.log('PASS: restored software issuer signs verified revocations; durable removals survive a fresh document, serialize concurrent sequences and retry idempotently. Tampering, invalid targets, failed writes and early cancellation refuse; late cancellation retains the committed result. Revocation UI, distribution and epoch rotation are not covered.');
+  console.log('PASS: restored software issuer signs verified revocations; durable removals and issued-device directory survive a fresh document. Signed-message receipt rejects tampering/wrong groups and handles replay, peer removal and self-removal. Invalid targets, failed writes and early cancellation refuse; late cancellation retains the committed result. UI, automatic propagation and epoch rotation are not covered by this test.');
 } finally { await browser?.close(); await new Promise(resolve => server.close(resolve)); }

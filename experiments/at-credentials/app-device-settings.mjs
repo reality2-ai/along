@@ -7,6 +7,7 @@ import {showATSettings} from './settings-view.mjs';
 import {showKeySharingFlow} from './key-sharing-flow.mjs';
 import {showOwnerDevices} from './owner-devices-view.mjs';
 import {showMemberDevices} from '../tg-pairing/member-devices-view.mjs';
+import {showRemovalTransfer} from '../tg-pairing/removal-transfer-view.mjs';
 
 // Lazy, explicit setup inside the journey app. This owns its storage handle;
 // onChanged may borrow it until disposal. No automatic identity or key creation.
@@ -72,6 +73,9 @@ export function mountAppDeviceSettings({onChanged}) {
         }, true);
       } else {
         const group = saved.value.record.group;
+        action(panel, 'Receive a group removal', () => {
+          clear(); child = showRemovalTransfer(content, {wasm, store, expectedGroup: group, focus: true, onBack: home});
+        });
         const identity = await loadLocalPersona({wasm, store, expectedGroup: group}); if (!active(selected)) return;
         if (!identity) throw Error('Saved identity unavailable');
         const binding = await loadATBinding({wasm, store, expectedGroup: group}); if (!active(selected)) return;

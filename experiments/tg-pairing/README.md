@@ -844,3 +844,29 @@ keyboard while offline and reloads to see the saved removal. Local saved journey
 remain. The software-custody test additionally covers concurrent/repeated issuance
 and directory persistence in a fresh document. Delivery to other members and
 epoch rotation remain unfinished.
+
+### Manual removal delivery
+
+After local removal, **Share this removal** opens the existing copy/QR transfer
+component. It remains available when reopening an already removed device. Any
+device with saved membership can choose **Receive a group removal** from device
+setup, including a device whose own membership has already been removed. The
+receiver uses its established local group rather than adopting the message's
+group. Its result reports local enforcement, not delivery to other devices.
+
+`removal-message.mjs` defines an Along-specific, single-removal message bounded
+at 1,024 characters, with strict fields and unsigned integer bounds. It includes
+public group/member identities and signed revocation evidence, never journey or
+credential data. The receiver checks the actual runtime signature before any
+write, commits under the membership revision, retains existing removals, bounds
+the retained set and deduplicates replay. Authenticated local-tab invalidation
+uses the runtime membership adapter. A receiver may accept its own signed removal;
+its local data remains, but subsequent membership checks refuse group access.
+
+The software browser test covers tampering, wrong group, truncation, early
+cancellation, replay, peer removal and self-removal. The generated-app test now
+copies a removal from the real owner review to the enrolled recipient's visible
+receive field while offline, observes self-removal and reloads without the journey
+sharing action. The harness copies the message; this does not establish physical
+QR scanning or automatic propagation. Sending devices get no receipt merely from
+copying. Automatic catch-up, delivery tracking and key rotation remain unfinished.

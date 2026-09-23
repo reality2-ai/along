@@ -271,6 +271,20 @@ try {
   await owner.reload(); await openGroupDevices();
   await owner.getByRole('heading', {name: 'Device removal already saved here', exact: true}).waitFor();
   assert.equal(await owner.getByRole('button', {name: 'Save device removal here', exact: true}).count(), 0);
+  await owner.getByRole('button', {name: 'Share this removal', exact: true}).click();
+  const removalMessage = await owner.getByLabel('Device message to copy', {exact: true}).inputValue();
+  await candidate.reload();
+  await candidate.locator('#settings-open').click();
+  await candidate.getByRole('button', {name: 'Device and AT-key setup', exact: true}).click();
+  await candidate.getByRole('button', {name: 'Receive a group removal', exact: true}).click();
+  await candidate.getByLabel('Signed group removal', {exact: true}).fill(removalMessage);
+  await candidate.getByRole('button', {name: 'Check and save removal', exact: true}).click();
+  await candidate.getByRole('heading', {name: 'Group removal saved', exact: true}).waitFor();
+  await candidate.getByRole('status').filter({hasText: 'This device is removed from the group'}).waitFor();
+  await candidate.reload();
+  await candidate.locator('#settings-open').click();
+  await expect(candidate.getByRole('button', {name: 'Share saved journeys with my devices', exact: true})).toHaveCount(0);
+  assert.equal((await saved(owner)).length, 1);
   assert.equal(providerRequests.length, 0); assert.deepEqual(errors, []);
   console.log('PASS: actual Settings enrollment/connection, saved places and service preferences, local history, current-step preservation, focused shortcut preservation and deferred refresh, service-control refresh without route replacement, narrow/zoom accessibility, offline edits and convergence; permission review/removal, retained copies, issued-device selection and offline group removal/reload. Two browser profiles on one host; manual transfer, not physical reachability or automatic discovery.');
 } finally { await browser?.close(); await new Promise(resolve => server.close(resolve)); }
