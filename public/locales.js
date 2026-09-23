@@ -1,0 +1,46 @@
+// Interface phrases only. Official place names and route identifiers are data.
+// No Māori translation has received fluent-speaker review yet.
+export const languageKey = 'along-language-v1';
+export const languages = Object.freeze({
+  en: {name: 'English', tag: 'en-NZ', status: 'source'},
+  mi: {name: 'Te reo Māori', tag: 'mi-NZ', status: 'draft'},
+});
+
+// Named placeholders must match between languages. Text is never HTML.
+export const messages = {
+  'language.label': {en: 'Language', mi: 'Reo'},
+  'language.draft': {en: 'Draft translation — awaiting fluent-speaker review.', mi: null},
+  'language.fallback': {en: 'Some information is still shown in English.', mi: null},
+  'language.session': {en: 'Your language choice will last for this session only; device storage is unavailable.', mi: null},
+  'language.changed': {en: 'Language changed to {language}.', mi: null},
+  'flow.destination.title': {en: 'Where would you like to go?', mi: 'Kei te hiahia haere koe ki hea?'},
+  'flow.origin.title': {en: 'Where are you travelling from?', mi: 'Kei te haere mai koe i hea?'},
+  'flow.review.title': {en: 'Review your journey', mi: 'Arotakengia tō haerenga'},
+  'flow.reviewNearby.title': {en: 'Review departure preferences', mi: null},
+  'flow.options.title': {en: 'Choose your journey', mi: 'Kōwhiria tō haerenga'},
+  'flow.follow.title': {en: 'Your next step', mi: 'Tō hipanga e whai ake nei'},
+  'flow.arrived.title': {en: 'You’re there.', mi: 'Kua tae koe.'},
+  'flow.nearby.title': {en: 'Your next ride nearby', mi: null},
+  'flow.destination.progress': {en: 'Plan a journey', mi: 'Whakaritea he haerenga'},
+  'flow.origin.progress': {en: 'Choose your starting place', mi: null},
+  'flow.review.progress': {en: 'Time and travel needs', mi: null},
+  'flow.options.progress': {en: 'Choose a route', mi: null},
+  'flow.follow.progress': {en: 'Follow your journey', mi: null},
+  'flow.arrived.progress': {en: 'Journey complete', mi: 'Kua oti te haerenga'},
+  'flow.nearby.progress': {en: 'Compare nearby stops', mi: null},
+  'flow.destinationSelected': {en: 'Destination already selected: {place}', mi: null},
+  'action.back': {en: '← Back', mi: '← Hoki'},
+  'action.newJourney': {en: 'New journey', mi: 'He haerenga hou'},
+  'action.understood': {en: 'Understood', mi: 'Kua mārama'},
+  'action.settings': {en: 'Settings', mi: 'Ngā tautuhinga'},
+  'action.closeSettings': {en: 'Close settings', mi: 'Katia ngā tautuhinga'},
+  'action.home': {en: 'Along home', mi: null},
+  'action.skip': {en: 'Skip to current task', mi: null},
+  'action.chooseOrigin': {en: 'Choose starting place →', mi: null},
+  'action.review': {en: 'Review journey →', mi: 'Arotakengia te haerenga →'},
+  'action.reviewNearby': {en: 'Review departure preferences →', mi: null},
+  'action.find': {en: 'Find my way →', mi: null},
+  'action.findNearby': {en: 'Show nearby departures →', mi: null},
+  'action.nextStep': {en: 'Next step →', mi: 'Te hipanga e whai ake nei →'},
+  'action.previousStep': {en: '← Previous step', mi: '← Te hipanga o mua'},
+};
