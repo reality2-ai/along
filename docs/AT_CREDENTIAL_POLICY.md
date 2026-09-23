@@ -1,13 +1,16 @@
 # Along AT credential policy — implementation contract
 
-This describes the next implementation boundary. It is not a claim that Along
-currently stores or shares AT keys. The public app still uses downloaded schedules.
+This describes the implementation contract. The public app still uses downloaded
+schedules and does not store or share AT keys.
 The owner performs no coding; the AI implements and verifies this contract.
 The [signed-policy experiment](../experiments/at-credentials/README.md) now checks
 owner signatures, explicit grants and context/revision binding with synthetic
 material. Durable policy acceptance additionally checks signatures on reopening
 and rejects replay, generation regression and conflicting concurrent writes.
-It is not a credential store or a deployed access-control system.
+The isolated experiment also has encrypted local storage, consent/settings screens,
+owner restoration and signed grant/rotation actions. New peer grants require
+certificate validation against locally held membership evidence. These components
+are not a deployed access-control system or completed device-delivery flow.
 
 ## Separate authorities
 

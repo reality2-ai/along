@@ -218,8 +218,18 @@ reviews. Application ownership remains distinct from a device's permission to us
 the key: the verified owner can restore grants after removing its own read access.
 Run `owner-policy.test.mjs` with the same browser/R2 environment as the vault tests.
 
+A newly added peer grant now requires its certificate to pass the real membership
+runtime against the owner's held group/epoch/revocation evidence. Certificate
+inputs are copied before asynchronous work. Existing grants can be retained or
+removed without presenting certificates again; retention does not refresh their
+membership. The owner's own identity is independently verified during signing.
+Tests refuse missing evidence, invalid signatures, wrong subjects and a valid
+certificate from another group. A positive peer-grant test uses real WebCrypto
+signatures and the core certificate verifier under a synthetic issuer fixture;
+it does not establish production issuer custody or peer possession.
+
 A device ID in this policy is not a TG membership proof. Authenticated delivery
-must separately verify the recipient's current held membership and explicit grant.
+must still verify the recipient's current held membership and explicit grant.
 Advancing Along's generation does not invalidate a key at Auckland Transport.
 The owner review UI, provider-side rotation guidance and peer delivery remain open;
 these checks use synthetic keys and do not contact AT.

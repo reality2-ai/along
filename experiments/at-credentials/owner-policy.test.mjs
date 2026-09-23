@@ -31,10 +31,12 @@ try {
     const denied = fn => fn().then(() => false, () => true);
     await vault.saveOwnerKey('synthetic-first');
     // A device grant records explicit app intent only; no key is delivered here.
-    const devices = [binding.owner, 'ab'.repeat(32)];
+    check(await denied(() => update({expectedRevision: 1n, devices: [binding.owner, 'ab'.repeat(32)]})), 'new peer requires membership certificate');
+    check(await denied(() => update({expectedRevision: 1n, devices: [binding.owner, 'ab'.repeat(32)], certificates: [new Uint8Array(136)]})), 'invalid membership certificate refused');
+    const devices = [binding.owner];
     const pending = update({expectedRevision: 1n, devices}); devices.length = 0;
     const granted = await pending;
-    check(granted.policy.revision === 2n && granted.policy.generation === 1n && granted.policy.devices.length === 2, 'snapshot explicit grants');
+    check(granted.policy.revision === 2n && granted.policy.generation === 1n && granted.policy.devices.length === 1, 'snapshot explicit grants');
     check(await denied(() => update({expectedRevision: 1n, devices: []})), 'stale review refused');
     check((await policies.read()).policy.revision === 2n, 'stale review did not write');
     const removed = await update({expectedRevision: 2n, devices: []});
@@ -71,6 +73,43 @@ try {
     check(receipt.status === 'policy-saved' && receipt.policy.revision === 6n, 'completed commit wins late cancellation');
     check((await policies.read()).policy.revision === 6n, 'late cancellation receipt matches persisted policy');
     store.close();
+    // Separate synthetic issuer fixture: real WebCrypto signatures and core
+    // certificates, not evidence that durable browser issuer custody is solved.
+    const peerStore = await (await import('./storage.mjs')).openBrowserStorage('owner-policy-peer');
+    const created = await (await import('./initial-persona.mjs')).initializeLocalPersona({wasm, store: peerStore}); created.close();
+    const issuer = await crypto.subtle.generateKey('Ed25519', true, ['sign', 'verify']);
+    const fixtureGroup = new Uint8Array(await crypto.subtle.exportKey('raw', issuer.publicKey));
+    const hex = value => Array.from(value, b => b.toString(16).padStart(2, '0')).join('');
+    const codec = (await import('./certificate.mjs')).certificateCodec(wasm);
+    const certify = async subject => codec.encode(subject, fixtureGroup, 0n,
+      new Uint8Array(await crypto.subtle.sign('Ed25519', issuer.privateKey, codec.signingBytes(subject, fixtureGroup, 0n))));
+    const persona = await peerStore.read('candidate-persona', 'active');
+    const subject = persona.value.record.subject, certificate = await certify(subject);
+    await peerStore.compareAndSwap('candidate-persona', 'active', persona.revision,
+      {...persona.value, record: {...persona.value.record, group: fixtureGroup, certificate}});
+    const bootstrap = await peerStore.read('persona-bootstrap', 'initial');
+    await peerStore.compareAndSwap('persona-bootstrap', 'initial', bootstrap.revision,
+      {format: 1, group: fixtureGroup, subject});
+    await peerStore.compareAndSwap('membership', hex(fixtureGroup), 0,
+      {format: 1, group: fixtureGroup, subject, certificate, current: 0n, depth: 0n, revocations: []});
+    const fixtureOwner = await (await import('./local-owner.mjs')).establishLocalATOwner({wasm, store: peerStore, expectedGroup: fixtureGroup});
+    const peerKey = await crypto.subtle.generateKey('Ed25519', true, ['sign', 'verify']);
+    const peer = new Uint8Array(await crypto.subtle.exportKey('raw', peerKey.publicKey));
+    const peerCertificate = await certify(peer);
+    for (const proof of [certificate, (() => { const value = peerCertificate.slice(); value[135] ^= 1; return value; })()]) {
+      check(await denied(() => updateLocalATPolicy({wasm, store: peerStore, expectedGroup: fixtureGroup, expectedRevision: 1n,
+        devices: [fixtureOwner.binding.owner, hex(peer)], certificates: [proof]})), 'wrong subject or signature cannot grant peer');
+    }
+    const otherIssuer = await crypto.subtle.generateKey('Ed25519', true, ['sign', 'verify']);
+    const otherGroup = new Uint8Array(await crypto.subtle.exportKey('raw', otherIssuer.publicKey));
+    const wrongGroup = codec.encode(peer, otherGroup, 0n, new Uint8Array(await crypto.subtle.sign('Ed25519',
+      otherIssuer.privateKey, codec.signingBytes(peer, otherGroup, 0n))));
+    check(await denied(() => updateLocalATPolicy({wasm, store: peerStore, expectedGroup: fixtureGroup, expectedRevision: 1n,
+      devices: [fixtureOwner.binding.owner, hex(peer)], certificates: [wrongGroup]})), 'valid certificate from another group refused');
+    const grant = await updateLocalATPolicy({wasm, store: peerStore, expectedGroup: fixtureGroup, expectedRevision: 1n,
+      devices: [fixtureOwner.binding.owner, hex(peer)], certificates: [peerCertificate]});
+    check(grant.policy.devices.includes(hex(peer)), 'core-valid current same-group peer can be granted');
+    peerStore.close();
   });
   console.log('PASS: actual owner signs explicit grant/removal/rotation, input snapshot, stale-review refusal, access removal and encrypted replacement; changed authority, cancellation, malformed grants and concurrent reviews refuse safely. Synthetic keys; no peer delivery or AT-side rotation claim.');
 } finally { await browser?.close(); await new Promise(resolve => server.close(resolve)); }
