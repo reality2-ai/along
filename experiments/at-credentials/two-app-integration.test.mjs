@@ -110,6 +110,41 @@ try {
   await owner.getByRole('button', {name: 'Allow AT access', exact: true}).click();
   const acceptKey = candidate.getByRole('button', {name: 'Allow this device to receive the key', exact: true});
   await acceptKey.waitFor();
+  if (process.env.INTERRUPT_GRANT === '1') {
+    const snapshot = page => page.evaluate(async () => {
+      const store = await (await import('./tg-pairing/storage.mjs')).openBrowserStorage('along-pairing-lab-v1');
+      try {
+        const record = (await store.read('candidate-persona', 'active')).value.record;
+        const hex = bytes => Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+        const anchor = await store.read('along-at-owners', hex(record.group));
+        const policy = anchor && await store.read('along-at-policy:' + anchor.value.owner, hex(record.group) + ':' + anchor.value.credential);
+        return {member: hex(record.subject), anchorRevision: anchor?.revision, policyRevision: policy?.revision};
+      } finally { store.close(); }
+    });
+    const before = await Promise.all(pages.map(snapshot));
+    assert.equal(await noAcceptedOwner(), true);
+    await Promise.all(pages.map(page => page.reload()));
+    await Promise.all(pages.map(page => page.getByRole('button', {name: 'Restore saved test device', exact: true}).click()));
+    await owner.getByRole('button', {name: 'Share my AT key', exact: true}).click();
+    await candidate.getByRole('button', {name: 'Receive a shared AT key', exact: true}).click();
+    await owner.getByRole('heading', {name: 'Share your AT key', exact: true}).waitFor();
+    await move(owner, candidate, 'AT-key sharing message', 'Review sharing device');
+    await candidate.getByRole('button', {name: 'Connect to this sharing device', exact: true}).click();
+    await candidate.getByRole('heading', {name: 'Connect for key sharing', exact: true}).waitFor();
+    await move(candidate, owner, 'Sharing connection request', 'Connect for key sharing');
+    await owner.getByRole('heading', {name: 'Send the sharing reply', exact: true}).waitFor();
+    await move(owner, candidate, 'Sharing connection reply', 'Check sharing connection');
+    const resume = owner.getByRole('button', {name: 'Continue sharing my key', exact: true});
+    await resume.waitFor();
+    assert.equal(await owner.getByRole('button', {name: 'Remove AT access', exact: true}).count(), 0);
+    await resume.evaluate(button => button.click());
+    assert.equal(await candidate.getByRole('button', {name: 'Allow this device to receive the key', exact: true}).count(), 0);
+    assert.deepEqual(await Promise.all(pages.map(snapshot)), before);
+    await resume.focus(); await owner.keyboard.press('Enter');
+    await acceptKey.waitFor();
+    assert.deepEqual(await Promise.all(pages.map(snapshot)), before, 'resuming does not rewrite identities, owner binding or grant');
+    assert.equal(providerRequests.length, 0);
+  }
   await acceptKey.evaluate(button => button.click());
   assert.equal(await noAcceptedOwner(), true, 'synthetic activation cannot accept an owner or request delivery');
   assert.deepEqual((await new AxeBuilder({page: candidate}).analyze()).violations.map(v => v.id), []);

@@ -89,18 +89,31 @@ export function showKeySharingFlow(container, {wasm, store, expectedGroup, role,
             void (async () => {
               try {
                 await session.authenticated(); current();
-                // This flow is for a new grant. Refuse existing grants here so
-                // the access view cannot turn a sharing attempt into removal.
-                const policy = await store.read('along-at-policy:' + binding.owner, binding.group + ':' + binding.credential); current();
-                const parsed = await (await import('./policy.mjs')).verifyCredentialPolicy(policy.value.bytes, policy.value.signature, {...binding, afterRevision: 0n, minimumGeneration: 1n});
-                if (parsed.devices.includes(hex(peer))) throw Error('Existing sharing needs recovery');
-                const access = showOwnerDeviceAccess(screen(), {wasm, store, expectedGroup: group, peer, certificate, deviceName: 'Connected group device', focus, onBack: back}); child = access;
-                await access.ready;
-                await access.completed; current();
-                const signed = await store.read('along-at-policy:' + binding.owner, binding.group + ':' + binding.credential); current();
-                phase = 'await-request';
-                await session.send(new TextEncoder().encode(JSON.stringify({type: 'sharing-policy', bytes: [...signed.value.bytes], signature: [...signed.value.signature]}))); current();
-                message('Waiting for your other device', 'Access permission is saved here. Your other device must accept the key before it is sent.');
+                const policyModule = await import('./policy.mjs'); current();
+                const readPolicy = async () => {
+                  const signed = await store.read('along-at-policy:' + binding.owner, binding.group + ':' + binding.credential); current();
+                  const parsed = await policyModule.verifyCredentialPolicy(signed.value.bytes, signed.value.signature, {...binding, afterRevision: 0n, minimumGeneration: 1n}); current();
+                  return {signed, parsed};
+                };
+                const continueSharing = async () => {
+                  // Re-read after the user's review; an access change during
+                  // review cannot be overwritten or turned into a new grant.
+                  const {signed, parsed} = await readPolicy();
+                  if (!parsed.devices.includes(hex(peer))) throw Error('Permission changed');
+                  phase = 'await-request';
+                  await session.send(new TextEncoder().encode(JSON.stringify({type: 'sharing-policy', bytes: [...signed.value.bytes], signature: [...signed.value.signature]}))); current();
+                  if (phase === 'await-request') message('Waiting for your other device', 'Access permission is saved here. Your other device must accept the key before it is sent.');
+                };
+                const {parsed} = await readPolicy();
+                if (parsed.devices.includes(hex(peer))) {
+                  message('Continue sharing with this device?', 'This connected device already has your permission. Continuing keeps that permission and waits for its consent before sending the key. Device identity: ' + hex(peer),
+                    'Continue sharing my key', continueSharing);
+                } else {
+                  const access = showOwnerDeviceAccess(screen(), {wasm, store, expectedGroup: group, peer, certificate, deviceName: 'Connected group device', focus, onBack: back}); child = access;
+                  await access.ready;
+                  await access.completed; current();
+                  await continueSharing();
+                }
               } catch { fail(); }
             })();
           }});

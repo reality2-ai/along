@@ -881,10 +881,13 @@ in delivery history. Sending alone is not reported as confirmed receipt. Back
 closes the exchange while preserving previously committed data. Synthetic clicks
 cannot select the sharing device or accept a key.
 
-This is the first-grant flow. It refuses an existing owner binding or existing
-grant instead of silently replacing it or accidentally showing a removal action.
-A combined retry/recovery flow for interrupted grants, acceptance or delivery is
-still needed. The generic unconfirmed outcome explicitly warns that permission
+The flow now resumes an owner grant that was saved before recipient consent.
+After fresh authentication the owner explicitly chooses **Continue sharing my
+key**. The current signed policy is re-read after that choice; continuation does
+not rewrite the grant or offer a removal action. The recipient still reviews and
+accepts the key. An existing recipient owner binding remains refused rather than
+silently replaced. Recovery after recipient acceptance or delivery is still
+needed. The generic unconfirmed outcome explicitly warns that permission
 or a key may already have been saved. Browser software-custody limits still apply.
 
 The two-app test now obtains its shared key entirely through these visible setup
@@ -892,3 +895,16 @@ controls before testing Settings reconnection and journey use. It also cancels
 at the device-review stage, checks that no owner was accepted, refuses synthetic
 recipient consent, and checks the recipient review/consent at 320px and 200% font
 size with axe. These checks do not establish TalkBack or physical-device usability.
+
+
+`INTERRUPT_GRANT=1` selects an additional two-app check: reload both profiles after
+the grant is durable but before recipient consent, reconnect through the lab,
+refuse synthetic continuation, then continue with keyboard activation. Snapshot
+comparisons verify unchanged device identities, owner-binding revisions and grant
+storage revisions before recipient consent. The test proceeds through actual key
+delivery, main-app reconnection, contextual mocked AT reads, withheld removal,
+disconnect and offline routing. Both this variant and the uninterrupted run pass.
+
+```sh
+INTERRUPT_GRANT=1 CHROMIUM_PATH=/path/to/chromium node experiments/at-credentials/two-app-integration.test.mjs
+```

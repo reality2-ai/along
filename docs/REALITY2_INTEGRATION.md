@@ -19,8 +19,11 @@ removal is learned before further provider I/O; disconnect preserves the journey
 and the recipient reopens and routes offline. Initial grant and recipient consent now run through a composed sharing flow in
 the linked experimental lab. It verifies the selected group member, authenticates
 the channel and distinguishes stored permission, encrypted key installation and
-acknowledged receipt. Removal still uses a harness call. Interrupted first-use
-sharing recovery and bringing setup into main-app Settings remain outstanding.
+acknowledged receipt. Removal still uses a harness call. An interrupted owner
+grant can now resume after both devices reload, with explicit owner continuation
+and no rewrite of the existing grant; the two-profile test covers that path.
+Recovery after recipient acceptance or delivery, and bringing setup into main-app
+Settings, remain outstanding.
 Physical phone/desktop connectivity remains unverified; this is not seamless
 background reconnection or a public release.
 
