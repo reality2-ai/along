@@ -364,3 +364,25 @@ owner-only restoration and missing certificate evidence, and fresh-document
 settings reopening. Owner, policy and consent/settings regression checks pass.
 The enclosing reconnect/discovery flow, policy propagation and public activation
 remain unfinished; older experimental pins without certificate evidence refuse.
+
+## Received policy changes
+
+`applyRemoteATPolicy` accepts updates only for an existing recipient binding and
+the owner selected by the authenticated session controller. It revalidates the
+saved owner certificate and local evidence, verifies the policy signature and
+strictly increasing revision, and guards the update transaction against changed
+owner/persona/membership/installation records. It never initializes missing trust.
+A removal need not grant the receiving device: refusing such policies would
+prevent the very update which removes access. `policy-update-message.mjs` supplies
+bounded, exact framing for this public signed policy without credential bytes.
+
+The WebRTC test now transmits removal and later regrant policies between distinct
+members. Received removal stops local key retrieval, suppresses an in-flight
+simulated AT result and prevents another provider request. Wrong-peer, invalid
+signature and replayed updates refuse; a newer explicit grant restores access.
+The framing check passes malformed-length, domain, bounds and byte-copy controls.
+
+This establishes behavior after a verified update is locally saved. It does not
+make an offline device aware of an unseen removal, invalidate a copied AT key,
+or implement automatic policy catch-up and freshness after reconnect. The test
+uses synthetic credentials/provider responses and fixture issuer/descriptors.

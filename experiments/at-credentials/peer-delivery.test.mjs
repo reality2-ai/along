@@ -6,7 +6,7 @@ import {join} from 'node:path';
 const {chromium} = await import(process.env.PLAYWRIGHT_MODULE || '@playwright/test');
 const sources = new Map();
 for (const name of ['storage.mjs', 'membership.mjs', 'certificate.mjs', 'peer-session.mjs', 'peer-link.mjs', 'challenge.mjs', 'session-statement.mjs']) sources.set('/' + name, await readFile(join(process.env.R2_BROWSER_DIR, name)));
-for (const name of ['../tg-pairing/initial-persona.mjs', '../tg-pairing/local-persona.mjs', 'local-owner.mjs', 'owner-policy.mjs', 'owner-delivery.mjs', 'remote-owner.mjs', 'remote-owner-view.mjs', 'settings-view.mjs', 'credential-view.mjs', '../tg-pairing/comparison.css', '../tg-pairing/local-persona-session.mjs', 'policy.mjs', 'policy-store.mjs', 'local-vault.mjs', 'delivery-message.mjs']) sources.set('/' + name.split('/').pop(), await readFile(new URL(name, import.meta.url)));
+for (const name of ['../tg-pairing/initial-persona.mjs', '../tg-pairing/local-persona.mjs', 'local-owner.mjs', 'owner-policy.mjs', 'owner-delivery.mjs', 'remote-owner.mjs', 'policy-update.mjs', 'policy-update-message.mjs', 'remote-owner-view.mjs', 'settings-view.mjs', 'credential-view.mjs', '../tg-pairing/comparison.css', '../tg-pairing/local-persona-session.mjs', 'policy.mjs', 'policy-store.mjs', 'local-vault.mjs', 'delivery-message.mjs']) sources.set('/' + name.split('/').pop(), await readFile(new URL(name, import.meta.url)));
 for (const name of ['hive_wasm.js', 'hive_wasm_bg.wasm']) sources.set('/' + name, await readFile(join(process.env.R2_WASM_DIR, name)));
 for (const name of ['live-client.mjs', '../../public/at-client.js', '../../public/live-client.js']) sources.set('/' + name.split('/').pop(), await readFile(new URL(name, import.meta.url)));
 const server = createServer((req, res) => {
@@ -36,6 +36,7 @@ try {
     const {openLocalATVault} = await import('./local-vault.mjs');
     const {openLocalPersonaSession} = await import('./local-persona-session.mjs');
     const {sendOwnerCredential} = await import('./owner-delivery.mjs');
+    const {applyRemoteATPolicy, encodePolicyUpdate, decodePolicyUpdate} = await import('./policy-update.mjs');
     const {updateLocalATPolicy} = await import('./owner-policy.mjs');
     const codec = (await import('./certificate.mjs')).certificateCodec(wasm);
     const hex = bytes => Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
@@ -67,12 +68,19 @@ try {
     const policyKey = binding.group + ':' + binding.credential, policyScope = 'along-at-policy:' + binding.owner;
     const signed = await owner.store.read(policyScope, policyKey);
     const receiverVault = openLocalATVault({wasm, store: receiver.store, ...binding});
-    let sending, receiving, request, resolve, reject, messages = 0;
+    let sending, receiving, request, resolve, reject, messages = 0, policyReply, policyError;
     const installed = new Promise((yes, no) => { resolve = yes; reject = no; });
     let timeout;
     try {
       receiving = await openLocalPersonaSession({wasm, store: receiver.store, expectedGroup: group, peer: owner.subject,
         role: 'offer', onMessage: async packet => {
+          if (policyReply) {
+            try { policyReply(await applyRemoteATPolicy({wasm, store: receiver.store, expectedGroup: group,
+              peer: owner.subject, connection: receiving, ...decodePolicyUpdate(packet)})); }
+            catch (error) { policyError(error); }
+            finally { policyReply = undefined; policyError = undefined; }
+            return;
+          }
           messages++;
           try { resolve(await request.install(packet)); } catch (error) { reject(error); }
         }});
@@ -140,10 +148,38 @@ try {
       }};
       check(await owners.loadATBinding({wasm, store: damaged, expectedGroup: group}).then(() => false, () => true), 'missing remote certificate refuses restore');
       window.restoreGroup = Array.from(group);
+      let entered, release, calls = 0;
+      const fetching = new Promise(yes => { entered = yes; });
+      const delayed = new Promise(yes => { release = yes; });
+      const live = (await import('./live-client.mjs')).createVaultATClient({vault: receiverVault, now: () => 1001,
+        fetcher: async () => { calls++; entered(); await delayed; return {ok: true, json: async () => ({header: {timestamp: 1000}, entity: []})}; }});
+      const pendingLive = live.read('predictions', {requested: true}); await fetching;
+      const sendPolicy = async () => {
+        const record = await owner.store.read(policyScope, policyKey);
+        const pending = new Promise((yes, no) => { policyReply = yes; policyError = no; });
+        await sending.send(encodePolicyUpdate(record.value.bytes, record.value.signature));
+        return pending;
+      };
       await updateLocalATPolicy({wasm, store: owner.store, expectedGroup: group, expectedRevision: 2n, devices: [hex(owner.subject)]});
+      const removal = (await owner.store.read(policyScope, policyKey)).value;
+      const applying = changes => applyRemoteATPolicy({wasm, store: receiver.store, expectedGroup: group,
+        peer: owner.subject, connection: receiving, policyBytes: removal.bytes, policySignature: removal.signature, ...changes});
+      check(await denied(() => applying({peer: receiver.subject})), 'unrelated peer cannot apply owner policy');
+      const invalid = removal.signature.slice(); invalid[0] ^= 1;
+      check(await denied(() => applying({policySignature: invalid})), 'invalid removal signature refused');
+      await sendPolicy();
+      check(await denied(() => receiverVault.getKey()), 'received removal stops local key access');
+      release(); check(!(await pendingLive).available, 'received removal suppresses pending live result');
+      check(!(await live.read('predictions', {requested: true})).available && calls === 1, 'removed device cannot request another feed');
+      live.close();
+      check(await denied(() => applying({})), 'replayed removal refused');
       check(await sendOwnerCredential({wasm, store: owner.store, expectedGroup: group, peer: receiver.subject,
         peerCertificate: receiver.certificate, nonce: crypto.getRandomValues(new Uint8Array(16)), connection: sending}).then(() => false, () => true), 'removed peer receives no further delivery');
       check(messages === 1, 'no removed-peer message sent');
+      await updateLocalATPolicy({wasm, store: owner.store, expectedGroup: group, expectedRevision: 3n,
+        devices: [hex(owner.subject), hex(receiver.subject)], certificates: [receiver.certificate]});
+      await sendPolicy();
+      check(await receiverVault.getKey() === 'synthetic-peer-delivery', 'explicit newer grant restores local use');
     } finally { clearTimeout(timeout); request?.close(); sending?.close(); receiving?.close(); owner.store.close(); receiver.store.close(); }
   });
   const restoredGroup = await page.evaluate(() => restoreGroup);
