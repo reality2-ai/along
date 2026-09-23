@@ -28,12 +28,12 @@ has also passed; the draft remains unmerged.
 | Direct AT access | Authenticated browser reads and strict timetable matching | Connect each user's authorized credential to contextual UI; verify actual installed devices |
 | Local installation | Core ceremony, candidate-generated key and atomic installation; real initial group-of-one, first-use storage, reopen and cancellation checks | Local setup integration, reset, issuer custody across restarts and application-secret policy |
 | Membership | Core certificates, local epoch policy, signed revocations; restored signing refuses revoked identity | Freshness after partition, epoch advancement and removal propagation |
-| AT credential custody | Experimental own-member owner pin, signed device grants, encrypted IndexedDB record and direct-client access checks; combined consent/settings flow passes browser setup, save and restore checks | Public UI integration, complete device-sharing flow, cross-device freshness and installed-device provider verification |
-| Credential transport | Distinct browser member keys mutually authenticate over direct WebRTC; signed owner delivery reaches atomic encrypted receiver storage, and a removed grant prevents another send | Production receiver consent/policy bootstrap, acknowledgment, physical-device reachability and partition freshness; issuer/bootstrap fixtures remain synthetic |
+| AT credential custody | Encrypted IndexedDB storage; owner grant/removal and key-replacement review; recipient policy check before provider I/O; browser save/restore/cancellation checks | Public UI integration, complete device-sharing flow, owner availability and installed-device provider verification |
+| Credential transport | Authenticated WebRTC delivery, explicit recipient consent, atomic encrypted installation, signed receipts and recovery over a fresh session | Complete device selection/signaling and physical-device reachability; issuer/bootstrap fixtures remain synthetic |
 | Receipts | Published encrypted receipt/acknowledgment exchange and durable records; authenticated recovery passes fresh-document, mismatch, cancellation and concurrent-write checks | Group announcement and end-user integration |
 | Reconnection | Installed-key mutual peer authentication, revocation closure and screen-cancellation checks | End-user signaling, actual device/network reachability and operation-specific authorization |
 | Comparison UI | Isolated comparison/live-session adapter, keyboard/reflow/axe and cancellation checks | Enclosing setup flow, actual TalkBack and physical co-presence; not loaded by Along |
-| Verification | Published local-installation increment passed the full local gate and browser checks; receipt increment also passed its unchanged full-gate snapshot | Hosted checks and complete user-facing integration; component success is not release completion |
+| Verification | Runtime transaction-evidence revision passed local and hosted gates; Along component browser checks pass through owner key replacement | Complete user-facing integration and physical-device checks; component success is not release completion |
 
 The published receipt/reconnection baseline is
 [`7634c3a9`](https://github.com/reality2-ai/r2-standard/commit/7634c3a9b19cd0fe6f3d5102aa95902ceceb29ab).
@@ -46,6 +46,36 @@ recorded snapshot and the repository commit checks. It is published at
 [`bf134d1a`](https://github.com/reality2-ai/r2-standard/commit/bf134d1a10a5c7bfe75f65a1186b27fdfe50202c).
 Status prose was refreshed after the full gate; hosted success for this revision
 is not yet established.
+
+### Architectural decision: persistent issuer custody
+
+The latest source inspection confirms a prerequisite for real browser pairing:
+`BrowserInitialPersona` keeps its group issuer and derived traffic keys only in
+`VolatileGroup`. `take_member_record()` transfers the nonextractable member key,
+not the issuer; `close()` drops issuer custody. Along's restored member cannot
+therefore create a real new-device enrollment merely by adding the AT screens.
+The synthetic issuer in the peer-delivery test bypasses this missing lifecycle.
+
+This is also a conformance boundary, not just a missing serializer. At the
+inspected R2 revision, [L5 5.3.1a–5.3.2](https://github.com/reality2-ai/r2-standard/blob/1b9229ad6d8483ba43cb66a53e14d336b0c6e091/standard/L5-trust-and-identity.md)
+requires volatile-only group-secret custody when qualifying hardware-rooted
+sealing is unavailable. [L5B 4.4 and 6.1.1](https://github.com/reality2-ai/r2-standard/blob/1b9229ad6d8483ba43cb66a53e14d336b0c6e091/standard/L5B-enrolment.md)
+requires actual provisioner custody and installs the role's group material.
+The current browser adapter does not establish hardware-rooted sealing.
+Encrypted IndexedDB under an ordinary browser CryptoKey must not be labelled as
+meeting that stronger requirement.
+
+Two implementation directions are being clarified with the user: an explicitly
+scoped browser-only R2 subset with encrypted software custody, consistent with
+the request to use at least part of R2; or qualifying native/hardware custody for
+full key-storage conformance. No issuer persistence or platform attestation has
+been fabricated while that choice is pending. This is not a claim that every
+browser/hardware combination is incapable of qualifying: the current adapter
+has no such evidence or implementation.
+
+The next implementation must replace the synthetic issuer in the integration
+scenario with actual creation, durable/reobtained custody, invitation issuance
+and enrollment. More downstream UI tests alone cannot establish that outcome.
 
 ### Next integration boundary: starting a device
 

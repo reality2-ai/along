@@ -852,3 +852,28 @@ reports issuer custody unavailable after reopening; a seamless, durable TG
 experience still requires that outstanding lifecycle work. The AI must complete
 it before treating the primitive as delivery of the user's goal. No human code
 contribution is required by this exercise or by the implementation process.
+
+### A reference framework can change the product's prerequisites
+
+**Development observation:** after implementing encrypted AT storage, policy
+updates, receipt recovery and owner controls, a focused source inspection found
+that durable issuer custody was still absent. The peer test created its issuer as
+a fixture. The inspected standard requires hardware-rooted sealing for persistent
+group keys, while the browser adapter establishes only software custody. These
+are implementation findings, not participant acceptance or an independent audit.
+
+**Interpretation:** the user's request to use Reality2 “or at least some part of
+it” leaves room for an explicitly scoped subset, while the request for a portable
+browser app constrains dependency choices. Treating complete framework conformance
+as an unstated requirement can displace the actual commuter outcome. Treating
+software encryption as hardware protection would instead overstate the evidence.
+The relevant design choice has been put to the user: browser-only storage with
+stated limits, or a qualifying native/hardware component. No answer is inferred.
+
+**Reflexive lesson:** test foundations before polishing dependent screens. The
+recent tests do establish local access decisions, cancellation and recovery; they
+do not replace a real issuer, device enrollment or practical connectivity. For a
+course exercise, ask learners to trace one end-to-end user task, mark each fixture,
+and identify which assumptions prevent deployment. Assessment should reward
+finding and resolving that dependency, rather than counting passing component
+tests or commits. The AI remains responsible for all coding.
