@@ -26,7 +26,7 @@ try {
   await page.evaluate(async () => {
     const {showCredentialSetup} = await import('./credential-view.mjs');
     window.calls = []; window.backs = 0;
-    window.mount = vault => showCredentialSetup(document.querySelector('#setup'), {vault, focus: true, onBack: () => { backs++; }});
+    window.mount = vault => showCredentialSetup(document.querySelector('#setup'), {vault: {inspect: async () => ({status: 'missing', canSave: true}), ...vault}, focus: true, onBack: () => { backs++; }});
     window.view = mount({saveOwnerKey: async (key, {signal}) => { calls.push({key, signal}); return {status: 'credential-saved'}; }});
   });
   assert.equal(await page.evaluate(() => document.activeElement.tagName), 'H2');
@@ -66,7 +66,7 @@ try {
   assert.equal(await page.evaluate(() => pendingSignal.aborted), true);
   await page.evaluate(() => { window.view = mount({saveOwnerKey: async () => { throw new Error('unused'); }}); release({status: 'credential-saved'}); });
   await page.getByRole('heading', {name: 'Add your AT key', exact: true}).waitFor();
-  assert.equal(await page.getByRole('status').textContent(), '');
+  assert.equal(await page.getByRole('status').textContent(), 'No AT key is saved for these live-information settings.');
   await page.setViewportSize({width: 320, height: 640});
   await page.evaluate(() => document.documentElement.style.fontSize = '200%');
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
@@ -76,6 +76,20 @@ try {
   await page.getByLabel('Personal AT API key').fill('synthetic-unsaved');
   await page.keyboard.press('Escape');
   assert.equal(await page.evaluate(() => document.querySelector('input').value), '');
+  await page.evaluate(async () => {
+    window.view = mount({inspect: async () => ({status: 'replacement-needed', canSave: true}), saveOwnerKey: async () => {}});
+    await view.ready;
+  });
+  await page.getByRole('heading', {name: 'Add your replacement AT key'}).waitFor();
+  assert.equal(await page.getByRole('button', {name: 'Save key on this device'}).count(), 1);
+  await page.evaluate(async () => {
+    let finish;
+    const pending = mount({inspect: () => new Promise(resolve => { finish = resolve; }), saveOwnerKey: async () => {}});
+    window.view = mount({inspect: async () => { throw new Error('unreadable'); }, saveOwnerKey: async () => {}});
+    await view.ready; finish({status: 'missing', canSave: true}); await pending.ready;
+  });
+  await page.getByRole('heading', {name: 'Live information unavailable on this device'}).waitFor();
+  assert.equal(await page.getByRole('button', {name: 'Save key on this device'}).count(), 0);
   // Exercise the same consent screen with actual WASM identity and encrypted storage.
   await page.evaluate(async () => {
     const wasm = await import('./hive_wasm.js'); await wasm.default();
@@ -90,6 +104,9 @@ try {
   await page.getByRole('button', {name: 'Save key on this device'}).click();
   await page.getByRole('heading', {name: 'AT key saved on this device'}).waitFor();
   assert.equal(await page.evaluate(async () => await realVault.getKey() === 'synthetic-browser-consent'), true);
+  await page.evaluate(async () => { window.view = mount(realVault); await view.ready; });
+  assert.equal(await page.getByRole('button', {name: 'Save key on this device'}).count(), 0);
+  assert.equal((await page.getByRole('status').textContent()).includes('can be opened locally'), true);
   await page.evaluate(() => { view.dispose(); realStore.close(); });
   console.log('PASS: credential consent keyboard save, honest unverified status, generic failure, cleared inputs, Back/Escape cancellation, late completion isolation, equal-width actions, axe and narrow enlarged text; actual WASM identity and encrypted vault save. Synthetic keys; no real TalkBack/device/provider test.');
 } finally { await browser?.close(); await new Promise(resolve => server.close(resolve)); }

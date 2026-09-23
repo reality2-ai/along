@@ -3,7 +3,7 @@
 const mounted = new WeakMap();
 let serial = 0;
 export function showCredentialSetup(container, {vault, focus = false, onBack = () => {}}) {
-  if (typeof vault?.saveOwnerKey !== 'function') throw new Error('AT vault required');
+  if (typeof vault?.saveOwnerKey !== 'function' || typeof vault?.inspect !== 'function') throw new Error('AT vault required');
   mounted.get(container)?.();
   const document = container.ownerDocument, lifetime = new AbortController();
   let disposed = false, busy = false, saved = false, resolve, reject;
@@ -14,12 +14,13 @@ export function showCredentialSetup(container, {vault, focus = false, onBack = (
   const heading = element('h2', 'Add your AT key'); heading.tabIndex = -1;
   const intro = element('p', 'Optional live information can improve the timetable for the stop or journey you are viewing. Downloaded journey planning still works offline.');
   const disclosure = element('p', 'Save your personal AT key encrypted in this browser. When you choose to check live information, Along sends the key directly to Auckland Transport. Saving here does not share it with another device or contact AT.');
-  const form = element('form');
+  const form = element('form'); form.hidden = true;
   const label = element('label', 'Personal AT API key');
   const input = element('input'); input.type = 'password'; input.id = `along-at-key-${++serial}`;
   input.autocomplete = 'off'; input.spellcheck = false; input.autocapitalize = 'none'; input.required = true; input.maxLength = 512;
   label.htmlFor = input.id;
   const status = element('p'); status.setAttribute('role', 'status'); status.setAttribute('aria-atomic', 'true');
+  status.textContent = 'Checking this device’s live-information settings…';
   const save = element('button', 'Save key on this device'); save.type = 'submit'; save.className = 'pairing-primary';
   const back = element('button', 'Back'); back.type = 'button';
   form.append(label, input, save); panel.append(heading, intro, disclosure, form, status, back);
@@ -36,7 +37,7 @@ export function showCredentialSetup(container, {vault, focus = false, onBack = (
   panel.addEventListener('keydown', event => { if (event.key === 'Escape') { event.preventDefault(); leave(); } });
   form.addEventListener('submit', async event => {
     event.preventDefault();
-    if (!event.isTrusted || disposed || busy || saved) return;
+    if (!event.isTrusted || disposed || busy || saved || form.hidden) return;
     if (!/^[\x21-\x7e]{1,512}$/.test(input.value)) {
       status.textContent = 'Enter your AT key without spaces or line breaks.';
       input.setAttribute('aria-invalid', 'true'); input.focus(); return;
@@ -64,5 +65,23 @@ export function showCredentialSetup(container, {vault, focus = false, onBack = (
       if (!disposed && moveFocus && (document.activeElement === document.body || form.contains(document.activeElement))) back.focus();
     }
   });
-  return Object.freeze({completed, dispose});
+  const ready = (async () => {
+    let state;
+    try { state = await vault.inspect({signal: lifetime.signal}); } catch { state = null; }
+    if (disposed) return;
+    if (state?.status === 'saved-unverified') {
+      heading.textContent = 'AT key saved on this device';
+      status.textContent = 'The saved key can be opened locally. It has not been checked with AT. Return to your stop or journey to choose live information.';
+    } else if (state?.canSave === true && ['missing', 'replacement-needed'].includes(state.status)) {
+      form.hidden = false;
+      if (state.status === 'replacement-needed') {
+        heading.textContent = 'Add your replacement AT key';
+        status.textContent = 'Your device settings require a newer key. The previous saved key cannot be used.';
+      } else status.textContent = 'No AT key is saved for these live-information settings.';
+    } else {
+      heading.textContent = 'Live information unavailable on this device';
+      status.textContent = 'Your saved settings could not authorize key access. Go Back to device settings. Downloaded journey planning still works.';
+    }
+  })();
+  return Object.freeze({ready, completed, dispose});
 }

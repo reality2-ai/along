@@ -55,6 +55,22 @@ export function openLocalATVault({wasm, store, group, owner, credential}) {
     && value.wrappingKey instanceof CryptoKey && value.wrappingKey.type === 'secret' && !value.wrappingKey.extractable
     && value.wrappingKey.algorithm.name === 'AES-GCM' && value.wrappingKey.algorithm.length === 256
     && value.wrappingKey.usages.length === 2 && ['encrypt', 'decrypt'].every(use => value.wrappingKey.usages.includes(use));
+  const readKey = async signal => {
+    let plaintext;
+    try {
+      const context = await access(signal), saved = await store.read(scope, key);
+      checkSignal(signal);
+      const record = saved?.value;
+      if (!validStored(record) || record.member !== context.member || record.generation !== context.policy.generation
+          || record.policyRevision > context.policy.revision) throw fail();
+      plaintext = new Uint8Array(await crypto.subtle.decrypt({name: 'AES-GCM', iv: record.iv,
+        additionalData: aad(record)}, record.wrappingKey, record.ciphertext));
+      await unchanged([...context.checks, {scope, key, expectedRevision: saved.revision}], signal);
+      const value = new TextDecoder('utf-8', {fatal: true}).decode(plaintext);
+      if (!token(value)) throw fail();
+      return value; // Trusted direct provider client only; never log or cache it.
+    } catch { throw fail(); } finally { plaintext?.fill(0); }
+  };
   return Object.freeze({
     saveOwnerKey: async (value, {signal} = {}) => {
       let plaintext;
@@ -79,21 +95,25 @@ export function openLocalATVault({wasm, store, group, owner, credential}) {
         return Object.freeze({status: 'credential-saved', generation: record.generation, storageRevision: result.revisions[0]});
       } catch { throw fail(); } finally { plaintext?.fill(0); }
     },
-    getKey: async ({signal} = {}) => {
-      let plaintext;
+    getKey: ({signal} = {}) => readKey(signal),
+    inspect: async ({signal} = {}) => {
       try {
         const context = await access(signal), saved = await store.read(scope, key);
-        checkSignal(signal);
-        const record = saved?.value;
-        if (!validStored(record) || record.member !== context.member || record.generation !== context.policy.generation
-            || record.policyRevision > context.policy.revision) throw fail();
-        plaintext = new Uint8Array(await crypto.subtle.decrypt({name: 'AES-GCM', iv: record.iv,
-          additionalData: aad(record)}, record.wrappingKey, record.ciphertext));
-        await unchanged([...context.checks, {scope, key, expectedRevision: saved.revision}], signal);
-        const value = new TextDecoder('utf-8', {fatal: true}).decode(plaintext);
-        if (!token(value)) throw fail();
-        return value; // Trusted direct provider client only; never log or cache it.
-      } catch { throw fail(); } finally { plaintext?.fill(0); }
+        const checks = [...context.checks, {scope, key, expectedRevision: saved?.revision ?? 0}];
+        const canSave = context.member === owner;
+        let status;
+        if (!saved) status = 'missing';
+        else {
+          const record = saved.value;
+          if (!validStored(record) || record.member !== context.member || record.policyRevision > context.policy.revision
+              || record.generation > context.policy.generation) throw fail();
+          if (record.generation < context.policy.generation) status = 'replacement-needed';
+          else { await readKey(signal); status = 'saved-unverified'; }
+        }
+        await unchanged(checks, signal);
+        // Only local state, never a credential or proof of provider acceptance.
+        return Object.freeze({status, canSave: canSave && status !== 'saved-unverified'});
+      } catch { return Object.freeze({status: 'unavailable', canSave: false}); }
     },
   });
 }

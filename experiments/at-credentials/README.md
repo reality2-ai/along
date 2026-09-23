@@ -153,3 +153,17 @@ signed owner policy and the encrypted vault. Run with the R2/browser environment
 used by `local-vault.test.mjs`. This is not a TalkBack, physical-device or real AT
 validation result. The screen and its CSS remain excluded from the public build;
 the enclosing setup/settings flow and device-delivery consent remain unfinished.
+
+On opening, the consent screen now calls the vault's `inspect` method before
+showing the field. Inspection returns only a local status and whether this owner
+may save: missing, replacement needed after a newer signed generation, saved but
+unverified with AT, or unavailable. Saved status requires successful local
+decryption and current locally held authorization; damaged ciphertext is not
+advertised as usable. Evidence and secret revisions are checked again before
+reporting status. No key is returned to the screen and no provider is contacted.
+This is a point-in-time local observation, not continuing permission to use a key.
+
+Browser checks cover these states, cancellation, removed grants, reopening a
+saved key, and an old asynchronous inspection completing after its screen has
+been replaced. An unreadable or unauthorized state never exposes an overwrite
+action. This does not implement owner recovery or provider-side key rotation.

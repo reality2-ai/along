@@ -30,9 +30,13 @@ try {
     const check = (v, why) => { if (!v) throw new Error(why); };
     const refused = async fn => { try { await fn(); return false; } catch { return true; } };
     check(await refused(() => vault.getKey()), 'missing key refuses');
+    check(JSON.stringify(await vault.inspect()) === JSON.stringify({status: 'missing', canSave: true}), 'missing status');
     const saved = await vault.saveOwnerKey('synthetic-at-generation-one');
     check(saved.status === 'credential-saved' && saved.generation === 1n, 'first key saved');
     check(await vault.getKey() === 'synthetic-at-generation-one', 'authorized local use');
+    check(JSON.stringify(await vault.inspect()) === JSON.stringify({status: 'saved-unverified', canSave: false}), 'saved status without secret');
+    const aborted = new AbortController(); aborted.abort();
+    check((await vault.inspect({signal: aborted.signal})).status === 'unavailable', 'cancelled inspection');
     check(await refused(() => vault.saveOwnerKey('unversioned-replacement')), 'same generation cannot replace key');
     const encrypted = await store.read('along-at-secret:' + binding.owner, binding.group + ':' + binding.credential);
     check(!Object.values(encrypted.value).includes('synthetic-at-generation-one'), 'no plaintext field');
@@ -43,6 +47,7 @@ try {
       return record;
     }}});
     check(await refused(() => damaged.getKey()), 'ciphertext tampering refused');
+    check((await damaged.inspect()).status === 'unavailable', 'damaged ciphertext never advertised as saved');
     const identity = await (await import('./local-persona.mjs')).loadLocalPersona({wasm, store, expectedGroup: group});
     const {credentialPolicyBytes} = await import('./policy.mjs');
     window.policies = (await import('./policy-store.mjs')).openCredentialPolicyStore({store, ...binding});
@@ -52,6 +57,7 @@ try {
     };
     await changePolicy(2n, 2n, [binding.owner]);
     check(await refused(() => vault.getKey()), 'old key unavailable after generation advances');
+    check(JSON.stringify(await vault.inspect()) === JSON.stringify({status: 'replacement-needed', canSave: true}), 'replacement status');
     check((await vault.saveOwnerKey('synthetic-at-generation-two')).generation === 2n, 'replacement generation saved');
     check(await vault.getKey() === 'synthetic-at-generation-two', 'replacement usable');
     return binding;
@@ -96,6 +102,7 @@ try {
       if (await pending) throw new Error('Removed grant returned a pending plaintext');
     } finally { crypto.subtle.decrypt = original; }
     if (await vault.getKey().then(() => true, () => false)) throw new Error('Removed grant still reads');
+    if ((await vault.inspect()).status !== 'unavailable') throw new Error('Removed grant advertised availability');
     store.close();
   });
   console.log('PASS: synthetic AT key encrypted under nonextractable browser AES custody; own-device policy gates save/use; no same-generation replacement, tampered ciphertext, stale generation or removed grant; fresh-document restore and removal during decryption. Software custody only; no real provider request or peer delivery.');
