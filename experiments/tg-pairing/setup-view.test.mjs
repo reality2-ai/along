@@ -6,7 +6,7 @@ import {join} from 'node:path';
 const {chromium} = await import(process.env.PLAYWRIGHT_MODULE || '@playwright/test');
 const sources = new Map();
 for (const name of ['storage.mjs', 'membership.mjs', 'certificate.mjs']) sources.set('/' + name, await readFile(join(process.env.R2_BROWSER_DIR, name)));
-for (const name of ['initial-persona.mjs', 'setup-view.mjs', 'comparison.css']) sources.set('/' + name, await readFile(new URL(name, import.meta.url)));
+for (const name of ['software-persona.mjs', 'local-persona.mjs', 'setup-view.mjs', 'comparison.css']) sources.set('/' + name, await readFile(new URL(name, import.meta.url)));
 for (const name of ['hive_wasm.js', 'hive_wasm_bg.wasm']) sources.set('/' + name, await readFile(join(process.env.R2_WASM_DIR, name)));
 const server = createServer((req, res) => {
   res.setHeader('Content-Type', req.url.endsWith('.css') ? 'text/css' : req.url.endsWith('.wasm') ? 'application/wasm' : sources.has(req.url) ? 'text/javascript' : 'text/html');
@@ -29,19 +29,25 @@ try {
   });
   assert.equal(await page.evaluate(() => document.activeElement.tagName), 'H2');
   assert.deepEqual((await new AxeBuilder({page}).analyze()).violations.map(v => v.id), []);
+  await page.setViewportSize({width: 320, height: 640});
+  await page.evaluate(() => document.documentElement.style.fontSize = '200%');
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+  await page.getByText('Your group keys will be encrypted', {exact: false}).waitFor();
+  await page.evaluate(() => document.documentElement.style.fontSize = '');
   await page.evaluate(() => document.querySelector('.pairing-primary').click());
   assert.equal(await page.evaluate(() => store.read('candidate-persona', 'active')), null);
   await page.keyboard.press('Tab'); await page.keyboard.press('Enter');
-  await page.getByRole('heading', {name: 'Device identity saved'}).waitFor();
-  assert.equal(await page.getByRole('button', {name: 'Create a device identity'}).count(), 0);
-  assert.equal(await page.evaluate(async () => (await view.completed).issuerAvailable()), true);
+  await page.getByRole('heading', {name: 'Device group saved'}).waitFor();
+  assert.equal(await page.getByRole('button', {name: 'Create my device group'}).count(), 0);
+  assert.equal(await page.evaluate(async () => (await view.completed).custody), 'encrypted-browser-software');
+  const savedGroup = await page.evaluate(async () => (await view.completed).group);
   assert.equal(await page.evaluate(() => document.activeElement.textContent), 'Back');
   await page.getByRole('button', {name: 'Back', exact: true}).click();
   assert.equal(await page.evaluate(() => backCount), 1);
-  assert.equal(await page.evaluate(async () => (await view.completed).issuerAvailable()), false);
+  assert.equal(await page.evaluate(async () => (await store.read('candidate-persona', 'active')).value.origin), 'initial');
   await page.evaluate(async () => { window.view = mount(); await view.ready; });
   await page.getByRole('heading', {name: 'Saved device state found'}).waitFor();
-  assert.equal(await page.getByRole('button', {name: 'Create a device identity'}).count(), 0);
+  assert.equal(await page.getByRole('button', {name: 'Create my device group'}).count(), 0);
   assert.deepEqual((await new AxeBuilder({page}).analyze()).violations.map(v => v.id), []);
   await page.setViewportSize({width: 320, height: 640});
   await page.evaluate(() => document.documentElement.style.fontSize = '200%');
@@ -52,7 +58,7 @@ try {
     window.view = mount({store: {read: async () => { throw new Error('controlled failure'); }}}); await view.ready;
   });
   await page.getByRole('status').filter({hasText: 'could not be read'}).waitFor();
-  assert.equal(await page.getByRole('button', {name: 'Create a device identity'}).count(), 0);
+  assert.equal(await page.getByRole('button', {name: 'Create my device group'}).count(), 0);
   // A replaced view cannot reveal a late Create action over its successor.
   await page.evaluate(async () => {
     let release;
@@ -61,6 +67,53 @@ try {
     window.view = mount(); await view.ready; release(); await old.ready;
   });
   await page.getByRole('heading', {name: 'Saved device state found'}).waitFor();
-  assert.equal(await page.getByRole('button', {name: 'Create a device identity'}).count(), 0);
-  console.log('PASS: real keyboard-activated setup, no synthetic-click creation, no repeat creation, Back/Escape custody disposal, read-failure and replaced-view refusal, axe and narrow enlarged-text checks. Not a TalkBack or physical-device check.');
+  assert.equal(await page.getByRole('button', {name: 'Create my device group'}).count(), 0);
+  // Back before the transaction prevents creation; Back after a committed
+  // transaction cannot undo it, but late completion must not alter the screen.
+  for (const afterCommit of [false, true]) {
+    await page.evaluate(async afterCommit => {
+      window.raceStore = await (await import('./storage.mjs')).openBrowserStorage('setup-race-' + afterCommit);
+      window.saveReached = false;
+      const gate = new Promise(resolve => { window.releaseSave = resolve; });
+      const original = raceStore.compareAndSwapMany.bind(raceStore);
+      window.saveFinished = new Promise(resolve => { window.finishSave = resolve; });
+      const delayed = {...raceStore, compareAndSwapMany: async (...args) => {
+        try {
+          let result;
+          if (afterCommit) result = await original(...args);
+          window.saveReached = true; await gate;
+          return afterCommit ? result : await original(...args);
+        } finally { finishSave(); }
+      }};
+      window.view = mount({store: delayed}); await view.ready;
+    }, afterCommit);
+    await page.getByRole('button', {name: 'Create my device group'}).click();
+    await page.waitForFunction(() => saveReached);
+    await page.getByRole('button', {name: 'Back', exact: true}).click();
+    await page.evaluate(() => document.querySelector('#setup').textContent = 'Returned to journeys');
+    assert.equal(await page.evaluate(async () => {
+      releaseSave(); await saveFinished;
+      const saved = await raceStore.read('candidate-persona', 'active');
+      raceStore.close(); return !!saved;
+    }), afterCommit);
+    assert.equal(await page.locator('#setup').textContent(), 'Returned to journeys');
+  }
+  // Restore in a fresh document after closing the creating page: the UI must
+  // have created durable software custody, not just a volatile issuer handle.
+  await page.evaluate(() => { view.dispose(); store.close(); });
+  await page.close();
+  const reopened = await context.newPage();
+  await reopened.goto(`http://127.0.0.1:${server.address().port}`);
+  assert.equal(await reopened.evaluate(async savedGroup => {
+    const wasm = await import('./hive_wasm.js'); await wasm.default();
+    const store = await (await import('./storage.mjs')).openBrowserStorage('setup-view');
+    const expectedGroup = Uint8Array.from(savedGroup.match(/../g), value => parseInt(value, 16));
+    let issuer;
+    try {
+      issuer = await (await import('./software-persona.mjs')).loadSoftwareIssuer({wasm, store, expectedGroup});
+      const certificate = await issuer.issueCertificate(crypto.getRandomValues(new Uint8Array(32)));
+      return certificate.length > 64 && issuer.group === savedGroup;
+    } finally { issuer?.close(); store.close(); }
+  }, savedGroup), true);
+  console.log('PASS: real keyboard-activated setup, no synthetic-click creation, no repeat creation, Back/Escape navigation, durable software issuer restore after page closure, read-failure and replaced-view refusal, cancellation before/after atomic commit, axe and narrow enlarged-text checks. Not a TalkBack or physical-device check.');
 } finally { await browser?.close(); await new Promise(resolve => server.close(resolve)); }

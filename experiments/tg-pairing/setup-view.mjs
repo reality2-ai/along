@@ -1,33 +1,35 @@
 // Experimental local first-use screen, excluded from the public build.
 // Trusted UI activation is a UI boundary, not protection against same-origin JS.
-import {initializeLocalPersona} from './initial-persona.mjs';
+import {initializeSoftwarePersona} from './software-persona.mjs';
 const mounted = new WeakMap();
 export function showLocalSetup(container, {wasm, store, focus = false, onBack = () => {}}) {
   mounted.get(container)?.();
   const document = container.ownerDocument, lifetime = new AbortController();
-  let disposed = false, busy = false, created, resolve, reject;
+  let disposed = false, busy = false, resolve, reject;
   const completed = new Promise((yes, no) => { resolve = yes; reject = no; });
   void completed.catch(() => {});
   const panel = document.createElement('section'); panel.className = 'pairing-comparison';
   const heading = document.createElement('h2'); heading.textContent = 'Set up this device'; heading.tabIndex = -1;
   const explanation = document.createElement('p');
   explanation.textContent = 'Connecting devices is optional. Your downloaded journeys work without it.';
+  const limits = document.createElement('p');
+  limits.textContent = 'Your group keys will be encrypted and saved in this browser. This is software protection, not hardware-backed storage. Code running as part of Along can use these keys. Clearing browser data can lose access to your group.';
   const status = document.createElement('p'); status.setAttribute('role', 'status');
   status.textContent = 'Checking this browser’s saved identity…';
   const create = document.createElement('button'); create.type = 'button';
-  create.className = 'pairing-primary'; create.textContent = 'Create a device identity'; create.hidden = true;
+  create.className = 'pairing-primary'; create.textContent = 'Create my device group'; create.hidden = true;
   const back = document.createElement('button'); back.type = 'button'; back.textContent = 'Back';
-  panel.append(heading, explanation, status, create, back); container.replaceChildren(panel);
+  panel.append(heading, explanation, limits, status, create, back); container.replaceChildren(panel);
   if (focus) heading.focus();
   const dispose = () => {
     if (disposed) return;
-    disposed = true; lifetime.abort(); created?.close();
+    disposed = true; lifetime.abort();
     create.disabled = true; back.disabled = true;
     reject(new Error('Local setup closed'));
     if (mounted.get(container) === dispose) mounted.delete(container);
   };
   mounted.set(container, dispose);
-  const leave = () => { dispose(); onBack(); };
+  const leave = () => { if (!disposed) { dispose(); onBack(); } };
   back.addEventListener('click', leave);
   panel.addEventListener('keydown', event => {
     if (event.key === 'Escape') { event.preventDefault(); leave(); }
@@ -38,11 +40,11 @@ export function showLocalSetup(container, {wasm, store, focus = false, onBack = 
     busy = true; create.disabled = true; panel.setAttribute('aria-busy', 'true');
     status.textContent = 'Saving this device’s identity…';
     try {
-      const value = await initializeLocalPersona({wasm, store, signal: lifetime.signal});
-      if (disposed) { value.close(); return; }
-      created = value; create.hidden = true;
-      heading.textContent = 'Device identity saved';
-      status.textContent = 'Saved in this browser. This device has not connected to another device yet.';
+      const value = await initializeSoftwarePersona({wasm, store, signal: lifetime.signal});
+      if (disposed) return;
+      create.hidden = true;
+      heading.textContent = 'Device group saved';
+      status.textContent = 'Your group is saved in this browser and can be reopened here. No other device is connected yet.';
       resolve(value);
     } catch {
       if (!disposed) {

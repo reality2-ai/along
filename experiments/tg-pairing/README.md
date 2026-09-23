@@ -351,19 +351,26 @@ facts and confirmation remain synthetic; local UI activation and reset are not
 yet implemented. The constructor passed the full runtime gate against its unchanged recorded
 snapshot. Status prose was refreshed afterwards.
 
-### Local setup screen
+### Local setup screen (updated for the browser software subset)
 
-`showLocalSetup` mounts the explicit first-use action and calls real initialization
-only after a trusted button activation. This is a UI boundary, not protection
+`showLocalSetup` mounts the explicit first-use action and calls
+`initializeSoftwarePersona` only after a trusted button activation. Before creation,
+it explains encrypted browser storage, the lack of hardware-backed protection,
+access by code running as part of Along, and possible loss when browser data is
+cleared. The original volatile-only initializer remains available for its separate
+runtime tests; it is no longer used by this setup screen. This is a UI boundary, not protection
 against arbitrary same-origin JavaScript. Missing storage is explained as first
 use or cleared data; existing or unreadable state never presents a replacement
 button. The screen distinguishes saved local identity from connecting to a peer.
-Back, Escape and replacement cancel pending work and close retained volatile
-custody. Late work cannot update a successor view. After the create action
+Back, Escape and replacement cancel pending work. The screen retains no issuer
+handle. A completed atomic save survives leaving the screen; a cancelled
+transaction does not create a partial group. Late work cannot update a successor view. After the create action
 finishes, keyboard focus moves to Back if it would otherwise be lost.
 
 The browser test exercises actual keyboard creation, programmatic-click refusal,
-repeat creation refusal, disposal, failed reads and delayed replacement. Axe and
+repeat creation refusal, disposal, failed reads, delayed replacement, and Back
+before and after atomic commit. A fresh document restores the real software issuer
+and signs a certificate from the group created through the keyboard UI. Axe and
 narrow/enlarged-text checks pass; the existing comparison suite also passes with
 the shared hidden-control rule. These do not establish TalkBack behavior or
 physical-device usability. The component remains outside the public static build;
