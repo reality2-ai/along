@@ -1056,3 +1056,12 @@ reconnection. This extends the evidence-based reporting theme: a successful send
 is not a saved receipt, and a one-way receipt is not proof of complete two-way sync.
 The real-channel check still supplies consent and signaling through the harness;
 it is not a completed commuter interface or physical-device acceptance.
+
+The consent component next replaced direct permission-grant/removal calls in the
+journey exchange test. It explains saved addresses and service preferences, keeps
+the complete device identity behind a disclosure, and distinguishes saving a
+choice from sending data. Keyboard testing caught focus being lost when the action
+was disabled before its focus state was recorded; the repair preserves a useful
+Back target. Escape, stale reviews and narrow-screen zoom are checked with real
+enrolled identities. This advances progressive disclosure and accessible consent,
+while peer selection, app Settings integration and physical testing remain separate.

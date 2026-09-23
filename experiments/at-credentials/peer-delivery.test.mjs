@@ -5,7 +5,7 @@ import {readFile} from 'node:fs/promises';
 import {join} from 'node:path';
 const {chromium} = await import(process.env.PLAYWRIGHT_MODULE || '@playwright/test');
 const sources = new Map();
-for (const name of ['state.mjs', 'store.mjs', 'permission.mjs', 'exchange.mjs', 'journey-session.mjs', 'permission-check.test.mjs', 'session-check.test.mjs']) sources.set('/' + name, await readFile(new URL('../journey-sync/' + name, import.meta.url)));
+for (const name of ['state.mjs', 'store.mjs', 'permission.mjs', 'permission-view.mjs', 'exchange.mjs', 'journey-session.mjs', 'permission-check.test.mjs', 'session-check.test.mjs']) sources.set('/' + name, await readFile(new URL('../journey-sync/' + name, import.meta.url)));
 for (const name of ['storage.mjs', 'membership.mjs', 'certificate.mjs', 'peer-session.mjs', 'peer-link.mjs', 'challenge.mjs', 'session-statement.mjs', 'enrollment-session.mjs', 'invitation-journal.mjs', 'enrollment-link.mjs', 'enrollment-exchange.mjs', 'enrollment-protection.mjs', 'invitation.mjs']) sources.set('/' + name, await readFile(join(process.env.R2_BROWSER_DIR, name)));
 for (const name of ['../tg-pairing/initial-persona.mjs', '../tg-pairing/software-persona.mjs', '../tg-pairing/core-candidate-session.mjs', '../tg-pairing/software-traffic.mjs', '../tg-pairing/enrollment-payloads.mjs', '../tg-pairing/enrollment-profile.mjs', '../tg-pairing/installation-receipt.mjs', '../tg-pairing/stored-claim.mjs', '../tg-pairing/local-persona.mjs', 'local-owner.mjs', 'owner-policy.mjs', 'owner-access-view.mjs', 'owner-policy-send.mjs', 'policy-sync.mjs', 'owner-delivery.mjs', 'delivery-history.mjs', 'delivery-recovery.mjs', 'remote-owner.mjs', 'policy-update.mjs', 'policy-update-message.mjs', 'remote-owner-view.mjs', 'settings-view.mjs', 'key-replacement-view.mjs', 'credential-view.mjs', '../tg-pairing/comparison.css', '../tg-pairing/local-persona-session.mjs', 'policy.mjs', 'policy-store.mjs', 'local-vault.mjs', 'delivery-ack.mjs', 'delivery-message.mjs']) sources.set('/' + name.split('/').pop(), await readFile(new URL(name, import.meta.url)));
 for (const name of ['hive_wasm.js', 'hive_wasm_bg.wasm']) sources.set('/' + name, await readFile(join(process.env.R2_WASM_DIR, name)));
@@ -21,6 +21,16 @@ try {
   browser = await chromium.launch({headless: true, executablePath: process.env.CHROMIUM_PATH});
   const context = await browser.newContext({viewport: {width: 320, height: 640}});
   const page = await context.newPage(); await page.goto(`http://127.0.0.1:${server.address().port}`);
+  await page.exposeFunction('exerciseJourneyPermission', async action => {
+    if (action === 'cancel') { await page.keyboard.press('Escape'); return; }
+    await page.evaluate(() => document.documentElement.style.fontSize = '200%');
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+    assert.deepEqual((await new AxeBuilder({page}).analyze()).violations.map(v => v.id), []);
+    const name = action === 'remove' ? 'Stop journey sharing' : 'Allow journey sharing';
+    await page.evaluate(() => document.querySelector('.pairing-primary').click());
+    await page.getByRole('button', {name, exact: true}).waitFor();
+    await page.getByRole('button', {name, exact: true}).focus(); await page.keyboard.press('Enter');
+  });
   await page.exposeFunction('exerciseConsent', async action => {
     if (action === 'cancel') { await page.keyboard.press('Escape'); return; }
     await page.evaluate(() => document.documentElement.style.fontSize = '200%');
@@ -554,5 +564,5 @@ try {
     finally { ownerStore.close(); }
   }, historyBinding), 'recipient-confirmed-saved');
   console.log('PASS: distinct real browser identities mutually authenticate over direct WebRTC, owner grant gates signed delivery, receiver encrypts/consumes request, removed peer is refused. Actual software issuer and acknowledged recipient enrollment; harness trust/comparison/signaling, reviewed-descriptor fixture and synthetic AT keys; checked receiver acceptance; one browser host, not physical-device reachability or public release.');
-  console.log('PASS: independent journey permission and transaction-race guards; authenticated multi-chunk saved-journey exchange, committed receipts, offline edits/deletion catch-up and live-session permission removal. Real enrolled identities; consent/signaling remain harness actions.');
+  console.log('PASS: independent journey permission and transaction-race guards; visible journey consent/removal, authenticated multi-chunk exchange, committed receipts, offline edits/deletion catch-up and live-session removal. Real enrolled identities; peer selection/signaling remain harness actions.');
 } finally { await browser?.close(); await new Promise(resolve => server.close(resolve)); }

@@ -14,10 +14,11 @@ tombstone set without garbage collection.
 The next increment adds independent per-peer application permission, verified
 against actual enrollment evidence, and transaction guards that prevent a merge
 when permission is removed during its commit. These checks use real browser
-storage but harness consent actions. The authenticated journey exchange now moves
+storage and a visible consent component; race setup remains a harness action.
+The authenticated journey exchange now moves
 bounded snapshots in acknowledged chunks and confirms only committed merges.
 The real-enrollment browser fixture checks offline changes, reconnect/convergence
-and permission removal on an open channel, independently of AT keys. Consent UI,
+and visible permission removal on an open channel, independently of AT keys. Settings integration,
 automatic reconciliation, discovery and physical-device tests remain unfinished.
 
 The earlier implementation references below are historical: those projects are

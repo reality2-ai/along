@@ -80,9 +80,10 @@ The actual-enrollment fixture in `experiments/at-credentials/peer-delivery.test.
 runs `permission-check.test.mjs` before creating AT settings. It checks refusal
 without consent, mismatched membership proof, independent directions, stale
 review, authorized merge, and removal during commit with saved journeys retained.
-It uses real WASM identities, membership evidence and IndexedDB, but the permission
-actions are harness calls. The controller now binds incoming packets to the
-selected authenticated peer; the consent UI remains unfinished.
+It uses real WASM identities, membership evidence and IndexedDB. Consent grants
+now use the visible permission component; race/stale-state setup still uses
+harness calls. The controller binds packets to the selected authenticated peer.
+Settings integration and device selection remain unfinished.
 
 ## Authenticated snapshot exchange
 
@@ -115,5 +116,21 @@ oversize headers and closure checks. The real-enrollment fixture additionally ru
 `session-check.test.mjs` over authenticated WebRTC and actual IndexedDB before any
 AT settings exist. It checks multi-chunk transfer, bidirectional convergence,
 offline save/deletion and reconnect, then removal on an open channel. Consent and
-signaling are harness actions on one host. App preference migration, consent UI,
+removal use visible controls; peer selection/signaling are harness actions on one
+host. App preference migration, Settings integration,
 automatic reconciliation and physical-device acceptance remain unfinished.
+
+## Journey-sharing review component
+
+`permission-view.mjs` names the selected device and explains the exchange of saved
+endpoints, service preferences, changes and removals. It explicitly separates
+current location/history and AT-key access. A full-width action saves permission;
+Back and Escape leave it unchanged. The complete device identity sits under a
+disclosure. Success names a saved local choice, not delivery or remote consent.
+Removal explains that already shared copies remain on the other device.
+
+The real-enrollment browser fixture checks synthetic-click refusal, keyboard
+confirmation/focus return, Escape, stale-review refusal, 320px/200% reflow and axe.
+It uses this component to grant both sides before the real journey exchange and
+remove permission while that channel is open. This is a component in a test page,
+not yet the commuter Settings flow, TalkBack acceptance or public deployment.

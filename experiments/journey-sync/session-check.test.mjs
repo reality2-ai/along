@@ -1,6 +1,7 @@
-// Real enrollment fixture supplies identities. Signaling/consent remain harness actions.
+// Real enrollment fixture supplies identities. Consent/removal use visible controls;
+// peer selection and signaling are harness actions, not app integration.
 import {openJourneySession} from './journey-session.mjs';
-import {setJourneyPermission, readJourneyPermission} from './permission.mjs';
+import {showJourneyPermission} from './permission-view.mjs';
 import {openJourneyStore} from './store.mjs';
 import {projectJourney, journeyId, savedJourneys} from './state.mjs';
 export async function checkJourneySession({wasm, owner, receiver, group}) {
@@ -13,8 +14,8 @@ export async function checkJourneySession({wasm, owner, receiver, group}) {
   ];
   check(await denied(() => openJourneySession(options[0])), 'session refuses absent permission before signaling');
   for (const context of options) {
-    const permission = await readJourneyPermission(context);
-    await setJourneyPermission({...context, allow: true, expectedRevision: permission.revision});
+    const view = showJourneyPermission(document.querySelector('#consent'), {...context, focus: true});
+    await view.ready; await window.exerciseJourneyPermission('allow'); await view.completed; view.dispose();
   }
   const a = openJourneyStore({store: owner.store, group: hex(group), actor: hex(owner.subject)});
   const b = openJourneyStore({store: receiver.store, group: hex(group), actor: hex(receiver.subject)});
@@ -40,8 +41,8 @@ export async function checkJourneySession({wasm, owner, receiver, group}) {
     await connect(); await synchronize();
     check(!savedJourneys((await b.read()).state).some(journey => journey.to.id === 'sync-3'), 'offline deletion survives reconnection');
     check(savedJourneys((await a.read()).state).some(journey => journey.to.id === 'sync-21'), 'independent offline save retained');
-    const permission = await readJourneyPermission(options[0]);
-    await setJourneyPermission({...options[0], allow: false, expectedRevision: permission.revision});
+    const removal = showJourneyPermission(document.querySelector('#consent'), {...options[0], focus: true});
+    await removal.ready; await window.exerciseJourneyPermission('remove'); await removal.completed; removal.dispose();
     const before = JSON.stringify(await a.read());
     await b.save(value('denied'));
     check(await denied(() => sessions[1].synchronize()), 'removed permission refuses an existing authenticated channel');
