@@ -30,7 +30,7 @@ selector have been withdrawn for now; official place names retain their spelling
 and macrons. Earlier saved language choices do not re-enable the draft.
 
 **Feedback:** use **Give feedback on this screen** in Settings, route/stop details
-or journey/departure notes. Drafts stay local, including offline. You review the
+or directly on journey and nearby-departure screens. Drafts stay local, including offline. You review the
 text before opening GitHub, where an account and **Submit new issue** are required.
 Submitted feedback is public. No journey details are attached automatically;
 app version, language and a general screen category are optional. Paste the issue

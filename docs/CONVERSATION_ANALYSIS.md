@@ -652,3 +652,12 @@ the active requirement: technical availability and disclaimer text do not imply
 acceptance. Version 31 returns to English throughout and ignores saved Māori
 choices. The goal records translation as deferred, while preserving official
 place names and the historical draft for possible future review.
+
+### Visible actions and discoverable feedback (23 September 2026)
+
+The user observed that feedback was hidden inside journey notes and that actions
+such as “Compare nearby departures instead” resembled ordinary text. This refines
+the recurring theme of clear affordances: progressive disclosure must not hide
+feedback or make available actions ambiguous. Version 32 moves feedback outside
+the disclosure and gives secondary actions consistent outlines, while preserving
+the filled primary travel action. Touch users need these cues before any hover.

@@ -1,6 +1,7 @@
 """AT's documented subscription-header authentication; never send keys to clients."""
 import json
 import os
+import re
 from pathlib import Path
 import threading
 import time
@@ -68,6 +69,7 @@ class Realtime:
                 trip = update.get('trip', {})
                 trip_id = trip.get('trip_id')
                 day = trip.get('start_date', '')
-                if trip_id:
-                    updates[(trip_id,day)] = update
+                if trip_id and isinstance(day, str) and re.fullmatch(r'\d{8}', day):
+                    key = (trip_id, day)
+                    updates[key] = None if key in updates else update
         return feed, updates

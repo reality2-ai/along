@@ -587,3 +587,21 @@ were restored, and GitHub receipt requests are allowed by the local CSP. Five
 focused Python tests pass for credentials, authenticated adapter behaviour,
 current HTTP assets and rejecting private-file URLs. No public live backend has
 been deployed and the retired private service remains untouched.
+
+## Version 32: visible actions and consistent journey choices
+
+Feedback is visible outside the journey/departure disclosures. Text-like actions
+now have quiet outlines, expandable sections have boundaries and native markers,
+and every Use this journey button has full width and 24 px separation. The filled
+primary action remains stronger. The phone review layout keeps Find my way within
+a 360 × 780 viewport after acknowledgement; swap shares the change-place row.
+
+Validation: 35 JavaScript and 7 Python checks passed. The 12 browser scenarios
+passed across the full run and the focused rerun after fixing the phone-height
+regression. Static-subpath accessibility (including 320 px, 200% zoom and forced
+colours), offline routing/data refresh and installed-app update checks passed.
+These are automated checks, not physical phone or TalkBack observations.
+
+Live-feed matching also now rejects undated, wrong-date, wrong-route and ambiguous
+trip instances, retaining scheduled times for malformed numeric events. The public
+live connection remains disabled.

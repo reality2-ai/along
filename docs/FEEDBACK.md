@@ -71,3 +71,7 @@ receipt after a new draft begins. New drafts clear the previous issue URL and
 retry confirmation. Physical assistive-technology checks remain outstanding.
 
 Version 31 follows the user’s decision to defer Māori: feedback is English-only.
+
+Version 32 places feedback outside the journey/departure information disclosures,
+so it is visible without expanding them. Alternative actions use outlined buttons
+and disclosures have visible boundaries and their native expansion markers.

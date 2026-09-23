@@ -42,7 +42,9 @@ def nearby(planner, realtime, lat, lon, destination=None, mode='all', now=None):
                 schedule = departure+shift
                 expected = schedule
                 live = False
-                update = predictions.get((trip,service_day.strftime('%Y%m%d'))) or predictions.get((trip,''))
+                update = predictions.get((trip,service_day.strftime('%Y%m%d')))
+                if update and update.get('trip', {}).get('route_id') not in (None, '', route):
+                    update = None
                 if update:
                     if update.get('trip', {}).get('schedule_relationship') in (3,'CANCELED'):
                         continue

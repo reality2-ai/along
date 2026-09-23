@@ -97,3 +97,16 @@ test('late receipt cannot mark a new draft received and retry controls reset',as
   await expect(page.locator('#feedback-url')).toHaveValue('');
   expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('along-feedback-v1')).receipt)).toBeNull();
 });
+
+test('journey feedback is visible without expanding journey information',async({page})=>{
+  await page.goto('/');await expect(page.locator('#data-status')).toContainText('offline ready',{timeout:90000});
+  async function choose(field,value){await page.locator('#'+field).fill(value);await page.locator('#'+field+'-options [data-index]').first().click();}
+  await choose('destination','1 Queen Street Auckland Central');await page.locator('#destination-next').click();
+  await choose('origin','277 Broadway Newmarket');await page.locator('#origin-next').click();
+  await page.locator('#journey-preferences > summary').click();await page.locator('#date').fill('2026-09-23');await page.locator('#time').fill('09:00');
+  await page.locator('#find').click();await expect(page.locator('.journey-card').first()).toBeVisible({timeout:30000});
+  await expect(page.locator('#journey-notes')).not.toHaveAttribute('open','');
+  await expect(page.locator('#journey-feedback')).toBeVisible();await page.locator('#journey-feedback').click();
+  await expect(page.locator('#feedback-title')).toHaveText('Feedback on Along');await page.locator('#feedback-close').click();
+  await expect(page.locator('#journey-feedback')).toBeFocused();await expect(page.locator('#journey-notes')).not.toHaveAttribute('open','');
+});

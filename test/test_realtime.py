@@ -29,6 +29,16 @@ class RealtimeTests(unittest.TestCase):
         def fail(*a, **k):
             raise OSError('No connection')
         self.assertFalse(Realtime('key', fail).get('tripupdates')['available'])
+    def test_prediction_index_requires_date_and_rejects_duplicate_instances(self):
+        def entity(day):
+            return {'trip_update': {'trip': {'trip_id': 'trip1', 'start_date': day}}}
+        client = Realtime('dummy')
+        client.get = lambda _: {'available': True, 'entities': [entity(''), entity('20260923'), entity('20260923'), entity('20260924')]}
+        _, updates = client.predictions()
+        self.assertNotIn(('trip1', ''), updates)
+        self.assertIsNone(updates[('trip1', '20260923')])
+        self.assertIsNotNone(updates[('trip1', '20260924')])
+
 
 class CredentialTests(unittest.TestCase):
     def test_local_file_environment_override_and_explicit_disable(self):

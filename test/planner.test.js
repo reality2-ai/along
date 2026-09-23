@@ -95,3 +95,29 @@ test('saved preferences persist service numbers and keep legacy saved endpoints 
  writePreferences({learning:false,journeys:[entry]},storage);assert.deepEqual(readPreferences(storage).journeys[0].savedRoutes,entry.savedRoutes);
  entry.savedRoutes=[{mode:'airplane',route:'10'}];writePreferences({journeys:[entry]},storage);assert.equal(readPreferences(storage).journeys[0].savedRoutes,null);
 });
+
+test('live updates require an unambiguous trip instance and matching optional route',()=>{
+  const p=new Planner(network()),args={lat:-36.85,lon:174.76,now:{date:'2026-09-22',seconds:28740}};
+  const item=trip=>({trip_update:{trip:{trip_id:'t1',schedule_relationship:3,...trip}}});
+  const cases=[
+    [item({})], [item({start_date:'20260921'})],
+    [item({start_date:'20260922',route_id:'other-route'})],
+    [item({start_date:'20260922'}),item({start_date:'20260922'})]
+  ];
+  for(const entities of cases){
+    const result=p.nearby({...args,feed:{available:true,updated:Date.now()/1000,entities}});
+    const departures=result.stops.find(s=>s.stop.id==='a').departures;
+    assert.equal(departures.length,2);assert.equal(departures.some(d=>d.live),false);
+  }
+  const matched=p.nearby({...args,feed:{available:true,updated:Date.now()/1000,entities:[item({start_date:'20260922',route_id:'r1'})]}});
+  assert.equal(matched.stops.find(s=>s.stop.id==='a').departures.length,1);
+});
+
+test('malformed live event numbers retain scheduled departure times',()=>{
+  const p=new Planner(network()),args={lat:-36.85,lon:174.76,now:{date:'2026-09-22',seconds:28740}};
+  for(const departure of [{delay:'not-a-number'},{time:'not-a-number'},{delay:Infinity}]){
+    const feed={available:true,updated:Date.now()/1000,entities:[{trip_update:{trip:{trip_id:'t1',start_date:'20260922'},stop_time_update:[{stop_id:'a',departure}]}}]};
+    const result=p.nearby({...args,feed}).stops.find(s=>s.stop.id==='a').departures.find(d=>d.trip==='t1');
+    assert.equal(result.departure,28800);assert.equal(result.live,false);
+  }
+});

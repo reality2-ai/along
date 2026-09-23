@@ -115,6 +115,7 @@ function showScreen(screen,{focus=true,historyEntry=true}={}){
   renderSavedPlaces();
   $('try-britomart').hidden=state.intent!=='nearby';
   $('journey-notes').hidden=!['options','follow'].includes(screen);
+  $('journey-feedback').hidden=!['options','follow'].includes(screen);
   $('form-error').textContent='';
   for(const field of ['origin','destination']){$(field+'-options').hidden=true;$(field).setAttribute('aria-expanded','false');$(field).removeAttribute('aria-activedescendant');}
   if(historyEntry){navDepth++;history.pushState({alongScreen:screen,depth:navDepth,intent:state.intent},'');}
