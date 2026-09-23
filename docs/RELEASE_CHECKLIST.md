@@ -21,7 +21,7 @@ this audit. Later public-hosting work supplements that brief.
 | 8. Course material | Thematic analysis, six lessons, exercises, assessment rubric and negative-case/contextual-map refinements | Course effectiveness has not been studied |
 | 9. Release checks and handover | 24 JavaScript and 4 Python tests; four real-data browser scenarios; static/update suites; source/archive/live asset comparison | Remaining physical and spoken screen-reader checks prevent claiming full goal completion |
 
-| 10. English / Te reo Māori | Device-local language module, 35-phrase initial catalogue and review sheet; flow selector connected in development; five foundation and two language-browser tests pass | Remaining screen text and full catalogue/guides, subpath/update checks, broader language/accessibility tests and fluent-speaker review |
+| 10. English / Te reo Māori | Device-local language module, 93-phrase draft catalogue and review sheet; flow selector connected in development; five foundation and two language-browser tests pass | Remaining screen text and full catalogue/guides, subpath/update checks, broader language/accessibility tests and fluent-speaker review |
 
 ## Evidence and reproduction
 
@@ -343,3 +343,11 @@ new language scenarios: mid-flow switching, saved places, Back, explicit fallbac
 language metadata, offline new address routing, narrow-screen axe/reflow and
 blocked preference storage. This evidence covers migrated headings and controls,
 not the still-incomplete whole-interface translation or human language quality.
+
+The draft catalogue now has 93 phrases. Place-entry help, journey actions,
+transport labels, walking preferences, sorting and the active preference summary
+are connected. Five localisation unit tests and three targeted browser scenarios
+passed after this expansion, including the English nearby flow and a 360-pixel
+Māori review screen with expanded preferences. Visual inspection caught and fixed
+extra nesting that styled the travel legend as a transport button. AI provenance
+and possible mistakes remain disclosed. This work is not yet publicly deployed.

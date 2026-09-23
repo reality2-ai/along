@@ -28,8 +28,9 @@ translation quality.
 1. Complete the phrase catalogue for static markup, generated journey and stop
    details, walking instructions, saved-service labels, accessibility information,
    loading and failure states, updates and recovery, installation guidance and
-   screen-reader announcements. The initial catalogue covers flow headings and
-   common actions only.
+   screen-reader announcements. The current 93-phrase catalogue covers flow headings, common actions, place
+   entry help and travel preferences. Dynamic journey details and guides remain
+   incomplete.
 2. Extend the connected English / Te reo Māori selector to all dynamic content
    and open detail views. Flow headings and shared controls already update without
    navigation or a reload. Preserve input, searches, journey progress and Back

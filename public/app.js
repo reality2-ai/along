@@ -30,8 +30,11 @@ function ask(type,args={}){return new Promise((resolve,reject)=>{const id=++requ
 function accessProfile(){return {pace:Number($('walking-pace').value),avoidSteps:$('avoid-steps').checked,confirmedAccess:$('confirmed-access').checked};}
 function updatePreferenceSummary(){
   const selected=[...document.querySelectorAll('.modes input:checked')].map(i=>i.value);
-  $('preference-summary').textContent=`Depart ${$('time').value||'now'} · ${selected.length===3?'Bus, train & ferry':selected.join(', ')||'Choose transport'}${$('avoid-steps').checked?' · Avoid barriers':''}${$('confirmed-access').checked?' · Confirmed access only':''}${$('walking-pace').value!=='1.25'?' · More walking time':''}`;
-  $('active-preferences').textContent=$('preference-summary').textContent;
+  const modes=selected.length===3?language.text('preference.allModes'):selected.length?selected.map(mode=>language.text(`mode.${mode}Word`)).join(', '):language.text('preference.chooseTransport');
+  const access=($('avoid-steps').checked?language.text('preference.barriers'):'')+($('confirmed-access').checked?language.text('preference.confirmedOnly'):'')+($('walking-pace').value!=='1.25'?language.text('preference.moreTime'):'');
+  const values={time:$('time').value||language.text('preference.now'),modes,access};
+  translated('preference-summary','preference.summary',values);
+  translated('active-preferences','preference.summary',values);
 }
 function walkingDirections(leg){
   if(!leg.directions)return '<p>Station access is estimated. Check the entrance, lift and platform signs.</p>';
@@ -79,10 +82,13 @@ function applyLanguage(){
   for(const element of document.querySelectorAll('[data-i18n-aria]')){
     const phrase=language.phrase(element.dataset.i18nAria);element.setAttribute('aria-label',phrase.text);element.lang=phrase.lang;
   }
+  for(const element of document.querySelectorAll('[data-i18n-placeholder]')){
+    const phrase=language.phrase(element.dataset.i18nPlaceholder);element.placeholder=phrase.text;element.lang=phrase.lang;
+  }
   $('language-choice').value=language.language;
   $('language-draft').hidden=language.language!=='mi';
   $('language-notice').hidden=language.language!=='mi';
-  renderFlowLanguage();
+  renderFlowLanguage();updatePreferenceSummary();
 }
 $('language-choice').onchange=()=>{
   const result=language.setLanguage($('language-choice').value);

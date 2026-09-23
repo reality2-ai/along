@@ -30,7 +30,7 @@ test('blocked storage and corrupt preferences leave language switching usable', 
 });
 
 test('untranslated phrases carry English metadata and substitutions preserve official names', () => {
-  const localizer = createLocalizer({storage: null});
+  const localizer = createLocalizer({storage: null, catalogue: {'flow.destinationSelected': {en: 'Destination already selected: {place}', mi: null}}});
   localizer.setLanguage('mi');
   const place = 'Waitematā <img src=x onerror=alert(1)> {language}';
   const phrase = localizer.phrase('flow.destinationSelected', {place});

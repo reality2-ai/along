@@ -161,3 +161,5 @@ button,.secondary-button,.tab,.setting,select,input[type=date],input[type=time]{
 .language-setting{margin:16px 0;padding-bottom:16px;border-bottom:1px solid var(--line)}
 .language-setting label{display:block;margin-bottom:8px}
 .language-setting select{min-height:44px;max-width:100%;font:inherit;padding:8px 12px}
+
+.guided-app .journey-preferences summary .preference-heading{display:inline;font:inherit;color:inherit;margin:0}
