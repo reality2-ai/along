@@ -46,10 +46,10 @@ def inventory(metadata):
             'packages': records, 'unresolved': unresolved}
 
 
-def collect(metadata, report, rust_doc=None):
+def collect(metadata, report, rust_doc=None, output=None):
     """Copy package notices and the owner-approved scoped R2 distribution grant."""
-    output = Path(__file__).resolve().parents[1] / 'releases' / 'along-pairing-notices'
-    output.parent.mkdir(exist_ok=True)
+    output = Path(output) if output else Path(__file__).resolve().parents[1] / 'releases' / 'along-pairing-notices'
+    output.parent.mkdir(parents=True, exist_ok=True)
     packages = {(p['name'], p['version']): p for p in metadata['packages']}
     with tempfile.TemporaryDirectory(dir=output.parent) as temporary:
         stage = Path(temporary)

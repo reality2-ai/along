@@ -60,8 +60,13 @@ and physical-device testing remain necessary. The
 and a conflict with an older explicit PolyForm Noncommercial change. The owner selected MIT, matching Along, for the included R2 subset on
 24 September 2026. A scoped MIT grant and verbatim dependency/Rust notices are now included in both
 experimental builds. Dependency licences and the wider standard are not changed.
-The cached runtime still needs a rebuild with recorded compiler provenance before
-publication. The [device-test guide](PAIRING_DEVICE_CHECK.md) is
+The runtime has now been rebuilt twice from committed source with matching bytes,
+recorded compiler tools and matching notices. Both experimental builders can verify
+and consume that recorded bundle. Pairing, lost-confirmation recovery, full-app
+journey use, browser Back and offline reopening tests pass with the rebuilt runtime.
+This is same-host build/browser evidence, not full R2 conformance or physical
+acceptance. A final distribution review and publication of the experimental test
+URL remain. The [device-test guide](PAIRING_DEVICE_CHECK.md) is
 ready for a verified test URL.
 The lab also exposes interrupted-installation confirmation recovery using saved
 identities and an authenticated receipt exchange. A browser test interrupts the

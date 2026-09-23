@@ -1,4 +1,4 @@
-"""Local-only integration build. Runtime provenance review is pending; do not distribute."""
+"""Local-only integration build. Experimental release checks remain; do not distribute."""
 import argparse
 import hashlib
 import json
@@ -9,18 +9,20 @@ import shutil
 import tempfile
 
 from runtime_notices import copy_runtime_notices
+from runtime_provenance import copy_provenance, runtime_arguments
 
 ROOT = Path(__file__).resolve().parents[1]
 PROFILE = 'along-experimental-app-v1'
 IMPORT = re.compile(r'''(?:from\s*|import\s*\(\s*|import\s+)['"](\.{1,2}/[^'"]+)['"]''')
 
 
-def build(browser, wasm, notices=None):
+def build(browser, wasm, notices=None, runtime=None):
     browser, wasm = browser.resolve(), wasm.resolve()
     output = ROOT / 'releases/along-experimental-app'
     output.parent.mkdir(exist_ok=True)
     with tempfile.TemporaryDirectory(dir=output.parent) as scratch:
         stage = Path(scratch)
+        copy_provenance(runtime, stage)
         copy_runtime_notices(notices or ROOT / 'releases/along-pairing-notices', stage / 'runtime-notices')
         shutil.copytree(ROOT / 'public', stage / 'public')
         (stage / 'public/data').mkdir()
@@ -99,7 +101,8 @@ window.addEventListener('along-live-connection-changed', () => {
         extra.append('./at-client.js')
         text = text.replace("self.addEventListener('install'", 'SHELL.push(...' + json.dumps(extra) + ");\nself.addEventListener('install'", 1)
         worker.write_text(text)
-        (stage / 'DO-NOT-PUBLISH.txt').write_text('Local experimental build only. Runtime source and compiler provenance review remains pending. Use synthetic credentials.\n')
+        (stage / 'DO-NOT-PUBLISH.txt').write_text('Local experimental build only. Experimental release checks remain pending. Use synthetic credentials.\n'
+            + ('Runtime provenance is included; see runtime-provenance.json.\n' if runtime else 'Runtime source/compiler provenance is not verified by this build.\n'))
         files = {str(p.relative_to(stage)): hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(stage.rglob('*')) if p.is_file()}
         (stage / 'build-info.json').write_text(json.dumps({'profile': PROFILE, 'files': files}, indent=2) + '\n')
         if output.exists():
@@ -113,8 +116,5 @@ window.addEventListener('along-live-connection-changed', () => {
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--browser', type=Path, required=True)
-    parser.add_argument('--wasm', type=Path, required=True)
-    parser.add_argument('--notices', type=Path, help='Collected runtime notices (defaults to releases/along-pairing-notices)')
-    args = parser.parse_args()
-    build(args.browser, args.wasm, args.notices)
+    args = runtime_arguments(parser)
+    build(args.browser, args.wasm, args.notices, args.runtime)

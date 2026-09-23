@@ -1,12 +1,56 @@
 # Pairing runtime distribution audit
 
-Status: incomplete. The standalone lab is built and tested locally; this audit
-has not established that its runtime distribution notices are complete. The project
+Status: the runtime has now been rebuilt twice from committed source with matching
+outputs, recorded compiler tools and bundled notices. Final distribution review
+and a published device-test build remain outstanding. The project
 owner has selected MIT, matching Along, for the R2 subset used
 in Along. The scoped distribution grant is now included as
 [MIT text](licenses/R2-MIT.txt) and an [explicit scope](licenses/R2-SCOPE.md).
-It does not relicense dependencies or the wider R2 standard. Matching the final
-binary to recorded source and compiler provenance remains distribution work.
+It does not relicense dependencies or the wider R2 standard.
+
+## Recorded runtime rebuild (24 September 2026)
+
+[`build_r2_runtime.py`](../scripts/build_r2_runtime.py) exports the committed Rust
+workspace at `1b9229ad6d8483ba43cb66a53e14d336b0c6e091` with `git archive` and builds
+it in two fresh source/target directories. Working-tree edits, including the
+uncommitted metadata draft discussed below, are excluded. Both builds produced
+identical WASM, JavaScript and TypeScript declaration files. This is measured
+same-host reproducibility, not cross-host verification or a new R2 conformance gate.
+
+The [build record](evidence/r2-runtime-provenance.json) includes source/archive and
+lockfile hashes, rustc/cargo/wasm-bindgen versions and executable hashes, commands,
+and the complete runtime/browser/notice file set. Rust 1.96.1 and wasm-bindgen
+0.2.126 produced the recorded build. The release compiler is used without a
+separate wasm-opt pass. The WASM is 205,987 bytes, SHA-256
+`0451e925bae4ff2deebd22d640004dd505c45db2f0db61cb8d457bc626ee50c7`.
+The compiler's own standard-library notices are collected from that same sysroot.
+
+Both static builders accept `--runtime` and verify all recorded bundle files
+before selecting the runtime, browser modules and notices. They include
+`runtime-provenance.json` in their output manifests. This detects changes relative
+to the build record; the record is not a signature or independent compiler audit.
+Tests reject changed or missing source/runtime/browser/notice files, symbolic
+links and unrecorded files. The original cache history below remains historical
+evidence, not the source of the new distribution binary.
+
+With cached Cargo dependencies and the Rust wasm32 target installed:
+
+```sh
+python3 scripts/build_r2_runtime.py \
+  --repo /path/to/r2-standard \
+  --revision 1b9229ad6d8483ba43cb66a53e14d336b0c6e091 \
+  --toolchain 1.96.1 \
+  --bindgen /path/to/wasm-bindgen-0.2.126 \
+  --output releases/along-r2-runtime-1b9229ad
+python3 scripts/build_pairing_lab.py --runtime releases/along-r2-runtime-1b9229ad
+python3 scripts/build_experimental_app.py --runtime releases/along-r2-runtime-1b9229ad
+```
+
+The output directory must be new. The observed machine used its `stable` alias,
+which resolved to the exact compiler recorded above; the example pins the version
+for subsequent builds. The offline/locked build neither upgrades dependencies nor
+installs tools. The source archive stays in the local runtime bundle; web builds
+include the build record, selected runtime files and notices, not that archive.
 
 ## Owner direction (24 September 2026)
 
@@ -75,10 +119,10 @@ in the WASM binary. A generated `notice-manifest.json` hashes every collected
 file. Both experimental builders require that collection and verify its exact
 file set and bytes before copying it into `runtime-notices/` in the output.
 
-The collection used here includes the installed stable toolchain's library
+The earlier collection used here included the installed stable toolchain's library
 notices. The cached WASM's build log does not identify its exact rustc version;
-a reproducible rebuild with recorded compiler provenance is still needed before
-calling the distribution audit complete. Upstream metadata gaps remain visible
+a rebuild was therefore required. The recorded rebuild above replaces that
+uncertain binary/compiler association. Upstream metadata gaps remain visible
 in the inventory; they are not silently rewritten by the Along collector.
 
 ## Gaps and source history
@@ -99,9 +143,7 @@ repairing the missing declaration, not evidence that today's missing notices hav
 already been repaired. Preserve existing declarations and copyright attribution;
 do not invent a new owner or silently relicense framework material.
 
-Remaining work: rebuild and record the runtime source, dependency and compiler
-provenance against the included notice collection, then verify the final static
-payload and publish a specific test URL with the
+Remaining work: review the final static distribution and publish a specific test URL with the
 [device-check guide](PAIRING_DEVICE_CHECK.md).
 
 ## Reproduce the inventory
@@ -137,9 +179,9 @@ on the larger filesystem. No hardware was flashed.
 
 This is technical verification of the draft metadata, not a determination of the
 applicable licence. The declaration remains uncommitted. The owner has since
-selected MIT for the
-subset used in Along; runtime distribution still requires verified source/compiler provenance against
-the collected notice bundle. This earlier gate does not verify those future edits.
+selected MIT for the subset used in Along. The later recorded rebuild above uses
+committed source without this metadata draft. This earlier gate does not verify
+later distribution edits.
 
 
 ## Notice packaging verification
@@ -153,3 +195,10 @@ test still completed address-to-address planning, mocked contextual AT reads,
 offline reopening and quiet fallback; startup timeout and unreadable-storage
 checks also passed. These checks establish packaging and behavioral regression
 evidence, not real-provider or physical-device acceptance.
+
+The same lab and full-app checks subsequently passed using the recorded runtime
+rebuild, including the real cached Back-navigation check. The two-app run also
+passed lost-confirmation recovery, shared-key contextual mocked reads, removal
+before further provider I/O and offline reopening. All inputs came from the
+verified runtime bundle. These results retain the same one-host, synthetic-key
+and mocked-provider limits.

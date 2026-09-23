@@ -665,6 +665,13 @@ Build after producing the experimental R2 WASM/runtime artifacts documented abov
 python3 scripts/build_pairing_lab.py --browser "$R2_BROWSER_DIR" --wasm "$R2_WASM_DIR"
 ```
 
+For a distribution candidate, prefer
+`python3 scripts/build_pairing_lab.py --runtime releases/along-r2-runtime-1b9229ad`
+using the [recorded rebuild procedure](../../docs/PAIRING_LICENSE_AUDIT.md#recorded-runtime-rebuild-24-september-2026).
+It verifies source/runtime/browser/notice hashes together and includes the build
+record in the output. Separate development inputs above do not establish that
+provenance.
+
 Output is `releases/along-pairing-lab/`. The builder follows only local module
 imports, copies the required WASM/CSS/HTML, QR license and verified runtime notice
 collection, and hashes all payload

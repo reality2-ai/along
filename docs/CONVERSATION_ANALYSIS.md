@@ -978,3 +978,19 @@ For the course, this illustrates why a test must distinguish a cached document
 from a fresh reload, and why optional services should not delay basic navigation.
 It is implementation evidence extending the offline-autonomy and contextual-task
 themes, not a new participant observation or physical-device acceptance report.
+
+### Development evidence: a reproducible framework subset
+
+The owner's choice to reuse a limited R2 subset under Along's MIT licence also
+requires a reproducible account of what is shipped. A new build procedure exports
+committed source, builds it in two fresh directories, compares the generated
+runtime bytes, and bundles notices from the dependencies and compiler actually
+used. Both builds matched, and the assembled browser tests passed with that
+runtime. Uncommitted upstream edits are excluded rather than silently becoming
+part of the claimed revision.
+
+This extends the themes of reusable course outputs and evidence-based reporting.
+Students can distinguish same-host reproducibility, hash consistency, licence
+scope and physical-device acceptance: each answers a different question. The
+recorded build is neither a compiler signature nor proof of full R2 conformance.
+The AI performs this work; the participant does not need to write build scripts.

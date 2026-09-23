@@ -1061,3 +1061,14 @@ This is Chromium automation for the local-owner path, not physical Android/Safar
 acceptance or a promise that browsers always retain pages in their history cache.
 Cold loads continue to use the ordinary background restoration path. Offline reopen,
 stalled optional runtime and unreadable future storage-schema checks also pass.
+
+### Reproducible runtime input
+
+Prefer `python3 scripts/build_experimental_app.py --runtime releases/along-r2-runtime-1b9229ad`
+after the [recorded runtime rebuild](../../docs/PAIRING_LICENSE_AUDIT.md#recorded-runtime-rebuild-24-september-2026).
+This verifies the committed-source build record and selects matching WASM, browser
+modules and compiler/dependency notices together. It also includes the record in
+the static output. Separate `--browser`, `--wasm` and `--notices` inputs remain
+available for local development, but do not establish runtime provenance.
+Two identical fresh builds on one host are not physical-device or provider
+acceptance, and the experimental app still has release checks outstanding.
