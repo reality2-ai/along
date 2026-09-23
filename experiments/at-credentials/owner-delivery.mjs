@@ -4,6 +4,7 @@ import {openMembership} from '../tg-pairing/membership.mjs';
 import {openCredentialPolicyStore} from './policy-store.mjs';
 import {openLocalATVault} from './local-vault.mjs';
 import {encodeCredentialDelivery} from './delivery-message.mjs';
+import {openDeliveryHistory} from './delivery-history.mjs';
 const fail = () => new Error('AT credential delivery unavailable');
 const hex = bytes => Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
 
@@ -40,6 +41,9 @@ export async function sendOwnerCredential({wasm, store, expectedGroup, peer, pee
     packet = await encodeCredentialDelivery({nonce: request, recipient, policyBytes: signed.value.bytes,
       policySignature: signed.value.signature, key: secret, sign: identity.sign});
     secret = undefined;
+    const acknowledgmentContext = Object.freeze({...binding, recipient: hex(recipient), nonce: hex(request),
+      policyRevision: policy.policy.revision, generation: policy.policy.generation});
+    await openDeliveryHistory({store, ...binding, recipient: hex(recipient)}).begin(acknowledgmentContext, {signal});
     await connection.authenticated();
     if (await held.peerStatus(proof, recipient) !== 'current') throw fail();
     for (const [s, k, revision] of [[scope, key, signed.revision],
@@ -48,8 +52,7 @@ export async function sendOwnerCredential({wasm, store, expectedGroup, peer, pee
     }
     current(); await connection.send(packet);
     // Sending is not evidence that the recipient committed or acknowledged it.
-    return Object.freeze({status: 'sent-unconfirmed', acknowledgmentContext: Object.freeze({...binding,
-      recipient: hex(recipient), nonce: hex(request), policyRevision: policy.policy.revision, generation: policy.policy.generation})});
+    return Object.freeze({status: 'sent-unconfirmed', acknowledgmentContext});
   } catch { throw fail(); }
   finally { secret = undefined; packet?.fill(0); held?.close(); }
 }

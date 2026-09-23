@@ -16,6 +16,7 @@ function body(value) {
   }
   return result;
 }
+export {body as deliveryAckBytes};
 export async function signDeliveryAck(value, sign) {
   const bytes = body(value), signature = await sign(bytes.slice());
   if (!(signature instanceof Uint8Array) || signature.length !== 64) throw fail();

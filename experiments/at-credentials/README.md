@@ -408,5 +408,22 @@ installation. `delivery-ack.test.mjs` passes wrong-context, wrong-signer, tamper
 and input-snapshot checks; receiver tests distinguish committed from interrupted,
 cancelled and superseded installations. This is a recipient's authenticated report
 of a local commit, not proof of hardware sealing or resistance to physical power
-loss. Durable owner-side receipt history, lost-acknowledgment recovery and public
-status presentation remain unfinished.
+loss. The durable sender journal below preserves the latest result;
+lost-acknowledgment recovery and public status presentation remain unfinished.
+
+## Durable sender status
+
+`openDeliveryHistory` stores the latest public delivery context per credential and
+recipient. The owner records `pending` before attempting the network send; that
+state does not prove the packet was sent or stored remotely. Only a matching,
+recipient-signed acknowledgment can change it to `recipient-confirmed-saved`.
+Confirmation uses revision comparison, so an old receipt cannot overwrite a newer
+pending request and concurrent confirmations cannot both commit. Reopening a
+confirmed record verifies its signature again. No credential bytes are stored here.
+
+The owner sender and WebRTC test now use this journal, including confirmation
+reopening in a fresh document. `delivery-history.test.mjs` passes unsolicited,
+tampered, stale and replayed receipt refusal, concurrent confirmation, cancellation
+and stored-signature corruption checks. These are historical delivery facts,
+never current grants or evidence of provider acceptance. Lost-acknowledgment
+recovery and user-facing delivery-status presentation remain open.

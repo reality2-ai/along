@@ -15,6 +15,14 @@ isolated development branch, published as
 The sections below preserve the
 sequence of findings, so earlier source-only/version statements are historical.
 
+The transaction-evidence runtime increment is published at
+[`1b9229ad`](https://github.com/reality2-ai/r2-standard/commit/1b9229ad6d8483ba43cb66a53e14d336b0c6e091).
+Its full local gate passed, and its
+[hosted Rust verification](https://github.com/reality2-ai/r2-standard/actions/runs/35868467158)
+has now passed. The separate
+[repository gate](https://github.com/reality2-ai/r2-standard/actions/runs/35868467283)
+is still running at this update; the draft remains unmerged.
+
 | Area | Evidence now available | What remains before an end-user claim |
 | --- | --- | --- |
 | Direct AT access | Authenticated browser reads and strict timetable matching | Connect each user's authorized credential to contextual UI; verify actual installed devices |

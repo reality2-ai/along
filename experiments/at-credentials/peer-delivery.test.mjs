@@ -6,7 +6,7 @@ import {join} from 'node:path';
 const {chromium} = await import(process.env.PLAYWRIGHT_MODULE || '@playwright/test');
 const sources = new Map();
 for (const name of ['storage.mjs', 'membership.mjs', 'certificate.mjs', 'peer-session.mjs', 'peer-link.mjs', 'challenge.mjs', 'session-statement.mjs']) sources.set('/' + name, await readFile(join(process.env.R2_BROWSER_DIR, name)));
-for (const name of ['../tg-pairing/initial-persona.mjs', '../tg-pairing/local-persona.mjs', 'local-owner.mjs', 'owner-policy.mjs', 'owner-delivery.mjs', 'remote-owner.mjs', 'policy-update.mjs', 'policy-update-message.mjs', 'remote-owner-view.mjs', 'settings-view.mjs', 'credential-view.mjs', '../tg-pairing/comparison.css', '../tg-pairing/local-persona-session.mjs', 'policy.mjs', 'policy-store.mjs', 'local-vault.mjs', 'delivery-ack.mjs', 'delivery-message.mjs']) sources.set('/' + name.split('/').pop(), await readFile(new URL(name, import.meta.url)));
+for (const name of ['../tg-pairing/initial-persona.mjs', '../tg-pairing/local-persona.mjs', 'local-owner.mjs', 'owner-policy.mjs', 'owner-delivery.mjs', 'delivery-history.mjs', 'remote-owner.mjs', 'policy-update.mjs', 'policy-update-message.mjs', 'remote-owner-view.mjs', 'settings-view.mjs', 'credential-view.mjs', '../tg-pairing/comparison.css', '../tg-pairing/local-persona-session.mjs', 'policy.mjs', 'policy-store.mjs', 'local-vault.mjs', 'delivery-ack.mjs', 'delivery-message.mjs']) sources.set('/' + name.split('/').pop(), await readFile(new URL(name, import.meta.url)));
 for (const name of ['hive_wasm.js', 'hive_wasm_bg.wasm']) sources.set('/' + name, await readFile(join(process.env.R2_WASM_DIR, name)));
 for (const name of ['live-client.mjs', '../../public/at-client.js', '../../public/live-client.js']) sources.set('/' + name.split('/').pop(), await readFile(new URL(name, import.meta.url)));
 const server = createServer((req, res) => {
@@ -37,6 +37,7 @@ try {
     const {openLocalPersonaSession} = await import('./local-persona-session.mjs');
     const {sendOwnerCredential} = await import('./owner-delivery.mjs');
     const {verifyDeliveryAck} = await import('./delivery-ack.mjs');
+    const {openDeliveryHistory} = await import('./delivery-history.mjs');
     const {applyRemoteATPolicy, encodePolicyUpdate, decodePolicyUpdate} = await import('./policy-update.mjs');
     const {updateLocalATPolicy} = await import('./owner-policy.mjs');
     const codec = (await import('./certificate.mjs')).certificateCodec(wasm);
@@ -68,6 +69,7 @@ try {
     await ownerVault.saveOwnerKey('synthetic-peer-delivery');
     const policyKey = binding.group + ':' + binding.credential, policyScope = 'along-at-policy:' + binding.owner;
     const signed = await owner.store.read(policyScope, policyKey);
+    const history = openDeliveryHistory({store: owner.store, ...binding, recipient: hex(receiver.subject)});
     const receiverVault = openLocalATVault({wasm, store: receiver.store, ...binding});
     let sending, receiving, request, resolve, reject, messages = 0, policyReply, policyError;
     const installed = new Promise((yes, no) => { resolve = yes; reject = no; });
@@ -96,7 +98,8 @@ try {
           try {
             if (acknowledgmentContext) {
               const context = acknowledgmentContext; acknowledgmentContext = undefined;
-              confirm(await verifyDeliveryAck(nonce, context)); return;
+              await verifyDeliveryAck(nonce, context);
+              confirm(await history.confirm(nonce, {signal: sending.signal})); return;
             }
             const sent = await sendOwnerCredential({wasm, store: owner.store, expectedGroup: group, peer: receiver.subject,
               peerCertificate: receiver.certificate, nonce, connection: sending});
@@ -168,6 +171,7 @@ try {
       }};
       check(await owners.loadATBinding({wasm, store: damaged, expectedGroup: group}).then(() => false, () => true), 'missing remote certificate refuses restore');
       window.restoreGroup = Array.from(group);
+      window.restoreHistory = {...binding, recipient: hex(receiver.subject)};
       let entered, release, calls = 0;
       const fetching = new Promise(yes => { entered = yes; });
       const delayed = new Promise(yes => { release = yes; });
@@ -215,5 +219,11 @@ try {
   assert.equal(await reopened.getByRole('button', {name: 'Save key on this device'}).count(), 0);
   assert.equal(await reopened.getByRole('button', {name: 'Set up live information'}).count(), 0);
   await reopened.evaluate(() => { view.dispose(); store.close(); });
+  const historyBinding = await page.evaluate(() => restoreHistory);
+  assert.equal(await reopened.evaluate(async binding => {
+    const ownerStore = await (await import('./storage.mjs')).openBrowserStorage('peer-key-owner');
+    try { return (await (await import('./delivery-history.mjs')).openDeliveryHistory({store: ownerStore, ...binding}).read()).status; }
+    finally { ownerStore.close(); }
+  }, historyBinding), 'recipient-confirmed-saved');
   console.log('PASS: distinct real browser identities mutually authenticate over direct WebRTC, owner grant gates signed delivery, receiver encrypts/consumes request, removed peer is refused. Synthetic issuer, reviewed-descriptor fixture and keys; checked receiver acceptance; one browser host, not physical-device reachability or public release.');
 } finally { await browser?.close(); await new Promise(resolve => server.close(resolve)); }
