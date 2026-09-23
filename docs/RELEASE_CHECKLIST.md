@@ -131,3 +131,19 @@ checksum and assets were also checked against current source, allowing only the
 builder's documented subpath transformations of HTML and the manifest; packaged
 installation guidance and notices match their sources. These checks do not
 replace physical installation or spoken screen-reader observations.
+
+
+## Downloadable version 21 candidate
+
+A GitHub draft prerelease `v0.21.0` contains the current `along-web.zip` and its
+SHA-256 file, targeted at source commit `141b3a6`. Both uploaded asset digests and
+sizes match the local files. The archive SHA-256 is
+`04614173fb8eb27a108525cc1ff45376c7df04039ea3f49cafc708d9c9c86fbe`.
+Draft release assets are visible to repository maintainers, not public download
+links. Public users can install from the live portal or build from source; the
+draft is not a claim that the remaining device checks passed.
+
+The public README was checked in Chromium at a 1440-pixel viewport: the gallery
+and article both measured 838 pixels wide; all four images loaded and rendered
+at identical dimensions. The prominent webapp link resolves to the public portal.
+This is presentation evidence only.
