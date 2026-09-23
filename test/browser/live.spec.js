@@ -15,5 +15,11 @@ test('nearby live requests require an explicit action and offline fallback retai
  await context.setOffline(true);await page.locator('#nearby-live').click();
  await expect(page.locator('#nearby-live-status')).toContainText('Scheduled departures are still available');
  await expect(page.locator('.stop-card').first()).toBeVisible();expect(requests).toBe(1);
+ await context.setOffline(false);
+ await page.locator('.stop-header .detail-link').first().click();
+ await expect(page.locator('#stop-live')).toBeVisible();expect(requests).toBe(1);
+ await page.locator('#stop-live').click();await expect(page.locator('#stop-live-status')).toContainText('No live match');expect(requests).toBe(2);
+ await expect(page.locator('.departure-board caption')).toContainText('Scheduled');
+ await page.locator('#detail-back').click();await expect(page.locator('#information')).not.toBeVisible();
  await context.close();
 });

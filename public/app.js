@@ -1,3 +1,4 @@
+import {departurePrediction} from './live-predictions.js';
 import {createLiveClient} from './live-client.js';
 import {liveBaseURL} from './live-config.js';
 import {setupFeedback} from './feedback-ui.js';
@@ -196,23 +197,58 @@ async function searchJourney(){
 }
 // Detail layers keep the underlying task, scroll position and explicit journey progress.
 const detailViews=new Map();let detailId=0,activeDetail=null;
+$('information').addEventListener('close',()=>{for(const view of detailViews.values())view.dispose?.();});
 function detailLink(label,title,body,className='detail-link'){
   const id=++detailId;detailViews.set(id,{title,body,titleKey:({'Route details':'explore.routeTitle','Walking connection':'explore.walkTitle'})[title]});
   return `<button type="button" class="${className}" data-detail="${id}" aria-haspopup="dialog">${label}</button>`;
 }
 function placeDetail(place){
-  const label=escape(place.name),id=detailId+1;
+  const label=escape(place.name),id=detailId+1;let stopRows=[],stopNow=null;
   const link=detailLink(label,place.name,async()=>{
     const now=explorationTime(),departures=place.placeType==='address'?[]:await ask('stopDetails',{id:place.id,now});
-    return `<p>${message(place.placeType==='address'?'place.addressType':'explore.stationStop')}${place.code?' · '+message('place.stopType',{code:place.code}):''}</p>${mapMarkup()}<p>${message('explore.access')}</p>${place.placeType==='address'?'':`<h3>${message('board.heading',{time:clock(now.seconds),date:now.date})}</h3><p>${message('board.limit')}</p><p><a href="https://at.govt.nz/atmobile/" target="_blank" rel="noopener noreferrer">${message('board.at')}</a> <small>${message('board.online')}</small></p>${departures.length?`<div class="departure-board"><table><caption>${message('board.caption')}</caption><thead><tr><th scope="col">${message('board.time')}</th><th scope="col">${message('board.route')}</th><th scope="col">${message('board.destination')}</th></tr></thead><tbody>${departures.map(d=>`<tr><td class="board-time">${clock(d.departure)}</td><td>${routeLink(escape(d.route),{routeId:d.routeId,tripId:d.trip},'board-route')}</td><td>${escape(d.headsign)}</td></tr>`).join('')}</tbody></table></div>`:`<p>${message('board.none')}</p>`}`}`;
-  });detailViews.get(id).mount=()=>mountMap(null,[place]);return link;
+    stopRows=departures;stopNow=now;
+    return `<p>${message(place.placeType==='address'?'place.addressType':'explore.stationStop')}${place.code?' · '+message('place.stopType',{code:place.code}):''}</p>${mapMarkup()}<p>${message('explore.access')}</p>${place.placeType==='address'?'':`<h3>${message('board.heading',{time:clock(now.seconds),date:now.date})}</h3><p>${message('board.limit')}</p><p><a href="https://at.govt.nz/atmobile/" target="_blank" rel="noopener noreferrer">${message('board.at')}</a> <small>${message('board.online')}</small></p>${liveClient.configured?'<button type="button" class="secondary-button" id="stop-live">Check live departures at this stop</button><p class="field-help">Optional online check. Your journey details stay on this device; the server receives your IP address.</p><p id="stop-live-status" class="field-help" role="status"></p>':''}${departures.length?`<div class="departure-board"><table><caption>${message('board.caption')}</caption><thead><tr><th scope="col">${message('board.time')}</th><th scope="col">${message('board.route')}</th><th scope="col">${message('board.destination')}</th></tr></thead><tbody>${departures.map((d,i)=>`<tr><td class="board-time" data-stop-time="${i}">${clock(d.departure)}</td><td>${routeLink(escape(d.route),{routeId:d.routeId,tripId:d.trip},'board-route')}</td><td>${escape(d.headsign)}</td></tr>`).join('')}</tbody></table></div>`:`<p>${message('board.none')}</p>`}`}`;
+  });detailViews.get(id).mount=()=>{mountMap(null,[place]);mountStopLive(id,stopRows,stopNow);};return link;
 }
+function mountStopLive(id,rows,at){
+  const button=$('stop-live');if(!button)return;
+  const client=createLiveClient({baseURL:liveBaseURL,pageURL:import.meta.url});
+  let timer=null,sequence=0;
+  const reset=()=>document.querySelectorAll('[data-stop-time]').forEach((cell,i)=>{cell.textContent=clock(rows[i].departure);});
+  detailViews.get(id).dispose=()=>{sequence++;clearTimeout(timer);client.cancel();};
+  button.onclick=async()=>{
+    const request=++sequence;clearTimeout(timer);reset();button.disabled=true;
+    $('stop-live-status').textContent='Checking current AT predictions…';
+    const feed=await client.read('predictions',{requested:true});
+    if(request!==sequence || !button.isConnected)return;
+    button.disabled=false;
+    let matched=0;
+    document.querySelectorAll('[data-stop-time]').forEach((cell,i)=>{
+      const departure=rows[i],prediction=departurePrediction(feed,departure);
+      if(prediction.status==='scheduled')return;
+      matched++;
+      let label=prediction.status==='cancelled'?'Cancelled':prediction.status==='skipped'?'Not stopping here':'';
+      if(prediction.status==='predicted'){
+        let seconds=departure.departure+prediction.delay,date=at.date;
+        if(prediction.epoch){const time=aucklandNow(new Date(prediction.epoch*1000));seconds=time.seconds;date=time.date;}
+        if(!prediction.epoch && (seconds<0 || seconds>=86400))date=new Date(Date.parse(at.date+'T12:00:00Z')+Math.floor(seconds/86400)*86400000).toISOString().slice(0,10);
+        label='Expected '+clock(seconds)+(date!==at.date?' · '+date:'');
+      }
+      cell.textContent=label;
+      const original=document.createElement('small');original.className='board-scheduled';original.textContent='Scheduled '+clock(departure.departure);cell.append(original);
+    });
+    $('stop-live-status').textContent=!feed.available?'Current predictions unavailable. Showing scheduled departures.':matched?'Live information matched to '+matched+' departures. Other times remain scheduled.':'No live match for these departures. Times remain scheduled.';
+    if(feed.available)timer=setTimeout(()=>{if(button.isConnected){reset();$('stop-live-status').textContent='Live information has expired. Showing scheduled departures.';}},Math.max(0,(feed.updated+180-Date.now()/1000)*1000));
+  };
+}
+
 function legDetail(leg,label,className){
   if(leg.mode!=='walk')return routeLink(label,{routeId:leg.routeId,tripId:leg.trip},className);
   return detailLink(label,leg.mode==='walk'?'Walking connection':`${leg.mode[0].toUpperCase()+leg.mode.slice(1)} ${leg.route}`,()=>`${legMarkup(leg)}<p>${leg.mode==='walk'?message('explore.walkEstimate'):'Times are scheduled, not live predictions.'}</p>`,className);
 }
 async function displayDetail(id){
   const view=detailViews.get(id);if(!view)return;
+  detailViews.get(activeDetail)?.dispose?.();
   if(contextMap){contextMap.remove();contextMap=null;}
   activeDetail=id;if(view.titleKey)translated('detail-title',view.titleKey);else {$('detail-title').textContent=view.title;$('detail-title').lang='en-NZ';textBindings.delete('detail-title');}$('detail-body').innerHTML=`<p role="status">${message('explore.loading')}</p>`;
   if(!$('information').open)$('information').showModal();

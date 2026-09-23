@@ -212,3 +212,5 @@ button,.secondary-button,.tab,.setting,select,input[type=date],input[type=time]{
 .guided-app .place-review > div{clear:both}
 .guided-app #edit-origin{max-width:calc(100% - 56px)}
 .guided-app #review-destination-row{margin-top:16px}
+
+.departure-board .board-scheduled{display:block;font-family:inherit;font-size:12px;font-weight:400;color:#d9e9df;margin-top:6px}

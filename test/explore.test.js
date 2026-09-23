@@ -10,5 +10,5 @@ test('route exploration retains branches, active service dates, complete stops a
  assert.equal(routeDetails(p,{routeId:'r',date:'2026-09-26'}).variants.length,1);
 });
 test('stop times exclude unavailable pickup and include only upcoming active services',()=>{
- const result=stopDetails(fixture(),{id:'a',now:{date:'2026-09-23',seconds:30000}});assert.deepEqual(result.map(r=>r.trip),['two']);
+ const result=stopDetails(fixture(),{id:'a',now:{date:'2026-09-23',seconds:30000}});assert.deepEqual(result.map(r=>r.trip),['two']);assert.equal(result[0].serviceDate,'20260923');assert.equal(result[0].startTime,'09:00:00');assert.equal(result[0].stopVisits,1);
 });

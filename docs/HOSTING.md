@@ -207,3 +207,27 @@ browser fixture confirms zero requests before a click, one on explicit intent,
 no request on ordinary refresh, and retained departures offline. That fixture
 blocks service workers to intercept configuration reliably and verifies session
 behaviour; it is not an installed-app or authenticated-public-proxy test.
+
+### Stop-board live checks (source integration)
+
+Configured deployments now offer an explicit live check within stop details.
+The board retains scheduled times and row order, annotating only matched predicted,
+cancelled or skipped departures. Closing/navigating the detail cancels its reader;
+a freshness timer restores scheduled cells after 180 seconds from the feed stamp.
+Unmatched or offline results remain scheduled. No public proxy is enabled yet.
+
+`live-predictions.js` checks trip ID, service date, any supplied route/start time,
+unique stop identity and schedule relationships. `stopDetails` supplies the dated
+trip and visit count from the downloaded timetable. Repeated stop visits retain
+scheduled information because the compact data lacks original stop_sequence;
+loop predictions require extending the data import before they can be supported.
+No-data, replacement/unscheduled trips and changed platform assignments are not
+silently treated as ordinary departure predictions. The basis is the
+[GTFS StopTimeUpdate reference](https://gtfs.org/documentation/realtime/reference/#message-stoptimeupdate).
+
+Six focused matcher/exploration tests pass. Three browser checks pass: existing
+mobile nearby/accessibility, route/map/stop/offline Back, and explicit configured
+live checks at nearby/individual stops with an empty-feed fixture. That last check
+proves request intent, empty-match messaging and Back, not a real AT prediction
+appearing on a physical device. Actual matched display, expiration and cancellation
+browser fixtures remain to be added before the next public release.
