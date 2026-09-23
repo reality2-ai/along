@@ -182,3 +182,21 @@ wrong owner/group, malformed credential identifiers, damaged or absent policy,
 cancellation and concurrent anchor changes. The consent-screen integration now
 opens its real vault through this restored binding. Recovery of deleted state,
 ownership transfer and consenting to another device's owner remain separate work.
+
+## Combined settings flow
+
+`showATSettings` now joins verified owner restoration, explicit first-owner setup
+and the credential consent screen. The enclosing device flow supplies an already
+established group; this controller does not silently create a device identity.
+Opening settings is read-only. When no owner pin exists, a trusted user action
+establishes the local owner before displaying the key field. Existing owners go
+through restoration and vault inspection. Failures offer Back, never automatic
+replacement. Back/Escape cancels the parent and child views; late asynchronous
+results cannot replace a successor screen.
+
+`settings-view.test.mjs` exercises keyboard setup, actual WASM owner signing and
+encrypted key saving, Back, reopening without owner rewrites, unreadable storage,
+replaced views, axe and enlarged narrow text. Use the same browser/R2 environment
+as the other browser tests. All keys are synthetic. This combined flow remains
+experimental and is not linked from public Along; device discovery, peer delivery,
+freshness policy and integration with contextual journey requests remain open.
