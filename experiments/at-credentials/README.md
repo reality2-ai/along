@@ -885,8 +885,12 @@ The flow now resumes an owner grant that was saved before recipient consent.
 After fresh authentication the owner explicitly chooses **Continue sharing my
 key**. The current signed policy is re-read after that choice; continuation does
 not rewrite the grant or offer a removal action. The recipient still reviews and
-accepts the key. An existing recipient owner binding remains refused rather than
-silently replaced. Recovery after recipient acceptance or delivery is still
+accepts the key. An existing recipient binding now resumes only when the sharing
+message matches its saved group, owner and credential. The current signed policy
+is verified on the new authenticated connection; an unchanged policy is not
+rewritten. The recipient explicitly chooses **Receive the shared key** when the
+key is missing. A stored key is kept with an explanatory status instead of
+silently delivered again. Recovery of an unacknowledged stored delivery is still
 needed. The generic unconfirmed outcome explicitly warns that permission
 or a key may already have been saved. Browser software-custody limits still apply.
 
@@ -908,3 +912,22 @@ disconnect and offline routing. Both this variant and the uninterrupted run pass
 ```sh
 INTERRUPT_GRANT=1 CHROMIUM_PATH=/path/to/chromium node experiments/at-credentials/two-app-integration.test.mjs
 ```
+
+
+`INTERRUPT_ACCEPTANCE=1` withholds outbound data-channel messages immediately
+before the trusted recipient consent action. The test observes the real committed
+owner acceptance and verifies that no secret record exists, then reloads both
+profiles. It rejects a changed credential descriptor without changing the saved
+choice, reconnects through visible controls, refuses synthetic receive activation,
+and compares identity/anchor/policy storage revisions before requesting delivery.
+The accepted owner is preserved; the retry does not ask the recipient to accept a
+new owner. The test then completes delivery, journey use, removal and offline
+routing. The earlier interrupted-grant variant also remains covered.
+
+```sh
+INTERRUPT_ACCEPTANCE=1 CHROMIUM_PATH=/path/to/chromium node experiments/at-credentials/two-app-integration.test.mjs
+```
+
+This test establishes recovery before key arrival. It does not prove recovery
+when a key committed but the receipt or its acknowledgment was lost. Nor does
+it qualify credential rotation, hardware protection or real provider responses.

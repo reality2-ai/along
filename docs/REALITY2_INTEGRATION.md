@@ -22,8 +22,11 @@ the channel and distinguishes stored permission, encrypted key installation and
 acknowledged receipt. Removal still uses a harness call. An interrupted owner
 grant can now resume after both devices reload, with explicit owner continuation
 and no rewrite of the existing grant; the two-profile test covers that path.
-Recovery after recipient acceptance or delivery, and bringing setup into main-app
-Settings, remain outstanding.
+Recipient acceptance also survives a reload before key arrival: the matching
+saved binding and current owner policy are checked before an explicit receive
+retry. Tests cover preserved revisions and refusal of a substituted credential
+descriptor. Recovery after key installation with lost confirmation, and bringing
+setup into main-app Settings, remain outstanding.
 Physical phone/desktop connectivity remains unverified; this is not seamless
 background reconnection or a public release.
 

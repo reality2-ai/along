@@ -10,6 +10,7 @@ import {showRemoteOwnerConsent} from './remote-owner-view.mjs';
 import {openLocalATVault} from './local-vault.mjs';
 import {sendOwnerCredential} from './owner-delivery.mjs';
 import {openDeliveryHistory} from './delivery-history.mjs';
+import {applyRemoteATPolicy} from './policy-update.mjs';
 const profile = 'along-at-sharing-v1';
 const hex = bytes => Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
 const unhex = text => { if (typeof text !== 'string' || !/^[0-9a-f]{64}$/.test(text)) throw Error('Invalid identity'); return Uint8Array.from(text.match(/../g), x => parseInt(x, 16)); };
@@ -118,13 +119,14 @@ export function showKeySharingFlow(container, {wasm, store, expectedGroup, role,
             })();
           }});
       } else {
-        if (saved) throw Error('Existing AT settings require their own recovery flow');
+        if (saved && saved.role !== 'recipient') throw Error('An owner cannot be replaced by sharing');
         phase = 'descriptor';
         transfer({title: 'Receive a shared AT key', outgoing: '', explanation: 'Paste the public sharing message from your enrolled AT-key device. You will review the device and consent before receiving a key.',
           incomingLabel: 'AT-key sharing message', action: 'Review sharing device', onReceive: async text => {
             const descriptor = JSON.parse(text);
             if (descriptor.profile !== profile || descriptor.group !== hex(group) || typeof descriptor.credential !== 'string' || !/^[0-9a-f]{32}$/.test(descriptor.credential)) throw Error('Invalid sharing descriptor');
             binding = Object.freeze({group: descriptor.group, owner: descriptor.owner, credential: descriptor.credential});
+            if (saved && ['group', 'owner', 'credential'].some(key => binding[key] !== saved.binding[key])) throw Error('Different saved sharing device');
             peer = unhex(binding.owner); certificate = bytes(descriptor.certificate, 136); await peerProof(peer, certificate);
             message('Use this sharing device?', 'Check that this is the group device you intend to use. Device identity: ' + binding.owner,
               'Connect to this sharing device', async () => {
@@ -135,16 +137,32 @@ export function showKeySharingFlow(container, {wasm, store, expectedGroup, role,
                     const policy = JSON.parse(new TextDecoder('utf-8', {fatal: true}).decode(packet));
                     if (policy.type !== 'sharing-policy' || !Array.isArray(policy.bytes) || policy.bytes.length > 2048) throw Error('Invalid policy');
                     phase = 'consent';
-                    const consent = showRemoteOwnerConsent(screen(), {wasm, store, expected: binding, ownerCertificate: certificate,
-                      policyBytes: bytes(policy.bytes, policy.bytes.length), policySignature: bytes(policy.signature, 64), connection: session, focus, onBack: back}); child = consent;
-                    // Do not hold the message dispatcher while waiting for a human.
-                    void (async () => { try {
-                      await consent.completed; current();
+                    const receiveKey = async () => {
+                      const latest = await loadATBinding({wasm, store, expectedGroup: group, signal: lifetime.signal}); current();
+                      if (!latest || latest.role !== 'recipient' || ['group', 'owner', 'credential'].some(key => latest.binding[key] !== binding[key])) throw Error('Sharing choice changed');
                       const vault = openLocalATVault({wasm, store, ...binding});
+                      const state = await vault.inspect({signal: lifetime.signal}); current();
+                      if (!['missing', 'replacement-needed'].includes(state.status)) throw Error('Key delivery not needed');
                       request = await vault.prepareDelivery({ownerCertificate: certificate, signal: lifetime.signal}); current();
                       phase = 'await-key'; message('Receiving the shared key', 'Your choice is saved. Waiting for encrypted delivery…');
                       await session.send(request.nonce);
-                    } catch { fail(); } })();
+                    };
+                    if (saved) {
+                      await applyRemoteATPolicy({wasm, store, expectedGroup: group, peer, connection: session,
+                        policyBytes: bytes(policy.bytes, policy.bytes.length), policySignature: bytes(policy.signature, 64),
+                        acceptUnchanged: true, signal: lifetime.signal}); current();
+                      const state = await openLocalATVault({wasm, store, ...binding}).inspect({signal: lifetime.signal}); current();
+                      if (state.status === 'saved-unverified') {
+                        message('A shared key is already saved', 'Your existing key has been kept. Use Along Settings to reconnect for live information. Confirmation of an earlier delivery needs its own recovery check.');
+                      } else if (['missing', 'replacement-needed'].includes(state.status)) {
+                        message('Continue receiving your shared key?', 'This is the sharing device you previously accepted. Keep that choice and request the key over this new connection.', 'Receive the shared key', receiveKey);
+                      } else throw Error('Saved access unavailable');
+                    } else {
+                      const consent = showRemoteOwnerConsent(screen(), {wasm, store, expected: binding, ownerCertificate: certificate,
+                        policyBytes: bytes(policy.bytes, policy.bytes.length), policySignature: bytes(policy.signature, 64), connection: session, focus, onBack: back}); child = consent;
+                      // Do not hold the message dispatcher while waiting for a human.
+                      void (async () => { try { await consent.completed; current(); await receiveKey(); } catch { fail(); } })();
+                    }
                   } else if (phase === 'await-key') {
                     phase = 'saving';
                     const receipt = await request.install(packet); current();
