@@ -571,3 +571,14 @@ individual release check, particularly Android TalkBack, was completed.
 
 The user also identified a mismatch between the installed icon and the header
 mark. Reusing the installed icon makes recognition consistent across entry points.
+
+
+### Language inclusion needs both technical and linguistic evidence
+
+The user asked whether an English / Māori switch could be offered confidently,
+then explicitly added it to the goal. The agreed distinction is between confidence
+in implementing a local, offline language switch and confidence in idiomatic,
+accurate public-facing te reo Māori. Fluent-speaker review is a completion gate;
+AI-written translations remain draft until reviewed. This extends inclusion beyond
+visual and motor access, and reinforces the course's division of responsibility:
+the AI implements and tests; people contribute domain knowledge and judgment.

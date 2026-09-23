@@ -54,3 +54,30 @@ observations. The goal is not yet fully verified: spoken screen-reader checks an
 physical checks of the latest contextual details remain outstanding. An AT key
 is needed to verify the optional authenticated live-data integration. Documented
 limits and an educational disclaimer do not count as passing these checks.
+
+
+## Added requirement: English / Te reo Māori
+
+10. Offer an English / Te reo Māori language switch that remembers the choice on
+    the device and works offline. Cover the complete experience: navigation,
+    journey instructions, status and error messages, installation guidance and
+    accessible names and announcements. Preserve recognisable official addresses,
+    stop names and route identifiers, and support finding places using names in
+    either language where verified source data provides them. Verify macrons,
+    longer labels, language metadata, screen-reader behaviour and unchanged
+    routing and saved journeys when switching languages. Do not promise speech
+    pronunciation that depends on the user's installed voices.
+
+The AI performs all implementation and technical verification. A fluent te reo
+Māori speaker must review natural phrasing, travel and accessibility terminology,
+and Auckland place names before the translation is presented as finished. Until
+that review, any available te reo Māori interface must be explicitly labelled as
+a draft translation. Keep a reviewable phrase catalogue and record review status;
+automated checks cannot substitute for language review.
+
+## Updated hosting direction
+
+GitHub Pages at https://reality2.ai/along/ is the public serving location. The user
+has retired the private server. Public deployment and offline installation replace
+the original requirement to maintain an updated private site. Retain the remaining
+original verification and course requirements.
