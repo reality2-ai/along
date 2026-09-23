@@ -321,3 +321,10 @@ draft archive above remains the previous packaged candidate.
 
 The header now uses the same icon asset as the installed app, with decorative
 image semantics inside the existing labelled home link.
+
+Version 28 is deployed to GitHub Pages. Its [public smoke check](evidence/public-site-v28.json)
+passed installation eligibility, Settings version, offline address routing and
+cached installation guidance. The former private server has been stopped and
+disabled; removal of its Tailscale serving entry requires local administrator
+authentication. Existing installations from that origin do not automatically
+move to the public origin, and their local saved data is separate.
