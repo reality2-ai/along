@@ -1161,3 +1161,12 @@ now follows the real app from enrollment to offline removal transfer and recipie
 reopening. Automatic delivery and replacement of compromised keys remain separate
 unfinished requirements. For teaching, this is a useful example of testing the
 meaning of a success message across devices rather than only testing its appearance.
+
+Preview 3802 strengthens update evidence by starting with the exact published
+3801 artifact rather than changing a version string in the current code. Saved
+places, identity and encrypted test-key bytes survive the actual upgrade while
+regular Along's cache remains unchanged. The qualification also checks removal
+against a working shared AT connection. Testing uncovered a recipient-removal
+race during asynchronous key derivation; the fix rechecks membership and clears
+derived bytes on refusal. This connects deployment and privacy claims to the
+specific state transitions that could invalidate them.

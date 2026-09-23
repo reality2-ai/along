@@ -25,7 +25,7 @@ connection is not yet deployed. Losing connectivity will not remove offline plan
 </p>
 <p align="center">Open in your browser and install on your device. Prepare it online, then plan scheduled journeys offline.</p>
 
-**Device testing:** [Open Along Device Preview 3801](https://reality2.ai/along/preview/public/)
+**Device testing:** [Open Along Device Preview 3802](https://reality2.ai/along/preview/public/)
 and follow the [S23/desktop guide](docs/PREVIEW_DEVICE_CHECK.md). It has separate
 saved places and device setup, with optional sharing between devices you approve.
 Use dummy AT keys for these tests. The regular installation above remains version 37.
@@ -300,8 +300,14 @@ The [full device preview](https://reality2.ai/along/preview/public/) includes
 and optional AT-key setup/sharing. Two-browser tests cover saved places, service
 preferences, offline changes and permission removal. Connecting still requires
 transferring messages; automatic reconnection and full release qualification remain
-unfinished. [Download the static preview and checksum](https://github.com/reality2-ai/along/releases/tag/device-preview-3801)
+unfinished. [Download the static preview and checksum](https://github.com/reality2-ai/along/releases/tag/device-preview-3802)
 to inspect or host it yourself. Runtime provenance and licence notices are included.
+
+Preview 3802 also provides a device-certificate list and reviewed, signed group
+removal messages. Each receiving device verifies and saves the removal; copying
+alone is not delivery. Older preview enrollments may be absent from the list.
+Removal cannot erase previously shared copies or replace an AT key at its provider.
+The tested 3801 → 3802 update preserves preview saved places and device setup.
 
 The repository also contains tested experimental live matching and proxy code; that proxy is not the
 planned public architecture. See [hosting and live-data status](docs/HOSTING.md).

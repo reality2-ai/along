@@ -1,7 +1,7 @@
 # Proposal: private cross-device synchronisation through Reality2
 
 Status: experimental device preview, 24 September 2026. Saved-journey sharing is
-enabled in [Device Preview 3801](https://reality2.ai/along/preview/public/), separately
+enabled in [Device Preview 3802](https://reality2.ai/along/preview/public/), separately
 from the regular version-37 app. Automatic discovery/reconnection, full TG removal
 and epoch rotation remain unfinished. See the [device checks](PREVIEW_DEVICE_CHECK.md).
 

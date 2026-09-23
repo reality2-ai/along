@@ -39,6 +39,17 @@ try {
   await page.getByRole('button', {name: 'Set up my device', exact: true}).click();
   await page.getByRole('button', {name: 'Create my device group', exact: true}).click();
   await page.getByRole('heading', {name: 'Your devices and AT key', exact: true}).waitFor();
+  let groupReview = false;
+  if (Number(local.appVersion) >= 3802) {
+    await page.getByText('Connect or recover another device', {exact: true}).click();
+    await page.getByRole('button', {name: 'Review group devices', exact: true}).click();
+    await page.getByRole('status').filter({hasText: 'No issued device certificates'}).waitFor();
+    await page.getByRole('button', {name: 'Back', exact: true}).click();
+    await page.getByRole('button', {name: 'Receive a group removal', exact: true}).click();
+    await page.getByLabel('Signed group removal', {exact: true}).waitFor();
+    await page.getByRole('button', {name: 'Back', exact: true}).click();
+    groupReview = true;
+  }
   await page.reload();
   await page.locator('#settings-open').click();
   await page.getByRole('button', {name: 'Device and AT-key setup', exact: true}).click();
@@ -61,6 +72,7 @@ try {
     app_version: local.appVersion, source_commit: local.source_commit,
     manifest_sha256: createHash('sha256').update(await readFile(new URL('../releases/along-device-preview-release/build-info.json', import.meta.url))).digest('hex'),
     payload_files_verified: Object.keys(local.files).length, https_setup_reload: true, offline_install_guide: true,
+    group_review_controls: groupReview,
     offline_new_address_bus_ferry_journey: true, page_errors: errors, external_requests: unexpected,
     limits: 'Fresh Chromium profile on one host; physical-device and real-provider checks remain separate.'};
   if (process.argv[3]) await writeFile(process.argv[3], JSON.stringify(evidence, null, 2) + '\n');

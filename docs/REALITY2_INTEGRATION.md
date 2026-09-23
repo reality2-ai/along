@@ -3,11 +3,11 @@
 Along should contact AT directly and keep each person's AT key within their own
 trust group, without requiring an Along-operated central server. Offline planning
 must continue without a key, a peer connection or a portal. The implementation described here is experimental and is not yet enabled in
-the regular version-37 app. A separate [device preview, version 3801](https://reality2.ai/along/preview/public/),
+the regular version-37 app. A separate [device preview, version 3802](https://reality2.ai/along/preview/public/),
 is now published for S23/desktop testing with dummy AT keys. It includes the
 experimental Settings flows and saved-journey sharing, with separate ordinary
 storage names and explicit software-security limits. See the
-[device-check guide](PREVIEW_DEVICE_CHECK.md) and [HTTPS evidence](evidence/device-preview-3801-public.json).
+[device-check guide](PREVIEW_DEVICE_CHECK.md) and [HTTPS evidence](evidence/device-preview-3802-public.json).
 
 ## Current status
 
@@ -48,7 +48,7 @@ signed removal and reopens to route offline. A targeted custody race test also
 removes a recipient during either key-derivation step: issuance now rechecks the
 recipient and wipes derived buffers before refusing. These are software-profile
 enforcement checks, not revocation of the subscription key at Auckland Transport.
-The existing 3801 preview bundle is unchanged by this source addition.
+These changes are included in preview 3802. The regular version-37 app is unchanged.
 
 The experimental existing-device reconnect screen now exchanges public connection
 messages through visible controls, authenticates saved identities and hands the
