@@ -20,16 +20,42 @@ sequence of findings, so earlier source-only/version statements are historical.
 | Direct AT access | Authenticated browser reads and strict timetable matching | Connect each user's authorized credential to contextual UI; verify actual installed devices |
 | Local installation | Published core ceremony, candidate-generated key, atomic persona/claim/invitation commit; rollback and reload checks | Real initial persona/claim lifecycle, qualified custody and application-secret policy |
 | Membership | Core certificates, local epoch policy, signed revocations; restored signing refuses revoked identity | Freshness after partition, epoch advancement and removal propagation |
-| Receipts | Encrypted receipt/acknowledgment exchange, durable records, malformed input and storage-failure checks | Interrupted-session recovery, group announcement and end-user integration |
+| Receipts | Published encrypted receipt/acknowledgment exchange and durable records; authenticated recovery passes fresh-document, mismatch, cancellation and concurrent-write checks | Group announcement and end-user integration |
 | Reconnection | Installed-key mutual peer authentication, revocation closure and screen-cancellation checks | End-user signaling, actual device/network reachability and operation-specific authorization |
 | Comparison UI | Isolated comparison/live-session adapter, keyboard/reflow/axe and cancellation checks | Enclosing setup flow, actual TalkBack and physical co-presence; not loaded by Along |
 | Verification | Published local-installation increment passed the full local gate and browser checks; receipt increment also passed its unchanged full-gate snapshot | Hosted checks and complete user-facing integration; component success is not release completion |
 
-The published local-installation baseline is
-[`5aae14c4`](https://github.com/reality2-ai/r2-standard/commit/5aae14c4e0e2416f3395dee072f5f9e75b258ba6).
-Its [hosted Rust verification](https://github.com/reality2-ai/r2-standard/actions/runs/35857956489)
-and [repository gate](https://github.com/reality2-ai/r2-standard/actions/runs/35857956961)
-are still in progress at this update; hosted success is not yet established.
+The published receipt/reconnection baseline is
+[`7634c3a9`](https://github.com/reality2-ai/r2-standard/commit/7634c3a9b19cd0fe6f3d5102aa95902ceceb29ab).
+Its [hosted Rust verification](https://github.com/reality2-ai/r2-standard/actions/runs/35860018851)
+and [repository gate](https://github.com/reality2-ai/r2-standard/actions/runs/35860018868)
+are still in progress at this update; hosted success is not established. The prior
+local-installation Rust run was cancelled after the newer publication, not passed.
+The recovery runtime increment passed its full local gate against the unchanged
+recorded snapshot and the repository commit checks. It is published at
+[`bf134d1a`](https://github.com/reality2-ai/r2-standard/commit/bf134d1a10a5c7bfe75f65a1186b27fdfe50202c).
+Status prose was refreshed after the full gate; hosted success for this revision
+is not yet established.
+
+### Next integration boundary: starting a device
+
+The recovery tests start from explicit synthetic initial trust and claim state.
+They do not yet establish a real first-use flow. Before exposing “Connect my
+devices”, initialization must create the actual group-of-one required by L5
+4.3.1–4.3.4, and keep the distinction between a newly created persona and one
+restored from storage. An absent store cannot establish whether this is first
+use or whether the browser previously deleted its data; report that limitation.
+
+A stored persona with a missing claim, an unreadable record, and a valid OPEN
+persona need distinct reports. Only the last can begin enrollment. A read failure
+must never trigger automatic identity replacement or turn OWNER into OPEN.
+L5 4.4.1–4.4.6 require persisted claim state, local reset and preservation across
+updates. The current test's explicit OPEN fixture is not that lifecycle.
+
+The browser also needs an honest custody policy for its initial issuer and derived
+keys. A nonextractable member signing handle does not establish hardware-rooted
+sealing for those other secrets. Implement that lifecycle before presenting a TG
+as durable AT-key storage; retain ordinary offline planning throughout.
 
 ## Historical implementation evidence
 

@@ -253,3 +253,76 @@ status prose was refreshed afterwards without implementation changes. The
 Along controller tests additionally cover receipt persistence, restoration,
 cancellation and authenticated reconnection. These remain experimental components
 outside the public PWA, not a completed user-facing TG feature.
+
+
+### Interrupted-receipt recovery transport
+
+Runtime dependency: [R2 bf134d1a](https://github.com/reality2-ai/r2-standard/commit/bf134d1a10a5c7bfe75f65a1186b27fdfe50202c),
+published on the draft browser-TG branch after full local verification and commit
+checks. Hosted verification and end-user integration remain outstanding.
+
+The verified R2 increment adds bounded ordered application messages to
+an already mutually authenticated session. Local and peer certificate standing
+are checked against held membership evidence around use. Incoming messages carry
+an exact sequence; replay closes without redelivery. The receiver gets the
+session cancellation signal and remains responsible for application authorization
+and atomic side effects. Concurrent outgoing calls preserve order and snapshot
+input before asynchronous work. Real-browser tests pass for these boundaries.
+The local-persona session wrapper forwards an optional message receiver.
+The application recovery path below uses this transport; it does not establish
+globally fresh membership or AT-key access.
+
+
+`receipt-recovery.mjs` now has an initial integrated recovery path. It reconnects
+an installed candidate to the recorded issuer through mutual authentication and
+sends a fresh nonce with the exact public receipt. The issuer requires a matching
+saved receipt, candidate identity, certificate digest and consumed invitation;
+the candidate accepts only the matching nonce/receipt and updates its existing
+record by revision. It does not repeat enrollment or reopen claim state.
+A real-peer test recovers after an intentionally aborted acknowledgment save.
+The negative, fresh-document and cancellation checks described below pass; the full
+runtime gate also passed against its unchanged recorded snapshot. This is not enabled in the public app.
+
+Recovery counterexamples now pass for missing issuer receipt, wrong requesting
+member, altered receipt, unconsumed invitation, wrong reply nonce and a different
+valid group-signed certificate. Each refusal preserves the candidate's OWNER state,
+acknowledgment flag and storage revision. A copied-module negative control removes
+only the certificate-digest comparison; the different-certificate case then fails
+at its intended assertion. Production source was not mutated for that control.
+Cancellation and fresh-document checks are described below; the full runtime
+gate passed against its unchanged recorded snapshot.
+
+Recovery cancellation is now checked during an actual queued IndexedDB write and
+during delivery of its completion event. The pending write rolls back without
+changing OWNER, acknowledgment or revision; the completed write returns its real
+successful result despite cancellation. The test resets only the acknowledgment
+flag between fixtures, not the installed identity or invitation.
+
+The recovery cases now run in a newly opened document after disposing the old
+enrollment controller and closing its storage connection. Only the database name
+and caller-established expected group are supplied; the issuer, receipt and
+nonextractable signing handle must be recovered from persisted origin storage.
+Success, mismatched evidence and both cancellation boundaries pass in that fresh
+document. Test assets are supplied by the harness after its HTTP server stops:
+this proves document-lifetime independence, not service-worker caching or a full
+browser-process restart. The full runtime gate passed against its unchanged recorded snapshot.
+
+Recovery also refuses a reply when another writer has advanced the local persona
+revision after recovery starts. The real-browser check writes a retained marker
+through the actual storage API, then completes the authenticated exchange. The
+acknowledgment remains false and the newer revision and marker survive unchanged;
+recovery does not overwrite the concurrent change.
+
+### Stored claim reporting
+
+The candidate controller now defaults to reading its persisted claim rather than
+requiring a fixture callback. `stored-claim.mjs` distinguishes missing, invalid
+and unreadable records without writing, minting or resetting anything. Only
+recorded OPEN/OWNER values are returned to the core; refused reads carry distinct
+error codes. The focused Node check passes, and the real-browser installation
+and recovery test now uses that default reader. The separate ceremony check
+retains an explicit reader to exercise changes and delayed reads.
+
+This closes the reporting boundary, not initial persona creation: a recorded OPEN
+flag alone is not proof of a valid group-of-one. Initial trust, platform facts and
+local first-use/reset integration remain experimental.

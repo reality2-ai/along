@@ -7,7 +7,8 @@ const {chromium} = await import(process.env.PLAYWRIGHT_MODULE || '@playwright/te
 if (!process.env.R2_BROWSER_DIR) throw new Error('Set R2_BROWSER_DIR to the experimental Reality2 browser module directory');
 if (!process.env.R2_WASM_DIR) throw new Error('Set R2_WASM_DIR');
 const sources = new Map(await Promise.all(['peer-session', 'challenge', 'session-statement', 'membership', 'certificate', 'enrollment-session', 'storage', 'invitation-journal', 'enrollment-link', 'enrollment-exchange', 'enrollment-protection', 'peer-link', 'invitation'].map(async name => ['/' + name + '.mjs', await readFile(join(process.env.R2_BROWSER_DIR, name + '.mjs'))])));
-for (const name of ['enrollment-profile.mjs', 'enrollment-payloads.mjs', 'core-candidate-session.mjs', 'installation-receipt.mjs', 'local-persona.mjs', 'local-persona-session.mjs']) sources.set('/' + name, await readFile(new URL('./' + name, import.meta.url)));
+for (const name of ['enrollment-profile.mjs', 'enrollment-payloads.mjs', 'core-candidate-session.mjs', 'stored-claim.mjs', 'installation-receipt.mjs', 'local-persona.mjs', 'local-persona-session.mjs', 'receipt-recovery.mjs']) sources.set('/' + name, await readFile(new URL('./' + name, import.meta.url)));
+if (process.env.RECOVERY_MODULE) sources.set('/receipt-recovery.mjs', await readFile(process.env.RECOVERY_MODULE));
 for (const name of ['hive_wasm.js', 'hive_wasm_bg.wasm']) sources.set('/' + name, await readFile(join(process.env.R2_WASM_DIR, name)));
 const server = createServer((req, res) => {
   if (sources.has(req.url)) { res.writeHead(200, {'Content-Type': req.url.endsWith('.wasm') ? 'application/wasm' : 'text/javascript'}); res.end(sources.get(req.url)); }
@@ -28,6 +29,7 @@ try {
       window.restoreModule = await import('./local-persona.mjs');
       window.receiptModule = await import('./installation-receipt.mjs');
       window.personaSession = await import('./local-persona-session.mjs');
+      window.recoveryModule = await import('./receipt-recovery.mjs');
       window.peerSessionModule = await import('./peer-session.mjs');
       window.membershipModule = await import('./membership.mjs');
       window.storageModule = await import('./storage.mjs');
@@ -89,7 +91,7 @@ try {
       }};
       window.creation = coreModule.createCoreCandidateSession({wasm, invitation, authorized, store: candidateStore, signal: setupAbort.signal,
         platform: {candidateDevelopment: false, provisionerDevelopment: false, provisionerHoldsCustody: true, epoch: 7n},
-        readClaimState: async () => { stateReads++; if (window.delayStateRead) { window.readWaiting = true; await new Promise(resolve => { window.releaseStateRead = resolve; }); } return (await store.read('candidate-persona', 'active'))?.value?.claim; }}).then(value => { window.enrollment = value; return true; }, () => false);
+        readClaimState: delaySetup ? async () => { stateReads++; if (window.delayStateRead) { window.readWaiting = true; await new Promise(resolve => { window.releaseStateRead = resolve; }); } return (await store.read('candidate-persona', 'active'))?.value?.claim; } : undefined}).then(value => { window.enrollment = value; return true; }, () => false);
       if (!delaySetup && !delayReservation && !await creation) throw new Error('Candidate setup failed');
     }, {evidence, delaySetup, delayReservation});
     if (delaySetup || delayReservation) return;
@@ -400,6 +402,109 @@ try {
       }), null);
     } else {
       assert.equal(await pages[1].evaluate(() => enrollment.invitationState()), 'consumed');
+      // Recover in a fresh document with only persisted origin storage. No
+      // invitation, private key or enrollment controller crosses from the old page.
+      const recoveryInputs = await pages[0].evaluate(async () => {
+        const database = 'install-fixture-' + invitation.code[0];
+        enrollment.dispose(); store.close();
+        return {database, group: [...invitation.group]};
+      });
+      const recoveryPage = await contexts[0].newPage();
+      await recoveryPage.route('**/*', route => {
+        const path = new URL(route.request().url()).pathname;
+        return route.fulfill({status: 200, contentType: sources.has(path)
+          ? path.endsWith('.wasm') ? 'application/wasm' : 'text/javascript' : 'text/html',
+          body: sources.get(path) || '<!doctype html><title>Recover connection</title>'});
+      });
+      await recoveryPage.goto(pages[0].url());
+      await recoveryPage.evaluate(async ({database, group}) => {
+        window.wasm = await import('./hive_wasm.js'); await wasm.default();
+        window.store = await (await import('./storage.mjs')).openBrowserStorage(database);
+        window.recoveryModule = await import('./receipt-recovery.mjs');
+        // Expected group is caller-established; issuer and receipt must be loaded.
+        window.invitation = {group: new Uint8Array(group)};
+      }, recoveryInputs);
+      for (const variant of ['missing', 'wrong-peer', 'bad-receipt', 'unconsumed', 'wrong-nonce', 'other-certificate', 'record-changed', 'cancel-during', 'normal', 'cancel-after']) {
+        if (variant === 'cancel-after') await recoveryPage.evaluate(async () => {
+          // Fixture replays an unrecorded acknowledgment without re-enrollment.
+          const saved = await store.read('candidate-persona', 'active');
+          await store.compareAndSwap('candidate-persona', 'active', saved.revision, {...saved.value, peerAcknowledged: false});
+        });
+        const before = await recoveryPage.evaluate(async () => (await store.read('candidate-persona', 'active')).revision);
+        const subject = await recoveryPage.evaluate(async variant => {
+          window.recoveryAbort = new AbortController();
+          window.recovery = await recoveryModule.openReceiptRecovery({wasm, store, expectedGroup: invitation.group, signal: recoveryAbort.signal});
+          window.recoveryOriginalPut = IDBObjectStore.prototype.put;
+          window.recoveryOriginalTransaction = IDBDatabase.prototype.transaction;
+          if (variant === 'cancel-during') IDBObjectStore.prototype.put = function(...args) {
+            const request = recoveryOriginalPut.apply(this, args); recoveryAbort.abort(); return request;
+          };
+          if (variant === 'cancel-after') IDBDatabase.prototype.transaction = function(...args) {
+            const tx = recoveryOriginalTransaction.apply(this, args);
+            if (args[1] === 'readwrite') tx.addEventListener('complete', () => recoveryAbort.abort(), {once: true});
+            return tx;
+          };
+          return [...(await store.read('candidate-persona', 'active')).value.record.subject];
+        }, variant);
+        if (variant === 'record-changed') await recoveryPage.evaluate(async () => {
+          const saved = await store.read('candidate-persona', 'active');
+          await store.compareAndSwap('candidate-persona', 'active', saved.revision,
+            {...saved.value, concurrentMarker: 'retained'});
+        });
+        await pages[1].evaluate(async ({subject, variant}) => {
+          const peer = new Uint8Array(subject), checkedPeer = peer.slice();
+          if (variant === 'wrong-peer') checkedPeer[0] ^= 1;
+          let alternate;
+          if (variant === 'other-certificate') {
+            const signature = new Uint8Array(await crypto.subtle.sign('Ed25519', authority.privateKey, codec.signingBytes(peer, group, 8n)));
+            alternate = codec.encode(peer, group, 8n, signature);
+          }
+          const checkedStore = {...store, read: async (scope, key) => {
+            const saved = await store.read(scope, key);
+            if (scope === 'enrollment-installations') {
+              if (variant === 'missing') return null;
+              if (variant === 'bad-receipt') saved.value.receipt[10] ^= 1;
+              if (variant === 'other-certificate') saved.value.certificate = alternate;
+            }
+            if (scope === 'enrollment-invitations' && variant === 'unconsumed') saved.value.state = 'reserved';
+            return saved;
+          }};
+          window.recoveryMembership = membershipModule.openMembership(store, wasm, group, issuer);
+          const publicId = Array.from(issuer, b => b.toString(16).padStart(2, '0')).join('');
+          window.recoveryPeer = peerSessionModule.createPeerSession({wasm, role: 'answer', group, epoch: 7n,
+            local: issuer, peer, certificate: issuerCertificate, membership: recoveryMembership,
+            identity: {publicId, sign: async message => new Uint8Array(await crypto.subtle.sign('Ed25519', issuerKey.privateKey, message))},
+            onMessage: message => recoveryModule.answerReceiptRecovery({wasm, store: checkedStore, group, local: issuer, peer: checkedPeer,
+              connection: {...recoveryPeer, send: bytes => {
+                if (variant === 'wrong-nonce') bytes[new TextEncoder().encode('along/receipt-recovery/v1\0').length + 1] ^= 1;
+                return recoveryPeer.send(bytes);
+              }}}, message)});
+        }, {subject, variant});
+        const offer = await recoveryPage.evaluate(() => recovery.offer());
+        const answer = await pages[1].evaluate(offer => recoveryPeer.accept(offer), offer);
+        await recoveryPage.evaluate(answer => recovery.accept(answer), answer);
+        const recovered = await recoveryPage.evaluate(() => recovery.completed.then(value => value.peerAcknowledged, () => false));
+        await recoveryPage.evaluate(() => {
+          IDBObjectStore.prototype.put = recoveryOriginalPut;
+          IDBDatabase.prototype.transaction = recoveryOriginalTransaction;
+        });
+        const succeeds = variant === 'normal' || variant === 'cancel-after';
+        assert.equal(recovered, succeeds, variant);
+        const after = await recoveryPage.evaluate(async () => {
+          const saved = await store.read('candidate-persona', 'active');
+          return {revision: saved.revision, claim: saved.value.claim, acknowledged: saved.value.peerAcknowledged, marker: saved.value.concurrentMarker};
+        });
+        assert.equal(after.claim, 'owner'); assert.equal(after.acknowledged, succeeds);
+        assert.equal(after.revision, before + (succeeds || variant === 'record-changed' ? 1 : 0));
+        if (variant === 'record-changed') assert.equal(after.marker, 'retained');
+        await pages[1].waitForFunction(() => recoveryPeer.state() === 'closed');
+        await pages[1].evaluate(() => recoveryMembership.close());
+      }
+      await recoveryPage.evaluate(() => store.close());
+      await recoveryPage.close();
+      await pages[0].evaluate(async database => {
+        window.store = await storageModule.openBrowserStorage(database);
+      }, recoveryInputs.database);
     }
   }
 
@@ -421,5 +526,5 @@ try {
   ]);
   assert.equal(lateAcknowledgment[0].peerAcknowledged, true);
   assert.equal(await pages[0].evaluate(async () => (await store.read('candidate-persona', 'active')).value.peerAcknowledged), true);
-  console.log('PASS: actual peer bundle installs requested candidate custody with claim and invitation consumption; restoration rejects corrupted evidence, mismatched keys and replacement before/during signing; existing group evidence survives refusal; signed revocation blocks restored signing; a competing revision wins without overwrite; pending cancellation rolls back; cancellation after commit still returns the durable local receipt. Synthetic initial trust, platform/initialization facts and consent; matching acknowledgment persists on both devices; aborted receipt writes cannot fabricate success and cancellation after completed acknowledgment preserves it; mismatched acknowledgment preserves local installation without claiming peer agreement; installed custody reconnects through mutual membership authentication and signed local revocation closes it; no hardware seal or AT credential authority.');
+  console.log('PASS: actual peer bundle installs requested candidate custody with claim and invitation consumption; restoration rejects corrupted evidence, mismatched keys and replacement before/during signing; existing group evidence survives refusal; signed revocation blocks restored signing; a competing revision wins without overwrite; pending cancellation rolls back; cancellation after commit still returns the durable local receipt. Synthetic initial trust, platform/initialization facts and consent; matching acknowledgment persists on both devices; aborted receipt writes cannot fabricate success and cancellation after completed acknowledgment preserves it; mismatched acknowledgment preserves local installation without claiming peer agreement; installed custody reconnects through mutual membership authentication and signed local revocation closes it; fresh-document receipt recovery uses persisted custody and rejects mismatched evidence; recovery cancellation respects the commit boundary; no hardware seal or AT credential authority.');
 } finally { await browser?.close(); if (server.listening) await new Promise(resolve => server.close(resolve)); }

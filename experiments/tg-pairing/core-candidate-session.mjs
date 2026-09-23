@@ -4,6 +4,7 @@ import {createEnrollmentSession} from './enrollment-session.mjs';
 import {invitationStatement} from './invitation.mjs';
 import {enrollmentPayloads} from './enrollment-payloads.mjs';
 import {installationReceipt} from './installation-receipt.mjs';
+import {readStoredClaim} from './stored-claim.mjs';
 
 export async function createCoreCandidateSession({wasm, invitation, authorized, platform, readClaimState, store, signal}) {
   const expected = structuredClone(invitation);
@@ -25,6 +26,7 @@ export async function createCoreCandidateSession({wasm, invitation, authorized, 
   signal?.addEventListener('abort', abort, {once: true});
   try {
     initiating();
+    if (readClaimState === undefined) readClaimState = () => readStoredClaim(store);
     const statement = invitationStatement(wasm, expected), checked = authorized.statement();
     if (checked.length !== statement.length || !checked.every((v, i) => v === statement[i])) throw new Error('Authorized invitation differs');
     // Refuse implicit conversions of absent platform facts to production/custody.
@@ -105,7 +107,7 @@ export async function createCoreCandidateSession({wasm, invitation, authorized, 
           const membershipKey = Array.from(record.group, b => b.toString(16).padStart(2, '0')).join('');
           const receipt = await session.consume([{scope: 'candidate-persona', key: 'active', expectedRevision: stored.revision,
             value: {format: 1, claim: 'owner', record, epoch: bundle.epoch, peerAcknowledged: false,
-              invitation: {group: expected.group, code: expected.code}}},
+              invitation: structuredClone(expected), receipt: receiptBytes}},
             {scope: 'membership', key: membershipKey, expectedRevision: 0, value: membership}]);
           // Do not apply the ordinary post-await cancellation guard here. A
           // transaction that already committed must still report that fact.

@@ -4,7 +4,7 @@ import {loadLocalPersona} from './local-persona.mjs';
 import {openMembership} from './membership.mjs';
 import {createPeerSession} from './peer-session.mjs';
 
-export async function openLocalPersonaSession({wasm, store, expectedGroup, peer, role, signal}) {
+export async function openLocalPersonaSession({wasm, store, expectedGroup, peer, role, signal, onMessage}) {
   if (!(expectedGroup instanceof Uint8Array) || expectedGroup.length !== 32
       || !(peer instanceof Uint8Array) || peer.length !== 32
       || !['offer', 'answer'].includes(role)) throw new Error('Peer context unavailable');
@@ -30,7 +30,7 @@ export async function openLocalPersonaSession({wasm, store, expectedGroup, peer,
     session = createPeerSession({wasm, role, group, epoch: context.epoch,
       local: context.subject, peer: remote, certificate: record.certificate,
       identity: {publicId: identity.member, sign: identity.sign}, membership,
-      onClose: dispose});
+      onClose: dispose, onMessage});
     current(); return session;
   } catch (error) { dispose(); throw error; }
 }
