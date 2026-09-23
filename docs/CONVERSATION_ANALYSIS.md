@@ -605,3 +605,12 @@ recurring next-action principle therefore applies to live data as well as layout
 a successful feed request is not enough. Relevance to the current stop, journey or
 leg must be established before showing a prediction or alert. Wider network
 information is a deliberate exploration path, not a competing default feed.
+
+
+### Feedback closes the loop between use and AI development
+
+The user requested a contextual feedback button whose typed observations reach
+the GitHub repository for the next AI development round. This extends the
+iterative design process beyond the original chat. Feedback should be available
+at the point of difficulty while keeping travel primary. Public submission must
+remain an informed user action, distinct from the app's private local history.

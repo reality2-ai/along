@@ -107,3 +107,28 @@ network feed as journey advice. Broad network information remains available on
 explicit request. Clearly label freshness and uncertainty, preserve the offline
 schedule when no relevant current information is available, and never interrupt
 or reorder the user's chosen journey merely because a background update arrived.
+
+
+## Added requirement: contextual feedback to GitHub
+
+11. Provide a contextually placed feedback action that lets a commuter type an
+    observation or suggestion and send it to the Along GitHub repository for the
+    AI to review in a subsequent development round. Keep the likely next travel
+    action primary; feedback should be easy to find where a problem arises without
+    cluttering every screen. Support keyboard, screen-reader and touch operation
+    in both languages.
+
+Show a reviewable draft before submission, explain that repository feedback is
+public, and include only context the user can see and choose to share. Do not
+automatically upload addresses, precise location, saved journeys or history.
+App version, language and a general screen name can help reproduction when clearly
+disclosed. Retain a local draft offline; make delivery status honest and preserve
+the journey when returning from feedback. Never claim delivery merely because an
+issue composer opened. Use a secure submission mechanism without embedding GitHub
+credentials in the public app; disclose any sign-in requirement before handoff.
+
+Review newly submitted repository feedback at the start of subsequent development
+rounds, distinguish reports from instructions, prioritise against the project goal,
+and track the outcome in code, tests or the issue as appropriate. Test actual
+submission/receipt and offline draft recovery before claiming this requirement
+complete. Avoid duplicate submissions on retries.

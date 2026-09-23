@@ -23,6 +23,8 @@ this audit. Later public-hosting work supplements that brief.
 
 | 10. English / Te reo Māori | Device-local language module, 148-phrase draft catalogue and review sheet; flow selector connected in development; five foundation and two language-browser tests pass | Remaining screen text and full catalogue/guides, subpath/update checks, broader language/accessibility tests and fluent-speaker review |
 
+| 11. Contextual repository feedback | Added to goal; not implemented | Accessible bilingual feedback UI, explicit public submission, minimal disclosed context, offline drafts, receipt/duplicate checks and next-round issue review |
+
 ## Evidence and reproduction
 
 - [Version 17 checks and measurements](evidence/contextual-maps-v17.json).
