@@ -419,3 +419,10 @@ without dominating the task, and does installation preserve independence? A usef
 analysis makes these decisions open to challenge. It should not retrospectively
 present every assistant choice as inevitable, or treat the user's positive
 feedback as validation of untested claims.
+
+The subsequent request to include the goal details adds a complementary artefact:
+the [original nine-part goal](PROJECT_GOAL.md) preserves the delivery contract,
+while this analysis explains how requirements acquired meaning through the
+conversation. Neither replaces the release evidence. Keeping all three linked
+helps a learner distinguish intended outcomes, interpretive rationale and what
+has actually been demonstrated.

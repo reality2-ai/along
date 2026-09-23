@@ -6,6 +6,9 @@ This register separates automated evidence, user observations and remaining chec
 
 ## Goal audit
 
+The [original goal and completion criteria](PROJECT_GOAL.md) define the scope of
+this audit. Later public-hosting work supplements that brief.
+
 | Requirement | Current evidence | Remaining limits or gates |
 | --- | --- | --- |
 | 1. Contextual interaction | Guided destination/origin/review/options/follow flow; route → direction/branch → stops/map → stop departures; Back/Escape and focus/filter restoration tested | Physical assessment of new contextual maps |
@@ -13,8 +16,8 @@ This register separates automated evidence, user observations and remaining chec
 | 3. Inclusion | Keyboard, axe, contrast, zoom, narrow screens, touch emulation, reduced motion and forced colours; text alternatives to maps | Spoken TalkBack/desktop-reader check; no disabled-commuter participant study |
 | 4. Installation and updates | Icons/manifest/installability; offline reopening; old-tab migration; quiet offline pull; failed/successful dataset refresh with saved journeys retained | Exact Android installation browser not recorded; latest contextual interface needs physical checks |
 | 5. Browser independence | Static `/along/` host with no Python API; offline new address routes; stored route geometry; measured download/storage/time | Low-memory phone performance not characterised; no evidence requiring WASM |
-| 6. Distribution | About 38 MiB ZIP/checksum, four data bundles, import scripts, MIT/data/Leaflet notices, AWS/Pages hosting instructions | Public deployment is a separate action; authenticated live verification needs an AT key |
-| 7. GitHub documentation | README, architecture, data, hosting, privacy, limits and contribution guidance match version 17 | Public source repository: [reality2-ai/along](https://github.com/reality2-ai/along); app hosting remains a separate step |
+| 6. Distribution | About 38 MiB ZIP/checksum, four data bundles, import scripts, MIT/data/Leaflet notices, AWS/Pages hosting instructions | Public Pages deployment is live; authenticated live verification needs an AT key |
+| 7. GitHub documentation | README, architecture, data, hosting, privacy, limits and contribution guidance; v21 course notice and current design-driver/goal summaries | Public source repository: [reality2-ai/along](https://github.com/reality2-ai/along); app hosted at [reality2.ai/along](https://reality2.ai/along/) |
 | 8. Course material | Thematic analysis, six lessons, exercises, assessment rubric and negative-case/contextual-map refinements | Course effectiveness has not been studied |
 | 9. Release checks and handover | 21 JavaScript and 4 Python tests; four real-data browser scenarios; static/update suites; source/archive/live asset comparison | Remaining physical and spoken screen-reader checks prevent claiming full goal completion |
 
@@ -119,3 +122,12 @@ installation guidance and the downloadable hosting README. It states that Along
 was built as an AI-assisted coding course exercise, is not an official AT service,
 and may contain incorrect or outdated route/access information. It does not
 claim that a disclaimer establishes safety, suitability or production readiness.
+
+
+The [version 21 public-site check](evidence/public-site-v21.json) confirms worker
+scope, Chromium installability, the Settings source link, offline new-address
+routing and cached installation help, with no page JavaScript errors. The ZIP's
+checksum and assets were also checked against current source, allowing only the
+builder's documented subpath transformations of HTML and the manifest; packaged
+installation guidance and notices match their sources. These checks do not
+replace physical installation or spoken screen-reader observations.

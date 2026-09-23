@@ -58,6 +58,18 @@ principles, and the [interaction principles](docs/INTERACTION_PRINCIPLES.md) for
 how to apply them to each screen. WASM and hosting choices are possible means;
 useful, accessible and independent operation is the goal.
 
+## Project goal
+
+**Finish Along as an intuitive, inclusive, installable Auckland commuter webapp,
+and prepare it as a reproducible AI-assisted coding course example.**
+
+The [full goal and completion criteria](docs/PROJECT_GOAL.md) preserve the user's
+nine-part brief: interaction design, real journeys, inclusion, installation and
+updates, browser independence, distribution, GitHub documentation, course material,
+and release checks. The [release checklist](docs/RELEASE_CHECKLIST.md) separates
+completed evidence from outstanding checks; public availability is not a claim
+that all validation is complete.
+
 ## See Along in use
 
 Actual app screens using public example addresses and the preserved Auckland
