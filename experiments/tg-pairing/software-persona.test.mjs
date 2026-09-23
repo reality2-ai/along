@@ -58,6 +58,21 @@ try {
       const member = crypto.getRandomValues(new Uint8Array(32));
       const certificate = await issuer.issueCertificate(member);
       check(codec.authentic(certificate, member, group), 'restored real issuer signs correct group');
+      const material = await issuer.enrollmentMaterial(member);
+      // Independent RFC 5869 extract/expand using HMAC, not deriveBits.
+      const heldRecord = (await store.read('along-browser-issuer', groupHex)).value;
+      const aad = new TextEncoder().encode(JSON.stringify(['along/software-issuer/v1', groupHex, issuer.member]));
+      const pkcs8 = new Uint8Array(await crypto.subtle.decrypt({name: 'AES-GCM', iv: heldRecord.iv, additionalData: aad}, heldRecord.wrappingKey, heldRecord.ciphertext));
+      const saltKey = await crypto.subtle.importKey('raw', group, {name: 'HMAC', hash: 'SHA-256'}, false, ['sign']);
+      const extracted = new Uint8Array(await crypto.subtle.sign('HMAC', saltKey, pkcs8.subarray(16))); pkcs8.fill(0);
+      const expandKey = await crypto.subtle.importKey('raw', extracted, {name: 'HMAC', hash: 'SHA-256'}, false, ['sign']); extracted.fill(0);
+      for (const [purpose, actual] of [['payload', material.payloadKey], ['integrity', material.integrityKey]]) {
+        const info = new TextEncoder().encode('r2/v0/group/' + purpose), block = new Uint8Array(info.length + 1); block.set(info); block[info.length] = 1;
+        const expected = new Uint8Array(await crypto.subtle.sign('HMAC', expandKey, block));
+        check(expected.every((v, i) => v === actual[i]), 'material agrees with independent extract/expand'); expected.fill(0);
+      }
+      check(!material.payloadKey.every((v, i) => v === material.integrityKey[i]), 'purpose separation');
+      material.destroy(); check(!material.payloadKey.some(Boolean) && !material.integrityKey.some(Boolean), 'material destruction');
       issuer.close(); check(await denied(() => issuer.issueCertificate(member)), 'closed custody refuses');
       const aborted = new AbortController(); aborted.abort();
       check(await denied(() => loadSoftwareIssuer({wasm, store, expectedGroup: group, signal: aborted.signal})), 'cancelled restore refuses');

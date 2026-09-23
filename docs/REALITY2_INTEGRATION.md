@@ -83,10 +83,14 @@ This is Along-specific software custody, not a change to the R2 standard. Browse
 profile compromise or same-origin malicious code can still use stored key handles;
 nonextractability is not hardware isolation or full-profile rollback protection.
 Old volatile-only identities cannot silently gain a replacement issuer or change
-groups. Group traffic-key derivation, invitations, real recipient enrollment and
-public setup wiring remain unfinished.
-The next implementation must replace the remaining recipient bootstrap fixture
-with actual invitation issuance and enrollment using this custody. More downstream UI tests alone cannot establish that outcome.
+groups. Initial-epoch group material is now derived from the actual software issuer. A
+separate browser test exercises signed invitation proof, core enrollment and
+fresh-document member restore with that issuer. Initial trust review, comparison
+approval and signaling remain harness inputs. Traffic-key persistence, epoch
+rotation and public setup wiring remain unfinished.
+The next integration step is to join the actual enrollment path to the AT
+credential scenario, replacing its remaining recipient bootstrap fixture, then
+complete invitation review and device signaling in the interface. More downstream UI tests alone cannot establish that outcome.
 
 ### Next integration boundary: starting a device
 

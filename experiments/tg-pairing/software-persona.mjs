@@ -60,6 +60,11 @@ export async function loadSoftwareIssuer({wasm, store, expectedGroup, signal}) {
     plaintext = new Uint8Array(await crypto.subtle.decrypt({name: 'AES-GCM', iv: value.iv,
       additionalData: aad(groupId, persona.member)}, value.wrappingKey, value.ciphertext));
     let key = await crypto.subtle.importKey('pkcs8', plaintext, 'Ed25519', false, ['sign']);
+    // RFC 8410's seed-only Ed25519 PKCS#8 form emitted by this profile's
+    // WebCrypto export. Refuse other encodings rather than guessing a seed.
+    const prefix = Uint8Array.of(0x30, 0x2e, 2, 1, 0, 0x30, 5, 6, 3, 0x2b, 0x65, 0x70, 4, 0x22, 4, 0x20);
+    if (plaintext.length !== 48 || !prefix.every((v, i) => plaintext[i] === v)) throw fail();
+    let derivationKey = await crypto.subtle.importKey('raw', plaintext.subarray(16), 'HKDF', false, ['deriveBits']);
     plaintext.fill(0); plaintext = undefined;
     const publicKey = await crypto.subtle.importKey('raw', group, 'Ed25519', false, ['verify']);
     const challenge = crypto.getRandomValues(new Uint8Array(32));
@@ -73,10 +78,9 @@ export async function loadSoftwareIssuer({wasm, store, expectedGroup, signal}) {
       current(signal); if (closed) throw fail();
     };
     await check();
-    const close = () => { closed = true; key = undefined; signal?.removeEventListener('abort', close); };
+    const close = () => { closed = true; key = undefined; derivationKey = undefined; signal?.removeEventListener('abort', close); };
     signal?.addEventListener('abort', close, {once: true});
-    return Object.freeze({group: groupId, member: persona.member, custody: 'encrypted-browser-software', close,
-      issueCertificate: async subject => {
+    const issueCertificate = async subject => {
         try {
           if (!bytes(subject, 32)) throw fail();
           const member = subject.slice(), codec = certificateCodec(wasm);
@@ -84,6 +88,20 @@ export async function loadSoftwareIssuer({wasm, store, expectedGroup, signal}) {
           const signature = new Uint8Array(await crypto.subtle.sign('Ed25519', key, codec.signingBytes(member, group, 0n)));
           await check(); return codec.encode(member, group, 0n, signature);
         } catch { throw fail(); }
+      };
+    return Object.freeze({group: groupId, member: persona.member, custody: 'encrypted-browser-software', close,
+      issueCertificate,
+      enrollmentMaterial: async subject => {
+        let payloadKey, integrityKey;
+        try {
+          const certificate = await issueCertificate(subject);
+          const derive = async purpose => new Uint8Array(await crypto.subtle.deriveBits({name: 'HKDF', hash: 'SHA-256',
+            salt: group, info: new TextEncoder().encode(purpose)}, derivationKey, 256));
+          await check(); payloadKey = await derive('r2/v0/group/payload');
+          await check(); integrityKey = await derive('r2/v0/group/integrity'); await check();
+          return Object.freeze({certificate, epoch: 0n, payloadKey, integrityKey,
+            destroy: () => { payloadKey.fill(0); integrityKey.fill(0); }});
+        } catch { payloadKey?.fill(0); integrityKey?.fill(0); throw fail(); }
       },
     });
   } catch { throw fail(); } finally { plaintext?.fill(0); }

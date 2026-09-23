@@ -398,3 +398,31 @@ sealing requirement. Same-origin scripts and a compromised browser profile remai
 outside its protection; references and temporary byte clearing cannot guarantee
 browser-engine memory erasure. Group traffic-key derivation, invitation and full
 enrollment wiring remain incomplete. Public Along does not load this experiment.
+
+
+## Enrollment from the actual software issuer
+
+`loadSoftwareIssuer.enrollmentMaterial(subject)` now returns a certificate and
+volatile initial-epoch payload/integrity keys derived from the persisted issuer
+seed. It uses HKDF-SHA256 with the group identity as salt and the R2 purpose
+strings `r2/v0/group/payload` and `r2/v0/group/integrity`. Restore accepts only the
+seed-only Ed25519 PKCS#8 encoding emitted by this profile; it refuses other forms
+rather than guessing which bytes contain a seed. Custody is rechecked around
+issuance and derivation, and the returned material has explicit destruction.
+This currently handles epoch zero only, not group-key rotation.
+
+`software-persona.test.mjs` compares both keys against an independent HMAC-based
+RFC 5869 extract/expand calculation and checks purpose separation and destruction.
+`software-enrollment.test.mjs` uses separate browser contexts, an actual reopened
+software issuer, its installed member's signed invitation proof, the core
+candidate ceremony and actual WebRTC carriage. After comparison confirmation, the
+candidate generates its member key, receives the issuer-signed bundle, commits
+through the existing installer, then restores and signs in a fresh document.
+No recipient membership record is inserted by that test's harness.
+
+The harness still supplies the initial trust decision, matching comparison
+approval and connection descriptions. The candidate installer's traffic-key
+persistence remains unfinished; this test proves member installation and restore,
+not complete group-material restoration, discovery, physical co-presence or full
+standard conformance. The AT peer scenario still has its separate bootstrap
+fixture until these paths are joined. No public app feature is enabled yet.
