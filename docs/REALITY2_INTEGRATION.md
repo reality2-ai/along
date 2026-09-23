@@ -222,3 +222,16 @@ pass real Chromium checks with synthetic material, including offline signature
 verification. This remains a platform primitive awaiting the Rust membership and
 protocol boundary. Non-extractable Web Crypto keys do not establish a hardware
 root, and no L5-derived group keys are persisted.
+
+The runtime branch now exposes Reality2's existing certificate codec and Ed25519
+verification through WASM. A real Chromium test connects a stored browser identity,
+Web Crypto signing, the compiled Rust verifier and IndexedDB certificate storage.
+It rejects wrong subjects/groups, forged signatures, malformed lengths and epoch
+overflow. The JS wrapper checks unsigned 64-bit bounds before wasm-bindgen can
+coerce an epoch. These are authenticity/interoperability checks; current membership
+and revocation enforcement remain to implement.
+
+Focused Rust tests and the WASM build pass. The initial full runtime gate failed
+because shared `/tmp` ran out of space; its replacement run uses a dedicated
+disk-backed temporary directory and is still running. No full-gate success or
+completed TG integration is claimed.
