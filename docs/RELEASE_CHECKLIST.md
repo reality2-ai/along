@@ -156,3 +156,16 @@ no-human-coding rule and linking directly to the project goal, thematic analysis
 and course exercises. The main journey flow is unchanged. The user's latest
 positive feedback is recorded above without treating it as an explicit TalkBack
 or offline test result.
+
+
+Version 22 is deployed to the private site and GitHub Pages. The
+[public-site check](evidence/public-site-v22.json) passed with the collapsed course
+section, its text and three links, installation eligibility, offline new-address
+routing and offline help. A focused 390-pixel Settings check passed keyboard
+expansion, Escape/focus restoration and axe rules. Core CI passed. These are
+browser checks, not spoken screen-reader evidence.
+
+The current README button was also inspected on GitHub: its 304 × 56-pixel image
+is centred in the article below the warning and introduction. The earlier
+version 21 draft archive remains historical; the locally rebuilt version 22 ZIP
+and deployed static branch contain the new app context.
