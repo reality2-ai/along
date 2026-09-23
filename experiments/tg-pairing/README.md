@@ -492,3 +492,23 @@ expiry while the cleanup timer is blocked. The interrupted-install variant still
 checks atomic rollback. This is same-host browser automation; reviewed initial
 trust, comparison decisions and signaling remain harness inputs. Nothing here
 establishes physical-device usability or hardware-backed protection.
+
+### Invitation sharing screen
+
+`showSoftwareInvitation` creates the real software invitation only on trusted
+activation. It offers a full-width Copy action and a labelled, read-only manual
+copy fallback. The screen says that copying is not a connection, keeps the local
+issuer alive only while the invitation is active, and closes it on Back, Escape
+or replacement. Expiry clears visible invitation text and moves keyboard focus
+to the retry action when necessary. Clipboard completion cannot overwrite a
+successor screen. Clipboard contents cannot be recalled after copying; an expired
+descriptor does not reactivate the closed local issuer.
+
+The enclosing controller can obtain the current invitation to answer the peer's
+challenge. It still must perform transport, trusted group review, code comparison
+and admission. This component sends nothing over the network and is not an
+end-to-end device connection or public app feature. The test uses actual persisted
+software custody and invitation creation, but mocks clipboard success and failure.
+It checks keyboard operation, cancellation, expiry/retry, late completion, manual
+copy fallback, automated axe checks and 320px/200% text reflow. Physical clipboard
+transfer and spoken screen-reader behavior remain unverified.
