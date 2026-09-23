@@ -1,0 +1,53 @@
+{
+  "checked_at": "2026-09-23T06:59:04.617Z",
+  "browser": "151.0.7922.34",
+  "page_origin": "https://reality2.ai",
+  "harness": "Locally fulfilled test page at the app origin; real cross-origin AT requests through Chromium.",
+  "credential_recorded": false,
+  "public_live_enabled": false,
+  "feeds": {
+    "predictions": {
+      "available": true,
+      "updated": 1790146742,
+      "records": 1997
+    },
+    "alerts": {
+      "available": true,
+      "updated": 1790146744,
+      "records": 182
+    },
+    "vehicles": {
+      "available": true,
+      "updated": 1790146744,
+      "records": 1594
+    }
+  },
+  "matching": {
+    "prediction_trips": {
+      "verified": 1997
+    },
+    "prediction_stops": {
+      "predicted": 494,
+      "stale-trip": 143,
+      "unmatched-stop": 6,
+      "no-stop-array": 6,
+      "no-departure": 17
+    },
+    "sequence_resolution": {
+      "terminal-arrival-only": 1273,
+      "stop-not-on-downloaded-trip": 4,
+      "unmatched-source-sequence": 54,
+      "repeated-stop-resolved": 4
+    },
+    "vehicles": {
+      "trip-not-in-download": 713,
+      "matched": 870,
+      "stale-position": 7,
+      "unmatched": 4
+    },
+    "stop_update_shape": {
+      "type": "undefined",
+      "keys": []
+    }
+  }
+}

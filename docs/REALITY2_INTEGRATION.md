@@ -155,3 +155,23 @@ alerts for another agency or the opposite direction, including direction zero,
 and leave missing identities unmatched. Public version 35 and its live connection
 remain unchanged; this is preparation for a future data/app release, not TG
 credential storage or a deployed live service.
+
+### Real-provider stop-sequence verification
+
+The [sequence-aware browser audit](evidence/at-direct-sequences.json) reads all
+three AT feeds directly from Chromium at a locally fulfilled page using the public
+app's origin. Boarding identities come from the downloaded timetable, not from
+copying the live event's sequence into the expected identity. In this snapshot,
+494 predictions matched, including four repeated-stop visits that would remain
+ambiguous without original sequences. Another 143 had stale trip measurements.
+
+The audit excludes 1,273 terminal-arrival-only records from departure checks. It
+also reports 54 source-sequence mismatches and four stops not on the downloaded
+trip; these are not treated as predictions. Six candidate visits were rejected by
+the full matcher. These are snapshot counts, not guaranteed network coverage.
+Vehicle matching accepted 870 positions. Only aggregates are saved; no credential,
+raw feed, vehicle coordinates or personal journey is recorded.
+
+Run `scripts/check_at_browser.mjs` explicitly with a local AT credential to repeat
+this verification; it consumes provider requests and is excluded from routine
+tests. Public live access and trust-group credential integration remain pending.
