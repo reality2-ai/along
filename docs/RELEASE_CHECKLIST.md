@@ -25,7 +25,7 @@ this audit. Later public-hosting work supplements that brief.
 
 | 10. English / Te reo Māori | Deferred by user instruction; version 31 removes the selector and ignores earlier saved Māori choices | Re-enable only with renewed direction; draft review remains incomplete |
 
-| 11. Contextual repository feedback | [Local draft/handoff/receipt foundation](FEEDBACK.md); three fixture-based unit checks pass; English contextual dialog deployed in v31 | Interactive GitHub sign-in/submission check, physical device checks and next-round outcome tracking |
+| 11. Contextual repository feedback | [Draft/handoff/receipt evidence](FEEDBACK.md); fixture checks and real repository acceptance/anonymous receipt; preview 3801 check starts with an actual UI draft and retains it/its receipt offline | Signed-in GitHub composer/submission and physical assistive-technology checks; real user feedback still needs next-round triage |
 
 ## Evidence and reproduction
 
@@ -802,3 +802,14 @@ its exact manifest matches the recorded qualification. The published test copy
 includes runtime provenance, notices, installation guidance and the device-check
 guide. This publication enables physical testing; it does not establish that those
 observations have passed or that the full project goal is complete.
+
+### Preview feedback receipt on the published origin
+
+[Recorded check](evidence/feedback-delivery-preview-3801.json) starts with a typed
+draft in preview 3801, recovers it offline, reviews the exact body and opens the
+real GitHub sign-in handoff. GitHub CLI submits that body; the browser anonymously
+verifies the resulting issue after an offline retry and retains the existing
+receipt on another offline reload. [Issue 2](https://github.com/reality2-ai/along/issues/2)
+is explicitly synthetic and closed as completed. No open user reports were present
+when checked after this run. The signed-in composer and final browser submission
+remain untested; the device guide now includes that optional human check.

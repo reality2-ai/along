@@ -1,0 +1,20 @@
+{
+  "checkedAt": "2026-09-23T22:54:46.434Z",
+  "app": "https://reality2.ai/along/preview/public/",
+  "verified": true,
+  "interactiveGitHubComposerTested": false,
+  "appVersion": "3801",
+  "storageKey": "along-device-preview-feedback-v1",
+  "issue": "https://github.com/reality2-ai/along/issues/2",
+  "reportId": "f5d062a4-933e-4463-a152-279a97e18b34",
+  "draft": "Typed and reviewed through the actual app UI; recovered after offline reload",
+  "submission": "Authenticated GitHub CLI with exact UI-reviewed body",
+  "handoff": "Actual anonymous GitHub navigation",
+  "handoffDestination": "/login",
+  "receipt": "Browser UI with anonymous GitHub API request",
+  "offlineReceiptRetry": true,
+  "existingIssueReopenedOffline": true,
+  "noAutomaticFormContext": true,
+  "anonymousReceiptRequests": true,
+  "testIssueClosed": true
+}

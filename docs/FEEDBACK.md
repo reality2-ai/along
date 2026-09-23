@@ -1,7 +1,8 @@
 # Contextual feedback to the Along repository
 
 Goal 11 is in progress. Version 37 includes the contextual feedback dialog first
-released in version 31.
+released in version 31. Device preview 3801 uses the same interface with separate
+draft storage and a newly recorded live-repository check below.
 `public/feedback.js` implements local draft storage, reviewable issue bodies,
 GitHub handoff URLs and explicit receipt verification. Both feedback modules are included in the offline shell.
 
@@ -72,6 +73,28 @@ Five feedback browser scenarios pass, including blocked-storage disclosure,
 retaining the in-memory draft, nested detail Back/focus, and ignoring a late
 receipt after a new draft begins. New drafts clear the previous issue URL and
 retry confirmation. Physical assistive-technology checks remain outstanding.
+
+## Published preview: UI-created draft and actual repository receipt
+
+[Preview evidence](evidence/feedback-delivery-preview-3801.json) records
+[synthetic issue 2](https://github.com/reality2-ai/along/issues/2), now closed.
+The test typed the report through the published preview's feedback controls,
+recovered it after offline reload, and reviewed the generated body without sharing
+context or an unrelated form entry. The real GitHub handoff opened `/login`; no
+GitHub credentials were placed in the browser or app.
+
+Authenticated GitHub CLI submitted exactly the body reviewed in the app. The app
+then retained its draft during an offline receipt attempt, verified the actual
+issue through an anonymous API request, and reopened the existing receipt after
+another offline reload. The test confirms use of the preview's separate feedback
+storage, preserved report ID and no offer of a new submission after receipt.
+It closes the synthetic issue and records that outcome; it is not commuter feedback.
+
+This strengthens the earlier preloaded-draft check, but still does not exercise
+the signed-in GitHub composer or its **Submit new issue** button. The manual
+[preview device guide](PREVIEW_DEVICE_CHECK.md#optional-github-submission-check)
+covers that remaining boundary. Do not present this CLI-assisted result as an
+end-to-end browser submission test.
 
 Version 31 follows the user’s decision to defer Māori: feedback is English-only.
 

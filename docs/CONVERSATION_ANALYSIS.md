@@ -1132,3 +1132,12 @@ and the still-needed physical observations. Keeping the regular app unchanged
 lets the human test the new device experience without being asked to write code
 or replace a working installation. Publishing a test preview remains a step toward
 the full goal, not a claim that automatic reconnection or the TG lifecycle is finished.
+
+Feedback verification next moved from a preloaded draft to one typed and reviewed
+through the published preview. It survived offline reopening, reached the real
+GitHub sign-in handoff, and was accepted by the repository and verified anonymously
+after CLI-assisted submission. The existing receipt then survived another offline
+reopen. The record explicitly retains the missing boundary: the authenticated
+composer's final submission was not exercised. This is an example of improving
+evidence without upgrading a partial result into a broader claim. The synthetic
+issue was closed and distinguished from commuter feedback needing product triage.

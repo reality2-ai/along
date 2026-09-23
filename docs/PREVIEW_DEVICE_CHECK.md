@@ -93,3 +93,18 @@ Report the version and browser on both devices, which checks passed, and the las
 screen/action for any failure. These observations qualify the actual devices;
 automated Chromium tests do not establish physical installation or spoken-reader
 acceptance.
+
+## Optional GitHub submission check
+
+If you use a GitHub account, choose **Give feedback on this screen** and type a
+short, non-private observation. You can label it a device-check report. Leave
+optional context unchecked unless you want to share the displayed version and
+general screen name. Review the exact text, open GitHub, sign in there if needed,
+and choose **Submit new issue** once. Never enter GitHub credentials into Along.
+
+Copy the resulting issue URL back into Along's feedback dialog and choose its
+receipt check. It should confirm the report is in the repository. Reopen the
+dialog and check that it points to the existing issue instead of inviting another
+submission. If you already submitted but cannot verify receipt, keep the draft
+and issue URL; do not submit again merely because verification failed. Mark this
+check **not tested** if you do not use GitHub or do not want to post publicly.
