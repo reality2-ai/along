@@ -20,17 +20,26 @@ Live predictions are optional and require a separately configured backend.
 ## See Along in use
 
 Actual app screens using public example addresses and the preserved Auckland
-transport timetable. The route map shows downloaded AT geometry, not live vehicle
-tracking. Tap a screenshot to view it at full size.
+transport timetable. The route map shows downloaded AT geometry over an optional
+online OpenStreetMap background, not live vehicle tracking. Tap a screenshot to view it at full size.
 
-| Start with your destination | Choose a mixed-mode journey |
-| --- | --- |
-| [<img src="docs/screenshots/01-start.png" width="280" alt="Along asks for a destination, with nearby departures and route exploration as alternatives.">](docs/screenshots/01-start.png) | [<img src="docs/screenshots/02-journey.png" width="280" alt="A scheduled Broadway to Devonport journey shows walking, train and ferry connections with one clear Use this journey action.">](docs/screenshots/02-journey.png) |
-| Follow one step at a time | Explore a route's path and stops |
-| [<img src="docs/screenshots/03-follow.png" width="280" alt="The journey view shows the current walking step, Next step and an expandable whole itinerary.">](docs/screenshots/03-follow.png) | [<img src="docs/screenshots/04-route-map.png" width="280" alt="Route 70 details show its published path and stop markers, with scheduled-service choices and stop-name search below.">](docs/screenshots/04-route-map.png) |
+<table width="100%">
+<tr><th width="50%">Start with your destination</th><th width="50%">Choose a mixed-mode journey</th></tr>
+<tr>
+<td width="50%"><a href="docs/screenshots/01-start.png"><img src="docs/screenshots/01-start.png" width="100%" alt="Along identifies itself as a course exercise and asks for a destination."></a></td>
+<td width="50%"><a href="docs/screenshots/02-journey.png"><img src="docs/screenshots/02-journey.png" width="100%" alt="A scheduled Broadway to Devonport journey shows walking, train and ferry connections with one clear Use this journey action."></a></td>
+</tr>
+<tr><th>Follow one step at a time</th><th>Explore a route's path and stops</th></tr>
+<tr>
+<td width="50%"><a href="docs/screenshots/03-follow.png"><img src="docs/screenshots/03-follow.png" width="100%" alt="The journey view shows the current walking step and Next step action."></a></td>
+<td width="50%"><a href="docs/screenshots/04-route-map.png"><img src="docs/screenshots/04-route-map.png" width="100%" alt="Route 70's published path and stop markers over a street-map background, with scheduled-service choices below."></a></td>
+</tr>
+</table>
 
 Screenshots are reproducible with `node scripts/capture_ux.mjs` against a running
-copy; set `CHROMIUM_PATH` if needed. The **About Along** links in the footer and Settings open
+copy; set `CHROMIUM_PATH` if needed. All captures use the same viewport and pixel
+dimensions. `CAPTURE_STREET_MAP=1` requests a street background for that one
+presentation capture; automated tests do not fetch public street tiles. The **About Along** links in the footer and Settings open
 this repository for source, installation help and the course material.
 
 ## What you can do
