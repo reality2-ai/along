@@ -672,7 +672,7 @@ axe. The real-peer credential test also mounts this view with `openATPolicySessi
 and clicks its button: real saved identities, authenticated owner policy replies
 and encrypted synthetic-key access precede mocked AT predictions. This joins the
 UI and credential checks, but does not claim a real provider response or public
-app integration. The journey component below now shares that lifecycle; vehicle-screen wiring remains work.
+app integration. The journey component below now shares that lifecycle; the vehicle component below now covers the corresponding map lifecycle.
 
 
 ### Remaining-journey updates
@@ -692,3 +692,24 @@ completed-leg exclusion, zoom and axe checks. The real-peer test also clicks the
 journey panel through `openATPolicySession`, verifying both provider reads follow
 authenticated owner checks. Credentials and provider feeds remain synthetic;
 these components are not yet mounted in the public journey app.
+
+
+### Selected-service vehicle position
+
+`vehicle-live-view.mjs` owns one reported-position marker on the enclosing
+Leaflet map. It snapshots the selected dated trip and uses the existing strict
+vehicle matcher; a route number alone never selects a vehicle. Its explicit check
+passes only the feed kind to the client. The panel labels the report time and,
+when verified stop coordinates are supplied, distance from the nearest stop in a
+straight line. It does not describe the position as an arrival prediction.
+
+Expiry, another check, disposal and unavailable results remove only that marker.
+The scheduled route remains. No basemap tiles, location permission or periodic
+requests are introduced. Dispose the view before removing its enclosing map.
+
+`vehicle-live-view.test.mjs` checks the actual Leaflet layers with synthetic feeds:
+matching position, different service date, stale GPS timestamp, duplicate matches,
+expiry, delayed response after navigation, narrow zoom and axe. The real-peer test
+also clicks this view and checks an actual marker after authenticated owner policy
+exchange and encrypted synthetic-key access. Provider data remains mocked; the
+public route screen still needs this experimental controller/view wired in.

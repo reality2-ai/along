@@ -52,7 +52,10 @@ check follows visible activation through actual authenticated policy checks to
 mocked provider data; scheduled times remain separate and old results expire.
 A remaining-journey panel now uses the same lifecycle with verified transit legs
 and timed intermediate calls. Mixed-mode UI tests and an authenticated peer
-integration test pass; neither panel is mounted in the public app yet.
+integration test pass. A selected-service vehicle panel now places only a verified
+position on an actual Leaflet map; expiry and navigation remove its marker while
+preserving the scheduled route. Its map and authenticated-controller tests pass
+with synthetic feeds. These panels are not mounted in the public app yet.
 Manual transfer is currently cumbersome, and the one-minute invitation lifetime
 needs real usability assessment. Public deployment, simpler transfer, group epoch
 updates/removal, saved-journey sync and physical-device validation remain work.
