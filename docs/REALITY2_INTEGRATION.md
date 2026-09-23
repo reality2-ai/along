@@ -83,6 +83,29 @@ normative wire formats or establish Notekeeper interoperability. Core ceremony
 authorization, issuer custody, epoch freshness and atomic installation remain
 required before these bytes can authorize application access.
 
+### Hosted captured-execution diagnosis
+
+[The focused hosted probe](https://github.com/reality2-ai/r2-standard/actions/runs/35846766655)
+failed before Rust verification: both a captured script and a captured ELF were
+readable at their mounted paths but refused direct execution with `ENOENT`.
+Invoking the script through `/bin/sh` worked; the probe still correctly failed.
+The Ubuntu package used by that run lacks the upstream `mediate_deleted` profile
+flags. The [published correction](https://github.com/reality2-ai/r2-standard/commit/9ad6286f) applies [AppArmor MR 1272](https://gitlab.com/apparmor/apparmor/-/merge_requests/1272)
+to those flags only, preserving the packaged ABI, access rules and child
+capability denial. This is a tested policy transformation, not yet a verified
+hosted repair. The isolation and captured-execution checks remain mandatory.
+
+### Core ceremony adapter work
+
+The current core `Ceremony::request` requires an opaque `Minted` value, while
+`Minted::from_mint` is crate-private and the production creation paths are inside
+core boot. A browser adapter must obtain that proof through an actual platform
+key-generation path; exposing a constructor accepting arbitrary public bytes
+would defeat the boundary. The next adapter work must provide a usable keystore
+mint path, retain candidate key custody, then drive the actual ceremony and its
+second OPEN check immediately before atomic installation. The existing payload
+validator does not replace any of these checks.
+
 ### Notekeeper reference inspection
 
 At the user's request, inspected `reality2-ai/r2-notekeeper` local revision
