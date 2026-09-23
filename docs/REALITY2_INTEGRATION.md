@@ -21,7 +21,9 @@ copy/paste. Independent decoding verifies generated images, while camera tests
 use mocks. Physical QR transfer remains unverified.
 A separate static device lab now provides first-use setup, explicit saved-state
 restore and both roles. Its generated-bundle test completes pairing through the
-UI and restores membership after reload. It is not yet published; runtime notices
+UI and restores membership after reload. Explicit lab-only reset now waits for
+confirmed database deletion and preserves Along’s journey preferences and offline
+database in the browser test. It does not revoke other devices. It is not yet published; runtime notices
 and physical-device testing remain necessary. The
 [runtime notice audit](PAIRING_LICENSE_AUDIT.md) records missing local R2 texts
 and a conflict with an older explicit PolyForm Noncommercial change. The owner’s
@@ -52,7 +54,7 @@ has also passed; the draft remains unmerged.
 | Area | Evidence now available | What remains before an end-user claim |
 | --- | --- | --- |
 | Direct AT access | Authenticated browser reads and strict timetable matching | Connect each user's authorized credential to contextual UI; verify actual installed devices |
-| Local installation | Core ceremony, candidate-generated key and atomic installation; browser software issuer/traffic-key persistence and restore; complete experimental pairing flow through visible controls | Public setup integration, practical cross-device transfer, reset, epoch lifecycle and physical-device checks |
+| Local installation | Core ceremony, candidate-generated key and atomic installation; browser software issuer/traffic-key persistence and restore; complete experimental pairing flow through visible controls | Public setup integration, practical cross-device transfer, production reset/recovery, epoch lifecycle and physical-device checks |
 | Membership | Core certificates, local epoch policy, signed revocations; restored signing refuses revoked identity | Freshness after partition, epoch advancement and removal propagation |
 | AT credential custody | Encrypted IndexedDB storage; owner grant/removal and key-replacement review; recipient policy check before provider I/O; browser save/restore/cancellation checks | Public UI integration, complete device-sharing flow, owner availability and installed-device provider verification |
 | Credential transport | Authenticated WebRTC delivery, explicit recipient consent, atomic encrypted installation, signed receipts and recovery over a fresh session | Complete device selection/signaling, epoch catch-up and physical-device reachability; initial trust/comparison and signaling remain harness inputs |

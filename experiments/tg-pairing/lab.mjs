@@ -6,10 +6,21 @@ import {showLocalSetup} from './setup-view.mjs';
 import {showPairingFlow} from './pairing-flow.mjs';
 import {loadLocalPersona} from './local-persona.mjs';
 import {loadSoftwareIssuer} from './software-persona.mjs';
+import {LAB_DATABASE, showLabReset} from './lab-reset.mjs';
 const container = document.querySelector('#lab');
 let store, view, generation = 0, closed = false;
 const element = (tag, text) => { const node = document.createElement(tag); node.textContent = text; return node; };
 const clear = () => { generation++; view?.dispose(); view = undefined; container.replaceChildren(); return generation; };
+const reset = () => {
+  const selected = clear();
+  view = showLabReset(container, {store, focus: true, onBack: showHome, onRemoved: async () => {
+    try {
+      const opened = await openBrowserStorage(LAB_DATABASE);
+      if (closed || selected !== generation) { opened.close(); return; }
+      store = opened; await showHome();
+    } catch { if (!closed && selected === generation) container.replaceChildren(element('p', 'The lab could not reopen storage. Reload this page to try again.')); }
+  }});
+};
 const showHome = async () => {
   const selected = clear();
   const panel = element('section', ''); panel.className = 'pairing-comparison';
@@ -60,13 +71,14 @@ const showHome = async () => {
         }
         button('Back', showHome);
       } catch {
-        if (!closed && generation === restoringGeneration) { clear(); const note = element('p', 'Saved device data could not be restored. It has not been replaced. Recovery or reset needs separate development.'); note.setAttribute('role', 'status'); container.append(note); }
+        if (!closed && generation === restoringGeneration) { clear(); const note = element('p', 'Saved device data could not be restored. It has not been replaced. Recovery needs separate development. Use the lab’s remove option only if you intend to lose this test identity.'); note.setAttribute('role', 'status'); container.append(note); const back = element('button', 'Back'); back.type = 'button'; back.addEventListener('click', showHome); container.append(back); }
       }
     }, true);
+    action('Remove this test device data…', reset);
   } catch { if (!closed && selected === generation) status.textContent = 'Device storage could not be read. Nothing has been replaced.'; }
 };
 try {
   if (!isSecureContext) throw new Error('Secure origin required');
-  await wasm.default(); store = await openBrowserStorage('along-pairing-lab-v1'); await showHome();
+  await wasm.default(); store = await openBrowserStorage(LAB_DATABASE); await showHome();
 } catch { container.replaceChildren(element('p', 'This test could not start. Use HTTPS or localhost with browser storage enabled.')); }
 window.addEventListener('pagehide', () => { closed = true; clear(); store?.close(); });

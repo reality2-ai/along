@@ -18,8 +18,8 @@ supplied with the URL. A camera is optional: copy/paste remains available.
 
 Do not clear the whole site's storage to restart this test; that could remove
 Along's saved journeys as well. If either lab already reports membership in a
-group, restore that state and report it instead of trying to enroll again. Reset
-and recovery navigation are not finished in this lab.
+group, restore that state and report it instead of trying to enroll again.
+Recovery navigation is not finished in this lab.
 
 ## Pair the devices
 
@@ -65,6 +65,19 @@ Accessibility → TalkBack (menu labels may vary; see
 [Google’s TalkBack guide](https://support.google.com/accessibility/answer/6007100?hl=en)), then try field labels, status
 announcements, review, Back and code comparison. Report TalkBack as **not tested**
 if you only used ordinary touch interaction.
+
+## Restart only the lab test
+
+After recording results, return to the lab home screen and choose **Remove this
+test device data…** only if you want to discard this test identity. **Keep this
+test device** backs out without removal. Read the confirmation, close other lab
+tabs, then confirm removal. If another tab holds storage open, the lab waits;
+it does not claim success. Once started, removal cannot be cancelled.
+
+After **Test device data removed**, choose **Return to setup**. Along’s saved
+journeys and offline timetable should remain available. Other devices retain
+their data: this is local deletion, not remote membership or AT-key revocation.
+Do not use it as recovery for an interrupted installation you want to preserve.
 
 ## Report results
 

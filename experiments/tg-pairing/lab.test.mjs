@@ -81,5 +81,53 @@ try {
   await Promise.all(pages.map(page => page.reload()));
   await Promise.all(pages.map(page => page.getByRole('button', {name: 'Restore saved test device', exact: true}).click()));
   await candidate.getByText('This device has joined a group and received installation confirmation.', {exact: true}).waitFor();
+  await candidate.getByRole('button', {name: 'Back', exact: true}).click();
+  await candidate.getByRole('button', {name: 'Remove this test device data…', exact: true}).click();
+  assert.deepEqual((await new AxeBuilder({page: candidate}).analyze()).violations.map(v => v.id), []);
+  await candidate.getByRole('button', {name: 'Keep this test device', exact: true}).click();
+  await candidate.getByRole('button', {name: 'Restore saved test device', exact: true}).waitFor();
+  await candidate.evaluate(async () => {
+    localStorage.setItem('along-journeys-v1', 'journey sentinel');
+    await new Promise((resolve, reject) => {
+      const request = indexedDB.open('along-offline', 1);
+      request.onupgradeneeded = () => request.result.createObjectStore('timetable');
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => {
+        const db = request.result, tx = db.transaction('timetable', 'readwrite');
+        tx.objectStore('timetable').put('schedule sentinel', 'test');
+        tx.oncomplete = () => { db.close(); resolve(); };
+      };
+    });
+    window.blocker = await new Promise((resolve, reject) => {
+      const request = indexedDB.open('r2-browser:along-pairing-lab-v1');
+      request.onsuccess = () => resolve(request.result); request.onerror = () => reject(request.error);
+    });
+  });
+  await candidate.getByRole('button', {name: 'Remove this test device data…', exact: true}).click();
+  await candidate.evaluate(() => [...document.querySelectorAll('button')].find(button => button.textContent === 'Remove this test device data').click());
+  assert.equal(await candidate.getByRole('heading', {name: 'Remove this test device?', exact: true}).count(), 1);
+  assert.equal(await candidate.getByRole('status').textContent(), '');
+  await candidate.getByRole('button', {name: 'Remove this test device data', exact: true}).focus();
+  await candidate.keyboard.press('Enter');
+  await candidate.getByRole('status').filter({hasText: 'Removal is waiting'}).waitFor();
+  assert.equal(await candidate.getByRole('button', {name: 'Keep this test device', exact: true}).count(), 0);
+  assert.equal(await candidate.getByRole('button', {name: 'Return to setup', exact: true}).count(), 0);
+  await candidate.evaluate(() => blocker.close());
+  await candidate.getByRole('heading', {name: 'Test device data removed', exact: true}).waitFor();
+  assert.equal(await candidate.evaluate(() => document.activeElement.textContent), 'Return to setup');
+  assert.equal(await candidate.evaluate(async () => {
+    if (localStorage.getItem('along-journeys-v1') !== 'journey sentinel') return false;
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open('along-offline', 1);
+      request.onsuccess = () => {
+        const db = request.result, read = db.transaction('timetable').objectStore('timetable').get('test');
+        read.onsuccess = () => { db.close(); resolve(read.result === 'schedule sentinel'); };
+      }; request.onerror = () => reject(request.error);
+    });
+  }), true);
+  await candidate.getByRole('button', {name: 'Return to setup', exact: true}).click();
+  await candidate.getByRole('button', {name: 'Set up this test device', exact: true}).waitFor();
+  assert.equal(await owner.getByRole('button', {name: 'Invite my other device', exact: true}).count(), 1);
+  console.log('PASS: explicit lab reset, cancel, synthetic-click refusal, blocked deletion and completed removal; Along journey preferences and offline database preserved.');
   console.log('PASS: standalone static lab setup, pairing and reload/restore; both complete pairing flows exchange public messages through fields, compare codes, enroll over real WebRTC, acknowledge installation and restore encrypted traffic keys. Harness transfers text and confirms codes; no physical-device usability claim.');
 } finally { await browser?.close(); await new Promise(resolve => server.close(resolve)); }

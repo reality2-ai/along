@@ -708,3 +708,19 @@ releases the result. It verifies retained membership and recovery wording.
 acknowledged outcome. These are actual commits, not fabricated membership records.
 Comparison cancellation and the rebuilt standalone setup/pair/reload flow still
 pass. No physical transport-loss test is claimed.
+
+
+### Explicit lab-only reset
+
+The home screen offers removal of this browser’s test identity with a separate
+confirmation and a prominent keep/back action. `lab-reset.mjs` targets only
+`r2-browser:along-pairing-lab-v1`; it does not enumerate or clear origin storage.
+Removal requires a trusted activation, waits through an IndexedDB blocked event,
+and offers fresh setup only after deletion succeeds. Closing a view cannot cancel
+an already-issued deletion; the confirmation explains this before starting.
+
+The built-lab browser test checks cancellation, synthetic-click refusal, a real
+blocking database connection, successful removal, fresh setup, and preservation
+of Along local preferences and a separate offline database. The other device’s
+identity remains usable. This is local test cleanup, not distributed revocation,
+provider credential revocation, secure erasure or interrupted-pairing recovery.
