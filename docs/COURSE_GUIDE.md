@@ -254,3 +254,47 @@ Assessment uses the existing rubric. Strong work preserves the independence
 requirement, identifies missing runtime capabilities without inventing an API,
 and distinguishes the observed snapshot from a coverage or security guarantee.
 No credit is added for deploying a proxy that violates the stated constraint.
+
+## Additional exercise: test evidence without inflating the claim
+
+Allow 30–45 minutes. Use the recorded [runtime evidence](REALITY2_INTEGRATION.md)
+and the analysis section “Trust is a lifecycle, not a storage setting”. This is
+an evidence-review exercise; it requires neither a real AT key nor access to an
+unpublished runtime branch. If code or a test artifact is unavailable, record
+that limit instead of asking the assistant to invent a successful run.
+
+Ask the assistant to help construct a table with four columns: user outcome,
+observation, what that observation establishes, and what remains untested.
+Include these cases:
+
+- A stored identity survives browser restart, but the browser has not demonstrated
+  hardware-rooted key protection.
+- A failure during the second database write rolls back the first, but no physical
+  power-loss test has been performed.
+- Two isolated browser contexts exchange messages after their asset server stops,
+  but the harness copies their connection descriptions and both run on one computer.
+- A correct signed invitation is refused because its signer differs from its named
+  issuer; signature validity alone was insufficient.
+- A full verification command succeeds while the source changes during the run;
+  the result cannot establish that one final source snapshot passed every check.
+
+Then choose one counterexample in ordinary language and ask the assistant to
+explain the minimum meaningful experiment. Examples include a double tap on
+Accept, closing a device during enrollment, receiving a revocation during a
+pending operation, or returning online with an old AT key. If the instructor has
+provided the runtime sources, the assistant may implement and run a synthetic
+check in an isolated workspace. Learners do not write test code, copy credentials,
+or configure real trust groups for this exercise.
+
+Deliverable: the evidence table, one proposed or observed counterexample, and a
+short public status paragraph. State whether the result was recorded evidence,
+a proposed experiment or a test actually run in class. The status paragraph must
+preserve both parts of the requirement: optional contextual live information and
+independence from an Along-operated central backend. It must also say whether
+end-user enrollment, removal and credential rotation are available.
+
+Assessment: strong work identifies the exact boundary exercised, preserves human
+consent and the no-human-coding rule, and names missing evidence without treating
+it as either success or proof of impossibility. A correct “not established” earns
+more credit than an unsupported security guarantee. Relate the interpretation to
+at least two conversation codes and explain one plausible alternative reading.

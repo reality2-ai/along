@@ -276,12 +276,14 @@ from AT or run an importer. All open tabs should be reloaded after an app update
 The public app currently uses scheduled data. The intended live connection goes
 directly to Auckland Transport, without an Along-operated central backend.
 Each person would use their own AT subscription key, with Reality2 trust-group
-integration proposed for managing access across their devices. No shared key will
-be included in the public app.
+integration under development for managing access across their devices. No shared
+key will be included in the public app.
 
-A direct AT cross-origin request has succeeded, but the browser connection and
-trust-group credential integration are not yet implemented. The repository also
-contains tested experimental live matching and proxy code; that proxy is not the
+Authenticated browser reads of the AT feeds and matching against the downloaded
+timetable have been tested. The complete trust-group credential connection and
+its public interface are unfinished, so live data remains disabled in the public
+app. See the [runtime integration evidence](docs/REALITY2_INTEGRATION.md).
+The repository also contains tested experimental live matching and proxy code; that proxy is not the
 planned public architecture. See [hosting and live-data status](docs/HOSTING.md).
 
 ## Limits and accessibility

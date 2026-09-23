@@ -10,7 +10,8 @@ usability research or a claim that the design is universally usable.
 The corpus is the available design conversation, reviewed on 23 September 2026,
 including the requests for public hosting, installation guidance, privacy, course
 status, consistent screenshots with a real map, and this README summary of the
-original drivers. This is a synthesis of the available conversation, not a
+original drivers, followed by the contextual live-data, independent hosting and
+explicitly approved browser trust-group development decisions. This is a synthesis of the available conversation, not a
 complete verbatim transcript.
 Requirement-bearing user messages are the primary
 evidence. Assistant proposals, implementation decisions and test results provide
@@ -81,6 +82,9 @@ publication does not establish readiness for every person or journey.
 | C25: representative presentation | UX images; equal heights and full-width pairs; “map one showing an actual map” | Readers need a coherent, concrete preview, with real behaviour and its conditions represented honestly. |
 | C26: preserve the design rationale | add “core drivers” repeatedly given and link/update this analysis | Documentation should retain the user's priorities as implementation and distribution expand. |
 | C27: human direction without human coding | “without any actual coding by the human (ie me)” | Implementation belongs to the AI; human participation centres on intention, judgment and observation. |
+| C28: operational autonomy | “independent of any central server aside from that we are getting info from” | Independence extends from offline planning to ownership of the live-data connection. |
+| C29: contextual enhancement | “the online information must be completely contextual” | Connectivity should improve the current decision without taking over the task. |
+| C30: explicit scope expansion | “Develop the missing TG capability” | A proposed integration becomes authorized runtime development; approval does not establish that the capability exists. |
 
 ## Central organising idea: independence with control
 
@@ -705,8 +709,9 @@ need no central server except the original information provider. The earlier
 implementation protected the key but introduced an operational dependency that
 conflicted with the intended autonomy. A direct AT preflight and authenticated
 request succeeded, changing the next design question from hosting to personal
-credential handling. Browser integration remains unverified, and the proposed
-personal-key option awaits agreement. This illustrates why satisfying a security
+credential handling. Subsequent authenticated browser checks verified access to
+the feeds, and the user explicitly approved developing the missing browser TG
+capability. The complete credential experience remains unfinished. This illustrates why satisfying a security
 constraint is not sufficient evidence of alignment with the product's core drivers.
 
 ### Provider evidence changes implementation assumptions
@@ -719,3 +724,45 @@ boundary, with strict identity matching retained. The subsequent snapshot matche
 unmatched outcomes. For the course, this distinguishes three separate claims:
 network access works, provider data reaches matching correctly, and the finished
 credential/UI experience works. Evidence for one is not evidence for all three.
+
+### Trust is a lifecycle, not a storage setting
+
+**Observation:** the user proposed that each person obtain their own AT key and
+keep it in their trust group, then chose to develop the missing TG capability.
+This extends C20, C23 and C28: the same device independence sought for journeys
+also applies to authority over online access. C30 records the explicit scope
+change; repeated requests to continue do not constitute separate requirements.
+
+**Interpretation:** “safe in my TG” includes what happens when a browser restarts,
+an invitation is declined, two tabs act at once, a device leaves the group, or a
+provider key is replaced. Storing a nonextractable signing key addresses one
+part of that lifecycle. It does not establish secure credential sharing, complete
+enrollment, or hardware-rooted protection. A competing interpretation would treat
+TG as merely a convenient login label; the user's emphasis on local ownership
+and no central backend makes that interpretation insufficient for this project.
+
+**Implementation response and its limits:** the development branch has browser
+checks for durable identity, atomic records, signed membership evidence,
+revocation, invitation use and connection-bound comparison. Tests use synthetic
+material; direct-channel tests stop their asset server before exchanging messages.
+These observations support specific mechanisms, not a finished trusted-device
+experience. Signaling in those tests comes from the harness. Physical reachability,
+accessible person confirmation, initial trust, credential custody and rotation
+still need implementation or verification. The public app remains offline-first
+and does not expose these unfinished mechanisms as live AT support.
+
+**Reflexive check:** the AI both built the mechanisms and described their evidence.
+That dual role can turn a sequence of successful component tests into an inflated
+completion claim. In this iteration, a full runtime gate passed after source had
+changed during its run. A fresh run against a recorded, unchanged snapshot was
+therefore required. Likewise, a linked-worktree hook-path assumption was diagnosed
+and a supported full clone used; the checker was not bypassed. These are evidence
+about the development process, not additional user quotations or independent
+usability observations.
+
+**Course lesson:** preserve the original outcome while exposing the steps still
+between a demonstration and it. Ask what an attacker, a second tab, a restart or
+a mistaken user action could change. Also ask what the test never exercised.
+Neither the number of passing tests nor architectural complexity answers whether
+a commuter can safely connect, remove and recover their actual devices. The
+human still directs those acceptance criteria without being asked to write code.

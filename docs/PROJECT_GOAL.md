@@ -46,7 +46,10 @@ Later refinements include contextual route/stop exploration and maps, explicit
 local-data and portal-independence explanations, browser/platform installation
 instructions, visible educational/use-at-own-risk notices, real UX screenshots,
 and a README account of the recurring design drivers. Trusted-device sync through
-Reality2 remains a [proposal](R2_SYNC_DESIGN.md), not an implemented feature.
+Reality2 is now approved implementation work. Browser runtime components are
+being developed and tested, but trusted-device sync and credential access are
+not available in the public app. See the [original sync design](R2_SYNC_DESIGN.md)
+and [current integration evidence](REALITY2_INTEGRATION.md).
 
 Use the [release evidence and remaining gates](RELEASE_CHECKLIST.md) to audit each
 numbered requirement against implementation, automated checks and user device
