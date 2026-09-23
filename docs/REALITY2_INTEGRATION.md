@@ -365,3 +365,15 @@ comparison and consent, and recheck membership before installation. Full
 verification is still running through repository tools; another latest-snapshot
 pass remains necessary after the new Rust boundary changes. No open Along GitHub
 feedback issues were present at this review.
+
+The member-side browser invitation controller now owns nonce issuance, a bounded
+monotonic lifetime, single-use/concurrent verification and cancellation on
+membership changes. Its authorization path restores the persisted local persona
+and rechecks its revision before returning the core result. Real browser tests
+pass for one concurrent success, retry after forgery, replay, expiry and learned
+revocation. Unused invalidated WASM results are freed.
+
+This helper requires an established local membership; it is not the initial trust
+bootstrap for an OPEN candidate. Session comparison, person consent and the
+remaining ceremony/install integration are still outstanding. The full runtime
+run remains active through its board checks, with a latest-snapshot rerun owed.
