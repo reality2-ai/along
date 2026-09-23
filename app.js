@@ -1,3 +1,6 @@
+import {departurePrediction} from './live-predictions.js';
+import {createLiveClient} from './live-client.js';
+import {liveBaseURL} from './live-config.js';
 import {setupFeedback} from './feedback-ui.js';
 import {createLocalizer, setLocalizedText, errorPhraseKey} from './i18n.js';
 import {setupUpdates} from './updates.js';
@@ -5,6 +8,9 @@ import {aucklandNow} from './planner.js';
 import {readPreferences,writePreferences,recordJourney,suggestions,journeyRoutes,sameRoutes} from './preferences.js';
 const $=id=>document.getElementById(id);
 const language=createLocalizer({storage:null});
+const liveClient=createLiveClient({baseURL:liveBaseURL,pageURL:import.meta.url});
+$('nearby-live').hidden=!liveClient.configured;
+$('nearby-live-help').hidden=!liveClient.configured;
 const textBindings=new Map();
 function showError(id,error){const key=errorPhraseKey(error);if(key){translated(id,key);return;}textBindings.delete(id);$(id).lang='en-NZ';$(id).textContent=error.message;}
 const translated=(id,key,values)=>{const phrase=setLocalizedText($(id),language,key,typeof values==='function'?values():values);textBindings.set(id,{key,values,text:phrase.text});return phrase;};
@@ -105,6 +111,7 @@ function applyLanguage(){
 let navDepth=0;
 function showScreen(screen,{focus=true,historyEntry=true}={}){
   if(screen!=='options'&&state.screen==='options'){state.searchSequence++;$('find').disabled=false;}
+  if(state.screen==='nearby' && screen!=='nearby'){state.nearbySequence++;liveClient.cancel();$('nearby-live').disabled=false;$('refresh').disabled=false;}
   state.screen=screen;
   for(const section of document.querySelectorAll('[data-screen]'))section.hidden=section.dataset.screen!==screen;
   $('journey-form').hidden=!['destination','origin','review'].includes(screen);
@@ -190,23 +197,60 @@ async function searchJourney(){
 }
 // Detail layers keep the underlying task, scroll position and explicit journey progress.
 const detailViews=new Map();let detailId=0,activeDetail=null;
+$('information').addEventListener('close',()=>{for(const view of detailViews.values())view.dispose?.();});
 function detailLink(label,title,body,className='detail-link'){
   const id=++detailId;detailViews.set(id,{title,body,titleKey:({'Route details':'explore.routeTitle','Walking connection':'explore.walkTitle'})[title]});
   return `<button type="button" class="${className}" data-detail="${id}" aria-haspopup="dialog">${label}</button>`;
 }
 function placeDetail(place){
-  const label=escape(place.name),id=detailId+1;
+  const label=escape(place.name),id=detailId+1;let stopRows=[],stopNow=null;
   const link=detailLink(label,place.name,async()=>{
     const now=explorationTime(),departures=place.placeType==='address'?[]:await ask('stopDetails',{id:place.id,now});
-    return `<p>${message(place.placeType==='address'?'place.addressType':'explore.stationStop')}${place.code?' · '+message('place.stopType',{code:place.code}):''}</p>${mapMarkup()}<p>${message('explore.access')}</p>${place.placeType==='address'?'':`<h3>${message('board.heading',{time:clock(now.seconds),date:now.date})}</h3><p>${message('board.limit')}</p><p><a href="https://at.govt.nz/atmobile/" target="_blank" rel="noopener noreferrer">${message('board.at')}</a> <small>${message('board.online')}</small></p>${departures.length?`<div class="departure-board"><table><caption>${message('board.caption')}</caption><thead><tr><th scope="col">${message('board.time')}</th><th scope="col">${message('board.route')}</th><th scope="col">${message('board.destination')}</th></tr></thead><tbody>${departures.map(d=>`<tr><td class="board-time">${clock(d.departure)}</td><td>${routeLink(escape(d.route),{routeId:d.routeId,tripId:d.trip},'board-route')}</td><td>${escape(d.headsign)}</td></tr>`).join('')}</tbody></table></div>`:`<p>${message('board.none')}</p>`}`}`;
-  });detailViews.get(id).mount=()=>mountMap(null,[place]);return link;
+    stopRows=departures;stopNow=now;
+    return `<p>${message(place.placeType==='address'?'place.addressType':'explore.stationStop')}${place.code?' · '+message('place.stopType',{code:place.code}):''}</p>${mapMarkup()}<p>${message('explore.access')}</p>${place.placeType==='address'?'':`<h3>${message('board.heading',{time:clock(now.seconds),date:now.date})}</h3><p>${message('board.limit')}</p><p><a href="https://at.govt.nz/atmobile/" target="_blank" rel="noopener noreferrer">${message('board.at')}</a> <small>${message('board.online')}</small></p>${liveClient.configured?'<button type="button" class="secondary-button" id="stop-live">Check live departures at this stop</button><p class="field-help">Optional online check. Your journey details stay on this device; the server receives your IP address.</p><p id="stop-live-status" class="field-help" role="status"></p>':''}${departures.length?`<div class="departure-board"><table><caption>${message('board.caption')}</caption><thead><tr><th scope="col">${message('board.time')}</th><th scope="col">${message('board.route')}</th><th scope="col">${message('board.destination')}</th></tr></thead><tbody>${departures.map((d,i)=>`<tr><td class="board-time" data-stop-time="${i}">${clock(d.departure)}</td><td>${routeLink(escape(d.route),{routeId:d.routeId,tripId:d.trip},'board-route')}</td><td>${escape(d.headsign)}</td></tr>`).join('')}</tbody></table></div>`:`<p>${message('board.none')}</p>`}`}`;
+  });detailViews.get(id).mount=()=>{mountMap(null,[place]);mountStopLive(id,stopRows,stopNow);};return link;
 }
+function mountStopLive(id,rows,at){
+  const button=$('stop-live');if(!button)return;
+  const client=createLiveClient({baseURL:liveBaseURL,pageURL:import.meta.url});
+  let timer=null,sequence=0;
+  const caption=$('detail-body').querySelector('.departure-board caption'),scheduledCaption=caption?.textContent;
+  const reset=()=>{if(caption)caption.textContent=scheduledCaption;document.querySelectorAll('[data-stop-time]').forEach((cell,i)=>{cell.textContent=clock(rows[i].departure);});};
+  detailViews.get(id).dispose=()=>{sequence++;clearTimeout(timer);client.cancel();};
+  button.onclick=async()=>{
+    const request=++sequence;clearTimeout(timer);reset();button.disabled=true;
+    $('stop-live-status').textContent='Checking current AT predictions…';
+    const feed=await client.read('predictions',{requested:true});
+    if(request!==sequence || !button.isConnected)return;
+    button.disabled=false;
+    let matched=0;
+    document.querySelectorAll('[data-stop-time]').forEach((cell,i)=>{
+      const departure=rows[i],prediction=departurePrediction(feed,departure);
+      if(prediction.status==='scheduled')return;
+      matched++;
+      let label=prediction.status==='cancelled'?'Cancelled':prediction.status==='skipped'?'Not stopping here':'';
+      if(prediction.status==='predicted'){
+        let seconds=departure.departure+prediction.delay,date=at.date;
+        if(prediction.epoch){const time=aucklandNow(new Date(prediction.epoch*1000));seconds=time.seconds;date=time.date;}
+        if(!prediction.epoch && (seconds<0 || seconds>=86400))date=new Date(Date.parse(at.date+'T12:00:00Z')+Math.floor(seconds/86400)*86400000).toISOString().slice(0,10);
+        label='Expected '+clock(seconds)+(date!==at.date?' · '+date:'');
+      }
+      cell.textContent=label;
+      const original=document.createElement('small');original.className='board-scheduled';original.textContent='Scheduled '+clock(departure.departure);cell.append(original);
+    });
+    if(matched && caption)caption.textContent='Departures · scheduled and live';
+    $('stop-live-status').textContent=!feed.available?'Current predictions unavailable. Showing scheduled departures.':matched?'Live information matched to '+matched+' departures. Other times remain scheduled.':'No live match for these departures. Times remain scheduled.';
+    if(feed.available)timer=setTimeout(()=>{if(button.isConnected){reset();$('stop-live-status').textContent='Live information has expired. Showing scheduled departures.';}},Math.max(0,(feed.updated+180-Date.now()/1000)*1000));
+  };
+}
+
 function legDetail(leg,label,className){
   if(leg.mode!=='walk')return routeLink(label,{routeId:leg.routeId,tripId:leg.trip},className);
   return detailLink(label,leg.mode==='walk'?'Walking connection':`${leg.mode[0].toUpperCase()+leg.mode.slice(1)} ${leg.route}`,()=>`${legMarkup(leg)}<p>${leg.mode==='walk'?message('explore.walkEstimate'):'Times are scheduled, not live predictions.'}</p>`,className);
 }
 async function displayDetail(id){
   const view=detailViews.get(id);if(!view)return;
+  detailViews.get(activeDetail)?.dispose?.();
   if(contextMap){contextMap.remove();contextMap=null;}
   activeDetail=id;if(view.titleKey)translated('detail-title',view.titleKey);else {$('detail-title').textContent=view.title;$('detail-title').lang='en-NZ';textBindings.delete('detail-title');}$('detail-body').innerHTML=`<p role="status">${message('explore.loading')}</p>`;
   if(!$('information').open)$('information').showModal();
@@ -317,22 +361,22 @@ $('prefer-services').onclick=()=>{
 };
 $('sort').onchange=renderJourneys;
 $('use-any-route').onclick=()=>{state.savedPreference=null;searchJourney();};
-let predictions={available:false},predictionsAt=0;
-async function getPredictions(){if(Date.now()-predictionsAt<60000)return predictions;predictionsAt=Date.now();try{const response=await fetch(new URL('./api/predictions',import.meta.url),{signal:AbortSignal.timeout(5000)});predictions=response.ok?await response.json():{available:false};}catch{predictions={available:false};}return predictions;}
-async function refreshNearby(){
+async function refreshNearby({liveRequested=false}={}){
   if(!state.location){$('departures').innerHTML=`<div class="empty-state"><h3>${message('nearby.start')}</h3><p>${message('nearby.startHelp')}</p></div>`;return;}
   const sequence=++state.nearbySequence,location={...state.location};
   if($('direct-only').checked&&!state.to){$('departures').innerHTML=`<div class="error-state">${message('nearby.chooseDestination')}</div>`;return;}
-  $('refresh').disabled=true;translated('nearby-context','nearby.context',{place:state.locationLabel});
+  $('refresh').disabled=true;$('nearby-live').disabled=true;$('nearby-live-status').textContent=liveRequested?'Checking current AT predictions…':'';translated('nearby-context','nearby.context',{place:state.locationLabel});
   $('departures').innerHTML=`<div class="loading">${message('nearby.loading')}</div>`;
   try{
     // Scheduled results render immediately; live predictions are a progressive enhancement.
-    const args={...location,to:$('direct-only').checked?state.to:null,mode:$('nearby-mode').value,now:aucklandNow(),feed:predictions,profile:accessProfile()};
+    const args={...location,to:$('direct-only').checked?state.to:null,mode:$('nearby-mode').value,now:aucklandNow(),feed:{available:false},profile:accessProfile()};
     const data=await ask('nearby',args);if(sequence!==state.nearbySequence)return;renderDepartures(data);
-    const fresh=await getPredictions();if(sequence!==state.nearbySequence)return;
+    if(!liveRequested)return;
+    const fresh=await liveClient.read('predictions',{requested:true});if(sequence!==state.nearbySequence || state.screen!=='nearby')return;
+    $('nearby-live-status').textContent=fresh.available?'Current feed checked. Only matched services show live predictions.':'Current predictions unavailable. Scheduled departures are still available.';
     if(fresh.available){const updated=await ask('nearby',{...args,feed:fresh,now:aucklandNow()});if(sequence===state.nearbySequence)renderDepartures(updated);}
   }catch(error){if(sequence===state.nearbySequence)$('departures').innerHTML=`<div class="error-state">${errorPhraseKey(error)?message(errorPhraseKey(error)):`<span lang="en-NZ">${escape(error.message)}</span>`}</div>`;}
-  finally{if(sequence===state.nearbySequence)$('refresh').disabled=false;}
+  finally{if(sequence===state.nearbySequence){$('refresh').disabled=false;$('nearby-live').disabled=false;}}
 }
 function renderDepartures(data){
   state.departureData=data;$('more-stops').hidden=data.stops.length<=3;translated('more-stops',state.showAllStops?'nearby.fewer':'nearby.more');
@@ -340,13 +384,13 @@ function renderDepartures(data){
   if(!data.stops.length){$('departures').innerHTML=`<div class="empty-state"><h3>${message(data.directOnly?'nearby.noneDirect':'nearby.none')}</h3><p>${message(data.directOnly?'nearby.tryDirect':'nearby.try')}<br>${message('nearby.window')}</p></div>`;return;}
   $('departures').innerHTML=data.stops.slice(0,state.showAllStops?8:3).map((s,i)=>`<article class="stop-card"><div class="stop-header"><div>${i===0?`<span class="context-tag">${message('nearby.first')}</span>`:''}<h3>${placeDetail(s.stop)}</h3><p>${message('nearby.distance',{code:s.stop.code||s.stop.id,metres:s.distance})}</p></div><span class="walk-time">${message('nearby.walk',{minutes:s.walk})}</span></div>${s.departures.slice(0,3).map(d=>`<div class="departure-row ${d.tight?'tight':''}">${routeLink(escape(d.route),{tripId:d.trip},`route-badge detail-link ${d.mode}`)}<div class="departure-info"><strong>${escape(d.headsign||'See route destination')}</strong><small>${message('mode.'+d.mode+'Title')}${d.tight?message('nearby.tight'):''}</small></div><div class="departure-time"><strong>${d.minutes} <small>${message('journey.minuteUnit')}</small></strong><small>${message(d.live?'nearby.live':'nearby.scheduled')}</small></div></div>`).join('')}</article>`).join('');
 }
-$('refresh').onclick=()=>{predictionsAt=0;refreshNearby();};$('nearby-mode').onchange=refreshNearby;$('direct-only').onchange=refreshNearby;
+$('refresh').onclick=()=>refreshNearby();$('nearby-live').onclick=()=>refreshNearby({liveRequested:true});$('nearby-mode').onchange=refreshNearby;$('direct-only').onchange=refreshNearby;
 $('location').onclick=()=>{if(!navigator.geolocation){translated('form-error','location.unavailable');return;}$('location').disabled=true;translated('location','location.finding');navigator.geolocation.getCurrentPosition(position=>{setPlace('origin',{id:`location:${position.coords.latitude.toFixed(5)},${position.coords.longitude.toFixed(5)}`,name:'Current location',lat:position.coords.latitude,lon:position.coords.longitude,placeType:'address'});state.locationLabel='your location';$('location').disabled=false;translated('location','location.use');translated('announcement','location.selected');},()=>{$('location').disabled=false;translated('location','location.use');translated('form-error','location.failed');},{enableHighAccuracy:false,timeout:12000,maximumAge:60000});};
 $('try-britomart').onclick=async()=>{try{const matches=await ask('search',{query:'Waitemata'});const alternatives=matches.length?matches:await ask('search',{query:'Britomart'});const stop=alternatives.find(s=>s.kind===1)||alternatives[0];if(!stop)throw new Error('Try searching for Waitematā or Britomart in the origin field.');setPlace('origin',stop);review();}catch(error){showError('form-error',error);}};
 $('settings-open').onclick=()=>$('settings').showModal();document.querySelectorAll('.close-dialog').forEach(b=>b.onclick=()=>b.closest('dialog').close());
 $('learning-enabled').onchange=()=>{state.preferences.learning=$('learning-enabled').checked;persist();};
 $('clear-history').onclick=()=>{state.preferences.journeys=[];persist();translated('storage-message','learning.cleared');if(state.lastSearch)renderJourneys();if(state.selectedJourney)renderFollow();};
-$('alerts-open').onclick=async()=>{$('alerts').showModal();$('alerts-content').innerHTML=`<div class="loading">${message('alerts.loading')}</div>`;try{const response=await fetch(new URL('./api/alerts',import.meta.url),{signal:AbortSignal.timeout(10000)});if(!response.ok)throw new Error();const data=await response.json();$('alerts-content').innerHTML=data.available?(data.alerts.length?data.alerts.map(a=>`<article class="alert-item" lang="en-NZ"><h3>${escape(a.title)}</h3><p>${escape(a.description)}</p></article>`).join(''):`<p>${message('alerts.none')}</p>`):`<p><span lang="en-NZ">${escape(data.message)}</span> ${message('alerts.website')}</p>`;}catch{$('alerts-content').innerHTML=`<p>${message('alerts.offline')}</p>`;}};
+$('alerts-open').onclick=async()=>{$('alerts').showModal();$('alerts-content').innerHTML=`<div class="loading">${message('alerts.loading')}</div>`;try{const data=await liveClient.read('alerts',{requested:true});if(!data.available)throw new Error();$('alerts-content').innerHTML=data.available?(data.alerts.length?data.alerts.map(a=>`<article class="alert-item" lang="en-NZ"><h3>${escape(a.title)}</h3><p>${escape(a.description)}</p></article>`).join(''):`<p>${message('alerts.none')}</p>`):`<p><span lang="en-NZ">${escape(data.message)}</span> ${message('alerts.website')}</p>`;}catch{$('alerts-content').innerHTML=`<p>${message('alerts.offline')}</p>`;}};
 let installPrompt;
 window.addEventListener('beforeinstallprompt',event=>{event.preventDefault();installPrompt=event;$('install').hidden=false;});
 $('install').onclick=async()=>{if(installPrompt){await installPrompt.prompt();installPrompt=null;$('install').hidden=true;}};
@@ -355,7 +399,7 @@ function updateStatus(){
 }
 function ready(result){state.ready=true;state.stored=result.stored;state.metadata=result.metadata;updateStatus();const end=result.metadata.feed_end_date||'';const expiry=end?`${end.slice(6,8)}/${end.slice(4,6)}/${end.slice(0,4)}`:'not specified';$('offline-info').innerHTML=[message(end?'status.overview':'status.unknownExpiry',{stops:result.stops.toLocaleString(),expiry}),message(result.stored?'status.stored':'status.notStored'),message('status.localRouting')].join(' ');}
 $('update-timetable').onclick=async()=>{$('update-timetable').disabled=true;translated('offline-info','status.refresh');try{ready(await ask('update'));await loadStreets(true);}catch(error){showError('offline-info',error);}finally{$('update-timetable').disabled=false;}};
-window.addEventListener('online',()=>{updateStatus();if(state.location)refreshNearby();});window.addEventListener('offline',()=>{predictions={available:false};updateStatus();if(state.location)refreshNearby();});
+window.addEventListener('online',()=>{updateStatus();if(state.location)refreshNearby();});window.addEventListener('offline',()=>{liveClient.cancel();updateStatus();if(state.location)refreshNearby();});
 // Departure updates are requested explicitly; avoid moving lists while people read.
 history.replaceState({alongScreen:'destination',depth:0,intent:'plan'},'');showScreen('destination',{focus:false,historyEntry:false});
 translated('location','location.use');translated('preparation-hint','status.preparing');applyLanguage();renderUsual();setNow();$('today').textContent=new Intl.DateTimeFormat('en-NZ',{timeZone:'Pacific/Auckland',weekday:'long',day:'numeric',month:'short'}).format(new Date());

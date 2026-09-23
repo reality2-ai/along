@@ -1298,7 +1298,7 @@ Object.assign(messages, {
     "mi": "Katia ngā whakahou"
   },
   "course.shortTitle": {
-    "en": "Course exercise · Use at your own risk.",
+    "en": "Use at your own risk",
     "mi": "He mahi akoranga · Kei a koe te tūraru o te whakamahi."
   },
   "course.shortWarning": {
