@@ -1,6 +1,6 @@
 # Release evidence and remaining gates
 
-Current candidate: **version 21**, reviewed 23 September 2026. The private site and
+Current candidate: **version 22**, reviewed 23 September 2026. The private site and
 static ZIP are prepared. GitHub Pages is published at `reality2.ai/along/`; no AWS deployment has been made.
 This register separates automated evidence, user observations and remaining checks.
 
@@ -60,7 +60,7 @@ no-pickup services. Stop-name filtering does not prove street traversal.
 | Desktop keyboard-only navigation and 200% zoom worked | User report before the guided redesign |
 | Android update page appeared to update, though app was already latest | User report; exact browser/version not recorded |
 | “Yes, looking good” in response to the version 15 device/flow question | Positive acceptance of the guided flow; not an explicit TalkBack result |
-| Version 17 contextual maps and details | Automated checks only so far |
+| “Looking good” in response to the version 21 route 70 / Symonds / Back checklist | Positive flow feedback; device-specific, offline and TalkBack results were not individually confirmed |
 
 The user requested TalkBack instructions but has not supplied a spoken-interaction
 result. No attached ADB device or desktop screen reader was available at the last
@@ -147,3 +147,12 @@ The public README was checked in Chromium at a 1440-pixel viewport: the gallery
 and article both measured 838 pixels wide; all four images loaded and rendered
 at identical dimensions. The prominent webapp link resolves to the public portal.
 This is presentation evidence only.
+
+
+## Version 22: course context inside the app
+
+Settings now has a collapsed “How Along was made” section explaining the
+no-human-coding rule and linking directly to the project goal, thematic analysis
+and course exercises. The main journey flow is unchanged. The user's latest
+positive feedback is recorded above without treating it as an explicit TalkBack
+or offline test result.

@@ -1,9 +1,5 @@
 # Along — your Auckland commute
 
-## [🌐 Open Along webapp](https://reality2.ai/along/)
-
-Install it from your browser, then search addresses and plan scheduled journeys offline after preparation.
-
 > **Course exercise — use at your own risk.** Along was created as an exercise
 > for an AI-assisted coding course. It is an experimental educational webapp,
 > not an official Auckland Transport service. Routes, times, walking directions
@@ -20,6 +16,11 @@ or uploaded journey history is needed.
 Along uses Auckland Transport's public data and its own bounded routing engine.
 It is **not an official AT app** and does not reproduce AT Mobile's journey planner.
 Live predictions are optional and require a separately configured backend.
+
+<p align="center">
+  <a href="https://reality2.ai/along/"><img src="docs/images/open-webapp.svg" width="304" height="56" alt="Open and install Along webapp"></a>
+</p>
+<p align="center">Open in your browser and install on your device. Prepare it online, then plan scheduled journeys offline.</p>
 
 ## What drives the design
 
