@@ -71,6 +71,18 @@ repository commit checks locally. This proves the tested transport behavior,
 not payload authority, completed membership installation or safe AT-key custody.
 Those integration steps remain outstanding; the public app stays on version 37.
 
+Along's isolated [payload profile and controller](../experiments/tg-pairing/README.md#enrollment-payload-validation)
+now validate the original invitation, requested candidate, group signature and
+expected epoch before returning received material. Chromium checks passed for
+substitution, forgery, malformed lengths, duplicate reads, delayed delivery after
+cancellation and clearing received material on abort. The actual peer test also
+checks that authenticated but malformed payloads close both sessions and void
+their reservations. Its initial group trust remains a synthetic harness setup.
+This is an application-specific experimental format: it does not change R2's
+normative wire formats or establish Notekeeper interoperability. Core ceremony
+authorization, issuer custody, epoch freshness and atomic installation remain
+required before these bytes can authorize application access.
+
 ### Notekeeper reference inspection
 
 At the user's request, inspected `reality2-ai/r2-notekeeper` local revision

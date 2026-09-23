@@ -275,6 +275,10 @@ Include these cases:
   but the harness copies their connection descriptions and both run on one computer.
 - A correct signed invitation is refused because its signer differs from its named
   issuer; signature validity alone was insufficient.
+- An encrypted enrollment bundle arrives intact but names the wrong requested
+  device or epoch. Compare the transport check with the application profile's
+  certificate and invitation checks in `experiments/tg-pairing/`; neither alone
+  establishes permission to install membership or retain credentials.
 - A full verification command succeeds while the source changes during the run;
   the result cannot establish that one final source snapshot passed every check.
 - A confirmation appears expired by design, but a backgrounded browser delays

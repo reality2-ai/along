@@ -59,3 +59,43 @@ and the actual data channel; the asset host stops before comparison. It exercise
 rendered controls, both confirmations, keyboard decline, remote disconnection and
 replacement while confirmation is pending. It does not establish initial trust,
 protected bundle delivery, full enrollment or physical-person co-presence.
+
+## Enrollment payload validation
+
+`enrollment-profile.mjs` defines an **Along experimental application format**,
+not a normative Reality2 wire format or a claim of Notekeeper compatibility.
+The test harness serves the runtime's `invitation.mjs` and `certificate.mjs`
+alongside this module. Use the runtime at draft PR #1, commit `c4f5b794` or a
+compatible successor, with its matching compiled WASM package.
+
+| Message | Exact contents |
+| --- | --- |
+| Claim, 129 bytes | `ALNGCLM1`, canonical 89-byte invitation, candidate public key (32 bytes) |
+| Bundle, 345 bytes | `ALNGBND1`, original claim, epoch (8-byte unsigned big-endian), core certificate (136 bytes), payload key (32 bytes), integrity key (32 bytes) |
+
+The certificate must verify through the actual core WASM for the requested
+candidate and group, with its issuance epoch equal to the expected epoch.
+Lengths, version markers and the original invitation must match exactly.
+Authenticating the traffic-key bytes depends on the protected transport and
+authorized issuer custody; the codec cannot prove their derivation.
+
+`enrollment-payloads.mjs` connects this profile to the confirmed runtime session.
+It snapshots the invitation, validates received payloads, rejects duplicate
+operations and cancels enrollment on failure. It clears received traffic-key
+arrays when the session aborts, and clears intermediate bundle copies. The caller
+must clear any further copies it makes; JavaScript cannot promise physical memory
+erasure. A decoded bundle is not permission to persist keys or install membership.
+
+With the same `R2_BROWSER_DIR`, `R2_WASM_DIR` and optional `CHROMIUM_PATH` as above:
+
+```sh
+node experiments/tg-pairing/enrollment-profile.test.mjs
+node experiments/tg-pairing/enrollment-profile-carriage.test.mjs
+```
+
+The first check uses actual certificate verification and controlled transport
+delays for cancellation races. The second uses real peer sessions and durable
+invitation journals after stopping the asset host. Its initial trust bootstrap
+is explicitly synthetic. A malformed encrypted claim or bundle must close both
+peers and void their reservations. Neither test establishes issuer authority,
+fresh epoch policy, core ceremony completion, durable installation or AT access.
