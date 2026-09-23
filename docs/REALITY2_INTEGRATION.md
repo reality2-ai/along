@@ -182,3 +182,17 @@ The source and enriched timetable described above are now included in
 [version 36](evidence/release-v36.json). Earlier “local only” statements record
 their status at the time of those investigations. Public live access remains
 disabled, and the Reality2 credential-storage gap remains unresolved.
+
+### Runtime recheck after version 36
+
+On 23 September 2026 the local Reality2 checkout advanced to
+`8efd689cddfcfae96de7b178817d0d4869b897b3`. The three commits since the original
+inspection concern host receipt routing and sensor evidence. None changes the
+browser hive, portal identity or application-secret capabilities inspected above.
+`hive-wasm` still uses `MemoryStorage` and documents the need for a persistent
+implementation. No Reality2 files were changed by Along.
+
+The pending scope choice remains whether to develop the missing TG capability
+as part of this work or wait for Reality2 support. Neither response is assumed.
+Direct AT access is ready for that integration; an arbitrary local key store would
+not fulfil the requested trust-group architecture.

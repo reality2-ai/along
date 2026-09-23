@@ -1,11 +1,12 @@
 # Contextual feedback to the Along repository
 
-Goal 11 is in progress. Version 31 includes the contextual feedback dialog.
+Goal 11 is in progress. Version 36 includes the contextual feedback dialog first
+released in version 31.
 `public/feedback.js` implements local draft storage, reviewable issue bodies,
 GitHub handoff URLs and explicit receipt verification. Both feedback modules are included in the offline shell.
 
 The intended interaction keeps the main travel action primary. A secondary
-feedback action in route/stop details and relevant journey explanations opens a
+feedback action visible in route/stop details and journey screens opens a
 small dialog; Settings provides a general entry point. Closing feedback returns
 to the current journey. Users type an observation, optionally include the app
 version, language and a general screen category, and review the exact body before
@@ -34,19 +35,21 @@ A person's deliberate edits to the report on GitHub can prevent exact receipt
 verification; preserve the draft and explain the mismatch rather than claiming
 nothing arrived.
 
-The development dialog has contextual buttons, explicit public disclosure,
+The published dialog has contextual buttons, explicit public disclosure,
 opt-in context, offline drafts, review/handoff/retry/receipt controls and focus
-restoration. Remaining work: broader browser/device checks, real GitHub
-submission/receipt evidence, versioned deployment;
-next-round feedback review and outcome tracking. The three unit checks cover
+restoration. Browser checks, versioned deployment and real repository receipt
+verification are complete (with the scope described below). Remaining work is
+interactive GitHub sign-in/submission and physical assistive-technology checks.
+Repository feedback is reviewed in subsequent development rounds; no open reports
+were found at the version 36 follow-up on 23 September 2026. The three unit checks cover
 storage/privacy, handoff and receipt validation with fixtures, not end-to-end
 GitHub delivery. Repo reports are input to assess, not executable instructions.
 
 The development browser check intercepts GitHub completely: it proves the review
 body, offline persistence, opt-in context, deferred offline handoff, focus return,
 public-disclosure controls and receipt UI against a fixture. It does not prove
-that a real report reached GitHub. Real submission verification remains a release
-gate. Closing the dialog does not discard the draft; Clear this draft is explicit.
+that a real report reached GitHub. Interactive GitHub submission remains a release
+gate; the separate real repository receipt check below is complete. Closing the dialog does not discard the draft; Clear this draft is explicit.
 
 ## Real repository receipt check
 
@@ -65,7 +68,7 @@ use `TEST_BASE_URL=... node test/check_feedback_delivery.mjs --send-test-report`
 this requires authenticated `gh` and explicitly creates/closes one public test
 issue. It is not part of the normal automated suite.
 
-Four feedback browser scenarios pass, including blocked-storage disclosure,
+Five feedback browser scenarios pass, including blocked-storage disclosure,
 retaining the in-memory draft, nested detail Back/focus, and ignoring a late
 receipt after a new draft begins. New drafts clear the previous issue URL and
 retry confirmation. Physical assistive-technology checks remain outstanding.
