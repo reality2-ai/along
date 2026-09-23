@@ -681,3 +681,9 @@ acknowledgment, encrypted-key restore, reload and restored membership display.
 No membership fixture or direct controller invocation starts this test flow.
 The harness still transfers public text and confirms the physical comparison;
 that is not evidence of camera usability or phone-to-desktop reachability.
+
+
+The [runtime notice audit](../../docs/PAIRING_LICENSE_AUDIT.md) records the exact
+56-package closure and outstanding local R2 notice/declaration gaps. The
+[S23/desktop check guide](../../docs/PAIRING_DEVICE_CHECK.md) is prepared for a
+published lab URL; it does not claim that such a URL or physical pass exists yet.
