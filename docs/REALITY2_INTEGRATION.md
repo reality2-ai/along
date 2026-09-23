@@ -352,3 +352,16 @@ The updated WASM build and browser checks pass. The long-running full gate began
 before this Rust export was added, so another full pass over the final snapshot
 will be required; its current run is being preserved. Signature coverage is not
 yet complete enrollment authorization or issuer custody evidence.
+
+The browser boundary now invokes the core L5B invitation authorization function
+and retains its opaque result. The actual WASM/browser test accepts the named
+issuer but refuses a cryptographically valid signature over the invitation from
+a different member. Malformed invitation length, wrong nonce and revoked issuer
+also refuse. The new WASM build and focused Rust tests pass.
+
+This low-level result is not a complete ceremony or an install grant. The browser
+controller must still own nonce lifetime/consumption, issuer custody, validity,
+comparison and consent, and recheck membership before installation. Full
+verification is still running through repository tools; another latest-snapshot
+pass remains necessary after the new Rust boundary changes. No open Along GitHub
+feedback issues were present at this review.
