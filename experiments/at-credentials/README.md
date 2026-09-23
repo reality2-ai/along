@@ -947,8 +947,9 @@ No credential is sent on the receipt path. If the owner still grants access,
 **Retry key delivery instead** remains available as an explicit alternative for
 a key that never arrived. It rechecks current policy and still requires recipient
 consent or explicit receipt continuation. The recipient refuses to overwrite an
-already-saved current key. Interrupted-delivery retry combinations beyond the
-verified cases remain to be checked.
+already-saved current key. The lost-delivery test below now verifies this retry alternative after the owner
+sent a key that never reached the recipient. Further fault combinations remain
+subject to separate checks.
 
 `LOSE_KEY_CONFIRMATION=1` drops the recipient's actual outbound confirmation after
 nonce delivery, observes an installed key and pending owner journal, reloads both
@@ -962,3 +963,37 @@ passes with this implementation.
 ```sh
 LOSE_KEY_CONFIRMATION=1 CHROMIUM_PATH=/path/to/chromium node experiments/at-credentials/two-app-integration.test.mjs
 ```
+
+
+### Retrying a key that never arrived
+
+`LOSE_KEY_DELIVERY=1` withholds the owner's actual data-channel delivery after the
+signed policy has reached the recipient. The test observes a real pending owner
+journal and an absent recipient secret record, then reloads both browser profiles.
+After fresh authentication it chooses **Retry key delivery instead**, followed by
+**Receive the shared key** on the recipient. Synthetic activation cannot advance
+either action. The existing accepted owner and policy revisions remain unchanged.
+
+The new delivery is confirmed under a fresh nonce; the original pending context
+is not mistaken for a receipt. Policy revision and credential generation remain
+unchanged. The test continues through main-app reconnection, address-to-address
+bus/ferry planning, contextual mocked AT reads, withheld removal, disconnect and
+offline reopening/routing. This adds evidence for a delivered-message loss rather
+than relying on the earlier pre-request interruption check.
+
+```sh
+LOSE_KEY_DELIVERY=1 CHROMIUM_PATH=/path/to/chromium node experiments/at-credentials/two-app-integration.test.mjs
+```
+
+Select only one interruption scenario in each run:
+
+| Scenario | Durable state before reload | Verified recovery |
+| --- | --- | --- |
+| `INTERRUPT_GRANT=1` | Owner grant, no recipient consent | Continue grant without rewriting it; obtain recipient consent |
+| `INTERRUPT_ACCEPTANCE=1` | Recipient accepted owner, no key request delivered | Preserve accepted binding; explicitly receive key |
+| `LOSE_KEY_DELIVERY=1` | Owner send pending, recipient key absent | Retry with a fresh nonce and unchanged permission/generation |
+| `LOSE_KEY_CONFIRMATION=1` | Recipient key saved, owner confirmation pending | Recover historical receipt without replacing encrypted keys |
+
+These browser checks cover the named boundaries. They do not establish arbitrary
+crash recovery, every storage failure, cross-network connectivity or physical-
+device usability. The provider feeds are mocked and the keys are synthetic.

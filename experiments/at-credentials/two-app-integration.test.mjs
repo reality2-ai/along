@@ -7,6 +7,9 @@ import {createServer} from 'node:http';
 import {readFile} from 'node:fs/promises';
 import {join, extname} from 'node:path';
 const {chromium, expect} = await import(process.env.PLAYWRIGHT_MODULE || '@playwright/test');
+const variants = ['INTERRUPT_GRANT', 'INTERRUPT_ACCEPTANCE', 'LOSE_KEY_CONFIRMATION', 'LOSE_KEY_DELIVERY'].filter(name => process.env[name] === '1');
+assert.ok(variants.length <= 1, 'Select one interruption scenario per run');
+let pendingLostDelivery;
 const root = new URL('../../releases/along-experimental-app/', import.meta.url).pathname;
 const manifest = JSON.parse(await readFile(join(root, 'build-info.json'), 'utf8'));
 assert.equal(manifest.profile, 'along-experimental-app-v1');
@@ -162,10 +165,17 @@ try {
       window.droppedConfirmation++;
     };
   });
+  if (process.env.LOSE_KEY_DELIVERY === '1') await owner.evaluate(() => {
+    window.droppedKeyDelivery = 0;
+    // Policy has already reached the recipient. Withhold the owner's next
+    // encrypted delivery; preserve all real journal and recipient storage work.
+    RTCDataChannel.prototype.send = function() { window.droppedKeyDelivery++; };
+  });
   await acceptKey.focus(); await candidate.keyboard.press('Enter');
-  if (process.env.INTERRUPT_ACCEPTANCE === '1') {
+  if (process.env.INTERRUPT_ACCEPTANCE === '1' || process.env.LOSE_KEY_DELIVERY === '1') {
     await candidate.getByRole('heading', {name: 'Receiving the shared key', exact: true}).waitFor();
-    await candidate.waitForFunction(() => window.withheldSharingMessages > 0);
+    if (process.env.LOSE_KEY_DELIVERY === '1') await owner.waitForFunction(() => window.droppedKeyDelivery > 0);
+    else await candidate.waitForFunction(() => window.withheldSharingMessages > 0);
     const snapshot = () => candidate.evaluate(async () => {
       const store = await (await import('./tg-pairing/storage.mjs')).openBrowserStorage('along-pairing-lab-v1');
       try {
@@ -174,12 +184,21 @@ try {
         const group = hex(record.group), anchor = await store.read('along-at-owners', group);
         const policy = await store.read('along-at-policy:' + anchor.value.owner, group + ':' + anchor.value.credential);
         const secret = await store.read('along-at-secret:' + anchor.value.owner, group + ':' + anchor.value.credential);
-        return {member: hex(record.subject), owner: anchor.value.owner, credential: anchor.value.credential,
+        return {group, member: hex(record.subject), owner: anchor.value.owner, credential: anchor.value.credential,
           anchorRevision: anchor.revision, policyRevision: policy.revision, missingKey: secret === null};
       } finally { store.close(); }
     });
     const before = await snapshot();
     assert.equal(before.missingKey, true); assert.equal(await noAcceptedOwner(), false);
+    if (process.env.LOSE_KEY_DELIVERY === '1') {
+      pendingLostDelivery = await owner.evaluate(async saved => {
+        const store = await (await import('./tg-pairing/storage.mjs')).openBrowserStorage('along-pairing-lab-v1');
+        try { return await (await import('./at-credentials/delivery-history.mjs')).openDeliveryHistory({store, ...saved, recipient: saved.member}).read(); }
+        finally { store.close(); }
+      }, before);
+      assert.equal(pendingLostDelivery.status, 'pending');
+      assert.equal(await owner.getByRole('heading', {name: 'Other device saved the key', exact: true}).count(), 0);
+    }
     // Destroy the connection and start fresh documents, preserving the actual
     // committed owner acceptance. No storage records are seeded or modified.
     await Promise.all(pages.map(page => page.reload()));
@@ -202,7 +221,10 @@ try {
     await move(candidate, owner, 'Sharing connection request', 'Connect for key sharing');
     await owner.getByRole('heading', {name: 'Send the sharing reply', exact: true}).waitFor();
     await move(owner, candidate, 'Sharing connection reply', 'Check sharing connection');
-    await owner.getByRole('button', {name: 'Continue sharing my key', exact: true}).click();
+    const retry = owner.getByRole('button', {name: process.env.LOSE_KEY_DELIVERY === '1' ? 'Retry key delivery instead' : 'Continue sharing my key', exact: true});
+    await retry.waitFor(); await retry.evaluate(button => button.click());
+    assert.equal(await candidate.getByRole('button', {name: 'Receive the shared key', exact: true}).count(), 0);
+    await retry.focus(); await owner.keyboard.press('Enter');
     const receive = candidate.getByRole('button', {name: 'Receive the shared key', exact: true});
     await receive.waitFor();
     assert.equal(await candidate.getByRole('button', {name: 'Allow this device to receive the key', exact: true}).count(), 0);
@@ -264,6 +286,18 @@ try {
     console.log('Lost confirmation: actual pending delivery recovered through visible receipt controls without replacing either encrypted key.');
   }
   await owner.getByRole('heading', {name: 'Other device saved the key', exact: true}).waitFor();
+  if (pendingLostDelivery) {
+    const confirmed = await owner.evaluate(async previous => {
+      const store = await (await import('./tg-pairing/storage.mjs')).openBrowserStorage('along-pairing-lab-v1');
+      try { return await (await import('./at-credentials/delivery-history.mjs')).openDeliveryHistory({store, ...previous.context}).read(); }
+      finally { store.close(); }
+    }, pendingLostDelivery);
+    assert.equal(confirmed.status, 'recipient-confirmed-saved');
+    assert.notEqual(confirmed.context.nonce, pendingLostDelivery.context.nonce, 'retry has a fresh delivery context');
+    assert.equal(confirmed.context.policyRevision, pendingLostDelivery.context.policyRevision);
+    assert.equal(confirmed.context.generation, pendingLostDelivery.context.generation);
+    console.log('Lost delivery: pending send was retried through explicit controls with a fresh nonce and unchanged permission/generation.');
+  }
   assert.equal(providerRequests.length, 0);
   await candidate.setViewportSize({width: 1280, height: 900});
   await Promise.all(pages.map(page => page.goto(origin + 'public/')));

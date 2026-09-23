@@ -29,8 +29,11 @@ descriptor. A lost delivery confirmation now recovers through explicit saved-
 receipt controls on a fresh authenticated connection. The two-profile check
 preserves both encrypted key records and permission revisions while changing
 only the owner's pending delivery to confirmed. This is historical storage
-confirmation, not provider verification. Further interruption combinations and
-bringing setup into main-app Settings remain outstanding.
+confirmation, not provider verification. A separate lost-delivery check now
+observes a pending send with no recipient key, then retries through visible
+controls using a fresh nonce and unchanged permissions. The four named reload
+boundaries are documented in the credential test guide; further fault combinations
+and bringing setup into main-app Settings remain outstanding.
 Physical phone/desktop connectivity remains unverified; this is not seamless
 background reconnection or a public release.
 
