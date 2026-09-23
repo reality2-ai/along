@@ -245,3 +245,11 @@ unavailable. These are informational local-state primitives. They do not yet
 authorize AT-key release: authenticated enrollment/epoch changes, peer freshness,
 revocation propagation and cross-tab failure handling remain required. The full
 repository gate is still running; the isolated branch remains unmerged.
+
+Same-origin tab coordination is now implemented for authenticated public
+revocation evidence. Each receiver independently verifies the signature, while
+subscribers invalidate pending/cached decisions before the write completes. A
+real two-tab test passes with a simulated quota failure in the source tab: the
+receiver persists the removal and the source remains unavailable. This does not
+prove cross-device propagation or authorize application-secret access. The full
+runtime gate is still building its platform targets.
