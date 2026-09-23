@@ -90,3 +90,16 @@ journey legs. Live matching can distinguish repeated visits using that sequence,
 while also checking the stop ID when the live record supplies it. Without a
 verified sequence, a repeated stop still retains its scheduled time. A sequence
 conflict is not silently retried as a stop-ID-only match.
+
+## Operator and direction identities
+
+New imports retain route agency IDs and trip direction IDs in `route_agencies`
+and `trip_directions`. The optional browser arrays `routeAgencies` and
+`tripDirections` align with `routes` and `trips`; absent values are null. Agency
+IDs must exist in agency.txt. A route without an agency ID uses the sole known
+agency only when there is exactly one. Directions retain explicit GTFS 0 or 1;
+they are not inferred from names or route geometry.
+
+Stop rows and journey legs carry these identities into contextual alert matching.
+Older databases and downloaded bundles remain usable, but cannot match alerts
+that require missing identities. Incorrect array lengths are rejected.

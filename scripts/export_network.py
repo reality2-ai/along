@@ -27,6 +27,12 @@ def export(db_path, output):
                 connections.extend((trip_index[trip],stop_index[a],stop_index[b],dep,arr,pickup,dropoff))
         network = dict(version=1,accessibilityVersion=1 if has_access else 0,metadata=json.loads(db.execute('SELECT value FROM metadata').fetchone()[0]),stops=stops,routes=routes,trips=trips,calendar=list(db.execute('SELECT * FROM calendar')),exceptions=list(db.execute('SELECT * FROM exceptions')),transfers=list(db.execute('SELECT * FROM transfers')),connections=connections)
         if has_sequences: network['connectionSequences']=sequences
+        if db.execute("SELECT 1 FROM sqlite_master WHERE name='route_agencies'").fetchone():
+            agencies=dict(db.execute('SELECT * FROM route_agencies'))
+            network['routeAgencies']=[agencies.get(r[0]) for r in routes]
+        if db.execute("SELECT 1 FROM sqlite_master WHERE name='trip_directions'").fetchone():
+            directions=dict(db.execute('SELECT * FROM trip_directions'))
+            network['tripDirections']=[directions.get(t[0]) for t in trips]
     temporary = output.with_suffix('.building.gz')
     with gzip.open(temporary,'wt',encoding='utf-8',compresslevel=6) as stream:
         json.dump(network,stream,separators=(',',':'))

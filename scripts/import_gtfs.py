@@ -30,6 +30,8 @@ def ingest(source, target):
       CREATE TABLE transfers(origin TEXT, destination TEXT, type INTEGER, seconds INTEGER);
       CREATE TABLE connections(trip TEXT, origin TEXT, destination TEXT, departure INTEGER, arrival INTEGER, pickup INTEGER, dropoff INTEGER);
       CREATE TABLE connection_sequences(connection_rowid INTEGER PRIMARY KEY, origin_sequence INTEGER);
+      CREATE TABLE route_agencies(route TEXT PRIMARY KEY, agency TEXT);
+      CREATE TABLE trip_directions(trip TEXT PRIMARY KEY, direction INTEGER);
       CREATE TABLE metadata(value TEXT);
       CREATE TABLE accessibility(kind TEXT, id TEXT, value INTEGER);
     ''')
@@ -45,6 +47,12 @@ def ingest(source, target):
             (r['route_id'], r.get('route_short_name', ''), r.get('route_long_name', ''), int(r['route_type']), r.get('route_color', '')) for r in rows('routes.txt')))
         db.executemany('INSERT INTO trips VALUES (?,?,?,?)', (
             (r['trip_id'], r['route_id'], r['service_id'], r.get('trip_headsign', '')) for r in rows('trips.txt')))
+        agencies={r.get('agency_id') for r in rows('agency.txt') if r.get('agency_id')}
+        def route_agency(row):
+            value=row.get('agency_id') or (next(iter(agencies)) if len(agencies)==1 else None)
+            return value if value in agencies else None
+        db.executemany('INSERT INTO route_agencies VALUES (?,?)', ((r['route_id'],route_agency(r)) for r in rows('routes.txt')))
+        db.executemany('INSERT INTO trip_directions VALUES (?,?)', ((r['trip_id'],int(r['direction_id']) if r.get('direction_id') in ('0','1') else None) for r in rows('trips.txt')))
         db.executemany('INSERT INTO accessibility VALUES (?,?,?)', (('stop',r['stop_id'],int(r.get('wheelchair_boarding') or 0)) for r in rows('stops.txt')))
         db.executemany('INSERT INTO accessibility VALUES (?,?,?)', (('trip',r['trip_id'],int(r.get('wheelchair_accessible') or 0)) for r in rows('trips.txt')))
         db.executemany('INSERT INTO calendar VALUES (?,?,?,?)', (

@@ -14,9 +14,10 @@ test('stop times exclude unavailable pickup and include only upcoming active ser
 });
 
 test('original boarding sequence reaches journey legs and stop departures',()=>{
- const p=fixture();p.data.metadata={};p.data.connectionSequences=[10,30,80,120];
+ const p=fixture();p.data.metadata={};p.data.routeAgencies=['operator'];p.data.tripDirections=[1,0,1,null];p.data.connectionSequences=[10,30,80,120];
  const rows=stopDetails(p,{id:'a',now:{date:'2026-09-23',seconds:30000}});
- assert.equal(rows[0].stopSequence,30);
+ assert.equal(rows[0].stopSequence,30);assert.equal(rows[0].agencyId,'operator');assert.equal(rows[0].directionId,0);
  const journeys=p.plan({from:'a',to:'b',date:'2026-09-23',time:'08:30',modes:['bus']});
- assert.equal(journeys[0].legs.find(l=>l.trip).stopSequence,30);
+ const leg=journeys[0].legs.find(l=>l.trip);
+ assert.equal(leg.stopSequence,30);assert.equal(leg.agencyId,'operator');assert.equal(leg.directionId,0);
 });

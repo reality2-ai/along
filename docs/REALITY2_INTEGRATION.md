@@ -141,3 +141,17 @@ New data is local only; public version 35 still carries its earlier bundle.
 Regression tests cover unsorted input, non-consecutive sequence numbers, repeated
 stops, legacy database export, propagation to journey/stop results, and conflicting
 live identities. A full data/app release and direct TG-connected UI remain pending.
+
+### Operator and direction alert scope (source and local data)
+
+The local reimport now retains verified agency IDs for all 219 routes and explicit
+directions for all 49,541 trips. Every previous timetable field remains unchanged
+apart from import provenance. The compressed bundle is 13,536,722 bytes, only
+2,502 bytes larger than the sequence-enriched bundle. See
+[validation evidence](evidence/alert-identities.json).
+
+Stop and journey alert contexts include these identities. Regression tests exclude
+alerts for another agency or the opposite direction, including direction zero,
+and leave missing identities unmatched. Public version 35 and its live connection
+remain unchanged; this is preparation for a future data/app release, not TG
+credential storage or a deployed live service.

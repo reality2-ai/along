@@ -1,0 +1,9 @@
+{
+  "routes": 219,
+  "routes_with_verified_agency": 219,
+  "trips": 49541,
+  "trips_with_direction": 49541,
+  "prior_timetable_fields_unchanged": true,
+  "new_compressed_bytes": 13536722,
+  "public_dataset_updated": false
+}

@@ -20,8 +20,8 @@ export function stopAlertContexts(place,rows,at){
  const contexts=[{stop_id:place.id,start,end}];
  for(const row of rows){
   const instant=aucklandWallEpoch(at.date,row.departure);if(instant===null)continue;
-  contexts.push({stop_id:row.stop.id,route_id:row.routeId,route_type:row.routeType,
-   trip:{trip_id:row.trip,route_id:row.routeId,start_date:row.serviceDate,start_time:row.startTime},start:instant,end:instant});
+  contexts.push({stop_id:row.stop.id,route_id:row.routeId,route_type:row.routeType,agency_id:row.agencyId,direction_id:row.directionId,
+   trip:{trip_id:row.trip,route_id:row.routeId,direction_id:row.directionId,start_date:row.serviceDate,start_time:row.startTime},start:instant,end:instant});
  }
  return contexts;
 }
@@ -33,8 +33,8 @@ export function journeyAlertContexts(legs,date){
   if(!leg.trip || !leg.routeId || !leg.serviceDate)continue;
   const start=aucklandWallEpoch(date,leg.departure),end=aucklandWallEpoch(date,leg.arrival);
   if(start===null||end===null||end<start)continue;
-  const identity={route_id:leg.routeId,route_type:leg.routeType,
-   trip:{trip_id:leg.trip,route_id:leg.routeId,start_date:leg.serviceDate,start_time:leg.startTime}};
+  const identity={route_id:leg.routeId,route_type:leg.routeType,agency_id:leg.agencyId,direction_id:leg.directionId,
+   trip:{trip_id:leg.trip,route_id:leg.routeId,direction_id:leg.directionId,start_date:leg.serviceDate,start_time:leg.startTime}};
   contexts.push({...identity,start,end});
   for(const call of leg.calls||[]){
    const arrival=aucklandWallEpoch(date,call.arrival),departure=aucklandWallEpoch(date,call.departure);

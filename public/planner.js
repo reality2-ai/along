@@ -19,6 +19,9 @@ export class Planner {
   constructor(data) {
     if(data.connectionSequences && data.connectionSequences.length!==data.connections.length/7)throw new Error('Timetable stop sequences are incomplete. Update the timetable.');
     if(data.version !== 1) throw new Error('Please update Along to read this timetable.');
+    for(const [field,count] of [['routeAgencies',data.routes.length],['tripDirections',data.trips.length]]){
+      if(data[field]!==undefined&&(!Array.isArray(data[field])||data[field].length!==count))throw new Error('Timetable service identities are incomplete. Update the timetable.');
+    }
     this.data=data;
     this.stops=data.stops.map(([id,code,name,lat,lon,parent,kind,wheelchair=0])=>({id,code,name,lat,lon,parent,kind,wheelchair}));
     this.stopIndex=new Map(this.stops.map((s,i)=>[s.id,i]));
@@ -132,7 +135,7 @@ export class Planner {
         let rider=onboard.get(key),buffer=boardings===1?(origin.placeType==='address'?60:0):Math.max(120,rule.seconds);
         if(!rider&&pickup===0&&base&&base.arrival+buffer<=dep&&(boardings===1||rule.type!==3)&&(!this.profile.confirmedAccess||this.accessibleStop(a))){
           const [trip,ri,,headsign]=this.data.trips[ti],route=this.data.routes[ri];
-          rider={path:base.path,walking:base.walking,leg:{mode:this.mode(ri),route:route[1]||route[2],routeId:route[0],routeType:route[3],serviceDate:compactDate(shiftDate(date,offset)),serviceOffset:offset,stopSequence,headsign,trip,origin:a,destination:b,departure:dep,arrival:arr,stops:0}};
+          rider={path:base.path,walking:base.walking,leg:{mode:this.mode(ri),route:route[1]||route[2],routeId:route[0],routeType:route[3],agencyId:this.data.routeAgencies?.[ri],directionId:this.data.tripDirections?.[ti],serviceDate:compactDate(shiftDate(date,offset)),serviceOffset:offset,stopSequence,headsign,trip,origin:a,destination:b,departure:dep,arrival:arr,stops:0}};
         }
         if(!rider)continue;
         const leg={...rider.leg,destination:b,arrival:arr,stops:rider.leg.stops+1};onboard.set(key,{...rider,leg});

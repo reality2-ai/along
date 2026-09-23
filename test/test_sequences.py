@@ -14,8 +14,9 @@ class SequenceImportTests(unittest.TestCase):
     def test_original_nonconsecutive_sequences_and_legacy_database(self):
         files = {
             'stops.txt': 'stop_id,stop_name,stop_lat,stop_lon\na,First,-36.8,174.7\nb,Second,-36.81,174.71\nc,End,-36.82,174.72\n',
+            'agency.txt': 'agency_id,agency_name,agency_url,agency_timezone\noperator,Test operator,https://example.org,Pacific/Auckland\n',
             'routes.txt': 'route_id,route_type,route_short_name\nr,3,70\n',
-            'trips.txt': 'route_id,service_id,trip_id\nr,day,loop\n',
+            'trips.txt': 'route_id,service_id,trip_id,direction_id\nr,day,loop,0\n',
             'calendar.txt': 'service_id,start_date,end_date,monday,tuesday,wednesday,thursday,friday,saturday,sunday\nday,20260101,20261231,1,1,1,1,1,1,1\n',
             'stop_times.txt': 'trip_id,stop_id,stop_sequence,arrival_time,departure_time\nloop,a,80,09:20:00,09:21:00\nloop,c,120,09:30:00,09:30:00\nloop,a,10,09:00:00,09:00:00\nloop,b,30,09:10:00,09:11:00\n',
         }
@@ -26,10 +27,15 @@ class SequenceImportTests(unittest.TestCase):
             ingest(source,database);export(database,output)
             with gzip.open(output,'rt') as stream: network=json.load(stream)
             self.assertEqual(network['connectionSequences'],[10,30,80])
+            self.assertEqual(network['routeAgencies'],['operator'])
+            self.assertEqual(network['tripDirections'],[0])
             self.assertEqual(len(network['connections']),21)
             self.assertEqual(network['connections'][3::7],[32400,33060,33660])
-            with sqlite3.connect(database) as db: db.execute('DROP TABLE connection_sequences')
+            with sqlite3.connect(database) as db:
+                for table in ['connection_sequences','route_agencies','trip_directions']: db.execute('DROP TABLE '+table)
             export(database,output)
             with gzip.open(output,'rt') as stream: legacy=json.load(stream)
             self.assertNotIn('connectionSequences',legacy)
+            self.assertNotIn('routeAgencies',legacy)
+            self.assertNotIn('tripDirections',legacy)
             self.assertEqual(legacy['connections'],network['connections'])

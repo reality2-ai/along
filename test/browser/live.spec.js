@@ -101,10 +101,13 @@ test('stop alerts disclose only matching service and time scopes, then expire',a
   await context.route('**/api/predictions',r=>r.fulfill({contentType:'application/json',body:JSON.stringify({available:false})}));
   await context.route('**/api/alerts',async route=>{
    const updated=await page.evaluate(()=>Math.floor(Date.now()/1000));
-   const selected={stop_id:row.stop.id,route_id:row.routeId,trip:{trip_id:row.trip,start_date:row.serviceDate}};
+   expect(row.agencyId).toBeTruthy();expect([0,1]).toContain(row.directionId);
+   const selected={agency_id:row.agencyId,direction_id:row.directionId,stop_id:row.stop.id,route_id:row.routeId,trip:{trip_id:row.trip,start_date:row.serviceDate}};
    const alerts=[
     {title:'Platform access changed',description:'<img src=x onerror=alert(1)> Use the signposted entrance.',informed_entity:[selected]},
     {title:'Unrelated route',informed_entity:[{...selected,route_id:'not-this-route'}]},
+    {title:'Another operator',informed_entity:[{...selected,agency_id:'not-this-operator'}]},
+    {title:'Opposite direction',informed_entity:[{...selected,direction_id:1-row.directionId}]},
     {title:'Another service day',informed_entity:[{...selected,trip:{trip_id:row.trip,start_date:'20990101'}}]},
     {title:'Expired disruption',informed_entity:[selected],active_period:[{end:updated-1}]},
    ];
@@ -117,6 +120,7 @@ test('stop alerts disclose only matching service and time scopes, then expire',a
   await page.locator('#stop-alerts summary').click();
   await expect(page.locator('#stop-alerts')).toContainText('Platform access changed');
   await expect(page.locator('#stop-alerts')).not.toContainText('Unrelated route');await expect(page.locator('#stop-alerts')).not.toContainText('Expired disruption');
+  await expect(page.locator('#stop-alerts')).not.toContainText('Another operator');await expect(page.locator('#stop-alerts')).not.toContainText('Opposite direction');
   await expect(page.locator('#stop-alerts img')).toHaveCount(0);
   await expect(page.locator('.departure-board')).toBeVisible();
   await page.clock.fastForward(181000);await expect(page.locator('#stop-alerts')).toContainText('expired');await expect(page.locator('#stop-alerts details')).toHaveCount(0);

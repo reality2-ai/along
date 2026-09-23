@@ -1,3 +1,4 @@
+import {contextualAlerts} from '../public/live-context.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {aucklandWallEpoch,stopAlertContexts,journeyAlertContexts} from '../public/live-time.js';
@@ -25,4 +26,20 @@ test('journey contexts retain intermediate stop intervals and the previous servi
  assert.equal(result[0].trip.start_date,'20260922');assert.equal(result[0].end-result[0].start,1200);
  assert.equal(result[2].stop_id,'b');assert.equal(result[2].end-result[2].start,60);
  assert.deepEqual(journeyAlertContexts(legs.slice(2),'2026-09-23'),[]);
+});
+
+test('stop and journey alert contexts retain verified operator and direction, including zero',()=>{
+ const row={trip:'t',serviceDate:'20260923',startTime:'09:00:00',routeId:'r',routeType:3,agencyId:'operator',directionId:0,departure:32400,arrival:33000,stop:{id:'s'}};
+ const stop=stopAlertContexts({id:'s'},[row],{date:'2026-09-23',seconds:32400})[1];
+ const leg=journeyAlertContexts([{...row,calls:[]}],'2026-09-23')[0];
+ for(const context of [stop,leg]){
+  assert.equal(context.agency_id,'operator');assert.equal(context.direction_id,0);assert.equal(context.trip.direction_id,0);
+  const feed={available:true,updated:context.start,alerts:[
+   {id:'right',informed_entity:[{agency_id:'operator',route_id:'r',direction_id:0}]},
+   {id:'wrong-direction',informed_entity:[{agency_id:'operator',route_id:'r',direction_id:1}]},
+   {id:'wrong-operator',informed_entity:[{agency_id:'other',route_id:'r',direction_id:0}]}
+  ]};
+  assert.deepEqual(contextualAlerts(feed,[context],{now:context.start}).map(a=>a.id),['right']);
+  assert.equal(contextualAlerts(feed,[{...context,agency_id:undefined}],{now:context.start}).length,0);
+ }
 });

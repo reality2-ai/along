@@ -253,8 +253,8 @@ time. Matching is evaluated at its displayed Auckland departure time. A separate
 stop-only context covers the inspected stop's two-hour window, including when no
 departures are returned. Wall-time conversion does not depend on the device's
 timezone; ambiguous or missing daylight-saving wall times are left unmatched.
-Agency/direction restrictions still need corresponding source metadata before
-those selectors can match. Selected-journey integration is described below.
+New timetable imports retain verified agency and direction metadata so those
+selectors can match. Older bundles without that metadata leave them unmatched. Selected-journey integration is described below.
 The public proxy remains unconfigured; version 34 is still the deployed release.
 
 ### Selected-journey service alerts (source integration)
@@ -268,8 +268,9 @@ corresponding stop visit. No route, time or progress is automatically changed.
 
 Advancing a step or leaving the journey clears and cancels the check. Results
 expire after the feed freshness window, and offline failure retains the chosen
-schedule. Unknown agency/direction selectors still require additional source
-metadata; this is not a guarantee that every relevant alert can be identified.
+schedule. Agency/direction selectors match only verified timetable metadata; missing or
+unknown identities remain unmatched. This does not guarantee every relevant alert
+can be identified.
 Vehicle position source integration is described below. Public version 34
 still has no configured live proxy.
 
