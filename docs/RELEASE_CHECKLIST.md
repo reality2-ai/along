@@ -226,3 +226,11 @@ Routing direction remains destination first, then origin, then review.
 The user explicitly clarified that TalkBack has **not** been tested. The earlier
 positive response to the TalkBack question is superseded by that correction;
 spoken screen-reader acceptance remains outstanding.
+
+
+Version 24 passed all four browser scenarios (guided journeys, mobile nearby,
+address/access flow, and route/map exploration), plus a focused 390-pixel check
+of the origin title, selected-destination context and Back preserving the choice.
+Public HTML, app code and service worker match the built version 24 files after
+successful Pages deployment. This copy clarification does not establish spoken
+screen-reader validation.

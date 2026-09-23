@@ -499,3 +499,9 @@ The final change keeps that ordering and improves the titles and retained-contex
 labels; an origin-first redesign was not carried forward. This illustrates why
 feedback should be read across the clarification sequence rather than treating
 an intermediate interpretation as a settled requirement.
+
+
+“If I can be confused, so can someone else” confirms that the misunderstanding
+remains useful design evidence after the ordering is understood. The response is
+to improve the interface's explanation, not dismiss the observation. One person's
+experience identifies a plausible issue; broader prevalence still needs testing.
