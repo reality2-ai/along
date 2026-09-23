@@ -1,0 +1,32 @@
+{
+  "profile": "along-preview-qualification-v1",
+  "app_version": "3801",
+  "source_commit": "e0bd07accee60e0c15fa02d87b3f5fa8a2837589",
+  "recorded_at": "2026-09-23T22:45:27.875017+00:00",
+  "candidate_manifest_sha256": "6bc39cfdc530f79688d7f4c91004c4e0e674e473ccc104ec5b114a3965e6ab96",
+  "checks": {
+    "journeys": {
+      "status": "passed",
+      "command": "PREVIEW=1 node experiments/journey-sync/app-integration.test.mjs"
+    },
+    "owner_key": {
+      "status": "passed",
+      "command": "PREVIEW=1 CHECK_BFCACHE=1 node experiments/at-credentials/app-integration.test.mjs"
+    },
+    "shared_key_replacement": {
+      "status": "passed",
+      "command": "PREVIEW=1 MAIN_APP_SETUP=1 REPLACE_SHARED_KEY=1 node experiments/at-credentials/two-app-integration.test.mjs"
+    },
+    "upgrade_coexistence": {
+      "status": "passed",
+      "command": "node experiments/journey-sync/preview-coexistence.test.mjs"
+    }
+  },
+  "limits": [
+    "Synthetic AT keys and mocked provider responses",
+    "Two browser profiles on one host; manual device-message transfer",
+    "Physical installation, QR reachability and TalkBack acceptance pending",
+    "No full R2 hardware-backed conformance or same-origin script isolation",
+    "Wider goal, group lifecycle and automatic reconnection unfinished"
+  ]
+}

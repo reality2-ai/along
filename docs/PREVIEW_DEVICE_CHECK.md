@@ -1,7 +1,7 @@
 # Along Device Preview: S23 and desktop check
 
-Candidate **3801** is prepared locally; the release URL will be supplied when it
-is published. These instructions are for that preview, not public version 37 or
+Open [Along Device Preview](https://reality2.ai/along/preview/public/) and check
+version **3801**. These instructions are for that preview, not public version 37 or
 the standalone pairing lab. No coding or terminal commands are required.
 
 Use your Samsung S23 and desktop. Record the browser name/version on each device.
