@@ -6,7 +6,7 @@ import {join} from 'node:path';
 const {chromium} = await import(process.env.PLAYWRIGHT_MODULE || '@playwright/test');
 if (!process.env.R2_BROWSER_DIR) throw new Error('Set R2_BROWSER_DIR to the Reality2 browser module directory');
 if (!process.env.R2_WASM_DIR) throw new Error('Set R2_WASM_DIR');
-const sources = new Map(await Promise.all(['enrollment-session', 'enrollment-link', 'enrollment-exchange', 'peer-link', 'invitation', 'invitation-journal', 'storage'].map(async name => ['/' + name + '.mjs', await readFile(join(process.env.R2_BROWSER_DIR, name + '.mjs'))])));
+const sources = new Map(await Promise.all(['enrollment-session', 'enrollment-link', 'enrollment-exchange', 'enrollment-protection', 'peer-link', 'invitation', 'invitation-journal', 'storage'].map(async name => ['/' + name + '.mjs', await readFile(join(process.env.R2_BROWSER_DIR, name + '.mjs'))])));
 for (const name of ['session-view.mjs', 'comparison.mjs']) sources.set('/' + name, await readFile(new URL('./' + name, import.meta.url)));
 for (const name of ['hive_wasm.js', 'hive_wasm_bg.wasm']) sources.set('/' + name, await readFile(join(process.env.R2_WASM_DIR, name)));
 const server = createServer((req, res) => {

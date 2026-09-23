@@ -48,10 +48,28 @@ success does not resolve those hosted failures. Repair the runner prerequisites
 and obtain hosted evidence before treating CI as verified; do not remove the
 isolation probe or count unrun controls as passing. The repair installs Ubuntu's
 packaged bubblewrap profile while retaining the global restriction and existing
-namespace probe, and builds the GUI prerequisites explicitly. New hosted runs
+namespace probe, and builds the GUI prerequisites explicitly. Hosted Rust run
 [35843129043](https://github.com/reality2-ai/r2-standard/actions/runs/35843129043)
-and [35843129013](https://github.com/reality2-ai/r2-standard/actions/runs/35843129013)
-are in progress; this is not yet evidence that the repair passed.
+passed the namespace setup probe but failed later in captured-packer tests
+with `bwrap: execvp …/program: No such file or directory`. The separate
+[repository gate run](https://github.com/reality2-ai/r2-standard/actions/runs/35843129013)
+was still running at this observation. Local probes using captured shell scripts
+and ELF programs pass; the hosted failure remains unresolved. Do not infer that
+the browser enrollment code caused this failure, or that local success establishes
+hosted compatibility.
+
+### Protected enrollment payloads (experimental)
+
+The [protected-carriage increment](https://github.com/reality2-ai/r2-standard/commit/c4f5b794)
+adds purpose-separated AES-GCM protection for the candidate claim and provisioner
+bundle, bound to the invitation and peer transcript. Both people must confirm
+before the link allows either message. Replay, tampering, out-of-order messages,
+expiry and disconnection close the session and void its durable reservation.
+Browser tests use synthetic material and real isolated contexts with the asset
+host stopped. The unchanged runtime snapshot passed `cargo xtask verify` and
+repository commit checks locally. This proves the tested transport behavior,
+not payload authority, completed membership installation or safe AT-key custody.
+Those integration steps remain outstanding; the public app stays on version 37.
 
 ### Notekeeper reference inspection
 
