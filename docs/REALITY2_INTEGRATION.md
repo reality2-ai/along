@@ -196,3 +196,19 @@ The pending scope choice remains whether to develop the missing TG capability
 as part of this work or wait for Reality2 support. Neither response is assumed.
 Direct AT access is ready for that integration; an arbitrary local key store would
 not fulfil the requested trust-group architecture.
+
+### Approved browser runtime implementation
+
+The user has now authorized development of the missing TG capability. The earlier
+pending scope choice is resolved. Work is isolated on the Reality2 branch
+`along-browser-tg`, based on `8efd689cddfcfae96de7b178817d0d4869b897b3`, to avoid
+interfering with concurrent runtime development.
+
+The first implementation is an asynchronous IndexedDB persistence foundation
+under `hive-wasm/browser`. It requires strict commit durability, uses revisioned
+compare-and-swap transactions, and keeps deletion tombstones to reject stale
+writers. It is not yet a TG credential store or a replacement for the synchronous
+Rust Storage trait. Real-browser checks verify restart/offline behavior and
+concurrent tabs using synthetic records and a generated test key. No real AT key
+is stored or published. The runtime verification gate and full integration remain
+in progress; Along's public live connection remains disabled.
