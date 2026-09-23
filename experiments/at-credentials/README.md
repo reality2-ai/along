@@ -456,3 +456,27 @@ identifiers. Existing grants need not be restored to acknowledge historical stor
 This is a one-browser-host test with synthetic issuer and manually exchanged
 connection descriptions. User-facing recovery, automatic discovery/signaling,
 physical-device reconnection and reconnect policy catch-up remain open.
+
+## Sending policy after reconnect
+
+`sendOwnerPolicy` restores the actual local owner, reads and verifies its saved
+policy, checks that the owner pin and policy revisions remain unchanged, and sends
+that signed policy on the controller's authenticated connection. Its result is
+`policy-sent-unconfirmed`; sending alone does not establish receipt. This sends
+public policy even when the remote device's AT grant has been removed, so that
+device can learn about its removal. No credential is included.
+
+The receiver can explicitly use `acceptUnchanged: true` for reconciliation.
+Byte-identical signed policy is accepted as `policy-unchanged` after checking the
+stored policy and local binding evidence again, without a storage write. Newer
+policy still uses the existing atomic guarded update. Older policies, invalid
+signatures and different contents at the same revision remain refused. Ordinary
+update calls retain their strict increasing-revision rule.
+
+The authenticated WebRTC test covers identical policy without rewriting storage,
+removal delivery to an ungranted recipient, identical removal without restoring
+key access, refusal of an older grant and subsequent explicit regrant. This is
+reconciliation machinery, not automatic reconnect scheduling or a live-access
+freshness gate. A controller must still order catch-up before contextual provider
+requests; no persisted freshness lease or independent challenge-bound owner
+confirmation is claimed. Physical-device and public interface checks remain open.

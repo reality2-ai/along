@@ -7,7 +7,7 @@ const hex = bytes => Array.from(bytes, b => b.toString(16).padStart(2, '0')).joi
 // Session controller supplies the actual authenticated peer, not a payload ID.
 // Removal policies must be accepted even when they no longer grant this device.
 export async function applyRemoteATPolicy({wasm, store, expectedGroup, peer,
-  policyBytes, policySignature, connection, signal}) {
+  policyBytes, policySignature, connection, signal, acceptUnchanged = false}) {
   try {
     if (store.capabilities?.transactionChecks !== true || !connection?.signal
         || !(expectedGroup instanceof Uint8Array) || expectedGroup.length !== 32
@@ -37,6 +37,23 @@ export async function applyRemoteATPolicy({wasm, store, expectedGroup, peer,
       {scope: evidenceScope, key: evidenceKey, expectedRevision: evidence.revision},
     ];
     const guarded = {...store, compareAndSwapMany: (changes, options) => store.compareAndSwapMany(changes, {...options, checks})};
+    if (acceptUnchanged === true) {
+      const scope = 'along-at-policy:' + owner, key = groupId + ':' + saved.binding.credential;
+      const loaded = await openCredentialPolicyStore({store, ...saved.binding}).read({signal: lifetime});
+      const record = await store.read(scope, key); current();
+      const equal = (a, b) => a instanceof Uint8Array && a.length === b.length && a.every((v, i) => v === b[i]);
+      if (record?.revision === loaded.storageRevision && equal(record.value.bytes, bytes)
+          && equal(record.value.signature, signature)) {
+        for (const check of [...checks, {scope, key, expectedRevision: record.revision}]) {
+          current();
+          if ((await store.read(check.scope, check.key))?.revision !== check.expectedRevision) throw fail();
+        }
+        current();
+        // Same verified policy received on this connection. This is not a
+        // durable freshness proof, a lease, or permission to ignore later updates.
+        return Object.freeze({status: 'policy-unchanged', policy: loaded.policy, storageRevision: record.revision});
+      }
+    }
     return await openCredentialPolicyStore({store: guarded, ...saved.binding}).update(bytes, signature, {signal: lifetime});
   } catch { throw fail(); }
 }

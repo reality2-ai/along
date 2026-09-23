@@ -6,7 +6,7 @@ import {join} from 'node:path';
 const {chromium} = await import(process.env.PLAYWRIGHT_MODULE || '@playwright/test');
 const sources = new Map();
 for (const name of ['storage.mjs', 'membership.mjs', 'certificate.mjs', 'peer-session.mjs', 'peer-link.mjs', 'challenge.mjs', 'session-statement.mjs']) sources.set('/' + name, await readFile(join(process.env.R2_BROWSER_DIR, name)));
-for (const name of ['../tg-pairing/initial-persona.mjs', '../tg-pairing/local-persona.mjs', 'local-owner.mjs', 'owner-policy.mjs', 'owner-delivery.mjs', 'delivery-history.mjs', 'delivery-recovery.mjs', 'remote-owner.mjs', 'policy-update.mjs', 'policy-update-message.mjs', 'remote-owner-view.mjs', 'settings-view.mjs', 'credential-view.mjs', '../tg-pairing/comparison.css', '../tg-pairing/local-persona-session.mjs', 'policy.mjs', 'policy-store.mjs', 'local-vault.mjs', 'delivery-ack.mjs', 'delivery-message.mjs']) sources.set('/' + name.split('/').pop(), await readFile(new URL(name, import.meta.url)));
+for (const name of ['../tg-pairing/initial-persona.mjs', '../tg-pairing/local-persona.mjs', 'local-owner.mjs', 'owner-policy.mjs', 'owner-policy-send.mjs', 'owner-delivery.mjs', 'delivery-history.mjs', 'delivery-recovery.mjs', 'remote-owner.mjs', 'policy-update.mjs', 'policy-update-message.mjs', 'remote-owner-view.mjs', 'settings-view.mjs', 'credential-view.mjs', '../tg-pairing/comparison.css', '../tg-pairing/local-persona-session.mjs', 'policy.mjs', 'policy-store.mjs', 'local-vault.mjs', 'delivery-ack.mjs', 'delivery-message.mjs']) sources.set('/' + name.split('/').pop(), await readFile(new URL(name, import.meta.url)));
 for (const name of ['hive_wasm.js', 'hive_wasm_bg.wasm']) sources.set('/' + name, await readFile(join(process.env.R2_WASM_DIR, name)));
 for (const name of ['live-client.mjs', '../../public/at-client.js', '../../public/live-client.js']) sources.set('/' + name.split('/').pop(), await readFile(new URL(name, import.meta.url)));
 const server = createServer((req, res) => {
@@ -41,6 +41,7 @@ try {
     const {requestDeliveryRecovery, answerDeliveryRecovery, encodeRecoveryRequest, decodeRecoveryRequest} = await import('./delivery-recovery.mjs');
     const {applyRemoteATPolicy, encodePolicyUpdate, decodePolicyUpdate} = await import('./policy-update.mjs');
     const {updateLocalATPolicy} = await import('./owner-policy.mjs');
+    const {sendOwnerPolicy} = await import('./owner-policy-send.mjs');
     const codec = (await import('./certificate.mjs')).certificateCodec(wasm);
     const hex = bytes => Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
     const check = (v, message) => { if (!v) throw new Error(message); };
@@ -87,7 +88,7 @@ try {
           }
           if (policyReply) {
             try { policyReply(await applyRemoteATPolicy({wasm, store: receiver.store, expectedGroup: group,
-              peer: owner.subject, connection: receiving, ...decodePolicyUpdate(packet)})); }
+              peer: owner.subject, connection: receiving, acceptUnchanged: true, ...decodePolicyUpdate(packet)})); }
             catch (error) { policyError(error); }
             finally { policyReply = undefined; policyError = undefined; }
             return;
@@ -221,11 +222,14 @@ try {
         fetcher: async () => { calls++; entered(); await delayed; return {ok: true, json: async () => ({header: {timestamp: 1000}, entity: []})}; }});
       const pendingLive = live.read('predictions', {requested: true}); await fetching;
       const sendPolicy = async () => {
-        const record = await owner.store.read(policyScope, policyKey);
         const pending = new Promise((yes, no) => { policyReply = yes; policyError = no; });
-        await sending.send(encodePolicyUpdate(record.value.bytes, record.value.signature));
+        const sent = await sendOwnerPolicy({wasm, store: owner.store, expectedGroup: group, connection: sending});
+        check(sent.status === 'policy-sent-unconfirmed', 'policy send is not receipt');
         return pending;
       };
+      const beforeRefresh = await receiver.store.read(policyScope, policyKey);
+      check((await sendPolicy()).status === 'policy-unchanged', 'unchanged policy accepted without new grant');
+      check((await receiver.store.read(policyScope, policyKey)).revision === beforeRefresh.revision, 'unchanged policy does not rewrite storage');
       await updateLocalATPolicy({wasm, store: owner.store, expectedGroup: group, expectedRevision: 2n, devices: [hex(owner.subject)]});
       const removal = (await owner.store.read(policyScope, policyKey)).value;
       const applying = changes => applyRemoteATPolicy({wasm, store: receiver.store, expectedGroup: group,
@@ -233,12 +237,17 @@ try {
       check(await denied(() => applying({peer: receiver.subject})), 'unrelated peer cannot apply owner policy');
       const invalid = removal.signature.slice(); invalid[0] ^= 1;
       check(await denied(() => applying({policySignature: invalid})), 'invalid removal signature refused');
+      check(await denied(() => applying({policySignature: invalid, acceptUnchanged: true})), 'catch-up does not accept an invalid signature');
       await sendPolicy();
       check(await denied(() => receiverVault.getKey()), 'received removal stops local key access');
       release(); check(!(await pendingLive).available, 'received removal suppresses pending live result');
       check(!(await live.read('predictions', {requested: true})).available && calls === 1, 'removed device cannot request another feed');
       live.close();
       check(await denied(() => applying({})), 'replayed removal refused');
+      check((await applying({acceptUnchanged: true})).status === 'policy-unchanged', 'explicit catch-up accepts identical removal');
+      check(await denied(() => receiverVault.getKey()), 'identical removal does not restore access');
+      check(await denied(() => applying({acceptUnchanged: true, policyBytes: signed.value.bytes,
+        policySignature: signed.value.signature})), 'catch-up refuses an older granting policy');
       check(await sendOwnerCredential({wasm, store: owner.store, expectedGroup: group, peer: receiver.subject,
         peerCertificate: receiver.certificate, nonce: crypto.getRandomValues(new Uint8Array(16)), connection: sending}).then(() => false, () => true), 'removed peer receives no further delivery');
       check(messages === 1, 'no removed-peer message sent');
