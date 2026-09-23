@@ -1,3 +1,4 @@
+import {tripStopMetadata} from './live-predictions.js';
 // Read-only timetable exploration; no location, learning or journey-state mutation.
 export function findRoutes(planner,query){
   const q=query.trim().toLocaleLowerCase();if(!q)return [];
@@ -39,18 +40,10 @@ export function stopDetails(planner,{id,now}){
     departures.push({serviceDate,trip:trip[0],routeId:route[0],route:route[1]||route[2],headsign:trip[3],departure,stop:planner.stops[a],mode:planner.mode(trip[1])});
   }
   const result=departures.sort((a,b)=>a.departure-b.departure).slice(0,30);
-  const wanted=new Map(result.map(d=>[d.trip,{visits:new Map(),first:Infinity,last:-Infinity,end:null}]));
-  const c=planner.data.connections;
-  for(let i=0;i<c.length;i+=7){
-    const run=wanted.get(planner.data.trips[c[i]][0]);if(!run)continue;
-    const stop=planner.stops[c[i+1]].id;
-    run.visits.set(stop,(run.visits.get(stop)||0)+1);run.first=Math.min(run.first,c[i+3]);
-    if(c[i+4]>run.last){run.last=c[i+4];run.end=planner.stops[c[i+2]].id;}
-  }
-  for(const run of wanted.values())run.visits.set(run.end,(run.visits.get(run.end)||0)+1);
-  for(const departure of result){const run=wanted.get(departure.trip);
+  const metadata=tripStopMetadata(planner.data,planner.stops,new Set(result.map(d=>d.trip)));
+  for(const departure of result){const run=metadata.get(departure.trip);
     departure.stopVisits=run.visits.get(departure.stop.id)||0;
-    departure.startTime=[Math.floor(run.first/3600),Math.floor(run.first%3600/60),run.first%60].map(n=>String(n).padStart(2,'0')).join(':');
+    departure.startTime=run.startTime;
   }
   return result;
 }

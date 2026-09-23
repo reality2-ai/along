@@ -1,3 +1,4 @@
+import {departurePrediction,tripStopMetadata} from './live-predictions.js';
 import {normaliseRoutes,journeyRoutes,sameRoutes} from './preferences.js';
 // Runs in a Web Worker. The entire network stays on the device, including searches.
 export const zone = 'Pacific/Auckland';
@@ -170,28 +171,23 @@ export class Planner {
     const connections=this.connections(now.date,now.seconds-1800,now.seconds+7200,mode==='all'?['bus','train','ferry']:[mode]);
     const onward=new Map();
     if(ends)for(const [,arr,ti,,b,,dropoff,offset]of connections)if(ends.has(b)&&dropoff===0){const key=`${ti}:${offset}`;onward.set(key,Math.max(onward.get(key)||0,arr));}
-    const fresh=feed.available&&Math.abs(Date.now()/1000-feed.updated)<180,predictions=new Map();
-    if(fresh)for(const entity of feed.entities||[]){
-      const update=entity.trip_update,trip=update?.trip;
-      if(!trip?.trip_id||!/^\d{8}$/.test(trip.start_date||''))continue;
-      const key=`${trip.trip_id}:${trip.start_date}`;
-      // Multiple records for one instance are ambiguous; do not guess a winner.
-      predictions.set(key,predictions.has(key)?null:update);
-    }
+    const fresh=feed.available===true&&typeof feed.updated==='number'&&Number.isSafeInteger(feed.updated)&&Math.abs(Date.now()/1000-feed.updated)<=180;
+    const metadata=fresh?tripStopMetadata(this.data,this.stops,new Set(connections.filter(c=>ids.has(c[3])).map(c=>this.data.trips[c[2]][0]))):new Map();
     const found=new Map(stops.map(s=>[s.i,[]])),seen=new Set();
     for(const [dep,,ti,a,,pickup,,offset]of connections){
       if(this.profile.confirmedAccess&&this.data.trips[ti][4]!==1)continue;
       if(!ids.has(a)||pickup!==0||(ends&&!(onward.get(`${ti}:${offset}`)>dep)))continue;
       const [trip,ri,,headsign]=this.data.trips[ti],dedup=`${trip}:${offset}:${a}:${dep}`;
       if(seen.has(dedup))continue;seen.add(dedup);
-      const date=compactDate(shiftDate(now.date,offset)),candidate=predictions.get(`${trip}:${date}`);
-      const update=candidate&&(!candidate.trip.route_id||candidate.trip.route_id===this.data.routes[ri][0])?candidate:null;
       let expected=dep,live=false;
-      if(update){if([3,'CANCELED'].includes(update.trip.schedule_relationship))continue;
-        const event=update.stop_time_update?.find(u=>u.stop_id===this.stops[a].id);
-        if(event){if([1,3,'SKIPPED','CANCELED'].includes(event.schedule_relationship))continue;
-          if(Number.isFinite(Number(event.departure?.time))&&Number(event.departure.time)>0){const at=aucklandNow(new Date(Number(event.departure.time)*1000));expected=(Date.parse(at.date)-Date.parse(now.date))/86400000*86400+at.seconds;live=true;}
-          else if(event.departure?.delay!=null&&Number.isFinite(Number(event.departure.delay))){expected+=Number(event.departure.delay);live=true;}
+      if(fresh){
+        const run=metadata.get(trip);
+        const prediction=departurePrediction(feed,{trip,routeId:this.data.routes[ri][0],serviceDate:compactDate(shiftDate(now.date,offset)),stop:this.stops[a],stopVisits:run?.visits.get(this.stops[a].id)||0,startTime:run?.startTime});
+        if(['cancelled','skipped'].includes(prediction.status))continue;
+        if(prediction.status==='predicted'){
+          if(prediction.epoch){const at=aucklandNow(new Date(prediction.epoch*1000));expected=(Date.parse(at.date)-Date.parse(now.date))/86400000*86400+at.seconds;}
+          else expected+=prediction.delay;
+          live=true;
         }
       }
       if(expected<now.seconds||expected>now.seconds+7200)continue;

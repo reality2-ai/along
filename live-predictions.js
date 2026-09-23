@@ -30,3 +30,21 @@ export function departurePrediction(feed,departure,{now=Date.now()/1000}={}){
   if(integer(value.delay)&&Number(value.delay)>=-2147483648&&Number(value.delay)<=2147483647)return {status:'predicted',delay:Number(value.delay),updated:feed.updated};
   return scheduled('invalid-delay');
 }
+
+// Source stop_sequence is not in the compact timetable. Count full-trip visits
+// (including the final arrival), never only the current two-hour search window.
+export function tripStopMetadata(data,stops,tripIds){
+  const wanted=new Map([...tripIds].map(id=>[id,{visits:new Map(),first:Infinity,last:-Infinity,end:null}]));
+  const c=data.connections;
+  for(let i=0;i<c.length;i+=7){
+    const run=wanted.get(data.trips[c[i]][0]);if(!run)continue;
+    const stop=stops[c[i+1]].id;
+    run.visits.set(stop,(run.visits.get(stop)||0)+1);run.first=Math.min(run.first,c[i+3]);
+    if(c[i+4]>=run.last){run.last=c[i+4];run.end=stops[c[i+2]].id;}
+  }
+  for(const run of wanted.values()){
+    if(run.end!==null)run.visits.set(run.end,(run.visits.get(run.end)||0)+1);
+    run.startTime=Number.isFinite(run.first)?[Math.floor(run.first/3600),Math.floor(run.first%3600/60),run.first%60].map(n=>String(n).padStart(2,'0')).join(':'):null;
+  }
+  return wanted;
+}
