@@ -201,3 +201,14 @@ Check for updates → Open Along. No uninstall or site-data deletion is required
 The user confirmed the recovery worked after receiving the version 23 update
 instructions. This closes the reported repeated-update incident; it does not
 establish a TalkBack result or identify the installation browser.
+
+
+## Downloadable version 23 candidate
+
+The `v0.23.0` draft prerelease targets source commit `37339d9` and contains the
+current ZIP and checksum. All archive files match `dist/`; both uploaded asset
+hashes match the local files. ZIP SHA-256:
+`7b373ed55765a97c6360d87856bb79dc3bba4a21b31577d3ea369979926b8201`.
+This supersedes the version 21 draft for review. Draft assets remain visible to
+maintainers only. The public app already serves version 23; spoken screen-reader
+acceptance is still outstanding.
