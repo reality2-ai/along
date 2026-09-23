@@ -94,8 +94,8 @@ button,.secondary-button,.tab,.setting,select,input[type=date],input[type=time]{
 .guided-app #previous-leg{margin-top:8px}
 .guided-app .follow-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:0 0 16px}
 .guided-app .follow-heading #step-count{margin:0}
-.guided-app #save-journey{display:block;margin:0;background:#fff;border:1px solid #214e40;border-radius:9px;min-height:48px;padding:12px 16px;color:#214e40;font-size:16px;font-weight:600}
-.guided-app #save-journey[aria-pressed="true"]{background:#e8f0e4}
+.guided-app #prefer-services{display:block;margin:0;background:#fff;border:1px solid #214e40;border-radius:9px;min-height:48px;padding:12px 16px;color:#214e40;font-size:16px;font-weight:600}
+.guided-app #prefer-services[aria-pressed="true"]{background:#e8f0e4}
 .guided-app #arrived-panel .secondary-button{width:100%;margin-top:16px}
 .guided-app #nearby-edit,.guided-app #change-search{display:block;margin-top:16px}
 .guided-app footer{margin-top:56px;padding:16px 0;border-top:1px solid var(--line);font-size:11px;line-height:1.8;display:block}
@@ -130,3 +130,18 @@ button,.secondary-button,.tab,.setting,select,input[type=date],input[type=time]{
 .map-load-button span{display:block;font-size:12px;margin-top:4px}
 .map-load-button:hover{background:#f0f5ee}
 .map-load-button:focus-visible{outline:3px solid #173e37;outline-offset:4px}
+
+/* Departure-board appearance, with normal text and semantic table navigation. */
+.departure-board{background:#172a28;color:#f5f7f2;border:1px solid #415a53;border-radius:12px;overflow:hidden;margin:20px 0}
+.departure-board table{width:100%;border-collapse:collapse;table-layout:fixed}
+.departure-board caption{text-align:left;padding:16px;color:#ffdc8a;background:#203a34;font-weight:700;font-size:16px}
+.departure-board th{text-align:left;padding:10px 8px;color:#d9e9df;font-size:12px;border-bottom:1px solid #647a70}
+.departure-board th:first-child{width:66px}.departure-board th:nth-child(2){width:70px}
+.departure-board td{padding:12px 8px;border-bottom:1px solid #415a53;font-size:14px;line-height:1.5;overflow-wrap:anywhere;vertical-align:middle}
+.departure-board tr:last-child td{border-bottom:0}.departure-board tbody tr:nth-child(even){background:#20332f}
+.departure-board .board-time{font-family:ui-monospace,monospace;font-size:16px;font-weight:700;font-variant-numeric:tabular-nums;color:#ffdc8a}
+.guided-app .departure-board .board-route{display:block;min-height:44px;width:100%;padding:8px 4px;border:1px solid #c7d7cd;border-radius:6px;background:#2a453b;color:#fff;font-weight:700;overflow-wrap:anywhere}
+.departure-board .board-route:focus-visible{outline:3px solid #ffdc8a;outline-offset:2px}
+@media(forced-colors:active){.departure-board,.departure-board caption,.departure-board tbody tr:nth-child(even){background:Canvas;color:CanvasText}.departure-board td,.departure-board th{color:CanvasText;border-color:CanvasText}.departure-board .board-time{color:CanvasText}}
+
+.guided-app #information .leaflet-control-attribution a{text-decoration:underline}

@@ -1,3 +1,4 @@
+import {normaliseRoutes,journeyRoutes,sameRoutes} from './preferences.js';
 // Runs in a Web Worker. The entire network stays on the device, including searches.
 export const zone = 'Pacific/Auckland';
 export function aucklandNow(date = new Date()) {
@@ -91,7 +92,18 @@ export class Planner {
       for(let i=lo;i<hi;i+=7){const trip=this.data.trips[c[i]];if(active.has(trip[2])&&modes.includes(this.mode(trip[1])))out.push([c[i+3]+shift,c[i+4]+shift,c[i],c[i+1],c[i+2],c[i+5],c[i+6],offset]);}
     }return out.sort((a,b)=>a[0]-b[0]||a[1]-b[1]);
   }
-  plan({from,to,date,time,modes,maxWalk=900,profile={}}){
+  plan({from,to,date,time,modes,maxWalk=900,profile={},preferredRoutes=null,routeSequence=null}){
+    const preference=normaliseRoutes(preferredRoutes);
+    if(preference){
+      const args={from,to,date,time,modes,maxWalk,profile};
+      const alternatives=this.plan(args);
+      // Search the chosen service sequence separately: it may be slower and
+      // therefore absent from the ordinary earliest-arrival options.
+      const preferred=preference.length?this.plan({...args,routeSequence:preference}):alternatives.filter(j=>j.walkOnly);
+      const signature=j=>JSON.stringify(j.legs.map(l=>[l.mode,l.trip,l.from.id,l.to.id,l.departure]));
+      const seen=new Set(preferred.map(signature));
+      return [...preferred,...alternatives.filter(j=>!seen.has(signature(j)))].map(j=>({...j,preferred:sameRoutes(journeyRoutes(j),preference)}));
+    }
     this.setProfile(profile);
     this.checkDate(date);const origin=this.place(from),destination=this.place(to);
     if(origin.id===destination.id)throw new Error('Choose two different stops or addresses.');
@@ -103,15 +115,17 @@ export class Planner {
     const [h,m]=time.split(':').map(Number),seconds=h*3600+m*60,horizon=seconds+14400;
     const connections=this.connections(date,seconds,horizon,modes),results=[];
     let previous=new Map([...starts].map(([s,walk])=>[s,{arrival:seconds+walk,path:origin.placeType==='address'?[this.walkingLeg(origin,this.stops[s],seconds,walk,{access:true})]:[],walking:walk}]));
-    if(this.streets&&(origin.placeType==='address'||destination.placeType==='address')){
+    if(!routeSequence&&this.streets&&(origin.placeType==='address'||destination.placeType==='address')){
       const walk=this.streets.route(origin,destination,maxWalk);
       if(walk)results.push({departure:seconds,arrival:seconds+walk.seconds,duration:walk.seconds,wait:0,transfers:0,walking:walk.seconds,walkOnly:true,legs:[this.walkingLeg(origin,destination,seconds,walk.seconds,{directions:walk})]});
     }
+    if(routeSequence&&(!starts.size||!ends.size))return [];
     if((!starts.size||!ends.size)&&!results.length)throw new Error(this.profile.confirmedAccess?'AT’s timetable does not confirm accessibility for the required stops. We cannot verify a wheelchair-accessible journey.':'No connected stops within your walking preference. Try a longer walk or choose a nearby stop.');
-    for(let boardings=1;boardings<=4;boardings++){
+    for(let boardings=1;boardings<=(routeSequence?.length||4);boardings++){
       const current=new Map(),onboard=new Map();
       for(const [dep,arr,ti,a,b,pickup,dropoff,offset] of connections){
         if(this.profile.confirmedAccess&&this.data.trips[ti][4]!==1)continue;
+        if(routeSequence){const ri=this.data.trips[ti][1],route=this.data.routes[ri],wanted=routeSequence[boardings-1];if(this.mode(ri)!==wanted.mode||(route[1]||route[2])!==wanted.route)continue;}
         if(arr>horizon)continue;const key=`${ti}:${offset}`,base=previous.get(a),rule=this.rules.get(`${a}:${a}`)||{type:0,seconds:120};
         let rider=onboard.get(key),buffer=boardings===1?(origin.placeType==='address'?60:0):Math.max(120,rule.seconds);
         if(!rider&&pickup===0&&base&&base.arrival+buffer<=dep&&(boardings===1||rule.type!==3)&&(!this.profile.confirmedAccess||this.accessibleStop(a))){
@@ -131,7 +145,7 @@ export class Planner {
         const label=current.get(s);if(!label)return [];
         return [{arrival:label.arrival+walk,path:destination.placeType==='address'?[...label.path,this.walkingLeg(this.stops[s],destination,label.arrival,walk,{egress:true})]:label.path,walking:label.walking+walk}];
       }).filter(c=>c.arrival<=horizon).sort((a,b)=>a.arrival-b.arrival||a.walking-b.walking);
-      if(candidates.length){const {arrival,path,walking}=candidates[0];results.push({departure:path[0].departure,arrival,duration:arrival-path[0].departure,wait:path[0].departure-seconds,transfers:boardings-1,walking,legs:path});}
+      if(candidates.length&&(!routeSequence||boardings===routeSequence.length)){const {arrival,path,walking}=candidates[0];results.push({departure:path[0].departure,arrival,duration:arrival-path[0].departure,wait:path[0].departure-seconds,transfers:boardings-1,walking,legs:path});}
       previous=current;
     }
     const options=[];

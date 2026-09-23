@@ -1,6 +1,13 @@
+export function normaliseRoutes(routes){
+  if(!Array.isArray(routes)||routes.length>4||routes.some(r=>!r||!['bus','train','ferry'].includes(r.mode)||typeof r.route!=='string'||!r.route.trim()||r.route.length>120))return null;
+  return routes.map(({mode,route})=>({mode,route}));
+}
+export function journeyRoutes(journey){return journey.legs.filter(l=>l.mode!=='walk').map(({mode,route})=>({mode,route}));}
+export function sameRoutes(a,b){return Array.isArray(a)&&Array.isArray(b)&&a.length===b.length&&a.every((r,i)=>r.mode===b[i].mode&&r.route===b[i].route);}
+export function routePreferenceLabel(routes){return routes.length?routes.map(r=>`${r.mode[0].toUpperCase()+r.mode.slice(1)} ${r.route}`).join(' → '):'Walk or roll';}
 const KEY='along-journeys-v1';
 export function readPreferences(storage=globalThis.localStorage){
-  try{const data=JSON.parse(storage.getItem(KEY));if(data&&Array.isArray(data.journeys))return {learning:data.learning!==false,mobility:data.mobility&&typeof data.mobility==='object'?data.mobility:{},journeys:data.journeys.filter(j=>j.from?.id&&j.to?.id&&Number.isFinite(j.count)&&Array.isArray(j.hours)&&Array.isArray(j.days)).slice(0,30)};}catch{}
+  try{const data=JSON.parse(storage.getItem(KEY));if(data&&Array.isArray(data.journeys))return {learning:data.learning!==false,mobility:data.mobility&&typeof data.mobility==='object'?data.mobility:{},journeys:data.journeys.filter(j=>j.from?.id&&j.to?.id&&Number.isFinite(j.count)&&Array.isArray(j.hours)&&Array.isArray(j.days)).slice(0,30).map(j=>({...j,savedRoutes:normaliseRoutes(j.savedRoutes)}))};}catch{}
   return {learning:true,journeys:[]};
 }
 export function writePreferences(data,storage=globalThis.localStorage){try{storage.setItem(KEY,JSON.stringify(data));return true;}catch{return false;}}
