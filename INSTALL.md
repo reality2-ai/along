@@ -1,5 +1,11 @@
 # Install Along and use it offline
 
+> **Course exercise — use at your own risk.** Along was created as an exercise
+> for an AI-assisted coding course. It is an experimental educational webapp,
+> not an official Auckland Transport service. Routes, times, walking directions
+> and accessibility information may be incomplete, outdated or incorrect.
+> Check your journey and access requirements with AT before travelling.
+
 **Along runs on your device. The portal delivers the app and updates; it does not
 run your journey searches. Once the app and travel data are downloaded, the core
 app works even when you have no connection or the portal is unavailable.**
