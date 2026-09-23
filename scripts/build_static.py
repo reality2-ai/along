@@ -45,7 +45,7 @@ def build():
         for file in sorted(OUT.rglob('*')):
             if file.is_file():output.write(file,file.relative_to(OUT))
     (releases/'along-web.zip.sha256').write_text(hashlib.sha256(archive.read_bytes()).hexdigest()+'  along-web.zip\n')
-    print(f'Static app built in {OUT}. Serve over HTTPS. Live AT updates require a separate backend.')
+    print(f'Static app built in {OUT}. Serve over HTTPS. Live AT access is optional and currently unconfigured.')
     print(f'Downloadable bundle: {archive} ({archive.stat().st_size/1024/1024:.1f} MiB)')
 
 

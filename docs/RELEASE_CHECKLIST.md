@@ -1,6 +1,6 @@
 # Release evidence and remaining gates
 
-Current deployed app: **version 34**, reviewed 23 September 2026. The static ZIP
+Current deployed app: **version 35**, reviewed 23 September 2026. The static ZIP
 is prepared and the private server is retired. GitHub Pages is published at `reality2.ai/along/`; no AWS deployment has been made.
 This register separates automated evidence, user observations and remaining checks.
 
@@ -16,10 +16,10 @@ this audit. Later public-hosting work supplements that brief.
 | 3. Inclusion | Keyboard, axe, contrast, zoom, narrow screens, touch emulation, reduced motion and forced colours; text alternatives to maps | Spoken TalkBack/desktop-reader check; no disabled-commuter participant study |
 | 4. Installation and updates | Icons/manifest/installability; offline reopening; old-tab migration; quiet offline pull; failed/successful dataset refresh with saved journeys retained; Android update repair accepted after v23 | Exact Android installation browser not recorded; latest contextual interface needs physical checks |
 | 5. Browser independence | Static `/along/` host with no Python API; offline new address routes; stored route geometry; measured download/storage/time | Low-memory phone performance not characterised; no evidence requiring WASM |
-| 6. Distribution | About 38 MiB ZIP/checksum, four data bundles, import scripts, MIT/data/Leaflet notices, AWS/Pages hosting instructions | Public Pages deployment is live; authenticated feeds now verified; public live proxy remains undeployed |
+| 6. Distribution | About 38 MiB ZIP/checksum, four data bundles, import scripts, MIT/data/Leaflet notices, AWS/Pages hosting instructions | Public Pages deployment is live; authenticated feeds now verified; direct browser feed access verified; TG credential integration remains incomplete |
 | 7. GitHub documentation | README, architecture, data, hosting, privacy, limits and contribution guidance; v21 course notice and current design-driver/goal summaries | Public source repository: [reality2-ai/along](https://github.com/reality2-ai/along); app hosted at [reality2.ai/along](https://reality2.ai/along/) |
 | 8. Course material | Thematic analysis, six lessons, exercises, assessment rubric and negative-case/contextual-map refinements | Course effectiveness has not been studied |
-| 9. Release checks and handover | Version 34: 50 JavaScript and 11 Python tests; 16 active browser scenarios; static/update suites; source/archive/live asset comparison | Remaining physical and spoken screen-reader checks prevent claiming full goal completion |
+| 9. Release checks and handover | Version 35: 63 JavaScript and 17 Python tests; 19 active browser scenarios; static/update suites; source/archive/live asset comparison | Remaining physical and spoken screen-reader checks prevent claiming full goal completion |
 
 | 10. English / Te reo Māori | Deferred by user instruction; version 31 removes the selector and ignores earlier saved Māori choices | Re-enable only with renewed direction; draft review remains incomplete |
 
@@ -658,3 +658,17 @@ in browser tests, including permission denial; actual device GPS remains unteste
 
 Version 34 deployment [35823924808](https://github.com/reality2-ai/along/actions/runs/35823924808) is recorded with
 [release hashes](evidence/release-v34.json) and [public smoke evidence](evidence/public-site-v34.json).
+
+
+## Version 35 icon update
+
+The loop-and-arrow mark was replaced with a curved route joining two stops to
+address its resemblance to the male gender symbol. The SVG, in-app header,
+GitHub heading, Android regular/maskable icons, Apple touch icon and favicon use
+the same artwork. Screenshots were refreshed from the rendered app.
+
+This release also packages the tested experimental contextual-live source work,
+but the public live connection remains disabled. Direct AT access and Reality2
+credential integration are the intended architecture; no Along proxy is deployed.
+Installed launchers may refresh their cached icon independently of the app shell;
+actual Android and desktop launcher appearance still needs observation.

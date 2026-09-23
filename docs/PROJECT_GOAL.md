@@ -143,3 +143,20 @@ Māori preference. Requirement 10 and bilingual feedback are deferred; they are 
 current release requirements. Retain draft source/review history for possible
 future work, but do not offer or enable the draft without renewed user direction.
 Preserve official Māori place names and macrons in transport/address data.
+
+## Updated direction: no Along-operated central backend
+
+The user clarified that Along must be independent of any central server except
+the original information providers it contacts, such as Auckland Transport.
+Do not deploy or require an Along-operated live-data proxy. Verify direct browser
+access to AT and its credential requirements. Do not publish the shared AT key.
+If provider authentication prevents seamless direct access, explain the constraint
+and establish a user-approved connection model while preserving offline operation.
+This supersedes the proposed public proxy hosting approach.
+
+The user proposed Reality2 trust-group integration so each person can obtain
+their own AT key and keep it in their TG. Investigate this as the credential
+architecture for direct provider access and authorised device use. Identify actual
+runtime capabilities and application-secret handling; do not invent a TG API,
+conflate AT credentials with group-management keys, or claim implemented security
+before verification.

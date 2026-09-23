@@ -691,7 +691,9 @@ remain available once the traveller begins choosing a journey.
 
 The user noticed that Along's loop-and-arrow icon resembles the male gender
 symbol. Visual inspection supported that reading. A path connecting two stops
-was suggested as a clearer travel metaphor; no redesign has been published.
+was suggested as a clearer travel metaphor. The user subsequently asked for that
+redesign; version 35 replaces the arrow with a curved connection between two stop
+rings, retaining the established green palette.
 This is another example of user interpretation revealing ambiguity that technical
 checks and the designer's intended meaning do not resolve.
 
