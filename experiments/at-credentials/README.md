@@ -772,3 +772,29 @@ runtime’s supported version: the planner starts, no lab record write is attemp
 and the database version and record count remain unchanged. No reset or migration
 is inferred from unreadable state. Normal key setup/provider-mock and offline
 routing checks continue to run in the same test.
+
+### Reconnect screen for existing AT-key sharing
+
+`showPolicyConnection` in `policy-connection-view.mjs` composes the saved-owner
+controller with the existing public-message copy/paste and optional QR controls.
+The recipient restores its accepted owner; the owner checks the request against
+its saved group, owner and credential binding before opening a peer session.
+The incoming member identifier is a routing hint, then authenticated by the
+runtime. Reconnection neither enrolls a device nor grants or delivers a key.
+
+After authentication, a trusted press of **Use this connection** passes the
+controller synchronously to `onConnected`. The parent then owns it and must close
+it when finished. Disposing the completed view does not close that transferred
+controller. Back/disposal before handoff closes its resources; a late restore
+cannot replace the next screen. The owner must remain open while recipient
+requests check its current permission. Provider reads still require explicit
+contextual user action and a fresh owner-policy exchange.
+
+`peer-delivery.test.mjs` now exchanges reconnect messages through these visible
+controls after actual enrollment and encrypted synthetic-key delivery. It checks
+wrong-owner refusal, cancellation during restoration, synthetic-click refusal,
+320px/200% reflow and axe, controller survival after view disposal, contextual
+stop/journey/vehicle checks, and removal before further provider I/O. The harness
+copies the messages on one browser host; provider responses are mocked. QR camera
+use and real phone/desktop reachability are not established. This view is not yet
+wired into the full application's Settings or public release.

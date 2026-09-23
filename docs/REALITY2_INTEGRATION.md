@@ -7,6 +7,14 @@ architecture, not an implemented feature.
 
 ## Current status
 
+The experimental existing-device reconnect screen now exchanges public connection
+messages through visible controls, authenticates saved identities and hands the
+controller to its parent after an explicit press. Browser integration checks
+cover owner substitution refusal, cancellation, accessible reflow, contextual
+mocked AT reads and removal before further requests. Full-app Settings integration
+and physical phone/desktop connectivity remain outstanding; this is not seamless
+background reconnection or a public release.
+
 The selected profile is a **browser-only R2 subset with encrypted software
 storage**, not hardware-rooted sealing or full R2 conformance. The experimental
 `pairing-flow.mjs` now joins invitation review, nonce proof, manual WebRTC signaling,

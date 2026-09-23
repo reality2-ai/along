@@ -8,7 +8,7 @@ const sources = new Map();
 for (const name of ['storage.mjs', 'membership.mjs', 'certificate.mjs', 'peer-session.mjs', 'peer-link.mjs', 'challenge.mjs', 'session-statement.mjs', 'enrollment-session.mjs', 'invitation-journal.mjs', 'enrollment-link.mjs', 'enrollment-exchange.mjs', 'enrollment-protection.mjs', 'invitation.mjs']) sources.set('/' + name, await readFile(join(process.env.R2_BROWSER_DIR, name)));
 for (const name of ['../tg-pairing/initial-persona.mjs', '../tg-pairing/software-persona.mjs', '../tg-pairing/core-candidate-session.mjs', '../tg-pairing/software-traffic.mjs', '../tg-pairing/enrollment-payloads.mjs', '../tg-pairing/enrollment-profile.mjs', '../tg-pairing/installation-receipt.mjs', '../tg-pairing/stored-claim.mjs', '../tg-pairing/local-persona.mjs', 'local-owner.mjs', 'owner-policy.mjs', 'owner-access-view.mjs', 'owner-policy-send.mjs', 'policy-sync.mjs', 'owner-delivery.mjs', 'delivery-history.mjs', 'delivery-recovery.mjs', 'remote-owner.mjs', 'policy-update.mjs', 'policy-update-message.mjs', 'remote-owner-view.mjs', 'settings-view.mjs', 'key-replacement-view.mjs', 'credential-view.mjs', '../tg-pairing/comparison.css', '../tg-pairing/local-persona-session.mjs', 'policy.mjs', 'policy-store.mjs', 'local-vault.mjs', 'delivery-ack.mjs', 'delivery-message.mjs']) sources.set('/' + name.split('/').pop(), await readFile(new URL(name, import.meta.url)));
 for (const name of ['hive_wasm.js', 'hive_wasm_bg.wasm']) sources.set('/' + name, await readFile(join(process.env.R2_WASM_DIR, name)));
-for (const name of ['vehicle-live-view.mjs', '../../public/live-vehicles.js', '../../public/vendor/leaflet/leaflet.js', '../../public/vendor/leaflet/leaflet.css', 'journey-live-view.mjs', 'stop-live-view.mjs', '../../public/live-predictions.js', '../../public/live-context.js', '../../public/live-time.js', 'policy-session.mjs', 'saved-client.mjs', 'live-client.mjs', '../../public/at-client.js', '../../public/live-client.js']) sources.set('/' + name.split('/').pop(), await readFile(new URL(name, import.meta.url)));
+for (const name of ['policy-connection-view.mjs', '../tg-pairing/transfer-view.mjs', 'vehicle-live-view.mjs', '../../public/live-vehicles.js', '../../public/vendor/leaflet/leaflet.js', '../../public/vendor/leaflet/leaflet.css', 'journey-live-view.mjs', 'stop-live-view.mjs', '../../public/live-predictions.js', '../../public/live-context.js', '../../public/live-time.js', 'policy-session.mjs', 'saved-client.mjs', 'live-client.mjs', '../../public/at-client.js', '../../public/live-client.js']) sources.set('/' + name.split('/').pop(), await readFile(new URL(name, import.meta.url)));
 const server = createServer((req, res) => {
   const path = '/' + req.url.split('/').pop();
   res.setHeader('Content-Type', req.url.endsWith('.wasm') ? 'application/wasm' : req.url.endsWith('.css') ? 'text/css' : sources.has(path) ? 'text/javascript' : 'text/html');
@@ -43,6 +43,32 @@ try {
     await page.getByRole('status').filter({hasText: '1 matching departure update and 0 service updates'}).waitFor();
     assert.match(await page.locator('#consent').textContent(), /Expected/);
     assert.deepEqual((await new AxeBuilder({page}).analyze()).violations.map(v => v.id), []);
+  });
+  await page.exposeFunction('exerciseReconnect', async () => {
+    const recipient = page.locator('#recipient-connect'), owner = page.locator('#owner-connect');
+    const request = await recipient.locator('textarea[readonly]').inputValue();
+    assert.ok(!request.includes('synthetic-peer-delivery'));
+    const wrong = JSON.parse(request); wrong.owner = '00'.repeat(32);
+    await owner.getByLabel('Connection request', {exact: true}).fill(JSON.stringify(wrong));
+    await owner.getByRole('button', {name: 'Prepare connection reply', exact: true}).click();
+    await owner.getByRole('heading', {name: 'Connection unavailable', exact: true}).waitFor();
+    assert.equal(await page.evaluate(() => Boolean(window.reconnectOwner)), false);
+    await page.evaluate(() => window.retryOwnerConnection());
+    await owner.getByLabel('Connection request', {exact: true}).fill(request);
+    await owner.getByRole('button', {name: 'Prepare connection reply', exact: true}).click();
+    await owner.getByRole('heading', {name: 'Reply to your other device', exact: true}).waitFor();
+    const reply = await owner.locator('textarea[readonly]').inputValue();
+    await recipient.getByLabel('Connection reply', {exact: true}).fill(reply);
+    await recipient.getByRole('button', {name: 'Connect devices', exact: true}).click();
+    await owner.getByRole('heading', {name: 'Devices connected', exact: true}).waitFor();
+    await recipient.getByRole('heading', {name: 'Devices connected', exact: true}).waitFor();
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+    assert.deepEqual((await new AxeBuilder({page}).analyze()).violations.map(v => v.id), []);
+    // Synthetic activation cannot transfer ownership to the app.
+    await page.evaluate(() => document.querySelector('#recipient-connect .pairing-primary').click());
+    assert.equal(await page.evaluate(() => Boolean(window.reconnectRecipient)), false);
+    await owner.getByRole('button', {name: 'Use this connection', exact: true}).click();
+    await recipient.getByRole('button', {name: 'Use this connection', exact: true}).click();
   });
   await page.exposeFunction('exerciseVehicleCheck', async () => {
     await page.getByRole('button', {name: 'Check this service’s current position', exact: true}).click();
@@ -379,8 +405,26 @@ try {
       check(await denied(() => openATPolicySession({wasm, store: receiver.store, expectedGroup: group, role: 'recipient', peer: receiver.subject})), 'recipient cannot substitute an incoming owner ID');
       check(await denied(() => openATPolicySession({wasm, store: receiver.store, expectedGroup: group, role: 'owner', peer: owner.subject})), 'recipient cannot open owner controller');
       let controllerFetches = 0;
-      const ownerController = await openATPolicySession({wasm, store: owner.store, expectedGroup: group, role: 'owner', peer: receiver.subject});
-      const recipientController = await openATPolicySession({wasm, store: receiver.store, expectedGroup: group, role: 'recipient', now: () => 1001,
+      const {showPolicyConnection} = await import('./policy-connection-view.mjs');
+      const ownerMount = document.createElement('div'), recipientMount = document.createElement('div');
+      ownerMount.id = 'owner-connect'; recipientMount.id = 'recipient-connect';
+      document.querySelector('main').append(ownerMount, recipientMount);
+      // Disposal during asynchronous restoration cannot overwrite the next page.
+      const cancelledConnectionView = showPolicyConnection(recipientMount, {wasm, store: receiver.store, expectedGroup: group, role: 'recipient',
+        onConnected: () => { throw new Error('Cancelled view cannot connect'); }});
+      cancelledConnectionView.dispose(); recipientMount.textContent = 'Next screen';
+      await cancelledConnectionView.ready;
+      check(recipientMount.textContent === 'Next screen', 'cancelled restoration cannot replace the next screen');
+      let ownerConnectionView;
+      window.retryOwnerConnection = async () => {
+        ownerConnectionView?.dispose();
+        ownerConnectionView = showPolicyConnection(ownerMount, {wasm, store: owner.store, expectedGroup: group, role: 'owner',
+          onConnected: controller => { window.reconnectOwner = controller; }});
+        await ownerConnectionView.ready;
+      };
+      await window.retryOwnerConnection();
+      const recipientConnectionView = showPolicyConnection(recipientMount, {wasm, store: receiver.store, expectedGroup: group, role: 'recipient', now: () => 1001,
+        onConnected: controller => { window.reconnectRecipient = controller; },
         fetcher: async (url, options) => {
           controllerFetches++; check(options.headers['Ocp-Apim-Subscription-Key'] === 'synthetic-peer-delivery', 'controller obtains locally encrypted key after actual owner check');
           return {ok: true, json: async () => ({header: {timestamp: 1000}, entity: [
@@ -388,9 +432,14 @@ try {
             {vehicle: {trip: {trip_id: 'view-trip', route_id: 'view-route', start_date: '19700101'}, timestamp: 1000, position: {latitude: -36.85, longitude: 174.77}}},
           ]})};
         }});
-      const reconnectOffer = await recipientController.offer();
-      await recipientController.accept(await ownerController.accept(reconnectOffer));
-      await Promise.all([ownerController.authenticated(), recipientController.authenticated()]);
+      await Promise.all([ownerConnectionView.ready, recipientConnectionView.ready]);
+      await window.exerciseReconnect();
+      const ownerController = window.reconnectOwner, recipientController = window.reconnectRecipient;
+      check(ownerController && recipientController, 'visible reconnect controls hand off authenticated controllers');
+      ownerConnectionView.dispose(); recipientConnectionView.dispose();
+      ownerMount.remove(); recipientMount.remove();
+      delete window.retryOwnerConnection;
+      check(!ownerController.signal.aborted && !recipientController.signal.aborted, 'leaving completed view preserves handed-off connection');
       check(!(await recipientController.read('alerts')).available && controllerFetches === 0, 'authenticated connection is not automatic provider consent');
       const controllerResults = await Promise.all(['alerts', 'predictions'].map(kind => recipientController.read(kind, {requested: true})));
       check(controllerResults.every(result => result.available) && controllerFetches === 2, 'controller routes authenticated nonce-bound policy replies for parallel feeds');
