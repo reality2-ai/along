@@ -14,6 +14,7 @@ export async function loadLocalPersona({wasm, store, expectedGroup}) {
   if (!saved || saved.value === null) return null;
   const value = saved.value, record = value.record;
   if (value.format !== 1 || value.claim !== 'owner' || record?.format !== 1
+      || (value.peerAcknowledged !== undefined && typeof value.peerAcknowledged !== 'boolean')
       || record.custody !== 'browser-nonextractable-unqualified'
       || !bytes(record.group, 32) || !equal(record.group, group)
       || !bytes(record.subject, 32) || !bytes(record.certificate, 136)
@@ -43,7 +44,7 @@ export async function loadLocalPersona({wasm, store, expectedGroup}) {
   if (!await crypto.subtle.verify('Ed25519', publicKey, proof, challenge)) throw refuse();
   await current();
   return Object.freeze({
-    status: 'installed-local', peerAcknowledged: false,
+    status: 'installed-local', peerAcknowledged: value.peerAcknowledged === true,
     member: hex(record.subject), group: hex(group), epoch: value.epoch,
     // Trusted runtime supplies canonical protocol bytes and authorization.
     sign: async message => {

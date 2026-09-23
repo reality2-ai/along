@@ -6,8 +6,8 @@ import {join} from 'node:path';
 const {chromium} = await import(process.env.PLAYWRIGHT_MODULE || '@playwright/test');
 if (!process.env.R2_BROWSER_DIR) throw new Error('Set R2_BROWSER_DIR to the experimental Reality2 browser module directory');
 if (!process.env.R2_WASM_DIR) throw new Error('Set R2_WASM_DIR');
-const sources = new Map(await Promise.all(['membership', 'certificate', 'enrollment-session', 'storage', 'invitation-journal', 'enrollment-link', 'enrollment-exchange', 'enrollment-protection', 'peer-link', 'invitation'].map(async name => ['/' + name + '.mjs', await readFile(join(process.env.R2_BROWSER_DIR, name + '.mjs'))])));
-for (const name of ['enrollment-profile.mjs', 'enrollment-payloads.mjs', 'core-candidate-session.mjs', 'installation-receipt.mjs', 'local-persona.mjs']) sources.set('/' + name, await readFile(new URL('./' + name, import.meta.url)));
+const sources = new Map(await Promise.all(['peer-session', 'challenge', 'session-statement', 'membership', 'certificate', 'enrollment-session', 'storage', 'invitation-journal', 'enrollment-link', 'enrollment-exchange', 'enrollment-protection', 'peer-link', 'invitation'].map(async name => ['/' + name + '.mjs', await readFile(join(process.env.R2_BROWSER_DIR, name + '.mjs'))])));
+for (const name of ['enrollment-profile.mjs', 'enrollment-payloads.mjs', 'core-candidate-session.mjs', 'installation-receipt.mjs', 'local-persona.mjs', 'local-persona-session.mjs']) sources.set('/' + name, await readFile(new URL('./' + name, import.meta.url)));
 for (const name of ['hive_wasm.js', 'hive_wasm_bg.wasm']) sources.set('/' + name, await readFile(join(process.env.R2_WASM_DIR, name)));
 const server = createServer((req, res) => {
   if (sources.has(req.url)) { res.writeHead(200, {'Content-Type': req.url.endsWith('.wasm') ? 'application/wasm' : 'text/javascript'}); res.end(sources.get(req.url)); }
@@ -27,16 +27,18 @@ try {
       window.coreModule = await import('./core-candidate-session.mjs');
       window.restoreModule = await import('./local-persona.mjs');
       window.receiptModule = await import('./installation-receipt.mjs');
+      window.personaSession = await import('./local-persona-session.mjs');
+      window.peerSessionModule = await import('./peer-session.mjs');
       window.membershipModule = await import('./membership.mjs');
       window.storageModule = await import('./storage.mjs');
       window.controller = await import('./enrollment-payloads.mjs');
       window.codec = (await import('./certificate.mjs')).certificateCodec(wasm);
       window.store = await (await import('./storage.mjs')).openBrowserStorage('core-session-test');
-      window.coreConfirms = 0; window.sentClaims = 0; window.claimState = 'open'; window.stateReads = 0;
+      window.sentAcknowledgments = 0; window.coreConfirms = 0; window.sentClaims = 0; window.claimState = 'open'; window.stateReads = 0;
       const originalConfirm = wasm.BrowserCandidateCeremony.prototype.confirm;
       wasm.BrowserCandidateCeremony.prototype.confirm = function(value) { coreConfirms++; return originalConfirm.call(this, value); };
       const originalSend = RTCDataChannel.prototype.send;
-      RTCDataChannel.prototype.send = function(text) { if (JSON.parse(text).type === 'claim') sentClaims++; return originalSend.call(this, text); };
+      RTCDataChannel.prototype.send = function(text) { if (JSON.parse(text).type === 'claim') sentClaims++; if (JSON.parse(text).type === 'acknowledged') sentAcknowledgments++; return originalSend.call(this, text); };
       if (index === 1) {
         window.authority = await crypto.subtle.generateKey('Ed25519', false, ['sign', 'verify']);
         window.issuerKey = await crypto.subtle.generateKey('Ed25519', false, ['sign', 'verify']);
@@ -52,6 +54,7 @@ try {
   const setup = async (delaySetup = false, delayReservation = false) => {
     const nonce = await pages[0].evaluate(() => { window.nonce = crypto.getRandomValues(new Uint8Array(16)); return [...nonce]; });
     const evidence = await pages[1].evaluate(async ({code, nonce}) => {
+      sentAcknowledgments = 0;
       window.invitation = {group, issuer, code: new Uint8Array(16).fill(code), validity: 8n, role: 'member'};
       const statement = wasm.tg_invitation_statement(group, issuer, 1, invitation.code, 8n);
       const proof = new Uint8Array(await crypto.subtle.sign('Ed25519', issuerKey.privateKey, wasm.tg_nonce_signing_bytes(statement, new Uint8Array(nonce))));
@@ -163,6 +166,8 @@ try {
     }});
     await refuses(() => load(corrupt(value => { value.record.certificate[90] ^= 1; })));
     await refuses(() => load(corrupt(value => { value.epoch += 1n; })));
+    await refuses(() => load(corrupt(value => { value.peerAcknowledged = 'true'; })));
+    await refuses(() => load(corrupt(value => { value.peerAcknowledged = null; })));
     await refuses(() => load(corrupt(value => { value.invitation.code[0] ^= 1; })));
     const otherKey = await crypto.subtle.generateKey('Ed25519', false, ['sign', 'verify']);
     await refuses(() => load(corrupt(value => { value.record.privateKey = otherKey.privateKey; })));
@@ -255,5 +260,166 @@ try {
   assert.equal(await storedSignerMatches(lateMember), true);
   assert.equal(await pages[0].evaluate(() => enrollment.invitationState()), 'consumed');
   await pages[1].waitForFunction(() => enrollment.state() === 'closed');
-  console.log('PASS: actual peer bundle installs requested candidate custody with claim and invitation consumption; restoration rejects corrupted evidence, mismatched keys and replacement before/during signing; existing group evidence survives refusal; signed revocation blocks restored signing; a competing revision wins without overwrite; pending cancellation rolls back; cancellation after commit still returns the durable local receipt. Synthetic initial trust, platform/initialization facts and consent; no peer receipt, hardware seal or AT credential authority.');
+  await setup(); await confirm();
+  await pages[0].evaluate(() => enrollment.sendClaim()); await sendBundle();
+  await pages[0].evaluate(() => enrollment.installLocal());
+  const acknowledgments = await Promise.all([
+    pages[0].evaluate(() => enrollment.acknowledgeInstallation()),
+    pages[1].evaluate(() => payloads.acknowledgeInstalled()),
+  ]);
+  assert.equal(acknowledgments[0].peerAcknowledged, true);
+  assert.equal(acknowledgments[1].status, 'acknowledgment-sent');
+  assert.equal(await pages[1].evaluate(() => enrollment.invitationState()), 'consumed');
+  assert.equal(await pages[0].evaluate(async () => (await restoreModule.loadLocalPersona({wasm, store, expectedGroup: invitation.group})).peerAcknowledged), true);
+  // A new document shares only origin storage, not the enrollment JS objects.
+  const reopened = await contexts[0].newPage();
+  await reopened.route('**/*', route => {
+    const path = new URL(route.request().url()).pathname;
+    return route.fulfill({status: 200, contentType: sources.has(path)
+      ? path.endsWith('.wasm') ? 'application/wasm' : 'text/javascript' : 'text/html',
+      body: sources.get(path) || '<!doctype html><title>Restored enrollment</title>'});
+  });
+  await reopened.goto(pages[0].url());
+  const restoreInputs = await pages[0].evaluate(() => ({group: [...invitation.group], database: 'install-fixture-' + invitation.code[0]}));
+  assert.equal(await reopened.evaluate(async ({group, database}) => {
+    const wasm = await import('./hive_wasm.js'); await wasm.default();
+    const store = await (await import('./storage.mjs')).openBrowserStorage(database);
+    try {
+      const identity = await (await import('./local-persona.mjs')).loadLocalPersona({wasm, store, expectedGroup: new Uint8Array(group)});
+      return identity.status === 'installed-local' && identity.peerAcknowledged === true;
+    } finally { store.close(); }
+  }, restoreInputs), true);
+  await reopened.close();
+  await pages[0].evaluate(() => enrollment.dispose());
+  await pages[1].waitForFunction(() => enrollment.state() === 'closed');
+  assert.equal(await pages[0].evaluate(() => enrollment.invitationState()), 'consumed');
+  // A replaced view cannot start a connection after its asynchronous read returns.
+  await pages[0].evaluate(async () => {
+    const originalPeer = window.RTCPeerConnection;
+    let connections = 0;
+    window.RTCPeerConnection = class extends originalPeer { constructor(...args) { super(...args); connections++; } };
+    try {
+      const cancelled = new AbortController(); cancelled.abort();
+      const options = {wasm, store, expectedGroup: invitation.group, peer: invitation.issuer, role: 'offer'};
+      if (await personaSession.openLocalPersonaSession({...options, signal: cancelled.signal}).then(() => true, () => false)) throw new Error('Pre-cancelled reconnect accepted');
+      const pending = new AbortController(); let release, entered;
+      const waiting = new Promise(resolve => { entered = resolve; }); let first = true;
+      const delayedStore = {...store, read: async (...args) => {
+        const value = await store.read(...args);
+        if (first) { first = false; entered(); await new Promise(resolve => { release = resolve; }); }
+        return value;
+      }};
+      const opening = personaSession.openLocalPersonaSession({...options, store: delayedStore, signal: pending.signal}).then(() => true, () => false);
+      await waiting; pending.abort(); release();
+      if (await opening || connections !== 0) throw new Error('Cancelled setup opened a connection');
+      const after = new AbortController();
+      const opened = await personaSession.openLocalPersonaSession({...options, signal: after.signal});
+      after.abort();
+      if (opened.state() !== 'closed') throw new Error('Screen disposal did not close reconnect');
+    } finally { window.RTCPeerConnection = originalPeer; }
+  });
+  // Reconnect after enrollment closes, using the actual installed candidate key.
+  const candidateSubject = await pages[0].evaluate(async () => {
+    const record = (await store.read('candidate-persona', 'active')).value.record;
+    window.reconnected = await personaSession.openLocalPersonaSession({wasm, store,
+      expectedGroup: invitation.group, peer: invitation.issuer, role: 'offer'});
+    return [...record.subject];
+  });
+  await pages[1].evaluate(async candidateSubject => {
+    // Explicit fixture provisioner membership, not a production bootstrap flow.
+    window.provisionerMembership = await membershipModule.establishMembership(store, wasm,
+      {group, subject: issuer, current: 7n, depth: 0n, certificate: issuerCertificate});
+    const publicId = Array.from(issuer, b => b.toString(16).padStart(2, '0')).join('');
+    window.reconnected = peerSessionModule.createPeerSession({wasm, role: 'answer', group, epoch: 7n,
+      local: issuer, peer: new Uint8Array(candidateSubject), certificate: issuerCertificate,
+      identity: {publicId, sign: async message => new Uint8Array(await crypto.subtle.sign('Ed25519', issuerKey.privateKey, message))},
+      membership: provisionerMembership});
+  }, candidateSubject);
+  const reconnectOffer = await pages[0].evaluate(() => reconnected.offer());
+  const reconnectAnswer = await pages[1].evaluate(offer => reconnected.accept(offer), reconnectOffer);
+  await pages[0].evaluate(answer => reconnected.accept(answer), reconnectAnswer);
+  await Promise.all(pages.map(page => page.evaluate(() => reconnected.authenticated())));
+  assert.deepEqual(await Promise.all(pages.map(page => page.evaluate(() => reconnected.state()))), ['authenticated', 'authenticated']);
+  const reconnectRevocation = await pages[1].evaluate(async member => {
+    const subject = new Uint8Array(member);
+    return [...new Uint8Array(await crypto.subtle.sign('Ed25519', authority.privateKey,
+      wasm.tg_revocation_signing_bytes(subject, 7n, 1n, 0)))];
+  }, candidateSubject);
+  await pages[0].evaluate(async ({subject, signature}) => {
+    const membership = membershipModule.openMembership(store, wasm, invitation.group, new Uint8Array(subject));
+    try { await membership.applyRevocation({subject: new Uint8Array(subject), signature: new Uint8Array(signature), epoch: 7n, sequence: 1n, reason: 0}); }
+    finally { membership.close(); }
+  }, {subject: candidateSubject, signature: reconnectRevocation});
+  await Promise.all(pages.map(page => page.waitForFunction(() => reconnected.state() === 'closed')));
+  assert.equal(await pages[0].evaluate(() => personaSession.openLocalPersonaSession({wasm, store,
+    expectedGroup: invitation.group, peer: invitation.issuer, role: 'offer'}).then(() => true, () => false)), false);
+  await pages[1].evaluate(() => provisionerMembership.close());
+
+  await setup(); await confirm();
+  await pages[0].evaluate(() => enrollment.sendClaim()); await sendBundle();
+  await pages[0].evaluate(() => enrollment.installLocal());
+  const mismatch = await Promise.all([
+    pages[0].evaluate(() => enrollment.acknowledgeInstallation().then(() => true, () => false)),
+    pages[1].evaluate(async () => {
+      const receipt = await enrollment.installed(); receipt[receipt.length - 1] ^= 1;
+      await enrollment.sendAcknowledged(receipt);
+    }),
+  ]);
+  assert.equal(mismatch[0], false);
+  assert.equal(await pages[0].evaluate(async () => (await store.read('candidate-persona', 'active')).value.peerAcknowledged), false);
+  assert.equal(await pages[0].evaluate(() => enrollment.invitationState()), 'consumed');
+  for (const failingSide of [1, 0]) {
+    await setup(); await confirm();
+    await pages[0].evaluate(() => enrollment.sendClaim()); await sendBundle();
+    await pages[0].evaluate(() => enrollment.installLocal());
+    await pages[failingSide].evaluate(() => {
+      window.originalPut = IDBObjectStore.prototype.put;
+      IDBObjectStore.prototype.put = function(...args) {
+        const request = originalPut.apply(this, args); this.transaction.abort(); return request;
+      };
+    });
+    let outcomes;
+    try {
+      outcomes = await Promise.all([
+        pages[0].evaluate(() => enrollment.acknowledgeInstallation().then(() => true, () => false)),
+        pages[1].evaluate(() => payloads.acknowledgeInstalled().then(() => true, () => false)),
+      ]);
+    } finally { await pages[failingSide].evaluate(() => { IDBObjectStore.prototype.put = originalPut; }); }
+    assert.equal(outcomes[0], false);
+    const saved = await pages[0].evaluate(async () => {
+      const value = (await store.read('candidate-persona', 'active')).value;
+      return {claim: value.claim, acknowledged: value.peerAcknowledged, invitation: enrollment.invitationState()};
+    });
+    assert.deepEqual(saved, {claim: 'owner', acknowledged: false, invitation: 'consumed'});
+    if (failingSide === 1) {
+      assert.equal(outcomes[1], false);
+      assert.equal(await pages[1].evaluate(() => sentAcknowledgments), 0);
+      assert.equal(await pages[1].evaluate(async () => {
+        const hex = bytes => Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+        return await store.read('enrollment-installations', hex(group) + ':' + hex(invitation.code));
+      }), null);
+    } else {
+      assert.equal(await pages[1].evaluate(() => enrollment.invitationState()), 'consumed');
+    }
+  }
+
+  await setup(); await confirm();
+  await pages[0].evaluate(() => enrollment.sendClaim()); await sendBundle();
+  await pages[0].evaluate(() => enrollment.installLocal());
+  const lateAcknowledgment = await Promise.all([
+    pages[0].evaluate(async () => {
+      const original = IDBDatabase.prototype.transaction;
+      IDBDatabase.prototype.transaction = function(...args) {
+        const tx = original.apply(this, args);
+        if (args[1] === 'readwrite') tx.addEventListener('complete', () => setupAbort.abort(), {once: true});
+        return tx;
+      };
+      try { return await enrollment.acknowledgeInstallation(); }
+      finally { IDBDatabase.prototype.transaction = original; }
+    }),
+    pages[1].evaluate(() => payloads.acknowledgeInstalled().then(() => true, () => false)),
+  ]);
+  assert.equal(lateAcknowledgment[0].peerAcknowledged, true);
+  assert.equal(await pages[0].evaluate(async () => (await store.read('candidate-persona', 'active')).value.peerAcknowledged), true);
+  console.log('PASS: actual peer bundle installs requested candidate custody with claim and invitation consumption; restoration rejects corrupted evidence, mismatched keys and replacement before/during signing; existing group evidence survives refusal; signed revocation blocks restored signing; a competing revision wins without overwrite; pending cancellation rolls back; cancellation after commit still returns the durable local receipt. Synthetic initial trust, platform/initialization facts and consent; matching acknowledgment persists on both devices; aborted receipt writes cannot fabricate success and cancellation after completed acknowledgment preserves it; mismatched acknowledgment preserves local installation without claiming peer agreement; installed custody reconnects through mutual membership authentication and signed local revocation closes it; no hardware seal or AT credential authority.');
 } finally { await browser?.close(); if (server.listening) await new Promise(resolve => server.close(resolve)); }

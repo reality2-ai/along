@@ -7,7 +7,7 @@ import {installationReceipt} from './installation-receipt.mjs';
 
 export async function createCoreCandidateSession({wasm, invitation, authorized, platform, readClaimState, store, signal}) {
   const expected = structuredClone(invitation);
-  let core, session, key, cancellation, started = false, ended = false;
+  let core, session, key, cancellation, installed, acknowledgmentStarted = false, started = false, ended = false;
   const close = () => {
     ended = true; signal?.removeEventListener('abort', abort);
     const heldKey = key; key = undefined;
@@ -104,12 +104,31 @@ export async function createCoreCandidateSession({wasm, invitation, authorized, 
           current();
           const membershipKey = Array.from(record.group, b => b.toString(16).padStart(2, '0')).join('');
           const receipt = await session.consume([{scope: 'candidate-persona', key: 'active', expectedRevision: stored.revision,
-            value: {format: 1, claim: 'owner', record, epoch: bundle.epoch,
+            value: {format: 1, claim: 'owner', record, epoch: bundle.epoch, peerAcknowledged: false,
               invitation: {group: expected.group, code: expected.code}}},
             {scope: 'membership', key: membershipKey, expectedRevision: 0, value: membership}]);
           // Do not apply the ordinary post-await cancellation guard here. A
           // transaction that already committed must still report that fact.
-          return Object.freeze({status: 'installed-local', revision: receipt.revisions[0], peerAcknowledged: false, receipt: receiptBytes});
+          installed = {revision: receipt.revisions[0], receipt: receiptBytes.slice()};
+          return Object.freeze({status: 'installed-local', revision: installed.revision, peerAcknowledged: false, receipt: receiptBytes});
+        } catch (error) { await dispose(); throw error; }
+      },
+      acknowledgeInstallation: async () => {
+        try {
+          current();
+          if (!installed || acknowledgmentStarted) throw new Error('Installation receipt unavailable');
+          acknowledgmentStarted = true;
+          await session.sendInstalled(installed.receipt);
+          const acknowledged = await session.acknowledged(); current();
+          if (acknowledged.length !== installed.receipt.length
+              || !acknowledged.every((v, i) => v === installed.receipt[i])) throw new Error('Acknowledgment differs');
+          const saved = await store.read('candidate-persona', 'active'); current();
+          if (saved?.revision !== installed.revision) throw new Error('Installed persona changed');
+          const result = await store.compareAndSwapMany([{scope: 'candidate-persona', key: 'active', expectedRevision: installed.revision,
+            value: {...saved.value, peerAcknowledged: true}}], {signal: session.signal});
+          if (!result.applied) throw new Error('Installed persona changed');
+          // As with installation, cancellation cannot undo a completed save.
+          return Object.freeze({status: 'installed-local', revision: result.revisions[0], peerAcknowledged: true});
         } catch (error) { await dispose(); throw error; }
       },
       dispose,

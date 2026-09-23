@@ -204,5 +204,52 @@ write set, including the revocation-bearing record, rather than only the persona
 and certificate digest. The controller returns it only after local commit. Its
 bytes alone are not evidence of a commit; eventual transmission must use the
 confirmed encrypted session. Changed version, invitation, subject, digest and
-truncated receipts are refused in the integrated test. Receipt transport remains
-a separate unpublished prototype and is not connected to this controller yet.
+truncated receipts are refused in the integrated test. Receipt transport is connected by the controller described below.
+
+
+### Receipt integration
+
+The controller exposes `acknowledgeInstallation()` after local
+installation. The provisioning payload controller's `acknowledgeInstalled()`
+validates the receipt against the certificate it actually sent and commits a
+public receipt with invitation consumption before sending acknowledgment. The
+candidate persists only an exact matching acknowledgment, and restoration can
+report that saved fact. Loss, mismatch or failure leaves local installation intact.
+This requires R2 [`7634c3a9`](https://github.com/reality2-ai/r2-standard/commit/7634c3a9b19cd0fe6f3d5102aa95902ceceb29ab) and matching compiled WASM.
+Real-peer controller and carriage tests pass; reconnect recovery and group
+announcement remain unfinished, and acknowledgment grants no credential access.
+
+Fault-injection checks abort actual IndexedDB transactions on either side while
+saving receipt state. Provisioner failure emits no acknowledgment and persists
+no receipt; candidate failure leaves its installed OWNER persona and consumed
+invitation intact with acknowledgment false. Cancellation during delivery of a
+completed candidate save still returns the committed acknowledgment. These tests
+do not simulate hardware power loss or establish interrupted-session recovery.
+
+
+`local-persona-session.mjs` connects restored local custody to the existing R2
+mutual peer handshake. It checks local membership, binds the expected peer and
+owns cleanup of its membership subscription. The real-browser installation test
+closes enrollment, opens a new channel using the installed candidate key and
+completes mutual authentication. An authenticated local revocation closes that
+connection and refuses a new one. Provisioner bootstrap and signaling remain
+explicit test fixtures; this does not establish automatic discovery, remote-network
+reachability, globally fresh revocations or application-secret rights.
+
+The reconnect factory accepts the view's `AbortSignal`. Pre-cancelled setup and
+cancellation during a delayed storage read create no peer connection; cancellation
+after setup closes the connection and membership subscription. Browser tests
+observe actual peer construction, not merely the returned status. Cancellation
+does not erase the installed persona or its receipt records.
+
+A fresh-document check restores the candidate and its acknowledged status from
+origin storage without reusing enrollment objects. Test assets are supplied by
+the fixture while the original asset server is stopped; this is not a service
+worker/offline-installation test. The persisted acknowledgment records a past
+exchange, not present reachability or newly established credential rights.
+
+The R2 receipt snapshot passed the full `cargo xtask verify` gate unchanged;
+status prose was refreshed afterwards without implementation changes. The
+Along controller tests additionally cover receipt persistence, restoration,
+cancellation and authenticated reconnection. These remain experimental components
+outside the public PWA, not a completed user-facing TG feature.

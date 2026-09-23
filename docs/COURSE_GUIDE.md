@@ -314,3 +314,19 @@ consent and the no-human-coding rule, and names missing evidence without treatin
 it as either success or proof of impossibility. A correct “not established” earns
 more credit than an unsupported security guarantee. Relate the interpretation to
 at least two conversation codes and explain one plausible alternative reading.
+
+
+### Exercise: describe a partial pairing outcome
+
+Use the installation/receipt tests as recorded evidence. Ask the AI to propose
+plain-language status and the next action for each case: installation committed
+but no acknowledgment received; acknowledgment saved before the page closed;
+provisioner receipt storage failed; a previously connected device is now revoked.
+The learner evaluates wording and requests revisions without writing code.
+
+Do not use “connected” merely because a receipt exists, promise that cancellation
+removed committed state, or suggest repeating a claim on an already owned device.
+Explain which actions are implemented and which recovery paths still need work.
+Assess whether the proposed screen keeps the commuter's journey primary while
+making the relevant device action clear. Distinguish tested technical evidence
+from assumptions requiring real-device and accessibility observation.

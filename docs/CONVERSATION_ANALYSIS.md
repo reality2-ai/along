@@ -792,3 +792,29 @@ or successful persona installation. A delayed-timeout test failed before a
 use-time expiry check was added, illustrating how another question can change
 the evidence even after normal-path tests pass. The AI authored these tests;
 they are not additional user feedback or independent security review.
+
+
+### Completion has several observable stages
+
+**Development observation, not a new user statement:** subsequent implementation
+checks distinguish a committed local identity, the provisioning device's saved
+receipt, the candidate's saved acknowledgment, and a later authenticated connection.
+Fault injection shows that these can diverge: one device may commit while its
+peer cannot save or deliver acknowledgment. A fresh document restores the saved
+result; a signed local revocation blocks subsequent use. These are AI-authored
+experiments, not physical-device acceptance or independent review.
+
+**Interpretation:** C20/C23's local ownership and C28's server independence require
+honest partial outcomes. The interface must neither imply that cancellation undid
+a completed save nor describe a remembered acknowledgment as present connectivity.
+This extends the earlier lifecycle theme without treating each successful test
+as another user requirement. An alternative interpretation would collapse all
+stages into “paired”; that label hides the recovery action the person needs next.
+
+**Reflexive limit:** extensive infrastructure work can displace the commuter's
+actual task. Component completion must therefore be checked against the original
+outcome: optional contextual AT information, accessible device connection and
+continued offline planning without human coding. The current public app has not
+received TG credential access. Initial setup, issuer custody, discovery and
+interrupted-session recovery remain gaps, even though local installation and
+reconnection have useful browser evidence.

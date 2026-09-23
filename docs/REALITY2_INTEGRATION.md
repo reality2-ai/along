@@ -17,14 +17,25 @@ sequence of findings, so earlier source-only/version statements are historical.
 
 | Area | Evidence now available | What remains before an end-user claim |
 | --- | --- | --- |
-| Direct AT access | Authenticated browser reads and strict timetable matching, with aggregate evidence below | Connect a user's authorized credential to the contextual UI; verify lifecycle cancellation and actual installed devices |
-| Browser persistence | Identity restart tests, revisioned atomic writes, concurrent-tab and injected-failure checks | Complete persona installation and application-secret policy; browser restart is not a physical power-loss test |
-| Existing membership | Core certificate/evidence verification, signed revocation persistence, expiring single-use challenges | Freshness after partition, epoch advancement, device removal propagation and integration with credential access |
-| Peer transport | Direct ordered channel and mutual proof tests with the asset host stopped | End-user signaling, actual device/network reachability, reconnect and operation-specific authorization |
-| Enrollment comparison | Committed X25519 exchange, canonical invitation fields, connection-bound comparison strings and live two-endpoint confirmation with durable cancellation | Connect initial trust, invitation validity/custody, protected bundle delivery and the core ceremony; qualify actual person co-presence |
-| Invitation use | Durable reservation, decline/consumption, restart refusal and atomic write-set tests | Connect the journal to a validated OPEN-to-OWNER install and resolve interrupted distributed receipts |
-| Comparison UI | [Isolated component and live-session adapter](../experiments/tg-pairing/README.md), keyboard/reflow/axe, actual peer comparison and cancellation tests | Complete the enclosing ceremony and test actual TalkBack and physical co-presence; it is not loaded by Along |
-| Complete runtime gate | Both full runs passed; the second matched the recorded unchanged snapshot at `4d4977141f3b9b35023e00a8d36c6e463fe6c06c`. Repository commit checks passed with the Composer GUI prerequisites built; source and verification notes are published in draft PR #1 | Complete enrollment and application integration; passing the component and repository checks does not establish those features |
+| Direct AT access | Authenticated browser reads and strict timetable matching | Connect each user's authorized credential to contextual UI; verify actual installed devices |
+| Local installation | Published core ceremony, candidate-generated key, atomic persona/claim/invitation commit; rollback and reload checks | Real initial persona/claim lifecycle, qualified custody and application-secret policy |
+| Membership | Core certificates, local epoch policy, signed revocations; restored signing refuses revoked identity | Freshness after partition, epoch advancement and removal propagation |
+| Receipts | Encrypted receipt/acknowledgment exchange, durable records, malformed input and storage-failure checks | Interrupted-session recovery, group announcement and end-user integration |
+| Reconnection | Installed-key mutual peer authentication, revocation closure and screen-cancellation checks | End-user signaling, actual device/network reachability and operation-specific authorization |
+| Comparison UI | Isolated comparison/live-session adapter, keyboard/reflow/axe and cancellation checks | Enclosing setup flow, actual TalkBack and physical co-presence; not loaded by Along |
+| Verification | Published local-installation increment passed the full local gate and browser checks; receipt increment also passed its unchanged full-gate snapshot | Hosted checks and complete user-facing integration; component success is not release completion |
+
+The published local-installation baseline is
+[`5aae14c4`](https://github.com/reality2-ai/r2-standard/commit/5aae14c4e0e2416f3395dee072f5f9e75b258ba6).
+Its [hosted Rust verification](https://github.com/reality2-ai/r2-standard/actions/runs/35857956489)
+and [repository gate](https://github.com/reality2-ai/r2-standard/actions/runs/35857956961)
+are still in progress at this update; hosted success is not yet established.
+
+## Historical implementation evidence
+
+The following records preserve the evidence and limitations at each increment.
+Use the current table above for present scope; earlier statements about what was
+not yet implemented are not a fresh audit of today's working tree.
 
 The confirmation increment is published at
 [`daa44f7e`](https://github.com/reality2-ai/r2-standard/commit/daa44f7ec385d12a3ef8dfacb4609e3ac38dada1),
@@ -721,19 +732,57 @@ before protected operations; UI cancellation does not undo an already-committed
 operation. The component remains outside the released app.
 
 
-### Receipt transport prototype
+### Receipt and reconnect integration
 
-A separate unpublished prototype adds purpose-separated encrypted installation
-receipts and acknowledgments to the experimental Along carriage. Browser crypto
-checks pass for direction, replay and purpose substitution, alongside the existing
-claim/bundle checks. It is outside the running integrated gate. A subsequent real-peer session test
-passes the encrypted receipt/acknowledgment round trip, refuses sending before
-the local transaction commits, and proves that replay closes transport without
-undoing a consumed invitation. That test uses a synthetic installation write set;
-receipt semantics, actual persona binding and durable acknowledgment bookkeeping
-remain to be integrated.
+The receipt prototype is now integrated in the working trees. Each protected
+message has its own purpose and direction. The candidate can send installation
+knowledge only after commit; the provisioner checks invitation/member/certificate
+binding and persists its receipt with invitation consumption before acknowledging.
+The candidate saves only an exact matching acknowledgment. Actual browser tests
+cover replay, wrong acknowledgments, storage failures on either side and late
+cancellation after commit. A new document restores the saved status.
+
+Installed candidate custody also completes the existing mutual peer handshake
+after enrollment closes. Signed local revocation closes that connection and
+refuses another. Screen disposal prevents delayed setup from creating a peer.
+Initial trust/provisioner setup and signaling remain explicit synthetic fixtures;
+these checks do not establish remote-network reachability or real human co-presence.
+The R2 receipt snapshot passed the full gate unchanged. Status prose was refreshed
+afterwards without implementation changes. Runtime dependency: [`7634c3a9`](https://github.com/reality2-ai/r2-standard/commit/7634c3a9b19cd0fe6f3d5102aa95902ceceb29ab).
 
 L5B 6.5 distinguishes membership at the atomic commit from knowledge spreading
-through ordinary verified traffic. Peer acknowledgment must report that knowledge,
-not become an invented admission requirement. A lost acknowledgment must not undo
-an already committed persona or invite a fresh claim of an OWNER device.
+through ordinary verified traffic. Acknowledgment records that knowledge, not a
+new admission rule or current reachability. Interrupted-session recovery, group
+announcement, initial setup and credential access remain unfinished.
+
+
+### First-time setup boundary review
+
+The next setup implementation must replace the tests' explicit bootstrap facts,
+not expose them as defaults in a public screen. The inspected standard separates:
+
+- **Claim initialization:** L5 4.4.2–4.4.6 permits OPEN at first boot or after local
+  physical reset, but missing or unreadable persisted claim state is not evidence
+  of OPEN. Missing and unreadable need distinguishable reporting. A lost browser
+  database must therefore not silently start a new claim or restore old ownership.
+- **Initial persona:** L5 4.3 requires a real group-of-one, including keys and
+  persona, rather than an empty group field. The current fixtures' bare OPEN
+  record is deliberately insufficient for this public lifecycle.
+- **Invitation evidence:** the core authorizes evidence against the invitation's
+  own group and named issuing member. The browser's existing membership helper
+  additionally assumes established group/epoch policy. The OPEN-candidate flow
+  still needs its own justified context; neither a caller boolean nor adopting
+  an incoming certificate establishes that policy. L5B 5.4 places invitation
+  expiry evaluation on the provisioner, not on the candidate's clock.
+- **Custody:** L5 5.3.1a and 5.3.2 require volatile group/derived keys where there
+  is no qualifying hardware-rooted sealing facility. Browser nonextractability
+  alone does not demonstrate that facility. The installed member record therefore
+  persists neither issuer nor derived traffic keys.
+- **Completion:** L5B 6.5.1 separates membership at atomic commit from knowledge
+  spreading through ordinary verified traffic. The receipt protocol records
+  knowledge; it must not turn acknowledgment into an additional admission rule.
+
+This review narrows the implementation questions; it is not a completed bootstrap,
+a platform qualification or a change to the normative standard. Preserve the
+currently tested local-installation and reconnect paths while implementing the
+missing first-boot, recovery and issuer lifecycle.
