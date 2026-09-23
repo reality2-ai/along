@@ -91,7 +91,7 @@ export function mountAppDeviceSettings({onChanged}) {
         if (identity.origin === 'initial' || !identity.peerAcknowledged) panel.append(details);
         if (identity.origin === 'initial') {
           action(details, 'Invite my other device', () => show(showPairingFlow, {role: 'provisioner'}));
-          action(details, 'Review group devices', () => show(showMemberDevices));
+          action(details, 'Review group devices', () => show(showMemberDevices, {databaseName: 'along-pairing-lab-v1'}));
           action(details, 'Join my other device', () => show(showPairingFlow, {role: 'candidate'}));
           action(details, 'Confirm an interrupted connection', () => show(showRecoveryFlow, {role: 'provisioner'}));
         } else if (!identity.peerAcknowledged) action(details, 'Recover installation confirmation', () => show(showRecoveryFlow, {role: 'candidate'}));

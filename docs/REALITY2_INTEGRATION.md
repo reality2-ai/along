@@ -30,7 +30,13 @@ before releasing it, so interrupted enrollment also leaves a reviewable target.
 The actual two-profile app test pairs devices, opens that list, removes a member
 offline and reopens its saved removal after reload, retaining local journeys.
 This is an issued-certificate list, not an online roster or proof of completed
-installation. Older preview enrollments lack this index; no migration is claimed.
+installation. The published 3802 preview lacks recovery for older enrollments.
+The next candidate recovers retained public installation receipts into the list,
+checking signatures, receipt bindings and consumed journals with guarded writes.
+Its `LEGACY_ENROLLMENT=1` app check pairs devices using the exact published 3801
+bundle before upgrading, verifies unchanged identities/key ciphertext and tests
+offline removal of the recovered device. Interrupted older enrollments without a
+retained receipt remain outside this recovery path.
 Manual distribution is now available in the local experimental app: **Share this
 removal** produces a bounded signed message, and **Receive a group removal**
 verifies it against the receiving device's established group before committing.

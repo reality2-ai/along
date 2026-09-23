@@ -9,6 +9,8 @@ import {join, extname} from 'node:path';
 const {chromium, expect} = await import(process.env.PLAYWRIGHT_MODULE || '@playwright/test');
 const mainSetup = true;
 const preview = process.env.PREVIEW === '1';
+const legacyEnrollment = process.env.LEGACY_ENROLLMENT === '1';
+assert.ok(!legacyEnrollment || preview, 'Legacy upgrade uses the preview storage profile');
 const root = new URL(preview ? '../../releases/along-device-preview/' : '../../releases/along-experimental-app/', import.meta.url).pathname;
 const manifest = JSON.parse(await readFile(join(root, 'build-info.json'), 'utf8'));
 assert.equal(manifest.profile, preview ? 'along-device-preview-v1' : 'along-experimental-app-v1');
@@ -18,11 +20,22 @@ const sources = new Map(await Promise.all(Object.entries(manifest.files).map(asy
   const bytes = await readFile(join(root, name));
   assert.equal(createHash('sha256').update(bytes).digest('hex'), hash); return [name, bytes];
 })));
+let serving = sources;
+if (legacyEnrollment) {
+  const oldRoot = new URL('../../releases/along-device-preview-3801/', import.meta.url).pathname;
+  const bytes = await readFile(join(oldRoot, 'build-info.json'));
+  assert.equal(createHash('sha256').update(bytes).digest('hex'), '8b0a756dd753421eee91b1412f6150e2eb209ac1db36c2cd820bb85cf5e31e32');
+  const old = JSON.parse(bytes); assert.deepEqual(old.namespaces, namespaces);
+  serving = new Map(await Promise.all(Object.entries(old.files).map(async ([name, hash]) => {
+    const body = await readFile(join(oldRoot, name));
+    assert.equal(createHash('sha256').update(body).digest('hex'), hash); return [name, body];
+  })));
+}
 const prefix = '/along-exp/';
 const server = createServer((req, res) => {
   const path = new URL(req.url, 'http://localhost').pathname;
   const name = path.startsWith(prefix) ? path.slice(prefix.length) + (path.endsWith('/') ? 'index.html' : '') : '';
-  const body = sources.get(name);
+  const body = serving.get(name);
   if (!body) { res.writeHead(404); res.end(); return; }
   res.setHeader('Content-Type', ({'.js': 'text/javascript', '.mjs': 'text/javascript', '.wasm': 'application/wasm', '.html': 'text/html', '.css': 'text/css', '.gz': 'application/gzip', '.json': 'application/json', '.webmanifest': 'application/manifest+json', '.png': 'image/png', '.svg': 'image/svg+xml'})[extname(name)] || 'text/plain');
   res.end(body);
@@ -85,6 +98,73 @@ try {
   }));
   await candidate.getByRole('heading', {name: 'Device connected', exact: true}).waitFor();
   await owner.getByRole('heading', {name: 'Other device installed', exact: true}).waitFor();
+
+  if (legacyEnrollment) {
+    const identityState = page => page.evaluate(async name => {
+      const store = await (await import('../experiments/tg-pairing/storage.mjs')).openBrowserStorage(name);
+      const hex = bytes => bytes && Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('');
+      try {
+        const persona = await store.read('candidate-persona', 'active'), group = hex(persona.value.record.group);
+        return {revision: persona.revision, member: hex(persona.value.record.subject), certificate: hex(persona.value.record.certificate),
+          issuerCiphertext: hex((await store.read('along-browser-issuer', group))?.value?.ciphertext),
+          trafficCiphertext: hex((await store.read('along-browser-traffic', group))?.value?.ciphertext),
+          directory: await store.read('along-issued-members-v1', group)};
+      } finally { store.close(); }
+    }, namespaces.devices);
+    const old = await Promise.all(pages.map(identityState));
+    assert.ok(old.every(value => value.directory === null));
+    serving = sources;
+    for (const page of pages) {
+      await page.goto(origin + 'public/update.html');
+      await page.locator('#recover-update').click();
+      await expect(page.locator('#recovery-status')).toContainText(manifest.appVersion, {timeout: 60000});
+      await page.locator('#recover-update').click();
+      await expect(page.locator('#address-status')).toContainText('ready offline', {timeout: 60000});
+    }
+    assert.deepEqual(await Promise.all(pages.map(identityState)), old, 'upgrade does not recreate identities, traffic material or issuer custody');
+    await owner.evaluate(async databaseName => {
+      const wasm = await import('../experiments/tg-pairing/hive_wasm.js'); await wasm.default();
+      const store = await (await import('../experiments/tg-pairing/storage.mjs')).openBrowserStorage(databaseName);
+      const {restoreIssuedMembers} = await import('../experiments/tg-pairing/legacy-members.mjs');
+      const hex = bytes => Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('');
+      try {
+        const group = (await store.read('candidate-persona', 'active')).value.record.group, groupId = hex(group);
+        const keys = await new Promise((resolve, reject) => {
+          const open = indexedDB.open('r2-browser:' + databaseName, 1); open.onerror = () => reject(open.error);
+          open.onsuccess = () => {
+            const db = open.result, tx = db.transaction('records', 'readonly');
+            const request = tx.objectStore('records').getAllKeys(IDBKeyRange.bound(['enrollment-installations', groupId + ':'], ['enrollment-installations', groupId + ':\uffff']));
+            tx.oncomplete = () => { db.close(); resolve(request.result); };
+            tx.onabort = () => { db.close(); reject(Error('receipt fixture unavailable')); };
+          };
+        });
+        if (keys.length !== 1) throw Error('Expected one real legacy installation receipt');
+        const key = keys[0][1], original = await store.read('enrollment-installations', key);
+        const input = {wasm, store, databaseName, expectedGroup: group};
+        const refuses = async options => {
+          if (await restoreIssuedMembers({...input, ...options}).then(() => true, () => false)) throw Error('Invalid migration accepted');
+          if (await store.read('along-issued-members-v1', groupId)) throw Error('Invalid migration wrote directory');
+        };
+        const damaged = structuredClone(original.value); damaged.receipt[153] ^= 1;
+        await store.compareAndSwap('enrollment-installations', key, original.revision, damaged);
+        await refuses();
+        let held = await store.read('enrollment-installations', key);
+        await store.compareAndSwap('enrollment-installations', key, held.revision, original.value);
+        const journal = await store.read('enrollment-invitations', key);
+        await store.compareAndSwap('enrollment-invitations', key, journal.revision, {...journal.value, state: 'void'});
+        await refuses();
+        held = await store.read('enrollment-invitations', key);
+        await store.compareAndSwap('enrollment-invitations', key, held.revision, journal.value);
+        const cancelled = new AbortController(); cancelled.abort(); await refuses({signal: cancelled.signal});
+        const racingStore = {...store, compareAndSwapMany: async (...args) => {
+          const latest = await store.read('enrollment-installations', key);
+          await store.compareAndSwap('enrollment-installations', key, latest.revision, latest.value);
+          return store.compareAndSwapMany(...args);
+        }};
+        await refuses({store: racingStore});
+      } finally { store.close(); }
+    }, namespaces.devices);
+  }
 
   await Promise.all(pages.map(page => page.reload()));
   const preferences = page => page.evaluate(key => JSON.parse(localStorage.getItem(key)), namespaces.preferences);

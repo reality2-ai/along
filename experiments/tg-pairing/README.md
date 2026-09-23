@@ -877,3 +877,33 @@ test removes the target during each derivation in turn, verifies refusal and
 observes that every derived buffer is zeroed. This closes the gap between checking
 eligibility to issue a certificate and later releasing enrollment keys. Returned
 bytes are still not an enduring authorization and cannot be recalled after release.
+
+### Recovering the older device list (next candidate)
+
+The published 3802 preview can omit devices enrolled by 3801. The next candidate's
+`legacy-members.mjs` restores their public certificates from retained installation
+receipts when the issuer opens **Review group devices**. It checks the certificate
+signature, receipt digest, group/issuer/subject/code binding and consumed invitation
+journal before merging into the directory. The write checks receipt, journal,
+persona and directory revisions; concurrent changes retry without replacing the
+existing index. It does not issue a new certificate, reset identity, alter keys or
+grant an application permission. Interrupted older enrollments without a retained
+receipt remain undiscoverable through this path.
+
+The pinned runtime's storage adapter has no enumeration operation. A bounded,
+read-only cursor enumerates only `enrollment-installations` keys for the selected
+group in the caller's device database, refusing schema creation/upgrades and more
+than 256 receipts. It never enumerates persona or credential values. Validation
+reads and all writes use the ordinary adapter. This helper is specific to the
+documented version-1 browser database; it is not a general R2 discovery API.
+
+`PREVIEW=1 LEGACY_ENROLLMENT=1 node experiments/journey-sync/app-integration.test.mjs`
+first serves the exact published 3801 bundle, pairs two real browser profiles,
+then upgrades them to the candidate. It checks unchanged identity/certificate and
+encrypted issuer/traffic bytes, refusal of damaged receipts and unconsumed journals,
+cancellation and a receipt changing during commit. The rest of the actual app
+flow covers sharing and offline selection/removal of the recovered device,
+followed by signed removal receipt. The prior bundle must be extracted at
+`releases/along-device-preview-3801/`; the test verifies its pinned manifest and all
+payload hashes before serving it. These are browser-profile checks, not physical
+device acceptance or proof of uninterrupted enrollment.
