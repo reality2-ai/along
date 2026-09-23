@@ -21,19 +21,37 @@ sequence of findings, so earlier source-only/version statements are historical.
 | Browser persistence | Identity restart tests, revisioned atomic writes, concurrent-tab and injected-failure checks | Complete persona installation and application-secret policy; browser restart is not a physical power-loss test |
 | Existing membership | Core certificate/evidence verification, signed revocation persistence, expiring single-use challenges | Freshness after partition, epoch advancement, device removal propagation and integration with credential access |
 | Peer transport | Direct ordered channel and mutual proof tests with the asset host stopped | End-user signaling, actual device/network reachability, reconnect and operation-specific authorization |
-| Enrollment comparison | Committed X25519 exchange, canonical invitation fields and connection-bound core comparison strings | Connect initial trust, invitation validity/custody, person confirmation, protected bundle delivery and the core ceremony |
+| Enrollment comparison | Committed X25519 exchange, canonical invitation fields, connection-bound comparison strings and live two-endpoint confirmation with durable cancellation | Connect initial trust, invitation validity/custody, protected bundle delivery and the core ceremony; qualify actual person co-presence |
 | Invitation use | Durable reservation, decline/consumption, restart refusal and atomic write-set tests | Connect the journal to a validated OPEN-to-OWNER install and resolve interrupted distributed receipts |
-| Comparison UI | [Isolated component](../experiments/tg-pairing/README.md), keyboard/reflow/axe and cancellation tests | Bind it to the live ceremony, test actual TalkBack and physical co-presence; it is not loaded by Along |
+| Comparison UI | [Isolated component and live-session adapter](../experiments/tg-pairing/README.md), keyboard/reflow/axe, actual peer comparison and cancellation tests | Complete the enclosing ceremony and test actual TalkBack and physical co-presence; it is not loaded by Along |
 | Complete runtime gate | Both full runs passed; the second matched the recorded unchanged snapshot at `4d4977141f3b9b35023e00a8d36c6e463fe6c06c`. Repository commit checks passed with the Composer GUI prerequisites built; source and verification notes are published in draft PR #1 | Complete enrollment and application integration; passing the component and repository checks does not establish those features |
 
-The published runtime branch currently ends at
-[`641e51c9`](https://github.com/reality2-ai/r2-standard/commit/641e51c9e084c90eb08358b77e0fb29482759c3d),
-which adds verification notes to the tested implementation. The later repository
-commit check ran the previously unavailable GUI controls successfully; no
+The confirmation increment is published at
+[`daa44f7e`](https://github.com/reality2-ai/r2-standard/commit/daa44f7ec385d12a3ef8dfacb4609e3ac38dada1),
+with a separate CI prerequisite repair at
+[`105255d3`](https://github.com/reality2-ai/r2-standard/commit/105255d37b95b85a2c4d0402858b4d1897eefe97).
+The final confirmation runtime snapshot passed `cargo xtask verify`, its browser
+tests and the repository commit checks. A handover wording adjustment then passed
+the prose checker; the implementation bytes were unchanged. The local repository
+commit checks ran the previously unavailable GUI controls successfully; no
 “REFUSED TO RUN” entries remained. This is a draft development contribution, not
 a merged runtime release or a public Along feature. The next functional work is
-binding person confirmation to the live exchange and durable invitation lifecycle,
-followed by protected bundle delivery and validated persona installation.
+binding that confirmation to the core ceremony, protected bundle delivery and
+validated persona installation.
+
+GitHub's checks on this draft are **not green**. The hosted Rust job
+[failed during environment setup](https://github.com/reality2-ai/r2-standard/actions/runs/35839489796)
+when bubblewrap could not configure its isolated network namespace. The
+[repository gate job](https://github.com/reality2-ai/r2-standard/actions/runs/35839489826)
+also lacked generated Composer GUI assets needed by its controls. Local gate
+success does not resolve those hosted failures. Repair the runner prerequisites
+and obtain hosted evidence before treating CI as verified; do not remove the
+isolation probe or count unrun controls as passing. The repair installs Ubuntu's
+packaged bubblewrap profile while retaining the global restriction and existing
+namespace probe, and builds the GUI prerequisites explicitly. New hosted runs
+[35843129043](https://github.com/reality2-ai/r2-standard/actions/runs/35843129043)
+and [35843129013](https://github.com/reality2-ai/r2-standard/actions/runs/35843129013)
+are in progress; this is not yet evidence that the repair passed.
 
 ### Notekeeper reference inspection
 
@@ -90,6 +108,23 @@ Source: [Notekeeper application at the inspected revision](https://github.com/re
 and [README](https://github.com/reality2-ai/r2-notekeeper/blob/f771c3b7e258394fc4d7998c369a9b2668dd9b35/README.md).
 
 ### Next integration boundaries
+
+The next increment now connects the comparison screen to the actual browser
+enrollment session in the isolated experiment. Both peers must confirm on the
+same live channel. Decline, duplicate decisions, lost connections and replaced
+views close the session and void its durable invitation reservation. A failed
+void write is reported and does not make the invitation reusable. The browser
+checks passed for these cases using synthetic invitations with the asset host
+stopped. The full runtime gate passed against the unchanged final snapshot and
+the source is published in draft PR #1. The public Along app remains unchanged.
+
+A delayed-timeout regression initially showed that a resolved comparison could
+still be queried after its lifetime. The runtime now checks monotonic elapsed
+time at each use, and that regression passes. A previously resolved promise is
+not an enduring authorization: later protected operations must observe the live
+session and its cancellation signal. Actual human co-presence, initial trust,
+protected bundle delivery and persona installation are not established by these
+automated confirmation checks.
 
 The next runtime increment must connect these boundaries, not turn a comparison
 callback into a direct write or secret-access grant:

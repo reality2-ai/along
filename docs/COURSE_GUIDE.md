@@ -277,6 +277,10 @@ Include these cases:
   issuer; signature validity alone was insufficient.
 - A full verification command succeeds while the source changes during the run;
   the result cannot establish that one final source snapshot passed every check.
+- A confirmation appears expired by design, but a backgrounded browser delays
+  its timeout callback. Compare a timer-only implementation with one that checks
+  elapsed time when confirmation is used; the recorded regression initially
+  failed and then passed after that correction.
 
 Then choose one counterexample in ordinary language and ask the assistant to
 explain the minimum meaningful experiment. Examples include a double tap on

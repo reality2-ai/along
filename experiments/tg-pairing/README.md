@@ -35,3 +35,27 @@ abort, disposal and replacement during pending confirmation, failure, enlarged-t
 reflow and axe checks.
 It uses only a synthetic comparison code. It does not test real enrollment,
 physical co-presence, Android TalkBack, hardware protection or AT access.
+
+## Connection to the experimental runtime
+
+`session-view.mjs` supplies the actual code from Reality2's experimental
+`createEnrollmentSession`, and sends the person's decision back to that same
+session. Both peers must confirm. Replacing or disposing the view cancels the
+old session; the runtime's abort signal disables the displayed controls when
+the peer disconnects or declines. Cancellation also prevents durable invitation
+reuse. This adapter remains outside Along's public build and does not enable
+membership installation or AT credentials.
+
+Run the integrated browser check with `R2_BROWSER_DIR` pointing to the runtime's
+`implementations/rust/hives/hive-wasm/browser` directory and `R2_WASM_DIR` to its
+compiled web WASM package:
+
+```sh
+node experiments/tg-pairing/session-view.test.mjs
+```
+
+The check uses synthetic invitations, real isolated browser contexts, IndexedDB
+and the actual data channel; the asset host stops before comparison. It exercises
+rendered controls, both confirmations, keyboard decline, remote disconnection and
+replacement while confirmation is pending. It does not establish initial trust,
+protected bundle delivery, full enrollment or physical-person co-presence.

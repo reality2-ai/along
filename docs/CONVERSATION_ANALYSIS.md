@@ -85,6 +85,7 @@ publication does not establish readiness for every person or journey.
 | C28: operational autonomy | “independent of any central server aside from that we are getting info from” | Independence extends from offline planning to ownership of the live-data connection. |
 | C29: contextual enhancement | “the online information must be completely contextual” | Connectivity should improve the current decision without taking over the task. |
 | C30: explicit scope expansion | “Develop the missing TG capability” | A proposed integration becomes authorized runtime development; approval does not establish that the capability exists. |
+| C31: reference-based redirection | “in terms of using R2, look at how notekeeper does it” | Examine an existing application before extending bespoke integration; reuse depends on the actual implementation and the earlier constraints. |
 
 ## Central organising idea: independence with control
 
@@ -766,3 +767,28 @@ a mistaken user action could change. Also ask what the test never exercised.
 Neither the number of passing tests nor architectural complexity answers whether
 a commuter can safely connect, remove and recover their actual devices. The
 human still directs those acceptance criteria without being asked to write code.
+
+### An existing app is evidence, not automatic compatibility
+
+**Observation:** the user redirected the R2 work toward Notekeeper (C31).
+The source inspection found browser WASM, invitation links/QR codes, local
+persistence and a configurable relay. Its own repository guidance describes an
+intentionally simplified application of R2. The inspection is recorded in
+[the integration notes](REALITY2_INTEGRATION.md#notekeeper-reference-inspection).
+
+**Interpretation:** this is a request to learn from working precedent, consistent
+with the user's repeated preference for practical, understandable interaction.
+It does not explicitly withdraw C28's server-independence requirement or establish
+that Notekeeper's trust groups interoperate with the newer runtime. An alternative
+reading—copy Notekeeper wholesale—would silently inherit a relay dependency and
+storage choices the user did not explicitly approve for credentials.
+
+**Response and limits:** retain the invitation and optional device-connection
+patterns while checking actual transport, storage and authentication boundaries.
+The subsequent experimental comparison screen now receives its code from a real
+peer exchange; automated button and keyboard actions exercise confirmation and
+cancellation. That demonstrates UI/runtime wiring, not observed human co-presence
+or successful persona installation. A delayed-timeout test failed before a
+use-time expiry check was added, illustrating how another question can change
+the evidence even after normal-path tests pass. The AI authored these tests;
+they are not additional user feedback or independent security review.
