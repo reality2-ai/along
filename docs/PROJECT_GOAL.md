@@ -172,3 +172,11 @@ application-secret handling needed by Along, including enrollment, authorized
 device access, revocation and credential rotation. Keep the server-independent
 architecture and offline planning requirements. Persistence alone is not proof
 of complete TG security. No further scope approval is needed for this work.
+
+
+## Licensing direction: included R2 subset (24 September 2026)
+
+Use MIT, matching Along, for the R2 subset included in Along, as explicitly
+requested by the project owner. Preserve upstream attribution and third-party
+licences. Document the included scope and complete runtime distribution notices;
+this direction does not change the licence of the wider R2 standard.

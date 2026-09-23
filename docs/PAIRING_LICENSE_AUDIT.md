@@ -1,9 +1,26 @@
 # Pairing runtime distribution audit
 
 Status: incomplete. The standalone lab is built and tested locally; this audit
-has not established that its runtime distribution notices are complete. No new
-runtime licence has been assigned by Along. A conflicting explicit licence
-change in the older R2 source requires clarification from the project owner.
+has not established that its runtime distribution notices are complete. The project
+owner has selected MIT, matching Along, for the R2 subset used
+in Along. Applying that direction to the exact runtime sources and assembling
+their notices remains distribution work; it does not relicense dependencies or
+the wider R2 standard.
+
+## Owner direction (24 September 2026)
+
+In response to the question about which R2 licence to use, the owner instructed:
+“make it the same as along as we are only using a part of the r2 standard”.
+Along’s [licence](../LICENSE) is MIT. Record this as the selected licence for the
+R2 subset included in Along, not a change to all R2 repositories or the standard.
+The earlier request for a licence choice is answered.
+
+Preserve original copyright attribution and third-party licence texts. The scope
+of included code must be documented in the source and distribution notices; using
+only a subset is not itself permission to change third-party terms. The historical
+conflict below remains provenance to reconcile in that source work, rather than
+an unanswered product decision. The existing Along MIT file already covers its
+original integration code; no replacement licence is needed for that code.
 
 ## Evidence inspected
 
@@ -42,11 +59,11 @@ MIT/Apache licence. That checkout still retains MIT/Apache files alongside its
 be copied and treated as resolving the current runtime's licensing conflict.
 
 Current R2-standard Cargo manifests retain MIT or MIT/Apache declarations, and
-the identifier extraction source also used those declarations. Neither inspecting
-those manifests nor discovering the older files settles which instruction is
-authoritative for this distribution. The owner has been asked to clarify. The
-proposed `r2-ident` metadata repair remains uncommitted pending that answer; no
-new permission grant or ownership attribution is being invented here.
+the identifier extraction source also used those declarations. The owner has
+now selected MIT for the subset included in Along. The proposed
+`r2-ident` metadata repair remains uncommitted and still reflects the historical
+dual declaration. Align the scoped source notices with the new direction before
+distribution; preserve dependency terms and existing ownership attribution.
 
 The registry notice collection can proceed independently: `--collect` copies 89
 existing files verbatim into `releases/along-pairing-notices`, with the inventory
@@ -71,8 +88,8 @@ repairing the missing declaration, not evidence that today's missing notices hav
 already been repaired. Preserve existing declarations and copyright attribution;
 do not invent a new owner or silently relicense framework material.
 
-Remaining work: resolve the owner’s authoritative licensing direction, then repair
-upstream metadata/notices using the source history under the
+Remaining work: apply the owner’s scoped MIT direction to runtime metadata and
+notices using the source history under the
 R2 repository's normal review/gate process, collect applicable dependency texts,
 and make the lab builder include them with provenance. Then verify the final
 static payload and publish a specific test URL with the
@@ -110,6 +127,7 @@ ran out of `/tmp` space; the completed retry used a dedicated temporary director
 on the larger filesystem. No hardware was flashed.
 
 This is technical verification of the draft metadata, not a determination of the
-applicable licence. The declaration remains uncommitted pending the owner's
-clarification of the contradictory source history. Runtime distribution is still
-pending that clarification and the complete notice bundle.
+applicable licence. The declaration remains uncommitted. The owner has since
+selected MIT for the
+subset used in Along; runtime distribution still requires aligned source metadata
+and a complete notice bundle. This earlier gate does not verify those future edits.

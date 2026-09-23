@@ -906,3 +906,14 @@ For the course, ask learners which event establishes each claimed outcome and
 whether an error can arrive after success became durable. A passing storage test
 alone does not prove that recovery advice is correct. The AI wrote both the repair
 and the delayed-completion regression; the human did not need to edit code.
+
+
+### Licensing the selected framework subset
+
+The participant directed that the R2 part used by Along should use the same
+licence as Along (MIT). This resolves the requested product choice while retaining
+the scope boundary: the wider standard and third-party dependencies are not being
+relicensed. It extends the themes of reusable course outputs and selective
+framework adoption. Implementation evidence must still include the exact source
+scope, retained attribution and bundled notices; a licence choice alone is not a
+completed distribution audit. No human coding is required.

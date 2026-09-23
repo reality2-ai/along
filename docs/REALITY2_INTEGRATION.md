@@ -26,9 +26,10 @@ confirmed database deletion and preserves Along’s journey preferences and offl
 database in the browser test. It does not revoke other devices. It is not yet published; runtime notices
 and physical-device testing remain necessary. The
 [runtime notice audit](PAIRING_LICENSE_AUDIT.md) records missing local R2 texts
-and a conflict with an older explicit PolyForm Noncommercial change. The owner’s
-licensing clarification is pending; registry notice texts have been collected
-without assigning R2 a licence. The [device-test guide](PAIRING_DEVICE_CHECK.md) is
+and a conflict with an older explicit PolyForm Noncommercial change. The owner selected MIT, matching Along, for the included R2 subset on
+24 September 2026. Scoped source metadata and complete distribution notices still
+need updating; dependency licences and the wider standard are not changed.
+Registry notice texts have been collected verbatim. The [device-test guide](PAIRING_DEVICE_CHECK.md) is
 ready for a verified test URL.
 The lab also exposes interrupted-installation confirmation recovery using saved
 identities and an authenticated receipt exchange. A browser test interrupts the
