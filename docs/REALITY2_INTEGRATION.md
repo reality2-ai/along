@@ -65,17 +65,28 @@ The current browser adapter does not establish hardware-rooted sealing.
 Encrypted IndexedDB under an ordinary browser CryptoKey must not be labelled as
 meeting that stronger requirement.
 
-Two implementation directions are being clarified with the user: an explicitly
-scoped browser-only R2 subset with encrypted software custody, consistent with
-the request to use at least part of R2; or qualifying native/hardware custody for
-full key-storage conformance. No issuer persistence or platform attestation has
-been fabricated while that choice is pending. This is not a claim that every
-browser/hardware combination is incapable of qualifying: the current adapter
-has no such evidence or implementation.
+The user has selected the **browser-only R2 subset with explicit security
+limits**. This resolves the architecture choice: Along may implement encrypted
+software custody without requiring a native component, while making no claim of
+hardware-rooted sealing conformance. No platform attestation is fabricated.
 
-The next implementation must replace the synthetic issuer in the integration
-scenario with actual creation, durable/reobtained custody, invitation issuance
-and enrollment. More downstream UI tests alone cannot establish that outcome.
+`experiments/tg-pairing/software-persona.mjs` now creates a browser group and member,
+encrypts issuer PKCS#8 material under a nonextractable AES-GCM wrapping key, and
+atomically stores that custody with the initial persona and membership. Restore
+checks the issuer's actual signing key against the expected group identity.
+A fresh-document test verifies real R2 certificate issuance after reopening;
+concurrent creation, interrupted writes, wrong groups, absent/tampered records,
+changed custody and cancellation refuse. The peer test now uses this actual
+persisted issuer, but still fixtures the recipient's membership installation.
+
+This is Along-specific software custody, not a change to the R2 standard. Browser
+profile compromise or same-origin malicious code can still use stored key handles;
+nonextractability is not hardware isolation or full-profile rollback protection.
+Old volatile-only identities cannot silently gain a replacement issuer or change
+groups. Group traffic-key derivation, invitations, real recipient enrollment and
+public setup wiring remain unfinished.
+The next implementation must replace the remaining recipient bootstrap fixture
+with actual invitation issuance and enrollment using this custody. More downstream UI tests alone cannot establish that outcome.
 
 ### Next integration boundary: starting a device
 

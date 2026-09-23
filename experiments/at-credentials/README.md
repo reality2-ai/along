@@ -558,3 +558,14 @@ replacement-needed state, saving a synthetic replacement at generation 2, and
 320px enlarged-text/axe checks. Existing credential consent and authenticated peer
 tests also pass. This is still experimental browser UI; no real key was used,
 no AT subscription was changed, and public/physical-device verification remains.
+
+
+## Issuer fixture replaced by software custody
+
+After the user selected the browser-only R2 subset, the peer test switched from
+an in-memory synthetic issuer to `software-persona.mjs`: create, persist, close
+storage, reopen and load the actual encrypted issuer, then issue the recipient
+certificate. The recipient bootstrap and reviewed descriptor remain fixtures;
+this is not yet full enrollment or physical-device pairing. Earlier references
+to a synthetic issuer describe the previous test arrangement. AT keys and provider
+responses remain synthetic, and the public app still excludes these modules.

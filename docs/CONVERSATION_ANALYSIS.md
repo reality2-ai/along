@@ -877,3 +877,16 @@ course exercise, ask learners to trace one end-to-end user task, mark each fixtu
 and identify which assumptions prevent deployment. Assessment should reward
 finding and resolving that dependency, rather than counting passing component
 tests or commits. The AI remains responsible for all coding.
+
+
+### Resolving the browser custody choice
+
+The participant selected “Browser-only R2 subset, with explicit security limits.”
+This resolves the previously recorded architecture question without changing the
+requirements for local data, offline journeys or no human coding. The subsequent
+implementation stores an encrypted software issuer and verifies restoration with
+actual signing; it does not establish hardware protection. The peer test now
+uses that issuer, while recipient bootstrap remains a fixture. This illustrates
+requirements negotiation: an explicit user choice narrows framework conformance,
+not the intended usable cross-device experience. It is not evidence of independent
+security review or physical-device acceptance.

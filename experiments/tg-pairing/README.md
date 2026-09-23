@@ -378,3 +378,23 @@ initialization-marker revision change then invalidates the previously returned
 signing handle; these reads do not rewrite the persona or turn a failure into
 first-use initialization. These focused checks pass, and the frozen runtime increment also passed its full
 verification gate.
+
+
+## Approved browser software profile
+
+The user chose browser-only R2 with explicit security limits. `software-persona.mjs`
+is a separate Along profile: it persists an AES-GCM encrypted issuer with a
+nonextractable browser wrapping key alongside the initial member, bootstrap and
+membership records in one atomic transaction. It uses the actual R2 certificate
+codec, verifies restored issuer possession against the caller's expected group,
+and invalidates a held issuer when its stored custody changes. It neither alters
+the canonical volatile-only constructor nor silently migrates an old identity.
+
+`software-persona.test.mjs` uses actual IndexedDB, WebCrypto and WASM codecs. It
+covers fresh-document issuer restore/issuance, concurrent first use, interrupted
+atomic installation, cancellation, wrong group, absent/tampered issuer and closed
+or changed custody. This profile does not meet the standard's hardware-rooted
+sealing requirement. Same-origin scripts and a compromised browser profile remain
+outside its protection; references and temporary byte clearing cannot guarantee
+browser-engine memory erasure. Group traffic-key derivation, invitation and full
+enrollment wiring remain incomplete. Public Along does not load this experiment.

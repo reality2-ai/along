@@ -6,7 +6,7 @@ import {join} from 'node:path';
 const {chromium} = await import(process.env.PLAYWRIGHT_MODULE || '@playwright/test');
 const sources = new Map();
 for (const name of ['storage.mjs', 'membership.mjs', 'certificate.mjs', 'peer-session.mjs', 'peer-link.mjs', 'challenge.mjs', 'session-statement.mjs']) sources.set('/' + name, await readFile(join(process.env.R2_BROWSER_DIR, name)));
-for (const name of ['../tg-pairing/initial-persona.mjs', '../tg-pairing/local-persona.mjs', 'local-owner.mjs', 'owner-policy.mjs', 'owner-access-view.mjs', 'owner-policy-send.mjs', 'policy-sync.mjs', 'owner-delivery.mjs', 'delivery-history.mjs', 'delivery-recovery.mjs', 'remote-owner.mjs', 'policy-update.mjs', 'policy-update-message.mjs', 'remote-owner-view.mjs', 'settings-view.mjs', 'key-replacement-view.mjs', 'credential-view.mjs', '../tg-pairing/comparison.css', '../tg-pairing/local-persona-session.mjs', 'policy.mjs', 'policy-store.mjs', 'local-vault.mjs', 'delivery-ack.mjs', 'delivery-message.mjs']) sources.set('/' + name.split('/').pop(), await readFile(new URL(name, import.meta.url)));
+for (const name of ['../tg-pairing/initial-persona.mjs', '../tg-pairing/software-persona.mjs', '../tg-pairing/local-persona.mjs', 'local-owner.mjs', 'owner-policy.mjs', 'owner-access-view.mjs', 'owner-policy-send.mjs', 'policy-sync.mjs', 'owner-delivery.mjs', 'delivery-history.mjs', 'delivery-recovery.mjs', 'remote-owner.mjs', 'policy-update.mjs', 'policy-update-message.mjs', 'remote-owner-view.mjs', 'settings-view.mjs', 'key-replacement-view.mjs', 'credential-view.mjs', '../tg-pairing/comparison.css', '../tg-pairing/local-persona-session.mjs', 'policy.mjs', 'policy-store.mjs', 'local-vault.mjs', 'delivery-ack.mjs', 'delivery-message.mjs']) sources.set('/' + name.split('/').pop(), await readFile(new URL(name, import.meta.url)));
 for (const name of ['hive_wasm.js', 'hive_wasm_bg.wasm']) sources.set('/' + name, await readFile(join(process.env.R2_WASM_DIR, name)));
 for (const name of ['live-client.mjs', '../../public/at-client.js', '../../public/live-client.js']) sources.set('/' + name.split('/').pop(), await readFile(new URL(name, import.meta.url)));
 const server = createServer((req, res) => {
@@ -55,16 +55,20 @@ try {
     const codec = (await import('./certificate.mjs')).certificateCodec(wasm);
     const hex = bytes => Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
     const check = (v, message) => { if (!v) throw new Error(message); };
-    // Synthetic issuer and confirmed-owner bootstrap only. Each device retains
-    // its own actual nonextractable member key; the channel proves possession.
-    const issuer = await crypto.subtle.generateKey('Ed25519', true, ['sign', 'verify']);
-    const group = new Uint8Array(await crypto.subtle.exportKey('raw', issuer.publicKey));
+    // Actual encrypted browser-software issuer; receiver installation below is
+    // still a bootstrap fixture rather than the complete enrollment ceremony.
+    const software = await import('./software-persona.mjs');
+    let ownerStore = await openBrowserStorage('peer-key-owner');
+    const createdOwner = await software.initializeSoftwarePersona({wasm, store: ownerStore});
+    ownerStore.close(); ownerStore = await openBrowserStorage('peer-key-owner');
+    const group = Uint8Array.from(createdOwner.group.match(/../g), b => parseInt(b, 16));
+    const issuer = await software.loadSoftwareIssuer({wasm, store: ownerStore, expectedGroup: group});
+    const ownerRecord = (await ownerStore.read('candidate-persona', 'active')).value.record;
     async function device(name) {
       const store = await openBrowserStorage(name);
       const initial = await initializeLocalPersona({wasm, store}); initial.close();
       const persona = await store.read('candidate-persona', 'active'), subject = persona.value.record.subject;
-      const signature = new Uint8Array(await crypto.subtle.sign('Ed25519', issuer.privateKey, codec.signingBytes(subject, group, 0n)));
-      const certificate = codec.encode(subject, group, 0n, signature);
+      const certificate = await issuer.issueCertificate(subject);
       await store.compareAndSwap('candidate-persona', 'active', persona.revision,
         {...persona.value, record: {...persona.value.record, group, certificate}});
       const bootstrap = await store.read('persona-bootstrap', 'initial');
@@ -72,7 +76,8 @@ try {
       await store.compareAndSwap('membership', hex(group), 0, {format: 1, group, subject, certificate, current: 0n, depth: 0n, revocations: []});
       return {store, subject, certificate};
     }
-    const owner = await device('peer-key-owner'), receiver = await device('peer-key-receiver');
+    const owner = {store: ownerStore, subject: ownerRecord.subject, certificate: ownerRecord.certificate};
+    const receiver = await device('peer-key-receiver'); issuer.close();
     check(hex(owner.subject) !== hex(receiver.subject), 'distinct identities');
     const {binding} = await (await import('./local-owner.mjs')).establishLocalATOwner({wasm, store: owner.store, expectedGroup: group});
     const {showOwnerDeviceAccess} = await import('./owner-access-view.mjs');
@@ -354,5 +359,5 @@ try {
     try { return (await (await import('./delivery-history.mjs')).openDeliveryHistory({store: ownerStore, ...binding}).read()).status; }
     finally { ownerStore.close(); }
   }, historyBinding), 'recipient-confirmed-saved');
-  console.log('PASS: distinct real browser identities mutually authenticate over direct WebRTC, owner grant gates signed delivery, receiver encrypts/consumes request, removed peer is refused. Synthetic issuer, reviewed-descriptor fixture and keys; checked receiver acceptance; one browser host, not physical-device reachability or public release.');
+  console.log('PASS: distinct real browser identities mutually authenticate over direct WebRTC, owner grant gates signed delivery, receiver encrypts/consumes request, removed peer is refused. Actual encrypted software issuer; receiver bootstrap/reviewed-descriptor fixtures and synthetic AT keys; checked receiver acceptance; one browser host, not physical-device reachability or public release.');
 } finally { await browser?.close(); await new Promise(resolve => server.close(resolve)); }

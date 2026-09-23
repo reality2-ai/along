@@ -107,8 +107,8 @@ Expected distinctions, to discuss after learners submit their first table:
   through the browser. It proves repository acceptance and receipt handling, not
   the interactive GitHub sign-in/composer flow. Opening a URL proves neither.
 - The peer scenario uses real browser member keys, IndexedDB and WebRTC. Its issuer
-  and initial group arrangements are fixtures, and connection descriptions are
-  exchanged by the harness. One host is not a phone-to-desktop network test.
+  now comes from encrypted software storage; recipient installation is still a
+  fixture, and connection descriptions are exchanged by the harness. One host is not a phone-to-desktop network test.
 - A signed saved receipt is a historical installation report. It does not establish
   continuing permission, provider acceptance or present reachability.
 - A locally saved removal affects a recipient after it learns the change. It does
@@ -118,9 +118,10 @@ Expected distinctions, to discuss after learners submit their first table:
 - The static test makes a new address search offline and preserves saved journeys.
   It supports portal-independent operation after preparation in the tested browser;
   it does not establish every phone's memory, installation or screen-reader behavior.
-- The R2 custody choice is a product/security decision still awaiting user input
-  when this lab was written. Learners should check current repository state rather
-  than treating this answer key as a permanent implementation report.
+- The user subsequently chose a browser-only R2 subset with explicit security
+  limits. Its software issuer now has restore tests, while recipient bootstrap
+  remains a fixture. Learners should check current repository state rather than
+  treating this answer key as a permanent implementation report.
 
 Suggested closing discussion: which missing foundation would you investigate
 before polishing another screen, and what evidence would let you resume that work?
