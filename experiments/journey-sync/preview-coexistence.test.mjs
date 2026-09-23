@@ -10,17 +10,17 @@ const root = new URL('../../releases/along-device-preview/', import.meta.url).pa
 const regularRoot = new URL('../../dist/', import.meta.url).pathname;
 const manifest = JSON.parse(await readFile(join(root, 'build-info.json'), 'utf8'));
 assert.equal(manifest.profile, 'along-device-preview-v1');
-assert.equal(manifest.appVersion, '3802');
+assert.equal(manifest.appVersion, '3803');
 const sources = new Map(await Promise.all(Object.entries(manifest.files).map(async ([name, hash]) => {
   const body = await readFile(join(root, name));
   assert.equal(createHash('sha256').update(body).digest('hex'), hash); return [name, body];
 })));
 // Use the exact published prior release, not a version-substituted current shell.
-const priorRoot = new URL('../../releases/along-device-preview-3801/', import.meta.url).pathname;
+const priorRoot = new URL('../../releases/along-device-preview-3802/', import.meta.url).pathname;
 const priorBytes = await readFile(join(priorRoot, 'build-info.json'));
-assert.equal(createHash('sha256').update(priorBytes).digest('hex'), '8b0a756dd753421eee91b1412f6150e2eb209ac1db36c2cd820bb85cf5e31e32');
+assert.equal(createHash('sha256').update(priorBytes).digest('hex'), 'efdddcda6e8324dd872554986ea3efaddf90908d6ecec844e9a6f2f4a88b8616');
 const priorManifest = JSON.parse(priorBytes);
-assert.equal(priorManifest.appVersion, '3801');
+assert.equal(priorManifest.appVersion, '3802');
 const priorSources = new Map(await Promise.all(Object.entries(priorManifest.files).map(async ([name, hash]) => {
   const body = await readFile(join(priorRoot, name));
   assert.equal(createHash('sha256').update(body).digest('hex'), hash); return [name, body];
@@ -79,7 +79,7 @@ try {
   await expect(preview.locator('#address-status')).toContainText('ready offline', {timeout: 60000});
   await expect.poll(() => preview.evaluate(() => navigator.serviceWorker.controller?.scriptURL)).toBe(origin + '/along/preview/public/sw.js');
   await preview.locator('#settings-open').click();
-  await expect(preview.locator('#settings')).toContainText('App version 3801');
+  await expect(preview.locator('#settings')).toContainText('App version 3802');
   await preview.getByRole('button', {name: 'Device and AT-key setup', exact: true}).click();
   await preview.getByRole('button', {name: 'Set up my device', exact: true}).click();
   await preview.getByRole('button', {name: 'Create my device group', exact: true}).click();
@@ -114,10 +114,10 @@ try {
   serveCurrent = true;
   await preview.goto(origin + '/along/preview/public/update.html');
   await preview.locator('#recover-update').click();
-  await expect(preview.locator('#recovery-status')).toContainText('3802', {timeout: 60000});
+  await expect(preview.locator('#recovery-status')).toContainText('3803', {timeout: 60000});
   await preview.locator('#recover-update').click();
   await expect(preview.locator('#address-status')).toContainText('ready offline', {timeout: 60000});
-  await expect(preview.locator('#settings')).toContainText('App version 3802');
+  await expect(preview.locator('#settings')).toContainText('App version 3803');
   assert.deepEqual(await previewState(), previewBefore, 'upgrade retains saved places, identity and exact encrypted key record');
   await preview.locator('#settings-open').click();
   await preview.getByRole('button', {name: 'Device and AT-key setup', exact: true}).click();
@@ -143,5 +143,5 @@ try {
   assert.deepEqual(after, original); assert.deepEqual(sentinel, {revision: 1, value: {kept: 'regular pairing lab'}});
   assert.deepEqual(await previewState(), previewBefore);
   assert.deepEqual(errors, []);
-  console.log('PASS: regular and preview coexist on one origin; the published 3801→3802 update preserves preview saved places, verified identity and exact encrypted key; offline reopening preserves regular preferences, feedback, pairing record and byte-identical shell cache. Namespacing is not a same-origin security boundary.');
+  console.log('PASS: regular and preview coexist on one origin; the published 3802→3803 update preserves preview saved places, verified identity and exact encrypted key; offline reopening preserves regular preferences, feedback, pairing record and byte-identical shell cache. Namespacing is not a same-origin security boundary.');
 } finally { await browser?.close(); await new Promise(resolve => server.close(resolve)); }

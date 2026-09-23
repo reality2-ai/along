@@ -1,7 +1,7 @@
 # Along Device Preview: S23 and desktop check
 
 Open [Along Device Preview](https://reality2.ai/along/preview/public/) and check
-version **3802**. These instructions are for that preview, not public version 37 or
+version **3803**. These instructions are for that preview, not public version 37 or
 the standalone pairing lab. No coding or terminal commands are required.
 
 Use your Samsung S23 and desktop. Record the browser name/version on each device.
@@ -9,15 +9,15 @@ Use dummy addresses from the examples and dummy key text only. Keep the regular
 Along installation. Do not clear the whole website's storage to restart a test;
 that can remove data from both apps. Mark anything you cannot check as **not tested**.
 
-If preview 3801 is already installed, open
+If preview 3801 or 3802 is already installed, open
 [preview update recovery](https://reality2.ai/along/preview/public/update.html)
 and choose **Update and reopen**. Check that saved places and setup remain and
-Settings shows 3802. Do not recreate an existing group to test an update.
+Settings shows 3803. Do not recreate an existing group to test an update.
 
 ## Install and plan offline
 
 1. Open the supplied preview URL in the browser used for installation. In Settings,
-   check **App version 3802 · Device preview** and wait for timetable and addresses
+   check **App version 3803 · Device preview** and wait for timetable and addresses
    to be ready offline.
 2. Follow the preview's **Install on your device** guide. The installed name is
    **Along Device Preview** or **Along Preview**. Check that the icon opens its own
@@ -47,10 +47,12 @@ connected** and desktop reports **Other device installed**. Reload and check tha
 the saved setup remains. Do not create new identities to recover an interrupted
 installation; preserve the last screen and report its wording.
 
-Version 3802 records newly issued device certificates for removal. Older paired
-devices may be missing from that list; report this as **older enrollment**, not a
-reason to clear storage. The list is not a live roster and may include an
-interrupted enrollment.
+Version 3803 also recovers completed older enrollments from verified installation
+receipts when you open the device list. Interrupted older enrollments without a
+receipt can still be missing; report this as **older enrollment**, not a reason
+to clear storage. The list is not a live roster and may include an interrupted
+enrollment. Both devices must update before reconnecting: the new connection
+messages exchange signed group removals before allowing shared access.
 
 ## Share saved places and stop sharing
 
@@ -84,6 +86,11 @@ To test sharing, choose **Share my AT key** on its owner device and **Receive a
 shared AT key** on the other. Review each permission and transfer the connection
 messages. The receiver should report **Shared AT key saved**, and the owner
 **Other device saved the key**. These are separate from journey-sharing permission.
+To reconnect later, choose **Connect an existing AT-key device** on both devices.
+Transfer the key owner’s device message first, then the recipient’s request and
+the owner’s reply as prompted. Choose **Use this connection** on both. No AT
+request should occur just from reconnecting.
+
 Do not post keys or transfer messages when reporting a problem.
 
 ## Updates, access and results
@@ -121,7 +128,7 @@ check **not tested** if you do not use GitHub or do not want to post publicly.
 
 ## Group removal — do this last
 
-Only test this with a disposable test pairing created in 3802. Removal stops that
+Only test this with a disposable test pairing created in 3803. Removal stops that
 device's group access; it does not remove its local journeys. Skip it for an older
 enrollment missing from the list or a group you want to keep using.
 

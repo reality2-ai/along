@@ -22,8 +22,10 @@ def prepare(qualification):
     manifest_path = candidate / 'build-info.json'
     manifest = json.loads(manifest_path.read_text())
     required = {'journeys', 'owner_key', 'shared_key_replacement', 'upgrade_coexistence'}
-    if manifest.get('appVersion') == '3802':
+    if int(manifest.get('appVersion', '0')) >= 3802:
         required.add('group_removal')
+    if int(manifest.get('appVersion', '0')) >= 3803:
+        required.add('legacy_enrollment')
     if (evidence.get('profile') != 'along-preview-qualification-v1'
             or evidence.get('candidate_manifest_sha256') != digest(manifest_path)
             or any(evidence.get('checks', {}).get(name, {}).get('status') != 'passed' for name in required)
