@@ -1,6 +1,6 @@
 # Release evidence and remaining gates
 
-Current deployed app: **version 31**, reviewed 23 September 2026. The static ZIP
+Current deployed app: **version 32**, reviewed 23 September 2026. The static ZIP
 is prepared and the private server is retired. GitHub Pages is published at `reality2.ai/along/`; no AWS deployment has been made.
 This register separates automated evidence, user observations and remaining checks.
 
@@ -19,7 +19,7 @@ this audit. Later public-hosting work supplements that brief.
 | 6. Distribution | About 38 MiB ZIP/checksum, four data bundles, import scripts, MIT/data/Leaflet notices, AWS/Pages hosting instructions | Public Pages deployment is live; authenticated feeds now verified; public live proxy remains undeployed |
 | 7. GitHub documentation | README, architecture, data, hosting, privacy, limits and contribution guidance; v21 course notice and current design-driver/goal summaries | Public source repository: [reality2-ai/along](https://github.com/reality2-ai/along); app hosted at [reality2.ai/along](https://reality2.ai/along/) |
 | 8. Course material | Thematic analysis, six lessons, exercises, assessment rubric and negative-case/contextual-map refinements | Course effectiveness has not been studied |
-| 9. Release checks and handover | Version 31: 33 JavaScript and 4 Python tests; 11 active browser scenarios; static/update suites; source/archive/live asset comparison | Remaining physical and spoken screen-reader checks prevent claiming full goal completion |
+| 9. Release checks and handover | Version 32: 35 JavaScript and 7 Python tests; 12 active browser scenarios; static/update suites; source/archive/live asset comparison | Remaining physical and spoken screen-reader checks prevent claiming full goal completion |
 
 | 10. English / Te reo Māori | Deferred by user instruction; version 31 removes the selector and ignores earlier saved Māori choices | Re-enable only with renewed direction; draft review remains incomplete |
 
@@ -605,3 +605,12 @@ These are automated checks, not physical phone or TalkBack observations.
 Live-feed matching also now rejects undated, wrong-date, wrong-route and ambiguous
 trip instances, retaining scheduled times for malformed numeric events. The public
 live connection remains disabled.
+
+Version 32 is published at https://reality2.ai/along/. Pages deployment
+[35821861941](https://github.com/reality2-ai/along/actions/runs/35821861941) passed.
+[Release asset hashes](evidence/release-v32.json) match the local ZIP/checksum.
+[Public smoke evidence](evidence/public-site-v32.json) records deployed-version,
+offline journey and feedback-draft verification. A separate mobile layout fixture
+confirmed both primary and alternative journey buttons fill their 286 px content
+width with 24 px top spacing; that fixture is not evidence of a real alternative
+route result.
