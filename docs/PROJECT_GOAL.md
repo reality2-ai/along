@@ -22,6 +22,18 @@ Finish Along as an intuitive, inclusive, installable Auckland commuter webapp, a
 
 Completion means: a tested build and documentation ready for others to install and host, an updated private site, and usable course materials. Publishing a public service is a separate deployment step.
 
+## Standing rule: no human coding
+
+The user added: “this has to be done without any actual coding by the human
+(ie me).” This applies to completing the app and presenting it as a course example.
+The AI must perform code authoring, edits, debugging and executable technical
+verification; it must not hand an implementation problem back to the human as a
+coding assignment. The human provides goals, priorities, feedback and observations,
+and can test installation, touch and assistive technology on their own devices.
+Those activities are participation in design and verification, not a requirement
+to write code. Where the AI lacks access or evidence, it must state the limit and
+request the needed observation or access rather than ask the human to patch code.
+
 ## Later direction and current evidence
 
 The user subsequently requested public distribution through the `reality2-ai`

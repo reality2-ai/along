@@ -80,6 +80,7 @@ publication does not establish readiness for every person or journey.
 | C24: visible educational status | emphasise a course exercise and “use it at your own risk” in repo and app | Public presentation should communicate the basis and limits of trust at the point of use. |
 | C25: representative presentation | UX images; equal heights and full-width pairs; “map one showing an actual map” | Readers need a coherent, concrete preview, with real behaviour and its conditions represented honestly. |
 | C26: preserve the design rationale | add “core drivers” repeatedly given and link/update this analysis | Documentation should retain the user's priorities as implementation and distribution expand. |
+| C27: human direction without human coding | “without any actual coding by the human (ie me)” | Implementation belongs to the AI; human participation centres on intention, judgment and observation. |
 
 ## Central organising idea: independence with control
 
@@ -426,3 +427,25 @@ while this analysis explains how requirements acquired meaning through the
 conversation. Neither replaces the release evidence. Keeping all three linked
 helps a learner distinguish intended outcomes, interpretive rationale and what
 has actually been demonstrated.
+
+
+## Refinement: human agency does not require human code authoring
+
+The explicit no-human-coding rule (C27) sharpens the meaning of an AI coding course.
+The human's contribution is directing, evaluating and correcting the intended
+experience; the assistant must carry the implementation and technical debugging.
+This does not remove human judgment or turn the exercise into unattended generation.
+The repeated contextual-design corrections are evidence of active human authorship
+of the requirements, even when code is authored by the assistant.
+
+The earlier course guide assumed basic code reading and described implementation
+exercises as student work. That was an assistant assumption, not a user requirement.
+The revised guide removes that prerequisite and assigns code changes and command
+execution to the assistant. Learners describe changes and assess observable results.
+Device testing remains a valid human contribution, because physical and spoken
+interaction cannot be established by generated code alone.
+
+This rule governs further work. It is not a retrospective audit proving that no
+human has ever edited a file: the available conversation is not a complete record
+of all filesystem activity. For teaching, retain requests, assistant changes and
+verification evidence so the division of work can be examined honestly.

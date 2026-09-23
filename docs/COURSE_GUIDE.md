@@ -8,9 +8,13 @@ claim of production readiness. The verification work is part of the lesson.
 
 Use a working commuter app to practise turning evolving human intentions into
 software whose behaviour can be inspected, tested and explained. Suitable for
-learners who can read basic HTML/JavaScript and run terminal commands. No paid AI
-API or AT key is needed for the core exercises. An assistant is optional: students
-can critique recorded decisions without sending private data to a model.
+learners without programming experience. **No actual coding by the human is
+required:** an AI coding assistant writes and edits code, runs commands and tests,
+and investigates failures. Learners direct the work in ordinary language, assess
+its evidence and try the resulting experience. No AT key is needed for the core
+exercises; access to an AI coding assistant depends on the teaching environment.
+An analysis-only class can critique recorded decisions without using an assistant,
+but cannot claim to have completed the implementation exercises.
 
 This is a case study of one user–assistant collaboration, not evidence that AI
 coding improves outcomes in general. The thematic analysis makes interpretations
@@ -29,8 +33,10 @@ By the end, students should be able to:
 
 ## Preparation
 
-Read the README and [conversation analysis](CONVERSATION_ANALYSIS.md). Install
-Node/Python and run `npm ci` and `npm test`. Instructors should prepare a dated
+Read the README, [project goal](PROJECT_GOAL.md) and
+[conversation analysis](CONVERSATION_ANALYSIS.md). Ask the assistant to inspect the
+environment, set up Node/Python as needed, and run `npm ci` and `npm test`.
+Instructors should arrange tool access and prepare a dated
 public-data snapshot or hosted static bundle in advance; importing everything in
 a short class can consume the session. Preserve `build-info.json` alongside it.
 
@@ -38,6 +44,20 @@ For each lab, record: the initial request, your interpretation, a proposed chang
 the evidence you checked, the actual result, and the remaining uncertainty. Do not
 record API keys, student home addresses or private conversation history. Use the
 public example addresses already in the tests.
+
+## Division of work
+
+In every exercise below, instructions to implement, change a fixture, add a test,
+run a command, inspect technical state or build a release are tasks to give the AI
+assistant. Learners do not write or paste code to repair its work. They describe
+the intended behaviour, ask for explanations and evidence, and report observed
+problems. Code may be shown as evidence, but reading or editing it is not an entry
+requirement. The assistant should explain findings in accessible language.
+
+Human work remains substantial: interpreting needs, making design judgments,
+trying the app, checking whether evidence supports a claim and deciding what to
+ask next. Physical-device and screen-reader observations must come from actual
+use; the assistant cannot replace them with a generated test report.
 
 ## Six sessions, approximately 75–90 minutes each
 
@@ -60,7 +80,7 @@ own role. Compare with the provided analysis only after making your own account.
 
 Scenario: a commuter has selected an origin and destination, receives three
 routes, and needs to decide what to do next. Review the hierarchy of route steps,
-saving, sorting and service alerts. Sketch a small improvement and implement it.
+saving, sorting and service alerts. Sketch or describe a small improvement and ask the assistant to implement it.
 
 Preserve keyboard order, avoid surprise focus movement, keep access needs
 findable, and retain alternatives to a suggested routine. Ask a partner to try
@@ -72,9 +92,9 @@ tradeoff. A visual preference is not sufficient evidence of improved usability.
 
 ### 3. Test the journey, not only the function
 
-Read the synthetic bus–ferry–train fixture. Change a departure so a transfer is
-missed and predict the result before running it. Exercise a forbidden transfer,
-an overnight service and unknown wheelchair access. Add one test whose failure
+Ask the assistant to explain the synthetic bus–ferry–train fixture. Direct it to
+change a departure so a transfer is missed; predict the result before it runs the test. Exercise a forbidden transfer,
+an overnight service and unknown wheelchair access. Ask it to add one test whose failure
 would matter to a commuter, rather than a test that mirrors code line by line.
 
 Then compare a real address journey to the original schedule records. Inspect
@@ -152,7 +172,10 @@ The portable launcher is optional and is not a prerequisite for this course.
 For each criterion: excellent work provides direct evidence and explains its
 limits; adequate work demonstrates the basic outcome with some missing context;
 weak work relies on assertions, screenshots alone or tests unrelated to the claim.
-Do not award extra credit merely for more code, more prompts, more agents or WASM.
+No learner-authored code is required or rewarded. Assess the learner’s direction,
+judgment and verification, and retain the assistant interaction as evidence of the
+division of work. Do not award extra credit merely for more code, more prompts,
+more agents or WASM.
 
 ## Reflection questions
 

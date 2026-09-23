@@ -1,5 +1,9 @@
 # Along — your Auckland commute
 
+## [🌐 Open Along webapp](https://reality2.ai/along/)
+
+Install it from your browser, then search addresses and plan scheduled journeys offline after preparation.
+
 > **Course exercise — use at your own risk.** Along was created as an exercise
 > for an AI-assisted coding course. It is an experimental educational webapp,
 > not an official Auckland Transport service. Routes, times, walking directions
@@ -47,6 +51,10 @@ that every need has already been met.
 - **Keep personal data under the person's control.** Searches, saved journeys and
   preferences stay on the device. Trusted-device synchronisation is a proposed
   extension, not a current feature; it must preserve local offline operation.
+- **Require no coding by the human.** The human supplies intentions, constraints,
+  feedback and real-device observations. The AI writes and changes the code, runs
+  technical checks and resolves implementation problems. The course follows this
+  same rule; programming knowledge is not a prerequisite.
 - **Make the result reusable and the process teachable.** Provide public source,
   clear installation instructions across browsers and platforms, honest screenshots,
   and an account of decisions and corrections. This is a course exercise used at
