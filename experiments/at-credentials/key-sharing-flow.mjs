@@ -178,7 +178,9 @@ export function showKeySharingFlow(container, {wasm, store, expectedGroup, role,
                       const state = await openLocalATVault({wasm, store, ...binding}).inspect({signal: lifetime.signal}); current();
                       if (state.status === 'saved-unverified') {
                         message('A shared key is already saved', 'Your existing key has been kept. If your sharing device is still waiting for confirmation, reconnect and choose Check saved confirmation there. Otherwise, use Along Settings to reconnect for live information.');
-                      } else if (['missing', 'replacement-needed'].includes(state.status)) {
+                      } else if (state.status === 'replacement-needed') {
+                        message('Receive your replacement AT key?', 'Your sharing device has updated its key settings. Along cannot use the previous key here. Receive the replacement from the device you already accepted; downloaded journeys still work.', 'Receive replacement key', receiveKey);
+                      } else if (state.status === 'missing') {
                         message('Continue receiving your shared key?', 'This is the sharing device you previously accepted. Keep that choice and request the key over this new connection.', 'Receive the shared key', receiveKey);
                       } else throw Error('Saved access unavailable');
                     } else {

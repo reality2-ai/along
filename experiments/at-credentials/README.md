@@ -1099,3 +1099,28 @@ planning remain intact. The peer test separately rejects stale removal and an
 attempt to turn the removal-only entry into a grant. These are synthetic-key
 browser checks on one host, not physical-device or real-provider acceptance.
 The public version-37 app and published standalone lab are unchanged.
+
+### Replace and redistribute a shared key
+
+The two-app test's `REPLACE_SHARED_KEY=1` scenario uses the actual experimental
+Settings screens to replace an owner's synthetic key after initial sharing. It
+leaves after advancing the key generation, reopens Settings and saves the
+replacement without advancing again. The owner can no longer open the old key
+during that interval. Existing device identities and access grants are retained.
+
+The same enrolled recipient then reconnects through the sharing controls, learns
+the newer signed policy and sees **Receive your replacement AT key?**. Its previous
+key is unusable after that policy catch-up; explicit **Receive replacement key**
+requests encrypted delivery. The owner waits for a verified saved receipt. The
+subsequent journey check must send the replacement synthetic key in both mocked
+AT feed requests. Removal and offline planning checks then run as usual.
+
+```sh
+MAIN_APP_SETUP=1 REPLACE_SHARED_KEY=1 CHROMIUM_PATH=/path/to/chromium node experiments/at-credentials/two-app-integration.test.mjs
+```
+
+This verifies Along's application-key generation and composed replacement flow.
+It does not rotate a key at AT, revoke copies outside Along, advance the R2 group
+epoch, prove cross-network reachability or qualify all combinations of interrupted
+replacement and receipt recovery. An offline device may retain the old key until
+it learns the owner's newer policy.

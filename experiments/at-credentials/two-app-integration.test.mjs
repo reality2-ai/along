@@ -7,10 +7,12 @@ import {createServer} from 'node:http';
 import {readFile} from 'node:fs/promises';
 import {join, extname} from 'node:path';
 const {chromium, expect} = await import(process.env.PLAYWRIGHT_MODULE || '@playwright/test');
-const variants = ['INTERRUPT_GRANT', 'INTERRUPT_ACCEPTANCE', 'LOSE_KEY_CONFIRMATION', 'LOSE_KEY_DELIVERY'].filter(name => process.env[name] === '1');
+const variants = ['INTERRUPT_GRANT', 'INTERRUPT_ACCEPTANCE', 'LOSE_KEY_CONFIRMATION', 'LOSE_KEY_DELIVERY', 'REPLACE_SHARED_KEY'].filter(name => process.env[name] === '1');
 assert.ok(variants.length <= 1, 'Select one interruption scenario per run');
 let pendingLostDelivery;
 const mainSetup = process.env.MAIN_APP_SETUP === '1';
+const replaceSharedKey = process.env.REPLACE_SHARED_KEY === '1';
+assert.ok(!replaceSharedKey || mainSetup, 'Replacement scenario uses actual app Settings');
 const root = new URL('../../releases/along-experimental-app/', import.meta.url).pathname;
 const manifest = JSON.parse(await readFile(join(root, 'build-info.json'), 'utf8'));
 assert.equal(manifest.profile, 'along-experimental-app-v1');
@@ -38,7 +40,7 @@ try {
   const providerRequests = [], errors = [];
   for (const page of pages) page.on('pageerror', error => errors.push(error.message));
   for (const context of contexts) await context.route('https://api.at.govt.nz/**', async route => {
-    assert.equal(route.request().headers()['ocp-apim-subscription-key'], 'synthetic-two-app-key');
+    assert.equal(route.request().headers()['ocp-apim-subscription-key'], replaceSharedKey ? 'synthetic-two-app-replacement' : 'synthetic-two-app-key');
     providerRequests.push(new URL(route.request().url()).pathname);
     await route.fulfill({status: 200, contentType: 'application/json', body: JSON.stringify({header: {timestamp: Math.floor(Date.now()/1000)}, entity: []})});
   });
@@ -315,6 +317,62 @@ try {
     console.log('Lost delivery: pending send was retried through explicit controls with a fresh nonce and unchanged permission/generation.');
   }
   assert.equal(providerRequests.length, 0);
+  if (replaceSharedKey) {
+    const keyState = page => page.evaluate(async () => {
+      const wasm = await import('../experiments/tg-pairing/hive_wasm.js');
+      const store = await (await import('../experiments/tg-pairing/storage.mjs')).openBrowserStorage('along-pairing-lab-v1');
+      try {
+        const record = (await store.read('candidate-persona', 'active')).value.record;
+        const {binding} = await (await import('../experiments/at-credentials/local-owner.mjs')).loadATBinding({wasm, store, expectedGroup: record.group});
+        const vault = (await import('../experiments/at-credentials/local-vault.mjs')).openLocalATVault({wasm, store, ...binding});
+        const policy = await (await import('../experiments/at-credentials/policy-store.mjs')).openCredentialPolicyStore({store, ...binding}).read();
+        const usable = await vault.getKey().then(() => true, () => false);
+        return {member: [...record.subject], generation: String(policy.policy.generation), devices: policy.policy.devices,
+          state: (await vault.inspect()).status, usable};
+      } finally { store.close(); }
+    });
+    const beforeOwner = await keyState(owner), beforeRecipient = await keyState(candidate);
+    for (const page of pages) await page.getByRole('button', {name: 'Back', exact: true}).click();
+    await owner.getByRole('button', {name: 'Manage my AT key', exact: true}).click();
+    await owner.getByRole('button', {name: 'Replace AT key', exact: true}).click();
+    await owner.getByRole('button', {name: 'Continue to replacement key', exact: true}).click();
+    await owner.getByRole('heading', {name: 'Add your replacement AT key', exact: true}).waitFor();
+    // Leaving after generation advancement must preserve a recoverable state.
+    await owner.getByRole('button', {name: 'Back', exact: true}).click();
+    const waitingOwner = await keyState(owner);
+    assert.equal(waitingOwner.state, 'replacement-needed');
+    assert.equal(waitingOwner.usable, false, 'owner cannot use its previous key after advancing generation');
+    assert.deepEqual(waitingOwner.member, beforeOwner.member);
+    assert.deepEqual(waitingOwner.devices, beforeOwner.devices);
+    assert.equal(BigInt(waitingOwner.generation), BigInt(beforeOwner.generation) + 1n);
+    await owner.getByRole('button', {name: 'Manage my AT key', exact: true}).click();
+    await owner.getByLabel('Personal AT API key', {exact: true}).fill('synthetic-two-app-replacement');
+    await owner.getByRole('button', {name: 'Save key on this device', exact: true}).click();
+    await owner.getByRole('heading', {name: 'AT key saved on this device', exact: true}).waitFor();
+    await owner.getByRole('button', {name: 'Back', exact: true}).click();
+    await owner.getByRole('button', {name: 'Share my AT key', exact: true}).click();
+    await candidate.getByRole('button', {name: 'Receive a shared AT key', exact: true}).click();
+    await owner.getByRole('heading', {name: 'Share your AT key', exact: true}).waitFor();
+    await move(owner, candidate, 'AT-key sharing message', 'Review sharing device');
+    await candidate.getByRole('button', {name: 'Connect to this sharing device', exact: true}).click();
+    await candidate.getByRole('heading', {name: 'Connect for key sharing', exact: true}).waitFor();
+    await move(candidate, owner, 'Sharing connection request', 'Connect for key sharing');
+    await owner.getByRole('heading', {name: 'Send the sharing reply', exact: true}).waitFor();
+    await move(owner, candidate, 'Sharing connection reply', 'Check sharing connection');
+    await owner.getByRole('button', {name: 'Continue sharing my key', exact: true}).click();
+    await candidate.getByRole('button', {name: 'Receive replacement key', exact: true}).waitFor();
+    const waitingRecipient = await keyState(candidate);
+    assert.equal(waitingRecipient.state, 'replacement-needed');
+    assert.equal(waitingRecipient.usable, false, 'recipient cannot use old key after learning replacement generation');
+    assert.deepEqual(waitingRecipient.member, beforeRecipient.member);
+    assert.equal(waitingRecipient.generation, waitingOwner.generation);
+    await candidate.getByRole('button', {name: 'Receive replacement key', exact: true}).click();
+    await candidate.getByRole('heading', {name: 'Shared AT key saved', exact: true}).waitFor();
+    await owner.getByRole('heading', {name: 'Other device saved the key', exact: true}).waitFor();
+    assert.equal((await keyState(candidate)).usable, true);
+    assert.equal(providerRequests.length, 0);
+    console.log('PASS: owner replacement resumes after Back, advances generation once, and reaches recipient through existing consent without changing identities or grants; old keys are refused after generation catch-up.');
+  }
   await candidate.setViewportSize({width: 1280, height: 900});
   if (mainSetup) {
     for (const page of pages) {
@@ -357,6 +415,7 @@ try {
   await expect(candidate.locator('#journey-prediction-results')).toContainText('No live departure match', {timeout: 15000});
   assert.deepEqual(providerRequests.sort(), ['/realtime/legacy/servicealerts', '/realtime/legacy/tripupdates']);
   assert.equal((await candidate.locator('body').textContent()).includes('synthetic-two-app-key'), false);
+  assert.equal((await candidate.locator('body').textContent()).includes('synthetic-two-app-replacement'), false);
   // Save removal through Settings without pushing it: the next contextual read
   // must learn the signed owner change before AT receives another request.
   const ownerPolicy = () => owner.evaluate(async () => {

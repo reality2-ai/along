@@ -1013,3 +1013,13 @@ revoking an already copied key at AT. This extends progressive disclosure and
 honest state reporting to access management. Automated UI and policy evidence
 still does not establish intuitive physical-device use, and identifier-based
 device labels remain a usability limitation.
+
+Shared-key replacement received a composed two-device check next. The test leaves
+the owner's flow after a newer key generation is saved, resumes key entry, then
+delivers that replacement through the recipient's existing sharing choice. The
+recipient prompt names the replacement as its next action. Verification checks
+that identities and grants remain intact and that subsequent provider requests
+carry the new synthetic key. This connects contextual wording to actual saved
+state, while keeping application-key replacement distinct from group-epoch
+rotation and revocation at the provider. It remains browser automation rather
+than a new report of physical-device acceptance.

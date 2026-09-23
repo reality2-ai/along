@@ -76,6 +76,12 @@ through that UI and checks that the recipient learns removal before another
 provider request, while preserving its journey. Removal-only selection cannot
 become a new grant and stale policy reviews are rejected. This is application-key
 permission management, not TG membership revocation or revocation at AT itself.
+The two-app replacement scenario now also advances the owner's AT-key generation
+through Settings, resumes after leaving before entry, and delivers the replacement
+through existing device consent. The recipient refuses its old key after policy
+catch-up, and subsequent contextual mocked AT requests use the replacement.
+Identity and grant preservation are checked. This is application-key replacement,
+not group-epoch rotation or provider-side revocation.
 The lab also exposes interrupted-installation confirmation recovery using saved
 identities and an authenticated receipt exchange. A browser test interrupts the
 original connection after the inviter’s receipt commit, then recovers confirmation
