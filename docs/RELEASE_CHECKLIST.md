@@ -1,6 +1,6 @@
 # Release evidence and remaining gates
 
-Current deployed app: **version 36**, reviewed 23 September 2026. The static ZIP
+Current deployed app: **version 37**, reviewed 23 September 2026. The static ZIP
 is prepared and the private server is retired. GitHub Pages is published at `reality2.ai/along/`; no AWS deployment has been made.
 This register separates automated evidence, user observations and remaining checks.
 
@@ -707,3 +707,11 @@ place heading. At a 360-pixel viewport the button fills all 286 available pixels
 Mobile nearby and address-journey browser scenarios pass, including their
 accessibility checks; rendered screenshots were inspected. This release changes
 layout only, with the same data and live-connection status as version 36.
+
+Version 37 [deployment](https://github.com/reality2-ai/along/actions/runs/35831301505)
+succeeded. [Public smoke checks](evidence/public-site-v37.json) passed, including
+offline new-address routing and feedback draft recovery. Public CSS, shell and
+build metadata match the tested files; [release hashes](evidence/release-v37.json)
+match the downloadable archive. The version 36 full-suite results remain the
+baseline; version 37 adds focused layout/browser checks rather than claiming
+a new run of that entire suite.

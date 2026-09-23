@@ -1,0 +1,22 @@
+{
+  "version": 37,
+  "source_commit": "8ec405aa07825848234ac5b7dd6e75f78867b957",
+  "pages_commit": "75e649f70211eae7941af3b43a0c1597a0320400",
+  "deployment_run": 35831301505,
+  "release": "https://github.com/reality2-ai/along/releases/tag/v0.37.0",
+  "assets": [
+    {
+      "name": "along-web.zip",
+      "bytes": 41120121,
+      "digest": "sha256:8dda7d208934d6f61494e67860ffe79dfbe7a3b51957e34fa9cbb99e28abf4e9",
+      "verified": true
+    },
+    {
+      "name": "along-web.zip.sha256",
+      "bytes": 80,
+      "digest": "sha256:fce1cd6f03dd2ef95031b7f91f87abcff3010f5b08238463cc10e6ab503e851a",
+      "verified": true
+    }
+  ],
+  "public_shell_style_and_build_info_verified": true
+}
