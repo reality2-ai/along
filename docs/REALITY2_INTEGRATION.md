@@ -235,3 +235,13 @@ Focused Rust tests and the WASM build pass. The initial full runtime gate failed
 because shared `/tmp` ran out of space; its replacement run uses a dedicated
 disk-backed temporary directory and is still running. No full-gate success or
 completed TG integration is claimed.
+
+Held membership evidence now uses Reality2's existing current/stale/ahead/revoked
+calculation and signature-verified revocation set. Browser transactions preserve
+verified revocations across reload, deduplicate subjects and prevent a second
+establishment from clearing them. Real WASM/browser tests cover forgery, changed
+reason, persistence and quota failure; a failed write makes the active handle
+unavailable. These are informational local-state primitives. They do not yet
+authorize AT-key release: authenticated enrollment/epoch changes, peer freshness,
+revocation propagation and cross-tab failure handling remain required. The full
+repository gate is still running; the isolated branch remains unmerged.
