@@ -56,7 +56,7 @@ test('draft language switch preserves current task, saved places, Back and offli
   expect((await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa']).analyze()).violations).toEqual([]);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   await context.setOffline(true);await page.reload();
-  await expect(page.locator('#data-status')).toContainText('ready',{timeout:60000});
+  await expect(page.locator('#data-status')).toHaveText(/^(Along · kua rite mō te tuimotu|Tuimotu · kua rite ngā haerenga)$/,{timeout:60000});
   await expect(page.locator('#flow-title')).toHaveText('Kei te hiahia haere koe ki hea?');
   expect(await page.evaluate(()=>localStorage.getItem('along-journeys-v1'))).toBe(saved);
   await choose(page,'destination','1 Queen Street Auckland Central');
@@ -178,4 +178,23 @@ test('nearby comparisons retain scheduled labels and controls in Māori offline'
   await expect(page.locator('#nearby-note')).toContainText('live updates are not connected');
   await page.locator('#refresh').click();await expect(page.locator('#refresh')).toBeEnabled();
   await expect(page.locator('#departures .stop-card').first()).toBeVisible();
+});
+
+
+test('offline readiness and failed manual refresh keep their actual language',async({page,context})=>{
+  await page.goto('/');await expect(page.locator('#data-status')).toContainText('offline ready',{timeout:90000});
+  await switchTo(page,'mi');await page.locator('#settings-open').click();
+  await expect(page.locator('#data-status')).toHaveText('Along · kua rite mō te tuimotu');
+  await expect(page.locator('#address-status')).toHaveText('Kua rite ngā wāhitau me ngā ara hīkoi mō te whakamahi tuimotu.');
+  await expect(page.locator('#offline-info')).toContainText('Ka whakahaeretia katoatia te rapu ara ā-wātaka');
+  await context.setOffline(true);await expect(page.locator('#data-status')).toHaveText('Tuimotu · kua rite ngā haerenga');
+  await page.locator('#update-timetable').click();await expect(page.locator('#update-timetable')).toBeEnabled();
+  await expect(page.locator('#offline-info')).toHaveAttribute('lang','en-NZ');
+  await expect(page.locator('#offline-info')).not.toContainText('Kei te tikiake');
+  await page.locator('#language-choice').selectOption('en');
+  await expect(page.locator('#data-status')).toHaveText('Offline · journeys ready');
+  await expect(page.locator('#offline-info')).not.toContainText('Downloading the latest');
+  await page.locator('#settings .close-dialog').click();
+  await choose(page,'destination','Waitemata Train');await page.locator('#destination-next').click();
+  await expect(page.locator('#origin')).toBeVisible();
 });

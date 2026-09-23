@@ -931,3 +931,98 @@ Object.assign(messages, {
     "mi": "Kua whakaritea"
   }
 });
+
+Object.assign(messages, {
+  "status.preparing": {
+    "en": "Preparing your timetable. The first offline download is about 40 MB.",
+    "mi": "Kei te whakarite i tō wātaka. Tata ki te 40 MB te tikiake tuimotu tuatahi."
+  },
+  "status.streetsPreparing": {
+    "en": "Preparing offline addresses and walking paths. This first download is about 24 MB.",
+    "mi": "Kei te whakarite i ngā wāhitau me ngā ara hīkoi tuimotu. Tata ki te 24 MB tēnei tikiake tuatahi."
+  },
+  "status.streetsReady": {
+    "en": "Street addresses and walking paths are ready offline.",
+    "mi": "Kua rite ngā wāhitau me ngā ara hīkoi mō te whakamahi tuimotu."
+  },
+  "status.streetsSession": {
+    "en": "Street search is ready for this session; device storage was unavailable.",
+    "mi": "Kua rite te rapu tiriti mō tēnei wā whakamahi; kāore i wātea te rokiroki pūrere."
+  },
+  "status.addressesStored": {
+    "en": "{count} addresses and the Auckland walking map are stored on this device.",
+    "mi": "Kua rokirokia ngā wāhitau {count} me te mahere hīkoi o Tāmaki Makaurau ki tēnei pūrere."
+  },
+  "status.addressesSession": {
+    "en": "{count} addresses and the Auckland walking map are available for this session.",
+    "mi": "Kei te wātea ngā wāhitau {count} me te mahere hīkoi o Tāmaki Makaurau mō tēnei wā whakamahi."
+  },
+  "status.noAddresses": {
+    "en": "Address search is unavailable. You can still choose a station or stop.",
+    "mi": "Kāore e wātea te rapu wāhitau. Ka taea tonu te kōwhiri he teihana, he tūnga rānei."
+  },
+  "status.ready": {
+    "en": "Along · offline ready",
+    "mi": "Along · kua rite mō te tuimotu"
+  },
+  "status.offline": {
+    "en": "Offline · journeys ready",
+    "mi": "Tuimotu · kua rite ngā haerenga"
+  },
+  "status.session": {
+    "en": "Along · session ready",
+    "mi": "Along · kua rite mō tēnei wā whakamahi"
+  },
+  "status.streetSearch": {
+    "en": "Preparing street search…",
+    "mi": "Kei te whakarite i te rapu tiriti…"
+  },
+  "status.loading": {
+    "en": "Loading AT timetable…",
+    "mi": "Kei te uta i te wātaka AT…"
+  },
+  "status.unavailable": {
+    "en": "Timetable unavailable",
+    "mi": "Kāore e wātea te wātaka"
+  },
+  "status.overview": {
+    "en": "{stops} AT stops. Timetable ends {expiry}.",
+    "mi": "E {stops} ngā tūnga AT. Ka mutu te wātaka i te {expiry}."
+  },
+  "status.unknownExpiry": {
+    "en": "{stops} AT stops. Timetable end date not specified.",
+    "mi": "E {stops} ngā tūnga AT. Kāore te rā mutunga o te wātaka i tohua."
+  },
+  "status.stored": {
+    "en": "Stored on this device.",
+    "mi": "Kua rokirokia ki tēnei pūrere."
+  },
+  "status.notStored": {
+    "en": "Storage was unavailable; an internet connection will be needed on your next visit.",
+    "mi": "Kāore i wātea te rokiroki; me whai hononga ipurangi i tō hokinga mai."
+  },
+  "status.localRouting": {
+    "en": "Scheduled routing runs entirely in your browser.",
+    "mi": "Ka whakahaeretia katoatia te rapu ara ā-wātaka i tō pūtirotiro."
+  },
+  "status.refresh": {
+    "en": "Downloading the latest timetable available on this server…",
+    "mi": "Kei te tikiake i te wātaka hou e wātea ana i tēnei tūmau…"
+  },
+  "alerts.loading": {
+    "en": "Checking service updates…",
+    "mi": "Kei te tirotiro i ngā whakahoutanga ratonga…"
+  },
+  "alerts.none": {
+    "en": "No alerts returned by AT.",
+    "mi": "Kāore he whakatūpato i whakahokia mai e AT."
+  },
+  "alerts.offline": {
+    "en": "Service updates need an internet connection. Your downloaded timetable is still available.",
+    "mi": "Me whai hononga ipurangi mō ngā whakahoutanga ratonga. Kei te wātea tonu tō wātaka kua tikiakehia."
+  },
+  "alerts.website": {
+    "en": "You can view current announcements on the AT website when online.",
+    "mi": "Ka taea te tiro i ngā pānui o nāianei i te pae tukutuku a AT ina hono ki te ipurangi."
+  }
+});

@@ -5,6 +5,7 @@ import {readPreferences,writePreferences,recordJourney,suggestions,journeyRoutes
 const $=id=>document.getElementById(id);
 const language=createLocalizer();
 const textBindings=new Map();
+function showEnglishError(id,error){textBindings.delete(id);$(id).lang='en-NZ';$(id).textContent=error.message;}
 const translated=(id,key,values)=>{const phrase=setLocalizedText($(id),language,key,values);textBindings.set(id,{key,values,text:phrase.text});return phrase;};
 // Acknowledgement is local to this browser, separate from journey learning.
 function collapseCourseNotice(focus=false){
@@ -45,9 +46,9 @@ function walkingDirections(leg){
   return `<details class="walk-directions"><summary>${message('walk.directions',{metres:leg.directions.metres})}</summary><ol>${leg.directions.steps.map(s=>`<li>${escape(s.name)} · ${s.metres} m${s.estimated?message('walk.estimated'):''}</li>`).join('')}</ol><p>${message('walk.checkSigns')}</p></details>`;
 }
 async function loadStreets(refresh=false){
-  $('address-status').hidden=false;$('address-status').textContent='Preparing offline addresses and walking paths. This first download is about 24 MB.';
-  try{const result=await ask('streets',{refresh});state.streetsReady=true;state.streetsStored=result.stored;updateStatus();$('address-status').textContent=result.stored?'Street addresses and walking paths are ready offline.':'Street search is ready for this session; device storage was unavailable.';$('preparation-hint').hidden=true;$('offline-info').textContent+=` ${result.addresses.toLocaleString()} addresses and the Auckland walking map are ${result.stored?'stored on this device':'available for this session'}.`;}
-  catch(error){$('address-status').textContent=error.message;$('preparation-hint').textContent='Address search is unavailable. You can still choose a station or stop.';updateStatus();}
+  $('address-status').hidden=false;translated('address-status','status.streetsPreparing');
+  try{const result=await ask('streets',{refresh});state.streetsReady=true;state.streetsStored=result.stored;updateStatus();translated('address-status',result.stored?'status.streetsReady':'status.streetsSession');$('preparation-hint').hidden=true;$('offline-info').insertAdjacentHTML('beforeend',' '+message(result.stored?'status.addressesStored':'status.addressesSession',{count:result.addresses.toLocaleString()}));}
+  catch(error){showEnglishError('address-status',error);translated('preparation-hint','status.noAddresses');updateStatus();}
 }
 const mobility=state.preferences.mobility||{};
 if([300,600,900,1200].includes(mobility.maxWalk))$('max-walk').value=mobility.maxWalk;
@@ -154,7 +155,7 @@ for(const field of ['origin','destination']){
       list.innerHTML=items.length?items.map((s,i)=>`<li role="option" aria-selected="false" id="${field}-option-${i}" data-index="${i}">${escape(s.name)}<small>${message(s.placeType==='address'?'place.addressType':s.kind===1?'place.stationType':'place.stopType',{code:s.code||s.id})}</small></li>`).join(''):`<li role="option" aria-disabled="true">${message('place.noMatch')}</li>`;
       list.hidden=false;input.setAttribute('aria-expanded','true');
       list.querySelectorAll('[data-index]').forEach(item=>{item.addEventListener('pointerdown',event=>event.preventDefault());item.addEventListener('click',()=>choose(Number(item.dataset.index)));});
-    }catch(error){$('form-error').textContent=error.message;}
+    }catch(error){showEnglishError('form-error',error);}
   },170);});
   input.addEventListener('keydown',event=>{if(event.key==='Escape'){close();return;}if(list.hidden)return;
     if(event.key==='ArrowDown'||event.key==='ArrowUp'){event.preventDefault();active=Math.max(0,Math.min(items.length-1,active+(event.key==='ArrowDown'?1:-1)));list.querySelectorAll('[data-index]').forEach((el,i)=>el.setAttribute('aria-selected',String(i===active)));if(active>=0){input.setAttribute('aria-activedescendant',`${field}-option-${active}`);$(field+'-option-'+active)?.scrollIntoView({block:'nearest'});}}
@@ -188,7 +189,7 @@ async function searchJourney(){
     const journeys=await ask('plan',{from,to,date,time,modes,maxWalk:Number($('max-walk').value),profile:accessProfile(),preferredRoutes:state.savedPreference?.routes});if(sequence!==state.searchSequence)return;
     state.journeys=journeys;state.lastSearch={from,to,date,time};translated('journey-title',journeys.length?(journeys.length===1?'journey.oneWay':'journey.ways'):'journey.noneWindow',{count:journeys.length});
     if(journeys.length){state.preferences=recordJourney(state.preferences,from,to,{hour:Number(time.slice(0,2)),day:new Date(date+'T12:00:00Z').getUTCDay(),timestamp:Date.now()});persist();}renderJourneys();translated('announcement',journeys.length?'journey.announced':'journey.noneAnnounced',{count:journeys.length,time:journeys.length?clock(journeys[0].arrival):''});$('journey-title').focus();
-  }catch(error){if(sequence===state.searchSequence){showScreen('review');$('form-error').textContent=error.message;$('form-error').focus();}}
+  }catch(error){if(sequence===state.searchSequence){showScreen('review');showEnglishError('form-error',error);$('form-error').focus();}}
   finally{if(sequence===state.searchSequence)$('find').disabled=false;}
 }
 // Detail layers keep the underlying task, scroll position and explicit journey progress.
@@ -215,7 +216,7 @@ async function displayDetail(id){
   if(!$('information').open)$('information').showModal();
   $('information').scrollTop=0;$('detail-title').focus();
   try{const markup=view.markup??await view.body();view.markup=markup;if(activeDetail!==id||!$('information').open)return;$('detail-body').innerHTML=markup;view.mount?.();mountVariant(view);applyBindings($('detail-body'));$('detail-body').querySelectorAll('details').forEach((d,i)=>{if(view.openDetails)d.open=!!view.openDetails[i];});if(view.restoreDetail)$('detail-body').querySelector(`[data-detail="${view.restoreDetail}"]`)?.focus();$('information').scrollTop=view.scroll||0;}
-  catch(error){if(activeDetail===id)$('detail-body').textContent=error.message;}
+  catch(error){if(activeDetail===id)showEnglishError('detail-body',error);}
 }
 function openInformation(button){
   if(!button)return;
@@ -345,22 +346,22 @@ function renderDepartures(data){
 }
 $('refresh').onclick=()=>{predictionsAt=0;refreshNearby();};$('nearby-mode').onchange=refreshNearby;$('direct-only').onchange=refreshNearby;
 $('location').onclick=()=>{if(!navigator.geolocation){translated('form-error','location.unavailable');return;}$('location').disabled=true;translated('location','location.finding');navigator.geolocation.getCurrentPosition(position=>{setPlace('origin',{id:`location:${position.coords.latitude.toFixed(5)},${position.coords.longitude.toFixed(5)}`,name:'Current location',lat:position.coords.latitude,lon:position.coords.longitude,placeType:'address'});state.locationLabel='your location';$('location').disabled=false;translated('location','location.use');translated('announcement','location.selected');},()=>{$('location').disabled=false;translated('location','location.use');translated('form-error','location.failed');},{enableHighAccuracy:false,timeout:12000,maximumAge:60000});};
-$('try-britomart').onclick=async()=>{try{const matches=await ask('search',{query:'Waitemata'});const alternatives=matches.length?matches:await ask('search',{query:'Britomart'});const stop=alternatives.find(s=>s.kind===1)||alternatives[0];if(!stop)throw new Error('Try searching for Waitematā or Britomart in the origin field.');setPlace('origin',stop);review();}catch(error){$('form-error').textContent=error.message;}};
+$('try-britomart').onclick=async()=>{try{const matches=await ask('search',{query:'Waitemata'});const alternatives=matches.length?matches:await ask('search',{query:'Britomart'});const stop=alternatives.find(s=>s.kind===1)||alternatives[0];if(!stop)throw new Error('Try searching for Waitematā or Britomart in the origin field.');setPlace('origin',stop);review();}catch(error){showEnglishError('form-error',error);}};
 $('settings-open').onclick=()=>$('settings').showModal();document.querySelectorAll('.close-dialog').forEach(b=>b.onclick=()=>b.closest('dialog').close());
 $('learning-enabled').onchange=()=>{state.preferences.learning=$('learning-enabled').checked;persist();};
 $('clear-history').onclick=()=>{state.preferences.journeys=[];persist();translated('storage-message','learning.cleared');if(state.lastSearch)renderJourneys();if(state.selectedJourney)renderFollow();};
-$('alerts-open').onclick=async()=>{$('alerts').showModal();$('alerts-content').innerHTML='<div class="loading">Checking service updates…</div>';try{const response=await fetch(new URL('./api/alerts',import.meta.url),{signal:AbortSignal.timeout(10000)});if(!response.ok)throw new Error();const data=await response.json();$('alerts-content').innerHTML=data.available?(data.alerts.length?data.alerts.map(a=>`<article class="alert-item"><h3>${escape(a.title)}</h3><p>${escape(a.description)}</p></article>`).join(''):'<p>No alerts returned by AT.</p>'):`<p>${escape(data.message)} You can view current announcements on the AT website when online.</p>`;}catch{$('alerts-content').innerHTML='<p>Service updates need an internet connection. Your downloaded timetable is still available.</p>';}};
+$('alerts-open').onclick=async()=>{$('alerts').showModal();$('alerts-content').innerHTML=`<div class="loading">${message('alerts.loading')}</div>`;try{const response=await fetch(new URL('./api/alerts',import.meta.url),{signal:AbortSignal.timeout(10000)});if(!response.ok)throw new Error();const data=await response.json();$('alerts-content').innerHTML=data.available?(data.alerts.length?data.alerts.map(a=>`<article class="alert-item" lang="en-NZ"><h3>${escape(a.title)}</h3><p>${escape(a.description)}</p></article>`).join(''):`<p>${message('alerts.none')}</p>`):`<p><span lang="en-NZ">${escape(data.message)}</span> ${message('alerts.website')}</p>`;}catch{$('alerts-content').innerHTML=`<p>${message('alerts.offline')}</p>`;}};
 let installPrompt;
 window.addEventListener('beforeinstallprompt',event=>{event.preventDefault();installPrompt=event;$('install').hidden=false;});
 $('install').onclick=async()=>{if(installPrompt){await installPrompt.prompt();installPrompt=null;$('install').hidden=true;}};
 function updateStatus(){
-  $('data-status').textContent=state.ready?(state.stored&&state.shellReady&&state.streetsStored?(navigator.onLine?'Along · offline ready':'Offline · journeys ready'):state.streetsReady?'Along · session ready':'Preparing street search…'):'Loading AT timetable…';
+  translated('data-status',state.ready?(state.stored&&state.shellReady&&state.streetsStored?(navigator.onLine?'status.ready':'status.offline'):state.streetsReady?'status.session':'status.streetSearch'):'status.loading');
 }
-function ready(result){state.ready=true;state.stored=result.stored;state.metadata=result.metadata;updateStatus();const end=result.metadata.feed_end_date||'';const expiry=end?`${end.slice(6,8)}/${end.slice(4,6)}/${end.slice(0,4)}`:'not specified';$('offline-info').textContent=`${result.stops.toLocaleString()} AT stops. Timetable ends ${expiry}. ${result.stored?'Stored on this device.':'Storage was unavailable; an internet connection will be needed on your next visit.'} Scheduled routing runs entirely in your browser.`;}
-$('update-timetable').onclick=async()=>{$('update-timetable').disabled=true;$('offline-info').textContent='Downloading the latest timetable available on this server…';try{ready(await ask('update'));await loadStreets(true);}catch(error){$('offline-info').textContent=error.message;}finally{$('update-timetable').disabled=false;}};
+function ready(result){state.ready=true;state.stored=result.stored;state.metadata=result.metadata;updateStatus();const end=result.metadata.feed_end_date||'';const expiry=end?`${end.slice(6,8)}/${end.slice(4,6)}/${end.slice(0,4)}`:'not specified';$('offline-info').innerHTML=[message(end?'status.overview':'status.unknownExpiry',{stops:result.stops.toLocaleString(),expiry}),message(result.stored?'status.stored':'status.notStored'),message('status.localRouting')].join(' ');}
+$('update-timetable').onclick=async()=>{$('update-timetable').disabled=true;translated('offline-info','status.refresh');try{ready(await ask('update'));await loadStreets(true);}catch(error){showEnglishError('offline-info',error);}finally{$('update-timetable').disabled=false;}};
 window.addEventListener('online',()=>{updateStatus();if(state.location)refreshNearby();});window.addEventListener('offline',()=>{predictions={available:false};updateStatus();if(state.location)refreshNearby();});
 // Departure updates are requested explicitly; avoid moving lists while people read.
 history.replaceState({alongScreen:'destination',depth:0,intent:'plan'},'');showScreen('destination',{focus:false,historyEntry:false});
-translated('location','location.use');applyLanguage();renderUsual();setNow();$('today').textContent=new Intl.DateTimeFormat('en-NZ',{timeZone:'Pacific/Auckland',weekday:'long',day:'numeric',month:'short'}).format(new Date());
+translated('location','location.use');translated('preparation-hint','status.preparing');applyLanguage();renderUsual();setNow();$('today').textContent=new Intl.DateTimeFormat('en-NZ',{timeZone:'Pacific/Auckland',weekday:'long',day:'numeric',month:'short'}).format(new Date());
 if('serviceWorker' in navigator){navigator.serviceWorker.register(new URL('./sw.js',import.meta.url),{type:'module',updateViaCache:'none'}).then(registration=>{setupUpdates(registration);return navigator.serviceWorker.ready;}).then(()=>{state.shellReady=true;updateStatus();}).catch(()=>{});}
-ask('init').then(async result=>{ready(result);navigator.storage?.persist?.().catch(()=>{});await loadStreets();}).catch(error=>{$('data-status').textContent='Timetable unavailable';$('form-error').textContent=error.message;$('offline-info').textContent=error.message;});
+ask('init').then(async result=>{ready(result);navigator.storage?.persist?.().catch(()=>{});await loadStreets();}).catch(error=>{translated('data-status','status.unavailable');showEnglishError('form-error',error);showEnglishError('offline-info',error);});
