@@ -31,8 +31,8 @@ async function openObservedStop(browser){
  await context.addInitScript(()=>{
   const Original=Worker;
   window.Worker=class extends Original{
-   constructor(...args){super(...args);this.stopRequests=new Set();this.addEventListener('message',({data})=>{if(this.stopRequests.has(data.id))window.observedStopRows=data.result;});}
-   postMessage(data,...rest){if(data.type==='stopDetails')this.stopRequests.add(data.id);return super.postMessage(data,...rest);}
+   constructor(...args){super(...args);this.planRequests=new Set();this.stopRequests=new Set();this.addEventListener('message',({data})=>{if(this.stopRequests.has(data.id))window.observedStopRows=data.result;if(this.planRequests.has(data.id))window.observedJourneys=data.result;});}
+   postMessage(data,...rest){if(data.type==='stopDetails')this.stopRequests.add(data.id);if(data.type==='plan')this.planRequests.add(data.id);return super.postMessage(data,...rest);}
   };
  });
  const page=await context.newPage();await page.clock.install({time:new Date('2026-09-22T21:00:00Z')});
@@ -115,5 +115,30 @@ test('stop alerts disclose only matching service and time scopes, then expire',a
   await expect(page.locator('#stop-alerts img')).toHaveCount(0);
   await expect(page.locator('.departure-board')).toBeVisible();
   await page.clock.fastForward(181000);await expect(page.locator('#stop-alerts')).toContainText('expired');await expect(page.locator('#stop-alerts details')).toHaveCount(0);
+ }finally{await context.close();}
+});
+
+test('selected journey checks only matching alerts and preserves the chosen route',async({browser})=>{
+ const {page,context}=await openObservedStop(browser);
+ try{
+  await page.locator('#detail-back').click();await page.locator('#new-journey').click();
+  for(const [field,query,next] of [['destination','Waitemata Train','destination-next'],['origin','Newmarket Train','origin-next']]){
+   await page.locator('#'+field).fill(query);await page.locator('#'+field+'-options [data-index]').first().click();await page.locator('#'+next).click();
+  }
+  await page.locator('#journey-preferences > summary').click();await page.locator('#date').fill('2026-09-23');await page.locator('#time').fill('09:00');await page.locator('#find').click();
+  await page.locator('[data-follow]').first().click();const leg=await page.evaluate(()=>window.observedJourneys[0].legs.find(l=>l.trip));expect(leg).toBeTruthy();
+  let requests=0;
+  await context.route('**/api/alerts',async route=>{
+   requests++;const updated=await page.evaluate(()=>Math.floor(Date.now()/1000));
+   const selector={route_id:leg.routeId,trip:{trip_id:leg.trip,start_date:leg.serviceDate}};
+   await route.fulfill({contentType:'application/json',body:JSON.stringify({available:true,updated,alerts:[{title:'Relevant service change',description:'Check platform signs.',informed_entity:[selector]},{title:'Wrong day',informed_entity:[{...selector,trip:{trip_id:leg.trip,start_date:'20990101'}}]}]})});
+  });
+  const before=await page.locator('#current-step').innerText();expect(requests).toBe(0);
+  await page.locator('#journey-alert-check').click();await expect(page.locator('#journey-alert-status')).toContainText('1 matching service update');
+  await page.locator('#journey-alert-results summary').click();await expect(page.locator('#journey-alert-results')).toContainText('Relevant service change');await expect(page.locator('#journey-alert-results')).not.toContainText('Wrong day');
+  expect(await page.locator('#current-step').innerText()).toBe(before);
+  await page.clock.fastForward(181000);await expect(page.locator('#journey-alert-status')).toContainText('expired');
+  await context.setOffline(true);await page.locator('#journey-alert-check').click();await expect(page.locator('#journey-alert-status')).toContainText('scheduled journey is still here');
+  expect(await page.locator('#current-step').innerText()).toBe(before);expect(requests).toBe(1);
  }finally{await context.close();}
 });

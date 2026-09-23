@@ -32,6 +32,8 @@ test('previous service day 24-hour times remain available after midnight',()=>{
   const n=network({connections:[0,0,2,87000,87600,0,0]});
   const result=new Planner(n).plan({...query,date:'2026-09-26',time:'00:05'});
   assert.equal(result[0].departure,600);assert.equal(result[0].arrival,1200);
+  assert.equal(result[0].legs[0].serviceDate,'20260925');assert.equal(result[0].legs[0].startTime,'24:10:00');
+  assert.deepEqual(result[0].legs[0].calls,[{stopId:'a',arrival:600,departure:600},{stopId:'c',arrival:1200,departure:1200}]);
 });
 test('mode filters, identical stops and out-of-feed dates are handled',()=>{
   const p=new Planner(network());assert.deepEqual(p.plan({...query,modes:['train']}),[]);

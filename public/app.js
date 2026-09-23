@@ -1,5 +1,5 @@
 import {contextualAlerts} from './live-context.js';
-import {stopAlertContexts} from './live-time.js';
+import {stopAlertContexts,journeyAlertContexts} from './live-time.js';
 import {departurePrediction} from './live-predictions.js';
 import {createLiveClient} from './live-client.js';
 import {liveBaseURL} from './live-config.js';
@@ -11,6 +11,8 @@ import {readPreferences,writePreferences,recordJourney,suggestions,journeyRoutes
 const $=id=>document.getElementById(id);
 const language=createLocalizer({storage:null});
 const liveClient=createLiveClient({baseURL:liveBaseURL,pageURL:import.meta.url});
+const journeyAlertClient=createLiveClient({baseURL:liveBaseURL,pageURL:import.meta.url});
+let journeyAlertSequence=0,journeyAlertTimer=null;
 $('nearby-live').hidden=!liveClient.configured;
 $('nearby-live-help').hidden=!liveClient.configured;
 const textBindings=new Map();
@@ -112,6 +114,7 @@ function applyLanguage(){
 
 let navDepth=0;
 function showScreen(screen,{focus=true,historyEntry=true}={}){
+  if(state.screen==='follow' && screen!=='follow')resetJourneyAlerts();
   if(screen!=='options'&&state.screen==='options'){state.searchSequence++;$('find').disabled=false;}
   if(state.screen==='nearby' && screen!=='nearby'){state.nearbySequence++;liveClient.cancel();$('nearby-live').disabled=false;$('refresh').disabled=false;}
   state.screen=screen;
@@ -373,7 +376,9 @@ function renderJourneys(){
   document.querySelectorAll('[data-follow]').forEach(button=>button.onclick=()=>{state.selectedJourney=journeys[Number(button.dataset.follow)];state.legIndex=0;$('full-itinerary').open=false;renderFollow();showScreen('follow');});
 }
 function renderFollow(){
+  resetJourneyAlerts();
   const journey=state.selectedJourney,leg=journey.legs[state.legIndex];
+  $('journey-live').hidden=!journeyAlertClient.configured || !journey.legs.slice(state.legIndex).some(l=>l.trip);
   translated('step-count','follow.step',{step:state.legIndex+1,total:journey.legs.length});
   $('current-step').innerHTML=legMarkup(leg);
   $('itinerary-legs').innerHTML=journey.legs.map(legMarkup).join('');
@@ -383,6 +388,27 @@ function renderFollow(){
   const saved=!!previousSave&&sameRoutes(previousSave.savedRoutes,journeyRoutes(journey));
   translated('prefer-services',saved?'service.preferred':previousSave?.savedRoutes?'service.instead':'service.prefer');$('prefer-services').setAttribute('aria-pressed',String(saved));
 }
+function resetJourneyAlerts(){
+  journeyAlertSequence++;clearTimeout(journeyAlertTimer);journeyAlertClient.cancel();
+  $('journey-alert-check').disabled=false;$('journey-alert-status').textContent='';$('journey-alert-results').replaceChildren();
+}
+$('journey-alert-check').onclick=async()=>{
+  resetJourneyAlerts();const sequence=journeyAlertSequence;
+  const contexts=journeyAlertContexts(state.selectedJourney.legs.slice(state.legIndex),state.lastSearch.date);
+  $('journey-alert-check').disabled=true;$('journey-alert-status').textContent='Checking relevant service updates…';
+  const feed=await journeyAlertClient.read('alerts',{requested:true});
+  if(sequence!==journeyAlertSequence||state.screen!=='follow')return;
+  $('journey-alert-check').disabled=false;
+  if(!feed.available){$('journey-alert-status').textContent='Service updates unavailable. Your scheduled journey is still here.';return;}
+  const alerts=contextualAlerts(feed,contexts);
+  $('journey-alert-status').textContent=alerts.length?alerts.length+' matching service update'+(alerts.length===1?'':'s')+'. Your chosen journey has not changed.':'No matching service updates returned. This does not confirm that every service is running normally.';
+  if(alerts.length){
+    const details=document.createElement('details'),summary=document.createElement('summary');summary.textContent='Service updates for your remaining journey';details.append(summary);
+    for(const alert of alerts){const article=document.createElement('article'),h=document.createElement('h3'),p=document.createElement('p');article.className='alert-item';h.textContent=alert.title;p.textContent=alert.description;article.append(h,p);details.append(article);}
+    $('journey-alert-results').append(details);
+  }
+  journeyAlertTimer=setTimeout(()=>{if(sequence===journeyAlertSequence){$('journey-alert-results').replaceChildren();$('journey-alert-status').textContent='Service updates have expired. Check again for current information.';}},Math.max(0,(feed.updated+180-Date.now()/1000)*1000));
+};
 $('next-leg').onclick=()=>{if(state.legIndex===state.selectedJourney.legs.length-1){showScreen('arrived');return;}state.legIndex++;renderFollow();$('flow-title').focus();};
 $('previous-leg').onclick=()=>{if(state.legIndex>0)state.legIndex--;renderFollow();$('flow-title').focus();};
 function renderSavedPlaces(){

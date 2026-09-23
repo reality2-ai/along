@@ -25,3 +25,21 @@ export function stopAlertContexts(place,rows,at){
  }
  return contexts;
 }
+
+
+export function journeyAlertContexts(legs,date){
+ const contexts=[];
+ for(const leg of legs){
+  if(!leg.trip || !leg.routeId || !leg.serviceDate)continue;
+  const start=aucklandWallEpoch(date,leg.departure),end=aucklandWallEpoch(date,leg.arrival);
+  if(start===null||end===null||end<start)continue;
+  const identity={route_id:leg.routeId,route_type:leg.routeType,
+   trip:{trip_id:leg.trip,route_id:leg.routeId,start_date:leg.serviceDate,start_time:leg.startTime}};
+  contexts.push({...identity,start,end});
+  for(const call of leg.calls||[]){
+   const arrival=aucklandWallEpoch(date,call.arrival),departure=aucklandWallEpoch(date,call.departure);
+   if(arrival!==null&&departure!==null&&arrival<=departure)contexts.push({...identity,stop_id:call.stopId,start:arrival,end:departure});
+  }
+ }
+ return contexts;
+}

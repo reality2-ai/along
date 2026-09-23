@@ -131,7 +131,7 @@ export class Planner {
         let rider=onboard.get(key),buffer=boardings===1?(origin.placeType==='address'?60:0):Math.max(120,rule.seconds);
         if(!rider&&pickup===0&&base&&base.arrival+buffer<=dep&&(boardings===1||rule.type!==3)&&(!this.profile.confirmedAccess||this.accessibleStop(a))){
           const [trip,ri,,headsign]=this.data.trips[ti],route=this.data.routes[ri];
-          rider={path:base.path,walking:base.walking,leg:{mode:this.mode(ri),route:route[1]||route[2],routeId:route[0],headsign,trip,origin:a,destination:b,departure:dep,arrival:arr,stops:0}};
+          rider={path:base.path,walking:base.walking,leg:{mode:this.mode(ri),route:route[1]||route[2],routeId:route[0],routeType:route[3],serviceDate:compactDate(shiftDate(date,offset)),serviceOffset:offset,headsign,trip,origin:a,destination:b,departure:dep,arrival:arr,stops:0}};
         }
         if(!rider)continue;
         const leg={...rider.leg,destination:b,arrival:arr,stops:rider.leg.stops+1};onboard.set(key,{...rider,leg});
@@ -151,10 +151,18 @@ export class Planner {
     }
     const options=[];
     for(const result of results)if(!options.some(r=>r.arrival<=result.arrival&&r.transfers<=result.transfers))options.push(result);
+    const tripMetadata=tripStopMetadata(this.data,this.stops,new Set(options.flatMap(r=>r.legs.filter(l=>l.trip).map(l=>l.trip))));
     return options.sort((a,b)=>a.arrival-b.arrival).map(r=>({...r,legs:r.legs.map(l=>{
       const from=l.from||this.stops[l.origin],to=l.to||this.stops[l.destination];
       const directions=l.directions||(l.mode==='walk'&&this.streets?this.streets.route(from,to,l.arrival-l.departure+5):null);
-      return {...l,from,to,...(directions?{directions}:{} )};
+      let liveIdentity={};
+      if(l.trip){
+        const parts=connections.filter(c=>this.data.trips[c[2]][0]===l.trip && c[7]===l.serviceOffset && c[0]>=l.departure && c[1]<=l.arrival);
+        const calls=parts.map((c,i)=>({stopId:this.stops[c[3]].id,arrival:i?parts[i-1][1]:c[0],departure:c[0]}));
+        if(parts.length)calls.push({stopId:this.stops[parts.at(-1)[4]].id,arrival:parts.at(-1)[1],departure:parts.at(-1)[1]});
+        liveIdentity={startTime:tripMetadata.get(l.trip)?.startTime,calls};
+      }
+      return {...l,from,to,...liveIdentity,...(directions?{directions}:{} )};
     })}));
   }
   nearby({lat,lon,to,mode='all',now=aucklandNow(),feed={available:false},profile={}}){

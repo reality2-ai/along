@@ -250,3 +250,25 @@ timezone; ambiguous or missing daylight-saving wall times are left unmatched.
 Agency/direction restrictions still need corresponding source metadata before
 those selectors can match. This does not yet implement selected-journey alerts.
 The public proxy remains unconfigured; version 34 is still the deployed release.
+
+### Selected-journey service alerts (source integration)
+
+Configured deployments now offer “Check service updates for this journey” below
+the primary progress action. It checks the remaining legs only, on explicit
+request. Dated trip identities and intermediate stop arrival/departure intervals
+are retained by the planner, including runs beginning on the previous service
+day. Route-wide alerts match the ridden interval; stop restrictions match the
+corresponding stop visit. No route, time or progress is automatically changed.
+
+Advancing a step or leaving the journey clears and cancels the check. Results
+expire after the feed freshness window, and offline failure retains the chosen
+schedule. Unknown agency/direction selectors still require additional source
+metadata; this is not a guarantee that every relevant alert can be identified.
+Journey predictions and vehicle positions remain unfinished. Public version 34
+still has no configured live proxy.
+
+For the journey-alert integration, all 54 JavaScript and 11 Python tests pass,
+as do all five live-data browser scenarios. The journey fixture verifies matching
+against a real downloaded leg with a synthetic alert, exclusion of a wrong-date
+alert, unchanged chosen-step content, expiry and quiet offline fallback. These
+checks do not establish authenticated public live availability.

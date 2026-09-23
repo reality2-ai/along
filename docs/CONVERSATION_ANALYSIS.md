@@ -686,3 +686,11 @@ how much space the current task receives.
 The follow-up observation that “Plan a journey” was redundant removed that home
 screen progress label and its empty navigation space. Back and step context
 remain available once the traveller begins choosing a journey.
+
+### Icon meaning can differ from design intent
+
+The user noticed that Along's loop-and-arrow icon resembles the male gender
+symbol. Visual inspection supported that reading. A path connecting two stops
+was suggested as a clearer travel metaphor; no redesign has been published.
+This is another example of user interpretation revealing ambiguity that technical
+checks and the designer's intended meaning do not resolve.

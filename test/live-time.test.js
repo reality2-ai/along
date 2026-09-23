@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {aucklandWallEpoch,stopAlertContexts} from '../public/live-time.js';
+import {aucklandWallEpoch,stopAlertContexts,journeyAlertContexts} from '../public/live-time.js';
 test('Auckland wall times map to UTC independently of device timezone',()=>{
  assert.equal(aucklandWallEpoch('2026-09-23',32400),Date.parse('2026-09-22T21:00:00Z')/1000);
  assert.equal(aucklandWallEpoch('2026-12-01',32400),Date.parse('2026-11-30T20:00:00Z')/1000);
@@ -17,4 +17,12 @@ test('stop contexts bind each service to its own stop and instant',()=>{
  const contexts=stopAlertContexts({id:'station'},rows,{date:'2026-09-23',seconds:32400});
  assert.equal(contexts.length,2);assert.equal(contexts[0].stop_id,'station');assert.equal(contexts[0].end-contexts[0].start,7200);
  assert.equal(contexts[1].stop_id,'platform');assert.equal(contexts[1].start,contexts[1].end);assert.equal(contexts[1].trip.start_date,'20260923');
+});
+
+test('journey contexts retain intermediate stop intervals and the previous service date',()=>{
+ const legs=[{mode:'walk',departure:0,arrival:30},{trip:'t',routeId:'r',routeType:3,serviceDate:'20260922',startTime:'24:10:00',departure:600,arrival:1800,calls:[{stopId:'a',arrival:600,departure:600},{stopId:'b',arrival:1200,departure:1260},{stopId:'c',arrival:1800,departure:1800}]}];
+ const result=journeyAlertContexts(legs,'2026-09-23');assert.equal(result.length,4);
+ assert.equal(result[0].trip.start_date,'20260922');assert.equal(result[0].end-result[0].start,1200);
+ assert.equal(result[2].stop_id,'b');assert.equal(result[2].end-result[2].start,60);
+ assert.deepEqual(journeyAlertContexts(legs.slice(2),'2026-09-23'),[]);
 });

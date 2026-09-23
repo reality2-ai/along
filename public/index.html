@@ -67,6 +67,7 @@
       <div class="follow-heading"><p id="step-count" class="field-help"></p><button class="save-button" id="prefer-services" aria-pressed="false">☆ Prefer these services</button></div><p class="field-help" id="service-preference-help" data-i18n="service.help">Optionally remember these service numbers for next time. This also saves the places; departure times are checked again.</p><div id="current-step"></div>
       <button class="primary-button" id="next-leg">Next step →</button><button class="text-button" id="previous-leg" data-i18n="action.previousStep" hidden>← Previous step</button>
       <p class="field-help"><span data-i18n="journey.advance">Advance when you are ready. Along is not tracking your progress. Times are scheduled.</span></p>
+      <section id="journey-live" hidden aria-label="Optional current service information"><button type="button" class="secondary-button" id="journey-alert-check">Check service updates for this journey</button><p class="field-help">Optional online check for the remaining steps. Your journey stays on this device; the server receives your IP address.</p><p id="journey-alert-status" class="field-help" role="status"></p><div id="journey-alert-results"></div></section>
       <details id="full-itinerary" class="journey-steps"><summary><span data-i18n="journey.whole">Whole journey</span></summary><div id="itinerary-legs"></div></details>
     </section>
     <section data-screen="arrived" id="arrived-panel" hidden>
