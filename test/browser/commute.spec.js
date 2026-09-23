@@ -89,3 +89,34 @@ test('route exploration maps, street-name matches, stop times and offline nested
  await page.locator('#browse-routes').click();await page.locator('#route-search').fill('70');await page.locator('#route-search-results button').first().click();await page.locator('#detail-body > .route-variant').first().click();await expect(page.locator('#context-map .leaflet-overlay-pane path').first()).toBeVisible();
  await page.keyboard.press('Escape');await page.keyboard.press('Escape');await expect(page.locator('#route-search')).toHaveValue('70');await page.keyboard.press('Escape');await expect(page.locator('#destination')).toBeVisible();expect(errors).toEqual([]);
 });
+
+test('course acknowledgement frees phone space, remains available and survives offline reopening',async({browser})=>{
+ const context=await browser.newContext({viewport:{width:360,height:780},isMobile:true,hasTouch:true});
+ const page=await context.newPage();await page.goto(process.env.TEST_BASE_URL||'http://127.0.0.1:3080');
+ await expect(page.locator('#data-status')).toContainText('offline ready',{timeout:60000});
+ await expect(page.locator('#course-notice')).toHaveAttribute('open','');
+ const before=(await page.locator('#flow-title').boundingBox()).y;
+ await page.locator('#course-understood').click();
+ await expect(page.locator('footer #course-notice')).toBeAttached();
+ await expect(page.locator('#course-notice')).not.toHaveAttribute('open','');
+ await expect(page.locator('#flow-title')).toBeFocused();
+ expect(before-(await page.locator('#flow-title').boundingBox()).y).toBeGreaterThan(100);
+ await page.locator('#course-notice summary').click();await expect(page.locator('#course-notice')).toHaveAttribute('open','');
+ await expect(page.locator('#course-notice')).toContainText('Experimental, not an official AT app');
+ await page.locator('#course-notice summary').click();
+ await choose(page,'destination','10 Victoria Road Devonport');await page.locator('#destination-next').click();
+ await choose(page,'origin','277 Broadway Newmarket');await page.locator('#origin-next').click();
+ await page.evaluate(()=>scrollTo(0,0));const find=await page.locator('#find').boundingBox();expect(find.y+find.height).toBeLessThanOrEqual(780);
+ await audit(page);await page.screenshot({path:'test-results/review-acknowledged-mobile.png',fullPage:false});
+ await context.setOffline(true);await page.reload();await expect(page.locator('#data-status')).toContainText(/ready/,{timeout:60000});
+ await expect(page.locator('footer #course-notice')).toBeAttached();await expect(page.locator('#course-notice')).not.toHaveAttribute('open','');
+ await page.locator('#settings-open').click();await expect(page.locator('#settings')).toContainText('Use at your own risk');
+ await context.close();
+});
+
+test('course acknowledgement still works for the session when storage is blocked',async({page})=>{
+ await page.addInitScript(()=>{const original=Storage.prototype.setItem;Storage.prototype.setItem=function(key,value){if(key==='along-course-notice-v1')throw new Error('Storage blocked');return original.call(this,key,value);};});
+ await page.goto('/');await page.locator('#course-understood').click();
+ await expect(page.locator('footer #course-notice')).toBeAttached();await expect(page.locator('#course-notice')).not.toHaveAttribute('open','');
+ await page.reload();await expect(page.locator('#course-notice')).toHaveAttribute('open','');
+});

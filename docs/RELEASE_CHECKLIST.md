@@ -306,3 +306,18 @@ remain maintainer-only pending acceptance; the public app itself is live.
 A live mobile-size check measured the optional street-map button at the horizontal
 and vertical centre of route, stop and street-address maps. All use the same
 shared map markup; the centred treatment applies to each existing map view.
+
+
+## Version 28: room for the next action
+
+After “Understood”, the course notice becomes an expandable footer item. Its
+acknowledgement stays on this device and survives offline reopening. Settings
+also retains the full course warning. Mobile review spacing is tighter while
+preserving text sizes and touch targets. Browser checks cover acknowledgement,
+focus, reopening the notice, offline persistence, blocked storage, accessibility
+and the Find button fitting within a 360 × 780 viewport. Physical Samsung S23
+confirmation and Android TalkBack remain separate manual checks. The version 27
+draft archive above remains the previous packaged candidate.
+
+The header now uses the same icon asset as the installed app, with decorative
+image semantics inside the existing labelled home link.

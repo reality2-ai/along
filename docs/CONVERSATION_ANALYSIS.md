@@ -554,3 +554,20 @@ services** afterwards. Service preferences are optional, and neither action save
 an old departure time. This distinction reconciles saving general endpoints with
 the earlier request to remember chosen service numbers, rather than replacing one
 requirement with the other.
+
+
+### Acknowledgement should release space for the next action
+
+The user's Samsung S23 feedback identified a repeated small scroll to reach the
+next action. They proposed moving the course warning away after pressing
+“Understood”. Version 28 retains the first-use notice, remembers acknowledgement
+on the device and moves it into an expandable footer item. Settings retains the
+full explanation. This extends progressive disclosure to introductory material:
+keep it available without repeatedly competing with the current task. Mobile
+review spacing is also reduced without shrinking touch targets or text.
+
+The user's general positive report for version 27 is not evidence that every
+individual release check, particularly Android TalkBack, was completed.
+
+The user also identified a mismatch between the installed icon and the header
+mark. Reusing the installed icon makes recognition consistent across entry points.

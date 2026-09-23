@@ -2,6 +2,18 @@ import {setupUpdates} from './updates.js';
 import {aucklandNow} from './planner.js';
 import {readPreferences,writePreferences,recordJourney,suggestions,journeyRoutes,sameRoutes,routePreferenceLabel} from './preferences.js';
 const $=id=>document.getElementById(id);
+// Acknowledgement is local to this browser, separate from journey learning.
+function collapseCourseNotice(focus=false){
+  const notice=$('course-notice');notice.open=false;
+  document.querySelector('footer').append(notice);$('course-understood').hidden=true;
+  if(focus)$('flow-title').focus({preventScroll:true});
+}
+try{if(localStorage.getItem('along-course-notice-v1')==='understood')collapseCourseNotice();}catch{}
+$('course-understood').onclick=()=>{
+  try{localStorage.setItem('along-course-notice-v1','understood');}catch{}
+  collapseCourseNotice(true);
+};
+
 const escape=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const clock=seconds=>{const s=((seconds%86400)+86400)%86400;return `${String(Math.floor(s/3600)).padStart(2,'0')}:${String(Math.floor(s%3600/60)).padStart(2,'0')}${seconds>=86400?' +1 day':''}`;};
 const minutes=seconds=>Math.ceil(seconds/60);
