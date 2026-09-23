@@ -198,3 +198,16 @@ Device/OS backup and browser policies remain outside Along's control.
 Different browsers, profiles and site origins have separate storage. Installing
 from a new public URL will not migrate data from a private/test site. There is no
 cloud account or automatic cloud backup of your journeys in Along.
+
+## Optional public feedback
+
+**Give feedback on this screen** is available in Settings, route/stop details and
+journey/departure notes. Your draft is kept locally, including offline. Review the
+exact text before opening GitHub. A GitHub account and its **Submit new issue**
+step are required; submitted reports are public. Opening GitHub alone does not
+confirm delivery. Paste the resulting issue link into Along to check receipt.
+
+No addresses, location or journey history are attached automatically. You may
+choose to include the displayed app version, language and general screen category.
+Avoid typing private details you do not want public. **Clear this draft** removes
+the local feedback draft; it does not delete an issue already submitted to GitHub.

@@ -139,9 +139,8 @@ if(recovery) recovery.onclick=async()=>{
 if(recovery){
   for(const element of document.querySelectorAll('[data-update-text]'))updateText(element,element.dataset.updateText);
   import('./i18n.js').then(({createLocalizer})=>{
-    const localizer=createLocalizer();bindUpdateLanguage(localizer);
+    const localizer=createLocalizer({storage:null});bindUpdateLanguage(localizer);
     document.documentElement.lang=localizer.tag;document.body.lang='en-NZ';
     try{document.title=localizer.text('update.title');}catch{}
-    const disclaimer=document.getElementById('recovery-draft');if(disclaimer)disclaimer.hidden=localizer.language!=='mi';
   }).catch(()=>{});
 }

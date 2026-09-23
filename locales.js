@@ -1365,3 +1365,138 @@ Object.assign(messages, {
     "mi": "Huakina a Along, ka whakarite i tēnei pūrere"
   }
 });
+
+Object.assign(messages, {
+  "feedback.title": {
+    "en": "Feedback on Along",
+    "mi": "Urupare mō Along"
+  },
+  "feedback.public": {
+    "en": "Feedback submitted to GitHub is public. Avoid personal details you do not want to share.",
+    "mi": "Ka kitea tūmatanuitia ngā urupare ka tukuna ki GitHub. Kaua e whakauru kōrero whaiaro kāore koe e hiahia ki te tiritiri."
+  },
+  "feedback.signin": {
+    "en": "You need a GitHub account. Review here, then sign in and choose Submit new issue on GitHub to send it.",
+    "mi": "Me whai pūkete GitHub koe. Arotakengia ki konei, kātahi ka takiuru, ka kōwhiri Submit new issue ki GitHub hei tuku."
+  },
+  "feedback.message": {
+    "en": "What would you like us to know?",
+    "mi": "He aha tāu e hiahia ana kia mōhio mātou?"
+  },
+  "feedback.local": {
+    "en": "Your draft stays on this device until you choose to open GitHub. Maximum 4,000 characters.",
+    "mi": "Ka noho tō hukihuki ki tēnei pūrere kia kōwhiri koe ki te huaki i a GitHub. Kia kaua e nui ake i te 4,000 pūāhua."
+  },
+  "feedback.context": {
+    "en": "Include the app version, language and general screen shown below",
+    "mi": "Whakaurua te putanga taupānga, te reo me te mata whānui kei raro nei"
+  },
+  "feedback.review": {
+    "en": "Review feedback",
+    "mi": "Arotakengia te urupare"
+  },
+  "feedback.body": {
+    "en": "Exact text to share (including the report ID)",
+    "mi": "Te tuhinga ka tiritiria (me te ID pūrongo)"
+  },
+  "feedback.copyHelp": {
+    "en": "This report is too long for a prefilled link. Copy this text, open GitHub and paste it into the issue description.",
+    "mi": "He roa rawa tēnei pūrongo mō te hononga kua whakakīa. Tāruatia te tuhinga, huakina a GitHub, ka whakapiri ki te whakaahuatanga take."
+  },
+  "feedback.copy": {
+    "en": "Copy report",
+    "mi": "Tāruatia te pūrongo"
+  },
+  "feedback.edit": {
+    "en": "Edit draft",
+    "mi": "Whakatikaina te hukihuki"
+  },
+  "feedback.github": {
+    "en": "Open GitHub to submit ↗",
+    "mi": "Huakina a GitHub hei tuku ↗"
+  },
+  "feedback.handoff": {
+    "en": "Opening GitHub does not confirm submission. After submitting, paste the issue link here to check receipt.",
+    "mi": "Kāore te huaki i a GitHub e whakaū kua tukuna. I muri i te tuku, whakapirihia te hononga take ki konei hei tirotiro kua tae atu."
+  },
+  "feedback.url": {
+    "en": "GitHub issue link",
+    "mi": "Hononga take GitHub"
+  },
+  "feedback.check": {
+    "en": "Check receipt",
+    "mi": "Tirohia kua tae atu"
+  },
+  "feedback.retry": {
+    "en": "Did not submit?",
+    "mi": "Kāore i tukuna?"
+  },
+  "feedback.retryHelp": {
+    "en": "Check your GitHub tab first to avoid duplicate reports. Reopening uses the same report ID.",
+    "mi": "Tirohia tō ripa GitHub i te tuatahi kia kore ai e tāruarua ngā pūrongo. Ka whakamahia taua ID pūrongo anō ina huaki anō."
+  },
+  "feedback.notSubmitted": {
+    "en": "I have not submitted this report",
+    "mi": "Kāore anō ahau kia tuku i tēnei pūrongo"
+  },
+  "feedback.view": {
+    "en": "View received feedback on GitHub ↗",
+    "mi": "Tirohia te urupare kua tae atu ki GitHub ↗"
+  },
+  "feedback.clear": {
+    "en": "Clear this draft",
+    "mi": "Mukua tēnei hukihuki"
+  },
+  "feedback.stored": {
+    "en": "Draft saved on this device.",
+    "mi": "Kua tiakina te hukihuki ki tēnei pūrere."
+  },
+  "feedback.session": {
+    "en": "Storage is unavailable. Keep this window open or copy your text.",
+    "mi": "Kāore te rokiroki e wātea ana. Waiho tēnei matapihi kia tuwhera, tāruatia rānei tō tuhinga."
+  },
+  "feedback.received": {
+    "en": "Receipt verified: this report is in the Along repository.",
+    "mi": "Kua whakaū kua tae atu: kei te putunga Along tēnei pūrongo."
+  },
+  "feedback.unverified": {
+    "en": "Submission is not yet verified. Your draft is kept here.",
+    "mi": "Kāore anō kia whakaūngia te tukunga. Ka puritia tō hukihuki ki konei."
+  },
+  "feedback.empty": {
+    "en": "Write some feedback before reviewing it.",
+    "mi": "Tuhia he urupare i mua i te arotake."
+  },
+  "feedback.offline": {
+    "en": "You are offline. Keep the draft and open GitHub when connected.",
+    "mi": "Kei te tuimotu koe. Puritia te hukihuki, ka huaki i a GitHub ina hono anō."
+  },
+  "feedback.copied": {
+    "en": "Report copied.",
+    "mi": "Kua tāruatia te pūrongo."
+  },
+  "feedback.selectCopy": {
+    "en": "Text selected. Use your device’s Copy action.",
+    "mi": "Kua tīpakohia te tuhinga. Whakamahia te mahi Tārua o tō pūrere."
+  },
+  "feedback.checking": {
+    "en": "Checking this issue on GitHub…",
+    "mi": "Kei te tirohia tēnei take ki GitHub…"
+  },
+  "feedback.invalid": {
+    "en": "Paste an Along repository issue link after opening GitHub to submit.",
+    "mi": "Whakapirihia he hononga take o te putunga Along i muri i te huaki i a GitHub hei tuku."
+  },
+  "feedback.unavailable": {
+    "en": "Receipt could not be checked. Your draft is kept; try again when connected.",
+    "mi": "Kāore i taea te tirotiro kua tae atu. Ka puritia tō hukihuki; whakamātau anō ina hono."
+  },
+  "feedback.mismatch": {
+    "en": "This issue does not contain the reviewed report. Check the link or any edits made on GitHub; the draft is kept.",
+    "mi": "Kāore tēnei take e mau ana i te pūrongo i arotakengia. Tirohia te hononga, ngā whakatikatika ki GitHub rānei; ka puritia te hukihuki."
+  },
+  "feedback.open": {
+    "en": "Give feedback on this screen",
+    "mi": "Tukuna he urupare mō tēnei mata"
+  }
+});
