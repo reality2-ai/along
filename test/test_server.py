@@ -27,7 +27,7 @@ class ServerAssetsTests(unittest.TestCase):
         cls.thread.join(timeout=5)
 
     def test_current_modules_are_served_and_private_files_are_not(self):
-        for asset in ['i18n.js', 'locales.js', 'feedback.js', 'feedback-ui.js']:
+        for asset in ['i18n.js', 'locales.js', 'feedback.js', 'feedback-ui.js', 'live-client.js', 'live-context.js']:
             with self.subTest(asset=asset), urllib.request.urlopen(self.base+'/'+asset) as response:
                 self.assertEqual(response.status, 200)
                 self.assertIn('javascript', response.headers['Content-Type'])
@@ -49,6 +49,15 @@ class ServerAssetsTests(unittest.TestCase):
         with patch.object(module, 'planner', None), patch.object(module.realtime, 'alerts', return_value=expected):
             with urllib.request.urlopen(self.base+'/api/alerts') as response:
                 self.assertEqual(json.load(response), expected)
+
+    def test_live_configuration_exposes_only_proxy_path_not_key(self):
+        module = importlib.import_module('server')
+        for key, expected in [('', ''), ('secret-test-key', './api/')]:
+            with patch.object(module.realtime, 'key', key):
+                with urllib.request.urlopen(self.base+'/live-config.js') as response:
+                    body = response.read().decode()
+                    self.assertEqual(body, 'export const liveBaseURL = '+json.dumps(expected)+';\n')
+                    self.assertNotIn('secret-test-key', body)
 
 
 if __name__ == '__main__':

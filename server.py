@@ -34,7 +34,15 @@ class Handler(BaseHTTPRequestHandler):
         url = urlparse(self.path)
         query = {k:v[0] for k,v in parse_qs(url.query).items()}
         try:
-            if url.path == '/api/status':
+            if url.path == '/live-config.js':
+                body = ('export const liveBaseURL = '+json.dumps('./api/' if realtime.key else '')+';\n').encode()
+                self.send_response(200)
+                self.send_header('Content-Type', 'text/javascript; charset=utf-8')
+                self.send_header('Cache-Control', 'no-cache')
+                self.send_header('Content-Length', str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+            elif url.path == '/api/status':
                 self.json({'ready':bool(planner),'realtimeConfigured':bool(realtime.key),'feed':planner.metadata if planner else None,'now':datetime.now(ZoneInfo('Pacific/Auckland')).isoformat()})
             elif url.path in {'/api/network','/api/streets','/api/addresses'}:
                 name=url.path.rsplit('/',1)[-1]
@@ -97,7 +105,7 @@ class Handler(BaseHTTPRequestHandler):
                 allowed['/update.html']='update.html'
                 allowed['/install.html']='install.html'
                 allowed['/updates.js']='updates.js'
-                for module in ['i18n.js','locales.js','feedback.js','feedback-ui.js']:
+                for module in ['i18n.js','locales.js','feedback.js','feedback-ui.js','live-client.js','live-context.js']:
                     allowed['/'+module]=module
                 for icon in ['icon-192.png','icon-512.png','maskable-512.png','apple-touch-icon.png','favicon-32.png']:
                     allowed['/icons/'+icon] = 'icons/'+icon

@@ -182,3 +182,28 @@ unknown restrictions do not become generic journey advice. Its functions have no
 network, storage or journey-state side effects. Five focused JavaScript scenarios
 cover these contracts; the adapter tests also verify preservation of the newer
 communication/impact fields. This module is not yet connected to the public UI.
+
+
+### Explicit live checks (source integration, not yet a public release)
+
+The nearby screen now uses `live-client.js`: live data is fetched only after
+“Check live departures”. Ordinary navigation/filtering/refresh uses scheduled
+results. The control is hidden when `live-config.js` has no proxy URL, as in the
+public static configuration. The Python server supplies `./api/` configuration
+when a server-side key exists; the key never appears in that module. Leaving
+nearby cancels pending reads and drops their cache. Offline checks retain the
+schedule without an error dialog. Network-wide alerts remain an explicit action.
+
+The client sends only a feed name to the proxy, without coordinates, addresses,
+history, cookies or a referrer. The proxy still receives the network IP address.
+It checks feed freshness even on cache hits, deduplicates pending reads and ignores
+responses cancelled by navigation. This does not yet provide live selected-stop
+boards, selected-journey alerts or vehicle positions. Secure public deployment is
+still outstanding; a hosting preference has been requested from the user.
+
+Verification for this source integration: all 45 JavaScript and 11 Python tests
+pass; the existing mobile-nearby accessibility flow passes; a configured-proxy
+browser fixture confirms zero requests before a click, one on explicit intent,
+no request on ordinary refresh, and retained departures offline. That fixture
+blocks service workers to intercept configuration reliably and verifies session
+behaviour; it is not an installed-app or authenticated-public-proxy test.
