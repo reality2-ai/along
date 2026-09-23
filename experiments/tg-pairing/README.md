@@ -687,3 +687,24 @@ The [runtime notice audit](../../docs/PAIRING_LICENSE_AUDIT.md) records the exac
 56-package closure and outstanding local R2 notice/declaration gaps. The
 [S23/desktop check guide](../../docs/PAIRING_DEVICE_CHECK.md) is prepared for a
 published lab URL; it does not claim that such a URL or physical pass exists yet.
+
+### Connection loss while a save result is returning
+
+The composed flow now waits for in-flight installation and acknowledgment writes
+to settle before choosing its terminal message. A connection abort can arrive
+after IndexedDB has committed but before the awaiting UI resumes. The earlier
+flow could report “start a new invitation” using an in-memory flag that had not
+yet caught up with that commit. Atomic storage was correct; the visible advice
+was not. A committed acknowledgment can have the same timing problem.
+
+The failure screen briefly checks saved state, then reports either no installation,
+local membership without confirmation, or saved membership with confirmation.
+Leaving the screen prevents a late result from replacing the next screen.
+
+`LOSE_INSTALL_REPLY=1` in `pairing-flow.test.mjs` delays delivery of a real successful
+installation transaction, closes the other device's actual WebRTC flow, then
+releases the result. It verifies retained membership and recovery wording.
+`LOSE_ACK_REPLY=1` does the same after the confirmation write and verifies the
+acknowledged outcome. These are actual commits, not fabricated membership records.
+Comparison cancellation and the rebuilt standalone setup/pair/reload flow still
+pass. No physical transport-loss test is claimed.

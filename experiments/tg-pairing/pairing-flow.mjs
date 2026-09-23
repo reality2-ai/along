@@ -13,7 +13,7 @@ export function showPairingFlow(container, {wasm, store, role, expectedGroup, fo
   if (!['candidate', 'provisioner'].includes(role)) throw new Error('Pairing role required');
   mounted.get(container)?.();
   const document = container.ownerDocument, lifetime = new AbortController(), views = [];
-  let disposed = false, completed = false, session, invitation, proof, payloads, localInstalled = false;
+  let disposed = false, completed = false, session, invitation, proof, payloads, installation, acknowledgment, localInstalled = false;
   const current = () => { if (disposed || lifetime.signal.aborted) throw new Error('Pairing ended'); };
   const stop = () => {
     if (disposed) return;
@@ -24,9 +24,9 @@ export function showPairingFlow(container, {wasm, store, role, expectedGroup, fo
   };
   mounted.set(container, stop);
   const leave = () => { if (!disposed) { stop(); onBack(); } };
-  const screen = () => { current(); const node = document.createElement('div'); container.replaceChildren(node); return node; };
-  const message = (title, text) => {
-    const node = screen(), panel = document.createElement('section'); panel.className = 'pairing-comparison';
+  const screen = (terminal = false) => { if (disposed) throw new Error('Pairing view closed'); if (!terminal) current(); const node = document.createElement('div'); container.replaceChildren(node); return node; };
+  const message = (title, text, terminal = false) => {
+    const node = screen(terminal), panel = document.createElement('section'); panel.className = 'pairing-comparison';
     const heading = document.createElement('h2'); heading.textContent = title; heading.tabIndex = -1;
     const status = document.createElement('p'); status.setAttribute('role', 'status'); status.textContent = text;
     const back = document.createElement('button'); back.type = 'button'; back.textContent = 'Back'; back.addEventListener('click', leave);
@@ -34,12 +34,26 @@ export function showPairingFlow(container, {wasm, store, role, expectedGroup, fo
   };
   const fail = () => {
     if (disposed || completed) return;
-    message(localInstalled ? 'Device group saved locally' : 'Connection did not finish', localInstalled
-      ? 'This device joined the group, but confirmation from the other device was not completed. Keep the saved device data for recovery.'
-      : 'Go Back and start a new invitation with both devices ready. Your downloaded journeys are still available.');
-    // Keep Back usable while closing all protocol resources.
-    completed = true; lifetime.abort(); invitation?.close(); proof?.close();
+    completed = true;
+    message('Checking saved device state', 'The connection ended. Checking whether this device finished saving before it closed.');
+    lifetime.abort(); invitation?.close(); proof?.close();
     void session?.cancel?.().catch(() => {}); void session?.dispose?.().catch(() => {});
+    // A completed atomic commit can be delivered after the connection aborts.
+    // Settle those operations before choosing recovery versus a fresh invitation.
+    void (async () => {
+      if (installation) {
+        try { await installation; localInstalled = true; } catch { /* no successful commit reported */ }
+      }
+      let acknowledged = false;
+      if (acknowledgment) {
+        try { await acknowledgment; acknowledged = true; } catch { /* keep local installation */ }
+      }
+      if (disposed) return;
+      if (acknowledged) message('Device connected', 'This device saved its group membership and confirmation before the connection ended.', true);
+      else message(localInstalled ? 'Device group saved locally' : 'Connection did not finish', localInstalled
+        ? 'This device joined the group, but confirmation from the other device was not completed. Keep the saved device data for recovery.'
+        : 'Go Back and start a new invitation with both devices ready. Your downloaded journeys are still available.', true);
+    })();
   };
   const watchSession = () => {
     session.signal.addEventListener('abort', fail, {once: true});
@@ -67,8 +81,10 @@ export function showPairingFlow(container, {wasm, store, role, expectedGroup, fo
         message('Saving your device connection', 'Keep both devices open until this step finishes.');
         if (role === 'candidate') {
           await session.sendClaim(); current();
-          await session.installLocal(); localInstalled = true; current();
-          await session.acknowledgeInstallation(); current();
+          installation = session.installLocal();
+          await installation; localInstalled = true; current();
+          acknowledgment = session.acknowledgeInstallation();
+          await acknowledgment; current();
           completed = true;
           message('Device connected', 'This device joined the group and received confirmation. Sharing journeys or an AT key still needs its own setup.');
         } else {

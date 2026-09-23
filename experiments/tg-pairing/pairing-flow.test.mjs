@@ -24,14 +24,25 @@ try {
   const pages = await Promise.all(contexts.map(c => c.newPage()));
   await Promise.all(pages.map(async (page, index) => {
     await page.goto(`http://127.0.0.1:${server.address().port}`);
-    await page.evaluate(async index => {
+    await page.evaluate(async ({index, loseInstallReply, loseAckReply}) => {
       window.wasm = await import('./hive_wasm.js'); await wasm.default();
       window.store = await (await import('./storage.mjs')).openBrowserStorage('pairing-flow');
       const initial = await (await import('./software-persona.mjs')).initializeSoftwarePersona({wasm, store});
       window.group = Uint8Array.from(initial.group.match(/../g), b => parseInt(b, 16));
+      let flowStore = store;
+      if (index === 0 && (loseInstallReply || loseAckReply)) {
+        flowStore = {...store, compareAndSwapMany: async (...args) => {
+          const result = await store.compareAndSwapMany(...args);
+          if (result.applied && args[0].some(write => write.scope === 'candidate-persona' && write.value?.invitation && write.value.peerAcknowledged === loseAckReply)) {
+            window.commitSaved = true;
+            await new Promise(resolve => { window.releaseCommit = resolve; });
+          }
+          return result;
+        }};
+      }
       window.flow = (await import('./pairing-flow.mjs')).showPairingFlow(document.querySelector('#flow'),
-        {wasm, store, role: index ? 'provisioner' : 'candidate', expectedGroup: group, focus: true});
-    }, index);
+        {wasm, store: flowStore, role: index ? 'provisioner' : 'candidate', expectedGroup: group, focus: true});
+    }, {index, loseInstallReply: process.env.LOSE_INSTALL_REPLY === '1', loseAckReply: process.env.LOSE_ACK_REPLY === '1'});
   }));
   const [candidate, owner] = pages;
   await owner.getByRole('heading', {name: 'Invite your other device', exact: true}).waitFor();
@@ -68,6 +79,23 @@ try {
   await Promise.all(pages.map(async page => {
     await page.getByRole('button', {name: 'Both devices are here and the codes match', exact: true}).click();
   }));
+  if (process.env.LOSE_INSTALL_REPLY === '1' || process.env.LOSE_ACK_REPLY === '1') {
+    await candidate.waitForFunction(() => window.commitSaved === true);
+    await owner.evaluate(() => flow.dispose());
+    await candidate.getByRole('heading', {name: 'Checking saved device state', exact: true}).waitFor();
+    await candidate.evaluate(() => releaseCommit());
+    const acknowledged = process.env.LOSE_ACK_REPLY === '1';
+    await candidate.getByRole('heading', {name: acknowledged ? 'Device connected' : 'Device group saved locally', exact: true}).waitFor();
+    assert.equal(await candidate.getByRole('status').textContent(), acknowledged
+      ? 'This device saved its group membership and confirmation before the connection ended.'
+      : 'This device joined the group, but confirmation from the other device was not completed. Keep the saved device data for recovery.');
+    const saved = await candidate.evaluate(async () => {
+      const persona = await store.read('candidate-persona', 'active');
+      return {claim: persona.value.claim, acknowledged: persona.value.peerAcknowledged};
+    });
+    assert.deepEqual(saved, {claim: 'owner', acknowledged});
+    console.log('PASS: transport loss after atomic commit but before completion delivery preserves membership and reports its durable confirmation state:', acknowledged ? 'acknowledged' : 'installed locally');
+  } else {
   await candidate.getByRole('heading', {name: 'Device connected', exact: true}).waitFor();
   await owner.getByRole('heading', {name: 'Other device installed', exact: true}).waitFor();
   const target = await owner.evaluate(() => [...group]);
@@ -77,6 +105,7 @@ try {
     traffic.destroy(); return restored.origin === 'enrolled' && restored.peerAcknowledged;
   }, target), true);
   }
+  }
   await Promise.all(pages.map(page => page.evaluate(() => flow.dispose())));
-  if (process.env.CANCEL_FLOW !== '1') console.log('PASS: both complete pairing flows exchange public messages through fields, compare codes, enroll over real WebRTC, acknowledge installation and restore encrypted traffic keys. Harness transfers text and confirms codes; no physical-device usability claim.');
+  if (process.env.CANCEL_FLOW !== '1' && process.env.LOSE_INSTALL_REPLY !== '1' && process.env.LOSE_ACK_REPLY !== '1') console.log('PASS: both complete pairing flows exchange public messages through fields, compare codes, enroll over real WebRTC, acknowledge installation and restore encrypted traffic keys. Harness transfers text and confirms codes; no physical-device usability claim.');
 } finally { await browser?.close(); await new Promise(resolve => server.close(resolve)); }

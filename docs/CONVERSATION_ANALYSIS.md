@@ -891,3 +891,18 @@ supplies initial trust review, comparison decisions and connection signaling. Th
 requirements negotiation: an explicit user choice narrows framework conformance,
 not the intended usable cross-device experience. It is not evidence of independent
 security review or physical-device acceptance.
+
+### Development evidence: completion messages must follow durable outcomes
+
+The interrupted-pairing test exposed a gap between atomic storage and the visible
+message: a connection could end after membership committed but before the UI's
+local flag changed. The old failure message then suggested a fresh invitation.
+The correction waits for the pending write result and distinguishes local
+installation from received confirmation. This is development evidence supporting
+the existing themes of contextual next actions and honest state reporting; it is
+not a new participant statement or physical-device acceptance.
+
+For the course, ask learners which event establishes each claimed outcome and
+whether an error can arrive after success became durable. A passing storage test
+alone does not prove that recovery advice is correct. The AI wrote both the repair
+and the delayed-completion regression; the human did not need to edit code.
