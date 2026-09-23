@@ -1,6 +1,6 @@
 # Release evidence and remaining gates
 
-Current candidate: **version 23**, reviewed 23 September 2026. The private site and
+Current candidate: **version 24**, reviewed 23 September 2026. The private site and
 static ZIP are prepared. GitHub Pages is published at `reality2.ai/along/`; no AWS deployment has been made.
 This register separates automated evidence, user observations and remaining checks.
 
@@ -212,3 +212,17 @@ hashes match the local files. ZIP SHA-256:
 This supersedes the version 21 draft for review. Draft assets remain visible to
 maintainers only. The public app already serves version 23; spoken screen-reader
 acceptance is still outstanding.
+
+
+## Version 24: distinguish destination from starting place
+
+User feedback identified ambiguity in “Starting where?” with the previously
+selected destination shown underneath. The origin heading now asks “Where are you
+travelling from?” and the context says “Destination already selected”. Labels
+spell out “Destination (to)” and “Starting place (from)”; actions name the next
+step, and the origin has its own visible, screen-reader-associated help text.
+Routing direction remains destination first, then origin, then review.
+
+The user explicitly clarified that TalkBack has **not** been tested. The earlier
+positive response to the TalkBack question is superseded by that correction;
+spoken screen-reader acceptance remains outstanding.

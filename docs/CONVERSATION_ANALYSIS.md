@@ -476,3 +476,26 @@ leaving the exact browser and unrelated screen-reader checks unconfirmed. The
 case now spans reported failure → test-environment correction → implementation
 fix → automated verification → user confirmation, with no code changes required
 from the human.
+
+
+## Refinement: distinguish the question from the retained context
+
+The user found “Starting where?” confusing because the step seemed to concern the
+destination. Inspection showed that the origin step displayed the selected
+destination beneath this short heading. Retaining context alone did not ensure
+that its role was clear. The revised wording explicitly asks where the person is
+travelling **from**, labels the destination as already selected, and names the
+next step on the button. This refines next-action clarity at the level of wording
+and information roles, without changing which endpoint the planner uses.
+
+A separate correction matters to evidence quality: after an initial positive
+answer to the TalkBack prompt, the user clarified that they had not used TalkBack.
+The later explicit correction takes precedence. Conversational acceptance must
+not be retained as a passed test when the participant retracts its basis.
+
+
+The user then clarified that the destination-first ordering had been misunderstood.
+The final change keeps that ordering and improves the titles and retained-context
+labels; an origin-first redesign was not carried forward. This illustrates why
+feedback should be read across the clarification sequence rather than treating
+an intermediate interpretation as a settled requirement.
