@@ -229,5 +229,7 @@ Six focused matcher/exploration tests pass. Three browser checks pass: existing
 mobile nearby/accessibility, route/map/stop/offline Back, and explicit configured
 live checks at nearby/individual stops with an empty-feed fixture. That last check
 proves request intent, empty-match messaging and Back, not a real AT prediction
-appearing on a physical device. Actual matched display, expiration and cancellation
-browser fixtures remain to be added before the next public release.
+appearing on a physical device. Matched display, expiration and cancellation browser fixtures now pass, including
+actual abort on Back, unchanged row order, retained scheduled times, 360 px reflow
+and an axe check of the live board. These use synthetic live events matched to
+real downloaded departures; they do not establish public proxy availability.

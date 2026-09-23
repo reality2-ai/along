@@ -661,3 +661,12 @@ the recurring theme of clear affordances: progressive disclosure must not hide
 feedback or make available actions ambiguous. Version 32 moves feedback outside
 the disclosure and gives secondary actions consistent outlines, while preserving
 the filled primary travel action. Touch users need these cues before any hover.
+
+### One clear disclosure boundary
+
+After the outlined-action revision, the user identified that a control inside
+another single-purpose card looked awkward. They also asked for the notice label
+to read “Use at your own risk”, with the course explanation revealed on opening.
+Version 33 removes redundant disclosure containers and shortens this label. The
+refinement balances recognisable actions with calm presentation: extra borders
+can add visual complexity without conveying another meaningful interaction.

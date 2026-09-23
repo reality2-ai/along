@@ -99,6 +99,7 @@ test('course acknowledgement frees phone space, remains available and survives o
  await page.locator('#course-understood').click();
  await expect(page.locator('footer #course-notice')).toBeAttached();
  await expect(page.locator('#course-notice')).not.toHaveAttribute('open','');
+ await expect(page.locator('#course-notice summary')).toHaveText('Use at your own risk');
  await expect(page.locator('#flow-title')).toBeFocused();
  expect(before-(await page.locator('#flow-title').boundingBox()).y).toBeGreaterThan(100);
  await page.locator('#course-notice summary').click();await expect(page.locator('#course-notice')).toHaveAttribute('open','');

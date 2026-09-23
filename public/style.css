@@ -214,3 +214,8 @@ button,.secondary-button,.tab,.setting,select,input[type=date],input[type=time]{
 .guided-app #review-destination-row{margin-top:16px}
 
 .departure-board .board-scheduled{display:block;font-family:inherit;font-size:12px;font-weight:400;color:#d9e9df;margin-top:6px}
+
+/* One disclosure boundary, not a button boxed inside another card. */
+.guided-app .course-notice,.guided-app footer .course-notice,
+.guided-app footer .course-notice[open]{border:0;padding:0;background:transparent}
+.guided-app .journey-preferences{border:0;padding:0}

@@ -1,4 +1,5 @@
 import {test,expect} from '@playwright/test';
+import AxeBuilder from '@axe-core/playwright';
 
 test('nearby live requests require an explicit action and offline fallback retains departures',async({browser})=>{
  const context=await browser.newContext({serviceWorkers:'block'});
@@ -22,4 +23,68 @@ test('nearby live requests require an explicit action and offline fallback retai
  await expect(page.locator('.departure-board caption')).toContainText('Scheduled');
  await page.locator('#detail-back').click();await expect(page.locator('#information')).not.toBeVisible();
  await context.close();
+});
+
+async function openObservedStop(browser){
+ const context=await browser.newContext({serviceWorkers:'block',viewport:{width:360,height:780}});
+ await context.route('**/live-config.js',r=>r.fulfill({contentType:'text/javascript',body:"export const liveBaseURL='./api/';"}));
+ await context.addInitScript(()=>{
+  const Original=Worker;
+  window.Worker=class extends Original{
+   constructor(...args){super(...args);this.stopRequests=new Set();this.addEventListener('message',({data})=>{if(this.stopRequests.has(data.id))window.observedStopRows=data.result;});}
+   postMessage(data,...rest){if(data.type==='stopDetails')this.stopRequests.add(data.id);return super.postMessage(data,...rest);}
+  };
+ });
+ const page=await context.newPage();await page.clock.install({time:new Date('2026-09-22T21:00:00Z')});
+ await page.goto(process.env.TEST_BASE_URL||'http://127.0.0.1:3080');
+ await expect(page.locator('#data-status')).toContainText('session ready',{timeout:60000});
+ await page.locator('#nearby-start').click();await page.locator('#try-britomart').click();await page.locator('#find').click();
+ await page.locator('.stop-header .detail-link').first().click();await expect(page.locator('#stop-live')).toBeVisible();
+ const rows=await page.evaluate(()=>window.observedStopRows);
+ return {page,context,rows};
+}
+
+test('matched stop predictions preserve schedule and ordering, then expire',async({browser})=>{
+ const {page,context,rows}=await openObservedStop(browser);
+ try{
+  const seen=new Set(),chosen=[];
+  rows.forEach((d,i)=>{if(d.stopVisits===1&&!seen.has(d.trip)&&chosen.length<3){seen.add(d.trip);chosen.push({d,i});}});
+  expect(chosen).toHaveLength(3);
+  const before=await page.locator('[data-stop-time]').allTextContents();
+  const routes=await page.locator('.board-route').allTextContents();
+  await context.route('**/api/predictions',async route=>{
+   const updated=await page.evaluate(()=>Math.floor(Date.now()/1000));
+   const entities=chosen.map(({d},i)=>({trip_update:{trip:{trip_id:d.trip,start_date:d.serviceDate,route_id:d.routeId,...(i===1?{schedule_relationship:'CANCELED'}:{})},stop_time_update:[{stop_id:d.stop.id,...(i===2?{schedule_relationship:'SKIPPED'}:{departure:{delay:120}})}]}}));
+   await route.fulfill({contentType:'application/json',body:JSON.stringify({available:true,updated,entities})});
+  });
+  await page.locator('#stop-live').click();await expect(page.locator('#stop-live-status')).toContainText('matched to 3');
+  for(const [j,label] of ['Expected','Cancelled','Not stopping here'].entries()){
+   const cell=page.locator(`[data-stop-time="${chosen[j].i}"]`);await expect(cell).toContainText(label);
+   await expect(cell.locator('small')).toHaveText('Scheduled '+before[chosen[j].i]);
+  }
+  expect(await page.locator('.board-route').allTextContents()).toEqual(routes);
+  await expect(page.locator('.departure-board caption')).toHaveText('Departures · scheduled and live');
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  expect((await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa']).analyze()).violations).toEqual([]);
+  await page.screenshot({path:'test-results/live-stop-board.png',fullPage:true});
+  await page.clock.fastForward(181000);
+  await expect(page.locator('#stop-live-status')).toContainText('expired');
+  expect(await page.locator('[data-stop-time]').allTextContents()).toEqual(before);
+  await expect(page.locator('.departure-board caption')).toContainText('Scheduled');
+ }finally{await context.close();}
+});
+
+test('leaving a stop cancels its request and a late response cannot change another screen',async({browser})=>{
+ const {page,context}=await openObservedStop(browser);
+ try{
+  let finish;const waiting=new Promise(resolve=>finish=resolve);
+  let arrived;const requestArrived=new Promise(resolve=>arrived=resolve);
+  await context.route('**/api/predictions',async route=>{arrived();await waiting;await route.fulfill({contentType:'application/json',body:JSON.stringify({available:true,updated:Math.floor(Date.now()/1000),entities:[]})}).catch(()=>{});});
+  const failed=page.waitForEvent('requestfailed',{predicate:r=>r.url().endsWith('/api/predictions')});
+  await page.locator('#stop-live').click();await requestArrived;
+  await page.locator('#detail-back').click();await failed;finish();
+  await expect(page.locator('#information')).not.toBeVisible();
+  await page.locator('.stop-header .detail-link').first().click();
+  await expect(page.locator('#stop-live')).toBeEnabled();await expect(page.locator('#stop-live-status')).toBeEmpty();
+ }finally{await context.close();}
 });

@@ -214,7 +214,8 @@ function mountStopLive(id,rows,at){
   const button=$('stop-live');if(!button)return;
   const client=createLiveClient({baseURL:liveBaseURL,pageURL:import.meta.url});
   let timer=null,sequence=0;
-  const reset=()=>document.querySelectorAll('[data-stop-time]').forEach((cell,i)=>{cell.textContent=clock(rows[i].departure);});
+  const caption=$('detail-body').querySelector('.departure-board caption'),scheduledCaption=caption?.textContent;
+  const reset=()=>{if(caption)caption.textContent=scheduledCaption;document.querySelectorAll('[data-stop-time]').forEach((cell,i)=>{cell.textContent=clock(rows[i].departure);});};
   detailViews.get(id).dispose=()=>{sequence++;clearTimeout(timer);client.cancel();};
   button.onclick=async()=>{
     const request=++sequence;clearTimeout(timer);reset();button.disabled=true;
@@ -237,6 +238,7 @@ function mountStopLive(id,rows,at){
       cell.textContent=label;
       const original=document.createElement('small');original.className='board-scheduled';original.textContent='Scheduled '+clock(departure.departure);cell.append(original);
     });
+    if(matched && caption)caption.textContent='Departures · scheduled and live';
     $('stop-live-status').textContent=!feed.available?'Current predictions unavailable. Showing scheduled departures.':matched?'Live information matched to '+matched+' departures. Other times remain scheduled.':'No live match for these departures. Times remain scheduled.';
     if(feed.available)timer=setTimeout(()=>{if(button.isConnected){reset();$('stop-live-status').textContent='Live information has expired. Showing scheduled departures.';}},Math.max(0,(feed.updated+180-Date.now()/1000)*1000));
   };

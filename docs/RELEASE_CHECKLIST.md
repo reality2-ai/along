@@ -614,3 +614,20 @@ offline journey and feedback-draft verification. A separate mobile layout fixtur
 confirmed both primary and alternative journey buttons fill their 286 px content
 width with 24 px top spacing; that fixture is not evidence of a real alternative
 route result.
+
+## Version 33: one disclosure boundary and explicit live checks
+
+The collapsed risk notice reads “Use at your own risk”; the course explanation
+is inside. Redundant outer borders around disclosure controls are removed.
+
+The source includes opt-in nearby and stop live checks, credential-free feed
+requests, strict matching, original schedule retention and expiry/cancellation.
+Public configuration still has no live proxy URL, so these controls stay hidden
+on Pages. Live prediction browser fixtures are synthetic and are not proof of
+public authenticated service or real-device performance. Repeated-stop matching,
+selected-journey alerts, vehicle positions and public live hosting remain open.
+
+Version 33 validation passed: 49 JavaScript tests, 11 Python tests, all 15 browser
+scenarios, static subpath/accessibility/offline checks, update/recovery checks and
+local release smoke. The ZIP is byte-identical to the generated static files and
+excludes the private key. This does not replace physical-device/TalkBack checks.
