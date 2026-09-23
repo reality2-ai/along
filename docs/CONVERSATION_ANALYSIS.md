@@ -1023,3 +1023,18 @@ carry the new synthetic key. This connects contextual wording to actual saved
 state, while keeping application-key replacement distinct from group-epoch
 rotation and revocation at the provider. It remains browser automation rather
 than a new report of physical-device acceptance.
+
+### Development evidence: preserving intent across offline edits
+
+The saved-journey sync foundation treats independent saves as separate records
+and retains deletion tombstones. This addresses the participant's combination of
+offline autonomy, device-local privacy and eventual sharing across trusted devices:
+replacing a whole preferences object could lose saves or restore removed journeys.
+The projection excludes learned patterns and active-screen state. Logical ordering
+avoids using two devices' wall clocks as the authority for concurrent changes.
+
+Model tests and actual IndexedDB transactions now establish merge and persistence
+behavior, including concurrency and restart. They do not establish peer identity,
+consent or delivery. For the course, ask students which claims a storage test can
+support and which require an authenticated two-device experiment. The distinction
+keeps a useful foundation from being presented as a finished synchronization feature.

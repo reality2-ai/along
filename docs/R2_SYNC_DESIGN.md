@@ -4,6 +4,14 @@ Status: design investigation, 23 September 2026. No sync functionality is enable
 in Along. This proposal extends the product; it is not evidence that the existing
 release has cross-device sync.
 
+A [saved-journey data layer](../experiments/journey-sync/README.md) now implements
+strict endpoint/route projection, deterministic logical ordering, retained deletion
+tombstones and atomic snapshot persistence. Model and real IndexedDB checks cover
+concurrent saves, replay, deletion and restart. It is not yet wired to an
+authenticated peer session or the app's preferences; public sync remains absent.
+Its documented limits include whole-journey conflict resolution and a bounded
+tombstone set without garbage collection.
+
 The earlier implementation references below are historical: those projects are
 now archived. The [current runtime investigation](REALITY2_INTEGRATION.md) pins
 the active monorepo and identifies missing durable browser TG/application-secret
