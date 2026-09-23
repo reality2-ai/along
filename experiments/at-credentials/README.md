@@ -535,3 +535,26 @@ review after another policy change. The initial run found lost keyboard focus
 when disabling the action; focus is now captured before disabling it. Real
 TalkBack, physical-device operation, device selection and public integration
 remain unverified/incomplete. Provider key rotation has no user-facing flow yet.
+
+## Replacing the owner's key
+
+Experimental owner settings now offer **Replace AT key** when a saved key can be
+opened. Recipient settings do not expose that action. The review explains that
+continuing stops use of the previous key locally, while changing/revoking a key
+at AT and delivering a replacement to other devices are separate operations.
+Back before confirmation leaves the current key unchanged.
+
+A trusted confirmation updates the reviewed signed policy to a new credential
+generation, preserving device grants, then opens the existing encrypted key-entry
+flow. If the user leaves after that policy commit, reopening settings asks for the
+replacement; it cannot resume using the old-generation key. Saving the replacement
+does not claim provider verification or delivery to other devices. The action
+cannot be repeated from missing/replacement-needed settings to keep incrementing
+generations instead of finishing entry.
+
+The actual storage/settings browser test covers keyboard confirmation, ignored
+synthetic clicks, Back before and after the policy commit, reopening the
+replacement-needed state, saving a synthetic replacement at generation 2, and
+320px enlarged-text/axe checks. Existing credential consent and authenticated peer
+tests also pass. This is still experimental browser UI; no real key was used,
+no AT subscription was changed, and public/physical-device verification remains.

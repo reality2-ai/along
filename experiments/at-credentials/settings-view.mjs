@@ -2,6 +2,7 @@ import {loadLocalPersona} from '../tg-pairing/local-persona.mjs';
 import {establishLocalATOwner, loadATBinding} from './local-owner.mjs';
 import {openLocalATVault} from './local-vault.mjs';
 import {showCredentialSetup} from './credential-view.mjs';
+import {showOwnerKeyReplacement} from './key-replacement-view.mjs';
 const mounted = new WeakMap();
 
 // The enclosing device flow supplies its established group, never a peer payload.
@@ -36,11 +37,14 @@ export function showATSettings(container, {wasm, store, expectedGroup, focus = f
     status.textContent = 'These settings could not be opened. Go Back to device settings. Your downloaded journeys are still available.';
     if (document.activeElement === setup || document.activeElement === document.body && busy) back.focus();
   };
-  const open = async (binding, activated = false) => {
+  const open = async (binding, activated = false, canReplace = false) => {
     if (disposed) return;
     const moveFocus = activated && (document.activeElement === document.body || panel.contains(document.activeElement))
       || focus && panel.contains(document.activeElement);
-    child = showCredentialSetup(container, {vault: openLocalATVault({wasm, store, ...binding}), focus: moveFocus, onBack: leave});
+    child = showCredentialSetup(container, {vault: openLocalATVault({wasm, store, ...binding}), focus: moveFocus, onBack: leave,
+      onReplace: canReplace ? () => {
+        if (!disposed) child = showOwnerKeyReplacement(container, {wasm, store, expectedGroup: group, focus: true, onBack: leave});
+      } : undefined});
     await child.ready;
   };
   setup.addEventListener('click', async event => {
@@ -49,7 +53,7 @@ export function showATSettings(container, {wasm, store, expectedGroup, focus = f
     busy = true; setup.disabled = true; status.textContent = 'Saving your live-information settings…';
     try {
       const owner = await establishLocalATOwner({wasm, store, expectedGroup: group, signal: lifetime.signal});
-      await open(owner.binding, activated);
+      await open(owner.binding, activated, true);
     } catch { unavailable(); }
   });
   const ready = (async () => {
@@ -59,7 +63,7 @@ export function showATSettings(container, {wasm, store, expectedGroup, focus = f
       if (!identity) throw new Error('Device identity unavailable');
       const owner = await loadATBinding({wasm, store, expectedGroup: group, signal: lifetime.signal});
       if (disposed) return;
-      if (owner) await open(owner.binding);
+      if (owner) await open(owner.binding, false, owner.role === 'owner');
       else {
         status.textContent = 'Continue to create local settings for your personal AT key. This does not contact AT or connect another device.';
         setup.hidden = false;

@@ -71,7 +71,7 @@ try {
   await page.evaluate(() => document.documentElement.style.fontSize = '200%');
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
   assert.deepEqual((await new AxeBuilder({page}).analyze()).violations.map(v => v.id), []);
-  const widths = await page.evaluate(() => [...document.querySelectorAll('button')].map(b => b.getBoundingClientRect().width));
+  const widths = await page.evaluate(() => [...document.querySelectorAll('button')].map(b => b.getBoundingClientRect().width).filter(width => width > 0));
   assert.equal(widths[0], widths[1]);
   await page.getByLabel('Personal AT API key').fill('synthetic-unsaved');
   await page.keyboard.press('Escape');

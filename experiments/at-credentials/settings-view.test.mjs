@@ -5,11 +5,11 @@ import {join} from 'node:path';
 import AxeBuilder from '@axe-core/playwright';
 const {chromium} = await import(process.env.PLAYWRIGHT_MODULE || '@playwright/test');
 const sources = new Map();
-for (const name of ['settings-view.mjs', 'credential-view.mjs', 'credential-view.css', '../tg-pairing/comparison.css']) {
+for (const name of ['settings-view.mjs', 'key-replacement-view.mjs', 'credential-view.mjs', 'credential-view.css', '../tg-pairing/comparison.css']) {
   sources.set('/' + name.split('/').pop(), await readFile(new URL(name, import.meta.url)));
 }
 for (const name of ['storage.mjs', 'membership.mjs', 'certificate.mjs']) sources.set('/' + name, await readFile(join(process.env.R2_BROWSER_DIR, name)));
-for (const name of ['../tg-pairing/initial-persona.mjs', '../tg-pairing/local-persona.mjs', 'local-owner.mjs', 'policy.mjs', 'policy-store.mjs', 'local-vault.mjs', 'delivery-ack.mjs', 'delivery-message.mjs']) sources.set('/' + name.split('/').pop(), await readFile(new URL(name, import.meta.url)));
+for (const name of ['../tg-pairing/initial-persona.mjs', '../tg-pairing/local-persona.mjs', 'local-owner.mjs', 'owner-policy.mjs', 'policy.mjs', 'policy-store.mjs', 'local-vault.mjs', 'delivery-ack.mjs', 'delivery-message.mjs']) sources.set('/' + name.split('/').pop(), await readFile(new URL(name, import.meta.url)));
 for (const name of ['hive_wasm.js', 'hive_wasm_bg.wasm']) sources.set('/' + name, await readFile(join(process.env.R2_WASM_DIR, name)));
 const server = createServer((req, res) => {
   const path = '/' + req.url.split('/').pop();
@@ -52,6 +52,37 @@ try {
   assert.equal(await page.getByRole('button', {name: 'Save key on this device'}).count(), 0);
   assert.equal(await page.evaluate(async () => (await store.read('along-at-owners', groupHex)).revision), revision);
   await page.keyboard.press('Escape'); assert.equal(await page.evaluate(() => backs), 2);
+  await page.evaluate(async () => { window.view = mount(); await view.ready; });
+  await page.getByRole('button', {name: 'Replace AT key', exact: true}).click();
+  await page.getByRole('button', {name: 'Continue to replacement key'}).waitFor();
+  await page.keyboard.press('Escape');
+  await page.evaluate(async () => { window.view = mount(); await view.ready; });
+  await page.getByRole('heading', {name: 'AT key saved on this device'}).waitFor();
+  await page.getByRole('button', {name: 'Replace AT key', exact: true}).click();
+  const proceed = page.getByRole('button', {name: 'Continue to replacement key'});
+  await proceed.waitFor();
+  await page.setViewportSize({width: 320, height: 640});
+  await page.evaluate(() => document.documentElement.style.fontSize = '200%');
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+  assert.deepEqual((await new AxeBuilder({page}).analyze()).violations.map(v => v.id), []);
+  await page.evaluate(() => document.querySelector('.pairing-primary').click());
+  await proceed.waitFor();
+  await page.keyboard.press('Tab'); await page.keyboard.press('Enter');
+  await page.getByRole('heading', {name: 'Add your replacement AT key'}).waitFor();
+  // Leaving after the policy commit must not reactivate the previous key.
+  await page.keyboard.press('Escape');
+  await page.evaluate(async () => { window.view = mount(); await view.ready; });
+  await page.getByRole('heading', {name: 'Add your replacement AT key'}).waitFor();
+  await page.getByLabel('Personal AT API key').fill('synthetic-replacement-key');
+  await page.getByRole('button', {name: 'Save key on this device'}).click();
+  await page.getByRole('heading', {name: 'AT key saved on this device'}).waitFor();
+  assert.equal(await page.evaluate(async () => {
+    const {binding} = await (await import('./local-owner.mjs')).loadLocalATOwner({wasm, store, expectedGroup: group});
+    const policy = await (await import('./policy-store.mjs')).openCredentialPolicyStore({store, ...binding}).read();
+    const key = await (await import('./local-vault.mjs')).openLocalATVault({wasm, store, ...binding}).getKey();
+    return policy.policy.generation === 2n && key === 'synthetic-replacement-key';
+  }), true);
+  await page.keyboard.press('Escape');
   // Replacing a loading screen must not let its late owner restore overwrite the successor.
   await page.evaluate(async () => {
     let release; const wait = new Promise(resolve => { release = resolve; });

@@ -2,7 +2,7 @@
 // application owner first. Saving does not opt into a provider request or peer share.
 const mounted = new WeakMap();
 let serial = 0;
-export function showCredentialSetup(container, {vault, focus = false, onBack = () => {}}) {
+export function showCredentialSetup(container, {vault, focus = false, onBack = () => {}, onReplace}) {
   if (typeof vault?.saveOwnerKey !== 'function' || typeof vault?.inspect !== 'function') throw new Error('AT vault required');
   mounted.get(container)?.();
   const document = container.ownerDocument, lifetime = new AbortController();
@@ -23,7 +23,9 @@ export function showCredentialSetup(container, {vault, focus = false, onBack = (
   status.textContent = 'Checking this device’s live-information settings…';
   const save = element('button', 'Save key on this device'); save.type = 'submit'; save.className = 'pairing-primary';
   const back = element('button', 'Back'); back.type = 'button';
-  form.append(label, input, save); panel.append(heading, intro, disclosure, form, status, back);
+  const replace = element('button', 'Replace AT key'); replace.type = 'button'; replace.hidden = true;
+  replace.addEventListener('click', event => { if (event.isTrusted && !disposed && !busy && !replace.hidden) { dispose(); onReplace(); } });
+  form.append(label, input, save); panel.append(heading, intro, disclosure, form, status, replace, back);
   container.replaceChildren(panel); if (focus) heading.focus();
   const dispose = () => {
     if (disposed) return;
@@ -51,6 +53,7 @@ export function showCredentialSetup(container, {vault, focus = false, onBack = (
       if (disposed) return;
       if (receipt?.status !== 'credential-saved') throw new Error('No saved receipt');
       saved = true; form.hidden = true; heading.textContent = 'AT key saved on this device';
+      replace.hidden = typeof onReplace !== 'function';
       status.textContent = 'The key has not been checked with AT. Return to your stop or journey to choose live information.';
       resolve(receipt);
     } catch {
@@ -70,6 +73,7 @@ export function showCredentialSetup(container, {vault, focus = false, onBack = (
     try { state = await vault.inspect({signal: lifetime.signal}); } catch { state = null; }
     if (disposed) return;
     if (state?.status === 'saved-unverified') {
+      replace.hidden = typeof onReplace !== 'function';
       heading.textContent = 'AT key saved on this device';
       status.textContent = 'The saved key can be opened locally. It has not been checked with AT. Return to your stop or journey to choose live information.';
     } else if (state?.canSave === false && ['missing', 'replacement-needed'].includes(state.status)) {
