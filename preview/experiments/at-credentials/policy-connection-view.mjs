@@ -3,7 +3,8 @@ import {showDeviceTransfer} from '../tg-pairing/transfer-view.mjs';
 import {loadLocalPersona} from '../tg-pairing/local-persona.mjs';
 import {loadATBinding} from './local-owner.mjs';
 import {openATPolicySession} from './policy-session.mjs';
-const profile = 'along-at-reconnect-v1';
+import {exportRemovalSet, receiveRemovalSet} from '../tg-pairing/removal-set.mjs';
+const profile = 'along-at-reconnect-v2';
 const mounted = new WeakMap();
 const unhex = value => Uint8Array.from(value.match(/../g), byte => parseInt(byte, 16));
 
@@ -52,7 +53,7 @@ export function showPolicyConnection(container, {wasm, store, expectedGroup, rol
   };
   const fail = () => {
     if (disposed || failed || handedOff) return;
-    message('Connection unavailable', 'Keep your saved device data and try again with both devices open. Your downloaded journeys are still available.');
+    message('Connection unavailable', 'Check that both devices use the latest preview. Keep your saved device data and try again with both open. Signed group removals may already have been saved. Your downloaded journeys are still available.');
     failed = true; lifetime.abort(); session?.close();
   };
   const transfer = options => {
@@ -85,21 +86,32 @@ export function showPolicyConnection(container, {wasm, store, expectedGroup, rol
         if (session.signal.aborted) throw new Error('Connection ended');
       };
       if (role === 'recipient') {
-        await open();
-        const offer = await session.offer(); current();
-        transfer({title: 'Connect to your AT-key device', outgoing: JSON.stringify({profile, ...saved.binding, member: identity.member, offer}),
-          explanation: 'On the device that shared its AT key, open the existing-device connection screen. Transfer this message and paste its reply here. Messages include connection details that may contain network addresses. Keep both devices open; this exchange lasts one minute.',
-          incomingLabel: 'Connection reply', action: 'Connect devices',
-          onReceive: async text => { await session.accept(JSON.parse(text)); current(); message('Connecting devices', 'Checking the saved identities on both devices…'); void watch(); }});
+        transfer({title: 'Connect to your AT-key device', outgoing: '',
+          explanation: 'On the device that shared its AT key, open the existing-device connection screen. Paste its device message here. Signed group removals are verified and saved before reconnecting; no AT key is included.',
+          incomingLabel: 'AT-key device message', action: 'Review AT-key device', onReceive: async text => {
+            const descriptor = JSON.parse(text);
+            if (!descriptor || Object.keys(descriptor).sort().join(',') !== 'credential,group,owner,profile,removals'
+                || descriptor.profile !== profile || ['group', 'owner', 'credential'].some(key => descriptor[key] !== saved.binding[key])) throw Error('Different AT-key device');
+            await receiveRemovalSet({wasm, store, expectedGroup: group, text: descriptor.removals, signal: lifetime.signal}); current();
+            await open();
+            const offer = await session.offer(); current();
+            const removals = await exportRemovalSet({wasm, store, expectedGroup: group}); current();
+            transfer({title: 'Send your AT connection request', outgoing: JSON.stringify({profile, ...saved.binding, member: identity.member, offer, removals}),
+              explanation: 'Transfer this request to your AT-key device and paste its reply here. It includes signed group removals and connection details that may contain network addresses. Keep both devices open.',
+              incomingLabel: 'Connection reply', action: 'Connect devices',
+              onReceive: async text => { await session.accept(JSON.parse(text)); current(); message('Connecting devices', 'Checking the saved identities on both devices…'); void watch(); }});
+          }});
       } else {
-        transfer({title: 'Connect a device using your AT key', outgoing: '',
-          explanation: 'Paste the connection message from a device already set up to use your AT key. Its saved identity and permissions will be checked; this does not share your key with a new device.',
+        const removals = await exportRemovalSet({wasm, store, expectedGroup: group}); current();
+        transfer({title: 'Connect a device using your AT key', outgoing: JSON.stringify({profile, ...saved.binding, removals}),
+          explanation: 'Transfer this device message to a device already set up to use your AT key, then paste its request here. Messages include signed group removals but no AT key. Its saved identity and permissions will still be checked.',
           incomingLabel: 'Connection request', action: 'Prepare connection reply',
           onReceive: async text => {
             const request = JSON.parse(text);
-            if (!request || Object.keys(request).sort().join(',') !== 'credential,group,member,offer,owner,profile'
+            if (!request || Object.keys(request).sort().join(',') !== 'credential,group,member,offer,owner,profile,removals'
                 || request.profile !== profile || typeof request.member !== 'string' || !/^[0-9a-f]{64}$/.test(request.member)
                 || ['group', 'owner', 'credential'].some(key => request[key] !== saved.binding[key])) throw new Error('Different saved connection');
+            await receiveRemovalSet({wasm, store, expectedGroup: group, text: request.removals, signal: lifetime.signal}); current();
             await open(unhex(request.member));
             const reply = await session.accept(request.offer); current();
             transfer({title: 'Reply to your other device', outgoing: JSON.stringify(reply), receive: false,

@@ -1,9 +1,9 @@
 {
   "profile": "along-preview-qualification-v1",
-  "app_version": "3802",
-  "source_commit": "5134680bcadc9a11b53dc54c1bd106ca5270d194",
-  "recorded_at": "2026-09-23T23:29:12.046848+00:00",
-  "candidate_manifest_sha256": "3a295f8b4616146d062384afd4db4208ae182aba127f6ef7e173e3d62db4e3ef",
+  "app_version": "3803",
+  "source_commit": "8e1008b7a140f63825d5f9854f440d7cfa897bef",
+  "recorded_at": "2026-09-23T23:56:48.534144+00:00",
+  "candidate_manifest_sha256": "0f95403dc417a1b443b9318a0d7c85a70fff2acb1c93682e0e01923fdee1e35c",
   "checks": {
     "journeys": {
       "status": "passed",
@@ -23,13 +23,18 @@
     "upgrade_coexistence": {
       "status": "passed",
       "command": "node experiments/journey-sync/preview-coexistence.test.mjs",
-      "log_sha256": "c7936ebc3def95e3354fbf118f2f2a640c2de0ee633d970872fb4c0c491d1258",
-      "previous_release_manifest_sha256": "8b0a756dd753421eee91b1412f6150e2eb209ac1db36c2cd820bb85cf5e31e32"
+      "log_sha256": "441c76d75b68434631c49930fbb8f3042243dcf7bc343df457ff7f7bb7844fc7",
+      "previous_release_manifest_sha256": "efdddcda6e8324dd872554986ea3efaddf90908d6ecec844e9a6f2f4a88b8616"
     },
     "group_removal": {
       "status": "passed",
       "command": "PREVIEW=1 MAIN_APP_SETUP=1 REMOVE_GROUP_MEMBER=1 node experiments/at-credentials/two-app-integration.test.mjs",
       "log_sha256": "4657b1dff8b4c0899edd26cdbfa55946ac191d958f95cf07f2ebe344c69c351d"
+    },
+    "legacy_enrollment": {
+      "status": "passed",
+      "command": "PREVIEW=1 LEGACY_ENROLLMENT=1 node experiments/journey-sync/app-integration.test.mjs",
+      "log_sha256": "cc12aa3ddc7f86a1df9cd92a142035efbdb1b7a20504f46c37690f838ec81275"
     }
   },
   "limits": [
@@ -38,6 +43,6 @@
     "Physical installation, QR reachability and TalkBack acceptance pending",
     "No full R2 hardware-backed conformance or same-origin script isolation",
     "Wider goal, group lifecycle and automatic reconnection unfinished",
-    "Issued-device directory does not migrate older 3801 enrollments; group removal messages are manually transferred"
+    "Older interrupted enrollments without retained installation receipts may be missing; removal catch-up requires explicit reconnection or manual transfer"
   ]
 }
