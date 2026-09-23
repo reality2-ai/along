@@ -11,6 +11,11 @@ concurrent saves, replay, deletion and restart. It is not yet wired to an
 authenticated peer session or the app's preferences; public sync remains absent.
 Its documented limits include whole-journey conflict resolution and a bounded
 tombstone set without garbage collection.
+The next increment adds independent per-peer application permission, verified
+against actual enrollment evidence, and transaction guards that prevent a merge
+when permission is removed during its commit. These checks use real browser
+storage but harness consent actions. An authenticated journey exchange protocol
+and its public consent interface remain unfinished.
 
 The earlier implementation references below are historical: those projects are
 now archived. The [current runtime investigation](REALITY2_INTEGRATION.md) pins

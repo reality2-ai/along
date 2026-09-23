@@ -59,3 +59,29 @@ deletion/replay, a fresh-document reopen, and cancelled/failed/invalid changes.
 Model checks cover reordered three-replica convergence and privacy projection.
 This does not yet establish authenticated peer delivery, receipt exchange,
 automatic reconciliation, preference migration, public UI or physical-device use.
+
+## Application permission boundary
+
+`permission.mjs` adds per-peer journey-sharing permission, separate from both TG
+enrollment and AT-key access. Granting it requires the selected peer's current
+membership certificate and the exact permission revision reviewed by the caller.
+The write also checks the persona and membership revisions atomically. Permission
+on one device never automatically grants permission on another. A missing or
+unreadable record does not opt in; records are limited to 16 peers.
+
+The permitted-state adapter checks saved consent when exporting a snapshot. An
+incoming merge additionally guards the same consent/persona/membership revisions
+in its storage transaction, so removing permission between review and commit
+prevents that commit. An existing adapter does not retain a permanent permission
+lease. Removing permission does not erase copies already read or revoke membership.
+
+The actual-enrollment fixture in `experiments/at-credentials/peer-delivery.test.mjs`
+runs `permission-check.test.mjs` before creating AT settings. It checks refusal
+without consent, mismatched membership proof, independent directions, stale
+review, authorized merge, and removal during commit with saved journeys retained.
+It uses real WASM identities, membership evidence and IndexedDB, but the permission
+actions are harness calls. There is no consent UI or journey network transfer yet.
+An authenticated session controller must still bind incoming packets to the peer
+selected by this adapter and recheck authority while sending. The runtime limits
+application messages to 2,048 bytes, so complete snapshots also need a bounded
+transfer protocol and receipts after durable commit.

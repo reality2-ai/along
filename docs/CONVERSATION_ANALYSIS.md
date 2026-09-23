@@ -1038,3 +1038,12 @@ behavior, including concurrency and restart. They do not establish peer identity
 consent or delivery. For the course, ask students which claims a storage test can
 support and which require an authenticated two-device experiment. The distinction
 keeps a useful foundation from being presented as a finished synchronization feature.
+
+Journey-sharing permission was then separated from group enrollment and AT-key
+access. Knowing that another device belongs to the group does not itself mean
+the user agreed to send saved addresses there. Tests with actual enrolled
+identities now verify that permission is independent in each direction and that
+removal racing with an incoming save prevents the save. The consent actions are
+still supplied by the harness, so this is authorization-boundary evidence rather
+than a verified consent experience. It extends the privacy theme while preserving
+the distinction between authenticated identity, application permission and delivery.
