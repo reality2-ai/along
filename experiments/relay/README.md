@@ -365,3 +365,23 @@ This supplies the missing certificate-verification primitive. A bounded discover
 service still needs to schedule announcements, dispatch only allowed peers through
 a shared relay socket, observe changed configuration and integrate with Settings.
 No relay is automatically enabled and nothing here has been deployed.
+
+### Shared optional relay service (not mounted)
+
+`sharing-service.mjs` composes saved opt-in configuration, signed discovery and
+protected journey connections over one socket per device. It dispatches at most
+16 already permitted peers, with bounded input/output queues. Announcements run
+while connected; every connection uses fresh authentication. Configuration changes
+stop the service, including pending retries. Permission revision changes replace
+all affected held sessions, and failed peer controllers are removed so later
+verified discovery can retry. Discovery still does not enroll a new device.
+
+`ENROLLED_RELAY_NETWORK=1` additionally runs `service-check.mjs` against the local
+TLS relay using actual enrolled identities. It verifies no socket without opt-in,
+certificate discovery without the harness supplying a peer to the service,
+snapshot convergence, one-sided disconnect with an offline edit, reconnection,
+permission revision/session replacement, and saved disable stopping further
+sharing. The full enrolled browser fixture passes; the 22 relay unit tests pass.
+This is one-host Chromium evidence, not S23 acceptance or external relay
+interoperability. Settings integration, initial-pairing improvements and publication
+remain unfinished. The published Device Preview remains 3805.
