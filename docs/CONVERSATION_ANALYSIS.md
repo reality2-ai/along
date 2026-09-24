@@ -1210,3 +1210,11 @@ rather than stopping at its success screen. Learners should identify which state
 must change, which choices must remain stable, and what evidence would justify
 claiming success. The remaining different-owner and physical-device cases keep
 the boundary between tested behavior and intended behavior explicit.
+
+
+A further integration check separates optional AT state from journey identity.
+An unreadable AT binding had prevented restoration of otherwise valid journey
+sharing. The fix preserves the failed AT record and restores independent journey
+controls. This sharpens the offline-first theme: graceful failure requires testing
+which unrelated tasks remain usable, not merely catching an exception. The
+regression checks both an already-open app and a reopened document.

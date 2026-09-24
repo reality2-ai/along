@@ -81,6 +81,28 @@ try {
     await page.getByRole('button', {name: 'Back to settings', exact: true}).click();
     await page.getByRole('button', {name: 'Device and AT-key setup', exact: true}).click();
     await page.getByRole('status').filter({hasText: 'Your saved AT setup could not be verified'}).waitFor();
+    await page.getByRole('button', {name: 'Back to settings', exact: true}).click();
+    await page.getByRole('button', {name: 'Share saved journeys with my devices', exact: true}).click();
+    await page.getByRole('button', {name: 'Manage journey-sharing devices', exact: true}).click();
+    await expect(page.getByRole('dialog', {name: 'Saved journey sharing'})).toContainText('No other devices have permission here');
+    await page.getByRole('button', {name: 'Back', exact: true}).click();
+    await page.getByRole('button', {name: 'Back to settings', exact: true}).click();
+    await page.getByRole('button', {name: 'Close settings', exact: true}).click();
+    await page.reload();
+    await expect(page.locator('#data-status')).toContainText('offline ready', {timeout: 90000});
+    // Re-enter the unfinished text after the deliberate document reload; the
+    // later assertion checks Settings navigation, not unsaved-form persistence.
+    await page.locator('#destination').fill('10 Victoria Road');
+    await page.locator('#settings-open').click();
+    await page.getByRole('button', {name: 'Share saved journeys with my devices', exact: true}).click();
+    await page.getByRole('button', {name: 'Manage journey-sharing devices', exact: true}).click();
+    await expect(page.getByRole('dialog', {name: 'Saved journey sharing'})).toContainText('No other devices have permission here');
+    await page.getByRole('button', {name: 'Back', exact: true}).click();
+    await page.getByRole('button', {name: 'Back to settings', exact: true}).click();
+    assert.equal(await page.getByRole('button', {name: 'Connect an existing AT-key device', exact: true}).count(), 0);
+    assert.equal(requests.length, 0);
+    await page.getByRole('button', {name: 'Device and AT-key setup', exact: true}).click();
+    await page.getByRole('status').filter({hasText: 'Your saved AT setup could not be verified'}).waitFor();
     assert.equal(await page.getByRole('button', {name: 'Use my own AT key', exact: true}).count(), 0);
     await page.getByText('Connect or recover another device', {exact: true}).click();
     await page.getByRole('button', {name: 'Update group keys on this device', exact: true}).click();
@@ -109,7 +131,7 @@ try {
     });
     await page.getByRole('button', {name: 'Back to settings', exact: true}).click();
     await page.getByRole('button', {name: 'Device and AT-key setup', exact: true}).click();
-    console.log('PASS: unreadable AT binding preserves group-recovery controls without resetting saved authority or offering new AT setup.');
+    console.log('PASS: unreadable AT binding preserves journey-sharing and group-recovery controls before and after reload without resetting saved authority or offering new AT setup.');
     console.log('PASS: actual app Settings reviews and installs group key version one, then opens the device update picker without claiming peer delivery.');
   }
   await page.getByRole('button', {name: 'Use my own AT key', exact: true}).click();

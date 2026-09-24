@@ -1154,3 +1154,23 @@ This review narrows the implementation questions; it is not a completed bootstra
 a platform qualification or a change to the normative standard. Preserve the
 currently tested local-installation and reconnect paths while implementing the
 missing first-boot, recovery and issuer lifecycle.
+
+
+### Independent restoration of optional features
+
+A failed AT-binding verification previously escaped the startup restoration block
+before journey-sharing controls were mounted. Startup now verifies the device
+identity separately and catches AT-binding failures without interpreting them as
+an invalid journey identity. Manual device Settings also reports that verified
+identity when its optional AT binding is unreadable, so stale AT controls can be
+removed while independent journey-sharing controls remain available. No AT binding
+or policy is reset or recreated.
+
+The generated-app `GROUP_KEYS=1` check now injects an unreadable AT binding and
+opens journey-sharing permission management both immediately and after a document
+reload. No AT reconnect/setup or provider request is enabled by the bad record;
+group recovery remains accessible, and the exact corrupt fixture remains saved.
+The test then removes only its injected fixture and continues the encrypted-key,
+provider-mock, bus/ferry and offline checks. This extends local integration evidence,
+not the public preview release. The existing optional-runtime timeout and identity
+verification rules still apply.

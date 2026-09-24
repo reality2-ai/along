@@ -44,11 +44,13 @@ async function start() {
       // First use without a saved identity does not need to compile WASM.
       const wasm = await import('../tg-pairing/hive_wasm.js'); current();
       await wasm.default(); current();
-      const {loadATConnectionBinding} = await import('./local-owner.mjs'); current();
-      const binding = await loadATConnectionBinding({wasm, store, expectedGroup: group, signal: lifetime.signal}); current();
       const {loadLocalPersona} = await import('../tg-pairing/local-persona.mjs'); current();
       const identity = await loadLocalPersona({wasm, store, expectedGroup: group}); current();
       if (!identity) { store.close(); return; }
+      const {loadATConnectionBinding} = await import('./local-owner.mjs'); current();
+      let binding;
+      try { binding = await loadATConnectionBinding({wasm, store, expectedGroup: group, signal: lifetime.signal}); }
+      catch { /* Unreadable optional AT state cannot invalidate verified journey identity. */ }
       current();
       configuredContext = contextKey({group, member: hex(saved.value.record.subject), binding});
       journeySettings = mountAppJourneySettings({wasm, store, expectedGroup: group, member: identity.member});

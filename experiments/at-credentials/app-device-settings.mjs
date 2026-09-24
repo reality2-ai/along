@@ -87,7 +87,7 @@ export function mountAppDeviceSettings({onChanged}) {
           try { binding = await loadATConnectionBinding({wasm, store, expectedGroup: group}); } catch { /* Keep unreadable state. */ }
         }
         if (!active(selected)) return;
-        if (bindingAvailable || binding) onChanged({wasm, store, group, binding, member: identity.member});
+        onChanged({wasm, store, group, binding, member: identity.member});
         status.textContent = !bindingAvailable
           ? 'Your saved AT setup could not be verified. It has been kept. Group connection and recovery options remain available below.'
           : binding?.role === 'recipient'
