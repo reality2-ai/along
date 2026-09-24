@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createCheckpointExchange} from './checkpoint-exchange.mjs';
 import {createJourneyExchange} from './exchange.mjs';
+import {selectNextCheckpoint,checkpointPosition} from './checkpoint-selection.mjs';
 import {emptyState,changeJourney,journeyId,projectJourney} from './state.mjs';
 import {journeySnapshotDigest,journeyCheckpointStatement,encodeJourneyCheckpoint,verifyJourneyCheckpoint} from './generation-checkpoint.mjs';
 const keys=await crypto.subtle.generateKey('Ed25519',true,['sign','verify']);
@@ -75,4 +76,21 @@ test('oversized checkpoint header refuses before retention',async()=>{
     transform:(n,p)=>{if(n===0&&p[0]===17)new DataView(p.buffer).setUint32(17,2*1024*1024+1);return p;}});
   try{await assert.rejects(link.a.sendCheckpoint(payload));assert.equal(retained,false);}
   finally{link.close();}
+});
+test('checkpoint selection checks retained signature, parent and stable revisions without writing',async()=>{
+  const peerState={generation:0,checkpoint:'0'.repeat(64)};
+  const prepared={revision:1,value:{format:1,...payload}};
+  const store={read:async scope=>scope==='along-prepared-journey-checkpoint-v1'?structuredClone(prepared):null};
+  assert.deepEqual(await selectNextCheckpoint({store,group,peerState}),payload);
+  assert.equal(await selectNextCheckpoint({store:{read:async()=>null},group,peerState}),null);
+  const bad=structuredClone(prepared);bad.value.checkpoint[183]^=1;
+  await assert.rejects(selectNextCheckpoint({store:{read:async()=>bad},group,peerState}));
+  let reads=0;
+  await assert.rejects(selectNextCheckpoint({store:{read:async scope=>{
+    if(scope!=='along-prepared-journey-checkpoint-v1')return null;
+    const record=structuredClone(prepared);record.revision=++reads;return record;
+  }},group,peerState}));
+  for(const invalid of [{generation:0,checkpoint:'a'.repeat(64)},
+    {generation:Number.MAX_SAFE_INTEGER,checkpoint:'a'.repeat(64)},
+    {...peerState,extra:true}])assert.throws(()=>checkpointPosition(invalid,group));
 });

@@ -575,3 +575,18 @@ connection, including keyboard consent, narrow-screen/axe checks and refusing a
 legacy descriptor without changing permission. The harness transfers public
 signaling messages. Settings still needs to mount this flow and select the
 appropriate retained checkpoint for the receiving device.
+
+Checkpoint sessions now exchange a bounded position message (generation and
+checkpoint digest) over the authenticated, permitted channel. Authentication
+completion waits for both positions; missing, duplicate or invalid positions
+cannot establish a usable checkpoint connection. This is the peer's advertised
+position, not authority to change the local generation.
+
+`nextCheckpoint()` selects the matching next signed bundle from local prepared
+or installation-recovery records using `checkpoint-selection.mjs`. It verifies
+the signature, snapshot, exact predecessor and stable source revisions; absent
+evidence returns no candidate. The enrolled-browser test selects both successive
+transfers this way, also checking archived evidence, absent successors and wrong
+parents. Node tests cover damaged signatures, changed records and malformed
+positions. Settings still needs to mount the connection and use this selection;
+the public preview remains unchanged.

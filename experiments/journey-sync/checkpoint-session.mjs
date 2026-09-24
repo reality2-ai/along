@@ -5,6 +5,7 @@ import {openPermittedJourneys,readJourneyPermission} from './permission.mjs';
 import {retainPermittedJourneyCheckpoint} from './checkpoint-permission.mjs';
 import {createCheckpointExchange} from './checkpoint-exchange.mjs';
 import {validateGenerationState} from './generation-state.mjs';
+import {checkpointPosition,selectNextCheckpoint} from './checkpoint-selection.mjs';
 const hex=bytes=>Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('');
 const fail=()=>new Error('Checkpoint connection unavailable; retention may already have occurred');
 export async function openCheckpointSession({wasm,store,expectedGroup,peer,certificate,role,signal,timeoutMs,onRetained=()=>{}}) {
@@ -13,10 +14,13 @@ export async function openCheckpointSession({wasm,store,expectedGroup,peer,certi
       ||!(certificate instanceof Uint8Array)||certificate.length!==136)throw fail();
   const group=expectedGroup.slice(),selected=peer.slice(),proof=certificate.slice(),groupId=hex(group);
   const lifetime=new AbortController();
-  let session,exchange,closed=false,queue=Promise.resolve();
+  let session,exchange,closed=false,queue=Promise.resolve(),remotePosition,positionSent,positionTimer;
+  let resolvePosition,rejectPosition;
+  const positionReady=new Promise((resolve,reject)=>{resolvePosition=resolve;rejectPosition=reject;});
+  void positionReady.catch(()=>{});
   const close=()=>{
     if(closed)return;
-    closed=true;lifetime.abort();signal?.removeEventListener('abort',close);exchange?.close();session?.close();
+    closed=true;clearTimeout(positionTimer);rejectPosition(fail());lifetime.abort();signal?.removeEventListener('abort',close);exchange?.close();session?.close();
   };
   const active=()=>{if(closed)throw fail();};
   signal?.addEventListener('abort',close,{once:true});if(signal?.aborted)close();
@@ -39,7 +43,17 @@ export async function openCheckpointSession({wasm,store,expectedGroup,peer,certi
     };
     await current();
     session=await openLocalPersonaSession({...context,role,signal:lifetime.signal,
-      onMessage:async packet=>{await current();await exchange.receive(packet);}});
+      onMessage:async packet=>{
+        await current();
+        if(packet[0]===32){
+          if(remotePosition||packet.length!==41)throw fail();
+          remotePosition=checkpointPosition({generation:Number(new DataView(packet.buffer,packet.byteOffset,packet.byteLength).getBigUint64(1)),
+            checkpoint:hex(packet.slice(9))},groupId);
+          resolvePosition();return;
+        }
+        if(!remotePosition)throw fail();
+        await exchange.receive(packet);
+      }});
     if(closed){session.close();active();}
     session.signal.addEventListener('abort',close,{once:true});if(session.signal.aborted)close();
     active();
@@ -52,15 +66,33 @@ export async function openCheckpointSession({wasm,store,expectedGroup,peer,certi
         try{onRetained(receipt);}catch{}
         return receipt;
       }});
+    const authenticate=async()=>{
+      try{
+        await session.authenticated();await current();
+        if(!positionSent){
+          positionTimer=setTimeout(close,timeoutMs??15000);
+          const packet=new Uint8Array(41);packet[0]=32;new DataView(packet.buffer).setBigUint64(1,BigInt(held.generation));
+          packet.set(Uint8Array.from(held.checkpoint.match(/../g),b=>parseInt(b,16)),9);
+          positionSent=session.send(packet);
+        }
+        await positionSent;await positionReady;clearTimeout(positionTimer);await current();
+      }catch(error){close();throw error;}
+    };
     return Object.freeze({
       peer:hex(selected),
       offer:()=>{active();return session.offer();},
       accept:description=>{active();return session.accept(description);},
-      authenticated:async()=>{try{await session.authenticated();await current();}catch(error){close();throw error;}},
+      authenticated:authenticate,
+      async nextCheckpoint(){
+        await authenticate();
+        const bundle=await selectNextCheckpoint({store,group:groupId,peerState:remotePosition});
+        await current();return bundle;
+      },
+      peerPosition:()=>remotePosition?{...remotePosition}:null,
       sendCheckpoint(bundle){
         const copy=structuredClone(bundle);
         const operation=queue.then(async()=>{
-          await session.authenticated();await current();return exchange.sendCheckpoint(copy);
+          await authenticate();return exchange.sendCheckpoint(copy);
         }).catch(error=>{close();throw error;});
         queue=operation.catch(()=>{});return operation;
       },

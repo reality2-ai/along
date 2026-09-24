@@ -617,6 +617,27 @@ retention after the setup view is disposed. Signaling is still copied by the tes
 harness. This component is not yet mounted by Settings; selecting the correct
 retained checkpoint and connecting the full sender/receiver app flow remain.
 
+## Selecting the receiver's next checkpoint
+
+An authenticated checkpoint session now exchanges a 41-byte position message:
+type 32, an unsigned 64-bit generation and a 32-byte checkpoint digest. The
+generation must fit the validated application range; the zero digest is valid
+only at generation zero. A session accepts one such message, waits for it with
+a timeout, and refuses checkpoint frames before receiving it. Current consent
+and the local generation remain checked throughout.
+
+The advertised position is only a selection hint. `nextCheckpoint()` looks up
+the exact successor in prepared/recovery records and verifies its group signature,
+snapshot and predecessor, then rereads source revisions. It never signs, installs
+or changes preferences. The receiver still independently checks its actual state.
+Missing evidence produces no candidate; contradictory or changed evidence fails.
+
+The enrolled-device browser test now selects and sends both successive checkpoints
+using this exchange. It also checks selection from an installed archive, missing
+successors and wrong parents. Node tests check malformed positions, signature
+damage and changed source revisions. Settings mounting and complete app-based
+catch-up remain unfinished.
+
 ## Required before integration
 
 1. Wire the tested migration and format-2 bridge to explicit reviewed opt-in,

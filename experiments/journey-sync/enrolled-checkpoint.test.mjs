@@ -11,6 +11,7 @@ import {preferenceKey,readEnvelope} from './app-preferences.mjs';
 import {openCheckpointSession} from './checkpoint-session.mjs';
 import {installJourneyCheckpoint} from './checkpoint-installation.mjs';
 import {showCheckpointConnection} from './connection-view.mjs';
+import {selectNextCheckpoint} from './checkpoint-selection.mjs';
 export async function checkEnrolledCheckpoint({wasm,owner,receiver,group}) {
   const hex=bytes=>Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('');
   const groupId=hex(group), check=(value,message)=>{if(!value)throw Error(message);};
@@ -91,7 +92,10 @@ export async function checkEnrolledCheckpoint({wasm,owner,receiver,group}) {
   }catch(error){delivered.forEach(s=>s.close());throw error;}
   finally{views.forEach(v=>v.dispose());panels.forEach(p=>p.remove());}
   try {
-    check((await delivered[0].sendCheckpoint({checkpoint:prepared.checkpoint,snapshot:prepared.snapshot})).status==='peer-retained-checkpoint',
+    const selected=await delivered[0].nextCheckpoint();
+    check(selected&&hex(selected.checkpoint)===hex(prepared.checkpoint),'automatic initial checkpoint selection failed');
+    check(delivered[0].peerPosition().generation===0,'authenticated peer position unavailable');
+    check((await delivered[0].sendCheckpoint(selected)).status==='peer-retained-checkpoint',
       'authenticated retry did not confirm durable retention');
     await grant(false);
     await refuses(delivered[0].sendCheckpoint({checkpoint:prepared.checkpoint,snapshot:prepared.snapshot}));
@@ -108,6 +112,12 @@ export async function checkEnrolledCheckpoint({wasm,owner,receiver,group}) {
     expectedLocalRaw:readEnvelope(adapters[0]).raw,checkpoint:prepared.checkpoint,snapshot:prepared.snapshot,storage:adapters[0]});
   const ownerInstalled=await owner.store.read('along-saved-journeys-v2',groupId);
   const ownerRecovery=await owner.store.read('along-journey-checkpoint-recovery-v1',groupId+':1');
+  const archivedSelection=await selectNextCheckpoint({store:{...owner.store,read:(scope,key)=>
+    scope==='along-prepared-journey-checkpoint-v1'?Promise.resolve(null):owner.store.read(scope,key)},
+    group:groupId,peerState:{generation:0,checkpoint:'0'.repeat(64)}});
+  check(hex(archivedSelection.checkpoint)===hex(prepared.checkpoint),'installed archive was not selectable');
+  check(await selectNextCheckpoint({store:owner.store,group:groupId,
+    peerState:{generation:1,checkpoint:ownerInstalled.value.checkpoint}})===null,'missing successor invented');
   const ownerReview=await createCheckpointReview({current:ownerInstalled.value,recovery:ownerRecovery.value,
     localRaw:readEnvelope(adapters[0]).raw,actor:hex(owner.subject)});
   await applyCheckpointChoices({wasm,store:owner.store,expectedGroup:group,generation:1,reviewId:ownerReview.id,
@@ -116,6 +126,7 @@ export async function checkEnrolledCheckpoint({wasm,owner,receiver,group}) {
   const successor=await nextIssuer.prepareJourneyCheckpoint({expectedRevision:(await owner.store.read('along-saved-journeys-v2',groupId)).revision});
   nextIssuer.close();
   const nextBundle={checkpoint:successor.checkpoint,snapshot:successor.snapshot};
+  await refuses(selectNextCheckpoint({store:owner.store,group:groupId,peerState:{generation:1,checkpoint:'a'.repeat(64)}}));
   await refuses(retainPermittedJourneyCheckpoint({...consent,...nextBundle}));
   check((await receiver.store.read(inboxScope,groupId)).revision===inbox.revision,'skipped predecessor replaced pending checkpoint');
   await refuses(acceptPermittedJourneyCheckpoint({...input,peer:receiver.subject,certificate:receiver.certificate}));
@@ -150,7 +161,11 @@ export async function checkEnrolledCheckpoint({wasm,owner,receiver,group}) {
     read:(scope,key)=>scope==='along-journey-checkpoint-recovery-v1'?Promise.resolve(null):receiver.store.read(scope,key)}}));
   check((await receiver.store.read(inboxScope,groupId)).revision===inbox.revision,'missing archive allowed inbox advance');
   const catchup=await connect();
-  try{check((await catchup[0].sendCheckpoint(nextBundle)).status==='peer-retained-checkpoint','successor retention unconfirmed');}
+  try{
+    const selected=await catchup[0].nextCheckpoint();
+    check(selected&&hex(selected.checkpoint)===hex(successor.checkpoint),'automatic successor selection failed');
+    check((await catchup[0].sendCheckpoint(selected)).status==='peer-retained-checkpoint','successor retention unconfirmed');
+  }
   finally{catchup.forEach(s=>s.close());}
   check((await receiver.store.read(inboxScope,groupId)).value.previous.generation===1,'inbox did not advance in order');
   check((await receiver.store.read('along-journey-checkpoint-recovery-v1',groupId+':1')).revision===recovery.revision,'advancement altered recovery archive');
