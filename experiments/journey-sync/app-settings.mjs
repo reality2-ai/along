@@ -2,6 +2,7 @@ import {showJourneyConnection} from './connection-view.mjs';
 import {showJourneyDevices} from './devices-view.mjs';
 import {openAppJourneyStore} from './app-store.mjs';
 import {enableJourneyTracking, readEnvelope, changedEvent, preferenceKey} from './app-preferences.mjs';
+import {JourneyCapacityError} from './state.mjs';
 
 export function mountAppJourneySettings({wasm, store, expectedGroup, member}) {
   const group = Array.from(expectedGroup, b => b.toString(16).padStart(2, '0')).join('');
@@ -16,6 +17,9 @@ export function mountAppJourneySettings({wasm, store, expectedGroup, member}) {
   let view, session, disposed = false, status, queue = Promise.resolve(), message = '', generation = 0, starting = false, screen = 'home';
   const clear = () => { generation++; starting = false; view?.dispose(); view = undefined; content.replaceChildren(); };
   const report = text => { message = text; if (status?.isConnected) status.textContent = text; };
+  const reportFailure = error => report(error instanceof JourneyCapacityError
+    ? 'Sharing has reached its 256-place limit, including deleted places. Your saved places and queued changes remain here. You can continue planning on this device. Reconnecting or deleting places will not free sharing space.'
+    : 'Sharing is unavailable. Your saved places and pending changes remain on this device. Try connecting again.');
   const reconcile = (send = false) => {
     queue = queue.then(async () => {
       if (disposed || readEnvelope().sync?.group !== group) return;
@@ -25,7 +29,7 @@ export function mountAppJourneySettings({wasm, store, expectedGroup, member}) {
         await session.synchronize();
         report('Your other device confirmed saving this snapshot. Later changes will be sent while both devices stay connected.');
       }
-    }).catch(() => { if (!disposed) report('Sharing is unavailable. Your saved places and pending changes remain on this device. Try connecting again.'); });
+    }).catch(error => { if (!disposed) reportFailure(error); });
     return queue;
   };
   const localChange = event => { if (event.type !== 'storage' || event.key === preferenceKey) void reconcile(true); };
@@ -58,7 +62,7 @@ export function mountAppJourneySettings({wasm, store, expectedGroup, member}) {
           if (session.signal.aborted) { disconnected(); return; }
           message = 'Connected. Sharing saved places and service preferences…'; home(); void reconcile(true);
         }});
-    } catch { if (!disposed && generation === selected) report('Journey sharing could not start. Your saved places have been kept.'); }
+    } catch (error) { if (!disposed && generation === selected) reportFailure(error); }
     finally { if (generation === selected) starting = false; }
   };
   const home = () => {

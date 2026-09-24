@@ -399,6 +399,33 @@ try {
   await candidate.locator('#settings-open').click();
   await expect(candidate.getByRole('button', {name: 'Share saved journeys with my devices', exact: true})).toHaveCount(0);
   assert.equal((await saved(owner)).length, 1);
+  if (process.env.CAPACITY === '1') {
+    await owner.reload();
+    const beforeCapacity = await stored(owner);
+    const queued = await owner.evaluate(async () => {
+      const {readPreferences, writePreferences, readEnvelope} = await import('../experiments/journey-sync/app-preferences.mjs');
+      const data = readPreferences(), sample = data.journeys.find(j => j.saved);
+      // Boundary fixture uses the production save/journal path; no deletion markers are removed.
+      data.journeys = Array.from({length: 257}, (_, n) => ({...sample,
+        to: {...sample.to, id: 'capacity-' + n, name: 'Capacity example ' + n}}));
+      if (!writePreferences(data)) throw Error('Local save was blocked by sharing capacity');
+      return readEnvelope().raw;
+    });
+    await owner.reload(); await share(owner);
+    const full = owner.getByRole('status').filter({hasText: 'Sharing has reached its 256-place limit'});
+    await full.waitFor();
+    await expect(full).toContainText('Reconnecting or deleting places will not free sharing space');
+    await owner.getByRole('button', {name: 'Start journey connection', exact: true}).click();
+    await expect(full).toContainText('Your saved places and queued changes remain here');
+    assert.equal((await preferences(owner)).journeys.length, 257);
+    assert.equal(await owner.evaluate(key => localStorage.getItem(key), namespaces.preferences), queued);
+    const afterCapacity = await stored(owner);
+    assert.deepEqual(afterCapacity.journeys, beforeCapacity.journeys, 'oversized import never partly replaces replicated state');
+    assert.equal(afterCapacity.personaRevision, beforeCapacity.personaRevision);
+    assert.deepEqual((await new AxeBuilder({page: owner}).analyze()).violations.map(v => v.id), []);
+    await closeSharing(owner);
+    console.log('PASS: capacity refusal remains specific after reload/retry, preserves all 257 local saves and exact queued changes, and leaves replicated state and identity unchanged.');
+  }
   assert.equal(providerRequests.length, 0); assert.deepEqual(errors, []);
   console.log('PASS: actual Settings enrollment/connection, saved places and service preferences, local history, current-step preservation, focused shortcut preservation and deferred refresh, service-control refresh without route replacement, narrow/zoom accessibility, offline edits and convergence; permission review/removal, retained copies, issued-device selection and offline group removal/reload. Two browser profiles on one host; manual transfer, not physical reachability or automatic discovery.');
 } finally { await browser?.close(); await new Promise(resolve => server.close(resolve)); }

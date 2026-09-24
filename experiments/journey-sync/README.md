@@ -323,3 +323,20 @@ and [S23/desktop guide](../../docs/PREVIEW_DEVICE_CHECK.md). The
 [HTTPS check](../../docs/evidence/device-preview-3801-public.json) verifies all 242
 payload hashes, identity setup/reload, offline help and new-address bus/ferry routing.
 Physical observations remain pending.
+
+
+### Distinct-place capacity reporting (source, after preview 3804)
+
+Local imports that exceed 256 replicated pairs now produce a distinct capacity
+error. Settings retains it across failed connection attempts and explains that
+reconnecting or deleting a place cannot free the retained deletion records. Local
+saved places, the pending journal and committed replica remain intact. This does
+not reset the sharing dataset, reclaim tombstones or resolve a peer-side merge
+failure; those recovery paths remain unfinished.
+
+`CAPACITY=1 node experiments/journey-sync/app-integration.test.mjs` exercises the
+built app with a 257-place boundary fixture through its production preferences
+writer. It checks reload, the visible capacity message, retry, exact retained
+journal/local saves, unchanged replica and identity, and automated accessibility.
+The fixture creates the large dataset programmatically; it is not 257 manual
+journey searches or a physical-device result.

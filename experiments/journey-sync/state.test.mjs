@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {emptyState, projectJourney, journeyId, changeJourney, mergeStates, savedJourneys, validateState} from './state.mjs';
+import {emptyState, projectJourney, journeyId, changeJourney, mergeStates, savedJourneys, validateState, JourneyCapacityError} from './state.mjs';
 const group = 'a'.repeat(64), alice = '1'.repeat(64), bob = '2'.repeat(64);
 const value = (id = 'destination') => projectJourney({
   from: {id: 'origin', name: 'Origin', lat: -36.8, lon: 174.7, placeType: 'address'},
@@ -59,4 +59,21 @@ test('three replicas converge after independent changes and reordered repeated s
   assert.deepEqual(result, mergeStates(a, mergeStates(c, b)));
   for (let n = 0; n < 3; n++) for (let i = 0; i < 3; i++) states[i] = mergeStates(states[i], states[(i + 1) % 3]);
   for (const state of states) assert.deepEqual(state, result);
+});
+test('capacity distinguishes valid overflow from invalid data and still permits existing-pair edits', () => {
+  let full = emptyState(group);
+  for (let n = 0; n < 256; n++) {
+    const item = value(String(n)); full = changeJourney(full, alice, journeyId(item), item);
+  }
+  const extra = value('extra'), id = journeyId(value('0'));
+  assert.throws(() => changeJourney(full, alice, journeyId(extra), extra), JourneyCapacityError);
+  const peer = changeJourney(emptyState(group), bob, journeyId(extra), extra);
+  assert.throws(() => mergeStates(full, peer), JourneyCapacityError);
+  const removed = changeJourney(full, alice, id, null);
+  assert.equal(savedJourneys(removed).length, 255);
+  assert.throws(() => mergeStates(removed, peer), JourneyCapacityError, 'deletion must retain its slot');
+  assert.equal(savedJourneys(changeJourney(removed, alice, id, value('0'))).length, 256);
+  assert.throws(() => mergeStates(full, {...peer, format: 99}), error => !(error instanceof JourneyCapacityError));
+  assert.throws(() => changeJourney(full, alice, journeyId(extra), value('mismatched')), error => !(error instanceof JourneyCapacityError));
+  assert.equal(savedJourneys(full).length, 256, 'failed operations preserve the input');
 });
