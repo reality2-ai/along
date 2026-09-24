@@ -1393,3 +1393,11 @@ their evidential scope explicit: the migration suite uses the actual writer,
 whereas the generated Settings test creates migration records as fixtures to
 exercise presentation and startup behavior. Neither alone proves the unfinished
 end-to-end migration wizard or peer checkpoint transfer.
+
+The review is now connected to the real Settings writer. Its test deliberately
+changes a local learning setting while a choice screen is open: confirmation must
+fail rather than overwrite the newer setting. Returning to a freshly built review
+then completes recovery while retaining that setting and travel history. Draft
+choices survive leaving only if their review identifier is still current. This
+turns the design principle of user control into an observable behavior under
+concurrency, while keeping fixture installation distinct from actual UI writes.

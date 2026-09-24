@@ -403,14 +403,14 @@ unfinished; no installed preview calls this operation.
 from verified recovery evidence. Each differing save, preference or deletion needs
 an explicit choice. It checks pending/local consistency and simulates capacity
 before proposing new-generation changes; it writes nothing. Run
-`node --test experiments/journey-sync/checkpoint-review.test.mjs`. The future review
+`node --test experiments/journey-sync/checkpoint-review.test.mjs`. The review
 flow and writer must revalidate current evidence rather than trust an old model.
 
 `checkpoint-review-view.mjs` now supplies the one-journey-at-a-time review screen,
 with retained Back choices, explicit final confirmation and cancellable pending
 confirmation. Run `checkpoint-review-view.test.mjs` with `CHROMIUM_PATH` set for
 keyboard, 320px/200% text, axe and failure-state checks. Its writer is a fixture;
-the screen is not yet connected to durable recovery or mounted in the app.
+the separate Settings test below now checks its real writer integration.
 
 `checkpoint-choice-commit.mjs` now revalidates the review against actual local
 identity and retained checkpoint evidence, atomically commits replica changes
@@ -460,3 +460,11 @@ edits but cannot yet open a peer session. The actual migration browser suite
 checks startup diagnosis; `startup-settings.test.mjs` checks generated Settings
 with real identity and explicit migration fixtures. Creating/reviewing migration,
 legacy-edit reconciliation and peer checkpoint delivery remain unfinished.
+
+Settings now opens the local-difference review and confirms through the real
+`applyCheckpointChoices` writer. Leaving/reopening retains choices only for an
+unchanged review identifier. The generated Settings test uses real issuer signing
+and actual UI confirmation over fixture installation records, and checks stale
+confirmation refusal, refreshed review, history/learning preservation and reload.
+The migration/installation wizard and peer delivery are still unfinished; this
+does not replace the separate real installer tests or release qualification.

@@ -160,7 +160,8 @@ local journal/differences, and install a matching new-generation import receipt.
 It must not merely replace the replica and leave an old receipt or relabel an
 old queue. The installer below now handles the durable cutover while preserving localStorage;
 the local-difference review and planner cutover are described below. The
-format-2 bridge is not mounted by the app and its use is not public qualification.
+format-2 bridge is now selected for ready migrated state in experimental Settings;
+its use is not public qualification.
 
 ## Atomic checkpoint installation
 
@@ -215,7 +216,7 @@ the captured decision model. No storage write occurs.
 
 The review identifier binds the captured current state, predecessor, signed
 checkpoint, actor and exact local data. It is not an authorization token. The
-future writer must rederive the review from current guarded records and compare
+guarded writer must rederive the review from current records and compare
 its identifier before accepting choices. A screen or caller holding an older
 model cannot authorize overwriting a newer local edit merely by returning its ID.
 
@@ -243,8 +244,9 @@ refusal, empty comparisons, failed confirmation and completion after leaving.
 The test uses a fixture writer: it proves presentation behavior, not persistent
 recovery or physical screen-reader usability. The first run exposed a test-harness
 issue (axe requires an explicit browser context); the corrected harness passes.
-The screen is not mounted in the installed app. A real guarded writer and composed
-recovery-flow tests are still required before publishing it.
+The screen is not mounted in the published app. The Settings integration below
+now connects it to the real guarded writer; complete migration/installation and
+peer recovery-flow tests remain required before publishing it.
 
 ## Durable recovery decisions
 
@@ -404,6 +406,30 @@ sharing, older-copy edits are explained and Back returns to Settings. The full
 two-profile app sharing integration also passes. The fixture UI test is not proof
 of an end-to-end migration wizard; that flow and authenticated checkpoint delivery
 remain unfinished.
+
+## Settings local-difference review
+
+When startup diagnosis reports `local-review-required`, Settings now makes
+“Review saved-place differences” the primary action. It reloads the current
+replica, retained checkpoint and planner copy to build the review, then connects
+the one-journey screen to `applyCheckpointChoices`. The writer still revalidates
+all evidence at confirmation. Leaving keeps a draft in this Settings session;
+it is reused only when the freshly built review has the same identifier. A newer
+local edit invalidates the old review and draft rather than being overwritten.
+
+The generated Settings test prepares a real issuer-signed checkpoint over its
+fixture generation and seeds the installation records. Through the actual UI it
+leaves/reopens the review, verifies the retained choice, injects a newer learning
+setting, observes refusal of stale confirmation, then completes a fresh review.
+The real guarded writer preserves history, the newer setting and the old storage
+copy, consumes the old journal and reopens the recovered generation. Separate
+screen tests retain their keyboard, reflow, axe, capacity and cancellation checks.
+
+This connects the local review and writer, not the complete migration/installation
+wizard. The generated test's installation records are explicitly fixtures;
+actual installer behavior is covered separately by the migration browser suite.
+Enrolled-device composition, peer checkpoint delivery, later legacy-edit review
+and exact-build qualification are still required before publishing recovery.
 
 ## Required before integration
 

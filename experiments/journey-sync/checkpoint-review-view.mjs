@@ -3,10 +3,14 @@
 import {JourneyCapacityError} from './state.mjs';
 const mounted = new WeakMap();
 let sequence = 0;
-export function showCheckpointReview(container, {review, onConfirm, onBack = () => {}, focus = false, signal}) {
+export function showCheckpointReview(container, {review, onConfirm, onBack = () => {}, initialChoices = [], focus = false, signal}) {
   if (!review || !Array.isArray(review.differences) || typeof review.resolve !== 'function' || typeof onConfirm !== 'function') throw Error('Recovery review unavailable');
   mounted.get(container)?.();
   const document = container.ownerDocument, differences = structuredClone(review.differences), choices = new Map();
+  for (const choice of initialChoices) {
+    if (!differences.some(d => d.id === choice.id) || !['local', 'shared'].includes(choice.use) || choices.has(choice.id)) throw Error('Recovery draft unavailable');
+    choices.set(choice.id, choice.use);
+  }
   const lifetime = new AbortController();
   let index = 0, disposed = false, busy = false, completed = false;
   const node = (tag, text) => { const n = document.createElement(tag); n.textContent = text; return n; };

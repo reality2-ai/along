@@ -3,6 +3,9 @@ import {showJourneyDevices} from './devices-view.mjs';
 import {openAppJourneyStore} from './app-store.mjs';
 import {openGenerationAppJourneyStore} from './generation-app-store.mjs';
 import {readJourneyStartupState} from './startup-state.mjs';
+import {createCheckpointReview} from './checkpoint-review.mjs';
+import {showCheckpointReview} from './checkpoint-review-view.mjs';
+import {applyCheckpointChoices} from './checkpoint-choice-commit.mjs';
 import {enableJourneyTracking, readEnvelope, changedEvent, preferenceKey} from './app-preferences.mjs';
 import {JourneyCapacityError} from './state.mjs';
 
@@ -17,6 +20,7 @@ export function mountAppJourneySettings({wasm, store, expectedGroup, member}) {
   const content = node('section', ''); content.className = 'pairing-comparison'; dialog.append(content); document.body.append(dialog);
   const lifetime = new AbortController();
   let startup = {status: 'checking'};
+  let reviewDraft;
   const startupMessage = () => ({
     checking: 'Checking this device’s saved journeys…',
     'isolation-required': 'Saved-journey migration needs to finish on this device. Your existing copies are kept; sharing is paused.',
@@ -90,6 +94,39 @@ export function mountAppJourneySettings({wasm, store, expectedGroup, member}) {
     } catch (error) { if (!disposed && generation === selected) reportFailure(error); }
     finally { if (generation === selected) starting = false; }
   };
+  const reviewLocalDifferences = async () => {
+    if (starting) return; starting = true;
+    const selected = generation;
+    try {
+      if (await checkStartup() !== 'local-review-required') {
+        if (!disposed && dialog.open && generation === selected) home(); return;
+      }
+      const reviewGeneration = startup.generation;
+      const replica = await store.read('along-saved-journeys-v2', group);
+      const recovery = await store.read('along-journey-checkpoint-recovery-v1', group + ':' + reviewGeneration);
+      const review = await createCheckpointReview({current: replica?.value, recovery: recovery?.value,
+        localRaw: readEnvelope().raw, actor: member});
+      if (disposed || !dialog.open || generation !== selected) return;
+      clear(); screen = 'local-review';
+      view = showCheckpointReview(content, {review, focus: true, signal: lifetime.signal,
+        initialChoices: reviewDraft?.reviewId === review.id ? reviewDraft.choices : [],
+        onConfirm: async ({reviewId, choices, signal}) => {
+          const result = await applyCheckpointChoices({wasm, store, expectedGroup, generation: reviewGeneration,
+            reviewId, choices, signal});
+          reviewDraft = undefined;
+          await checkStartup();
+          return result;
+        },
+        onBack: async retained => {
+          reviewDraft = retained;
+          const active = generation;
+          await checkStartup();
+          if (!disposed && dialog.open && generation === active) home();
+        },
+      });
+    } catch (error) { if (!disposed && dialog.open && generation === selected) reportFailure(error); }
+    finally { if (generation === selected) starting = false; }
+  };
   const home = () => {
     clear(); screen = 'home';
     const heading = node('h2', session ? 'Your journeys are connected' : 'Share your saved journeys'); heading.tabIndex = -1;
@@ -98,10 +135,11 @@ export function mountAppJourneySettings({wasm, store, expectedGroup, member}) {
     if (startup.status !== 'legacy') {
       status.textContent = startupMessage();
       if (startup.legacyChangesPending) content.append(node('p', 'An older app copy has additional edits. They remain separate and still need review.'));
+      if (startup.status === 'local-review-required') action('Review saved-place differences', reviewLocalDifferences).className = 'pairing-primary';
       action('Check saved-journey recovery', async () => {
         const selected = generation; await checkStartup();
         if (!disposed && dialog.open && generation === selected) home();
-      }).className = 'pairing-primary';
+      }).className = startup.status === 'local-review-required' ? '' : 'pairing-primary';
     } else if (session) {
       action('Check for saved journey changes', () => reconcile(true)).className = 'pairing-primary';
       action('Disconnect journey sharing', () => { disconnect(); message = 'Disconnected. Saved changes stay here until you reconnect.'; home(); });
