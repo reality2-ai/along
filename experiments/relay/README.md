@@ -174,3 +174,33 @@ seven consecutive reruns passed, including a five-run batch. The initial stall's
 cause is **not resolved**; retain it as a reliability investigation item. Do not
 interpret reruns as proving physical-device reliability or fixing the user's QR
 timeout. No relay feature or changed preview has been deployed.
+
+### Addressed, bounded peer exchange
+
+`peer-exchange.mjs` now composes a single fresh handshake with addressed relay
+packets and a queue capped at 32 pending messages. Its 137-byte header contains
+`ALNRLY01`, message kind, sender and recipient IDs, and each side's handshake nonce.
+These outer routing fields are untrusted hints; signatures, transcript binding and
+protected sequence checks remain authoritative. Other recipients, senders, protocols
+and session nonces are ignored before cryptographic work. Message size is bounded.
+
+The exchange repeats its contribution and cached confirmation once per second
+until its peer confirms, within the handshake's existing one-minute lifetime.
+Duplicates reuse the exact confirmation bytes without consuming another protected
+sequence. A ready peer responds to repeated matching contributions, allowing its
+other peer to recover a lost confirmation. Application sends still require local
+key confirmation, and the existing acknowledged snapshot protocol must establish
+actual delivery/commit. No persistent delivery guarantee is inferred.
+
+Three controller tests pass: a peer joining after the first contribution was
+lost; a dropped confirmation followed by duplicates and successful encrypted
+application delivery; ignored unrelated traffic and queue overflow closing the
+session. The two-context WSS test now uses this controller and starts exchanges
+when each socket connects, without a harness step transferring contributions.
+It passed with synthetic identities. The initial earlier stall remains unexplained;
+these deterministic recovery cases do not retroactively identify its cause.
+
+One instance covers one peer and one fresh transport session. Its caller must
+replace it on reconnection or a peer restart and must serialize application sends.
+Automatic multi-peer lifecycle, real enrolled WSS composition and Settings remain
+unfinished. The module is still not mounted or deployed.

@@ -13,7 +13,7 @@ const {wsServer}=require('../../node_modules/playwright-core/lib/utilsBundle.js'
 const dir=await mkdtemp(join(tmpdir(),'along-relay-')); let browser,server,wss;
 try {
   execFileSync('openssl',['req','-x509','-newkey','rsa:2048','-nodes','-keyout',join(dir,'key'),'-out',join(dir,'cert'),'-days','1','-subj','/CN=localhost','-addext','subjectAltName=IP:127.0.0.1'],{stdio:'ignore'});
-  const modules=new Map(await Promise.all(['transport.mjs','hello.mjs','handshake.mjs','protection.mjs'].map(async n=>['/'+n,await readFile(new URL(n,import.meta.url))])));
+  const modules=new Map(await Promise.all(['transport.mjs','hello.mjs','handshake.mjs','protection.mjs','peer-exchange.mjs'].map(async n=>['/'+n,await readFile(new URL(n,import.meta.url))])));
   if (process.env.STORED_IDENTITY === '1') {
     for (const name of ['storage.mjs','membership.mjs','certificate.mjs']) modules.set('/tg-pairing/'+name,await readFile(join(process.env.R2_BROWSER_DIR,name)));
     for (const name of ['software-persona.mjs','local-persona.mjs']) modules.set('/tg-pairing/'+name,await readFile(new URL('../tg-pairing/'+name,import.meta.url)));
