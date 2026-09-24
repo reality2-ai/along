@@ -1,0 +1,37 @@
+{
+  "status": "passed",
+  "recorded_at": "2026-09-24T19:51:19.609728+00:00",
+  "source_base": "8d17a18d593fd6232cfd3d40bcf02b04c3d541c2",
+  "source_files": {
+    "experiments/relay/sharing-service.mjs": "acf073138ed89f1626b60b2dc52ca2a6a4fbe84ccab041fe2af2762e7cd8ae44",
+    "experiments/relay/service-check.mjs": "ea69f9f8db662161eb41440325b451baebfb8d1fd4b8297a90c0f96e2bff1da9",
+    "experiments/at-credentials/peer-delivery.test.mjs": "5a706a715b282b1ff65b7bcdd56d4274b347a0c80d4bb834719cc89d9e86e923"
+  },
+  "regression": {
+    "before": "Timed out waiting for membership-change renewal; both peers retained prior sessions.",
+    "after": "Real signed removal for an unrelated subject applied to both enrolled devices; service renews automatically and both replicas converge after another save."
+  },
+  "logs": {
+    "before": {
+      "sha256": "90181be570d88f250255122fce9448bd94a7c20682f4b3341b40d4cd010258b3",
+      "status": "expected-failure"
+    },
+    "after": {
+      "sha256": "0ce3a0b06fa62eb5584716a78c0ebee3f464d52c8383a396b92a4760594108f4",
+      "status": "passed"
+    },
+    "generation": {
+      "sha256": "987b4f715f597a410d4a8e2ec32fca8f3240114d34c3b2752623d99b85f6b0b9",
+      "status": "passed"
+    },
+    "unit": {
+      "sha256": "9936cb4bc7fe741c792076ef8934fc6b536889a801b9e59b418b8b50daaafe83",
+      "status": "passed"
+    }
+  },
+  "actual_relay": {
+    "source_commit": "b4ae9487bb0b721487b4765b210839c1c7055742",
+    "reference": "actual-r2-relay.json"
+  },
+  "scope": "One-host Chromium, actual R2 relay on loopback behind test TLS. Five lifecycle/exchange tests and generation exchange regression also pass. Removal is applied explicitly through the existing verified receiver API; no automated delivery of removals/group keys/checkpoints, no physical acceptance. Source only; published v38 unchanged."
+}

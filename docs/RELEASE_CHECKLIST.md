@@ -30,6 +30,14 @@ explicit flows, not unattended synchronization of all trust-group state.
 Regular Along 38 now includes the live/TG controls and preserves separate preview storage. Historical
 entries below retain their original versions and scopes.
 
+## Source changes awaiting the next app release
+
+The [relay membership-reconnection fix](evidence/relay-membership-reconnect.json)
+renews discovery and sessions after locally received membership changes. The old
+code timed out in its new regression; source tests pass. This is not yet included
+in published v38 and needs a new versioned build and release qualification.
+It does not automatically deliver group updates between devices.
+
 ## Goal audit
 
 The [original goal and completion criteria](PROJECT_GOAL.md) define the scope of

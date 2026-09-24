@@ -449,3 +449,21 @@ stop/remove and recovery pause. Enrollment/signaling still uses the existing
 single-host harness; no external endpoint or physical S23 was tested. Payloads
 remain Along-specific, with no normative R2-WIRE or Notekeeper app compatibility
 claim. No public relay was configured, and released app bytes are unchanged.
+
+
+## Membership-change reconnection (source, not yet deployed)
+
+The service now observes the local membership storage revision as well as the
+journey-sharing permission revision. A change discards queued frames and held
+peer sessions, renews the signed discovery announcement, and opens fresh sessions
+subject to the existing membership and permission checks. This avoids leaving
+still-permitted devices attached to a session whose authority audit is obsolete.
+
+The regression applies a real issuer-signed removal for an unrelated subject to
+two enrolled devices, then waits for automatic session renewal and successful
+sharing of a new saved journey. The old code timed out; the corrected source
+passes against the actual R2 relay on loopback. The test deliberately supplies
+the removal through the existing receiver API. It does not establish automatic
+network delivery of removals, group keys or checkpoints, nor physical-device
+reconnection. Those update transfers remain explicit. See
+[the recorded check](../../docs/evidence/relay-membership-reconnect.json).

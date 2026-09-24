@@ -1,3 +1,5 @@
+import {loadSoftwareIssuer} from '../tg-pairing/software-persona.mjs';
+import {encodeRemoval,receiveRemoval} from '../tg-pairing/removal-message.mjs';
 import {openRelaySharingService} from './sharing-service.mjs';
 import {readRelayConfiguration,saveRelayConfiguration} from './configuration.mjs';
 import {readJourneyPermission,setJourneyPermission} from '../journey-sync/permission.mjs';
@@ -38,6 +40,20 @@ export async function checkRelayService({wasm,owner,receiver,group}) {
     const renewed=await services[0].synchronize();
     check(renewed.length===1&&renewed[0].status==='fulfilled','permission revision restores exactly one peer');
     check(JSON.stringify((await replicas[0].read()).state)===JSON.stringify((await replicas[1].read()).state),'renewed permission shares new snapshot');
+    // An explicitly received, valid removal changes membership even when this
+    // connected pair remains permitted. Resume using freshly audited sessions.
+    const membershipReceipts=states.map(s=>s.filter(v=>v==='peer-saved-snapshot').length);
+    const issuer=await loadSoftwareIssuer({wasm,store:owner.store,expectedGroup:group});
+    let removal;
+    try{removal=encodeRemoval(group,await issuer.issueRevocation({subject:new Uint8Array(32).fill(77),sequence:1n,reason:0}));}
+    finally{issuer.close();}
+    for(const device of devices)await receiveRemoval({wasm,store:device.store,expectedGroup:group,text:removal});
+    await wait(()=>states.every(s=>s.includes('membership-changed')));
+    await wait(()=>states.every((s,i)=>s.filter(v=>v==='peer-saved-snapshot').length>membershipReceipts[i]));
+    await replicas[0].save(projectJourney({from:point('relay-service-home'),to:point('relay-service-membership-renewed')}));
+    const refreshed=await services[0].synchronize();
+    check(refreshed.length===1&&refreshed[0].status==='fulfilled','membership revision restores exactly one peer');
+    check(JSON.stringify((await replicas[0].read()).state)===JSON.stringify((await replicas[1].read()).state),'membership refresh shares new snapshot');
     const before=(await replicas[1].read()).revision;
     await saveRelayConfiguration({...options[0],expectedRevision:(await readRelayConfiguration(options[0])).revision,url,enabled:false});
     await wait(()=>services[0].signal.aborted);check(states[0].at(-1)==='stopped','saved disable stops service');
