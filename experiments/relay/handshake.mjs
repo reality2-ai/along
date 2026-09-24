@@ -29,7 +29,16 @@ export async function createRelayHandshake({role,group,epoch,local,peer,sign,che
     try{await current();if(phase!==next)throw Error('Unexpected relay handshake step');return await operation();}
     catch(error){close();throw error;}finally{busy=false;}
   };
+  const inspect=async value=>{
+    const packet=fixed(value,129)?value.slice():null;
+    await current();
+    if(!packet||packet[0] !== (role==='offer'?2:1))throw Error('Invalid relay contribution');
+    const key=await crypto.subtle.importKey('raw',other,'Ed25519',false,['verify']);
+    if(!await crypto.subtle.verify('Ed25519',key,packet.subarray(65),concat(context,packet.subarray(0,65))))throw Error('Relay peer signature refused');
+    await current();return packet.slice(1,33);
+  };
   return Object.freeze({
+    inspect,
     contribution:()=>run('new',async()=>{
       const signature=await sign(concat(context,own));await current();
       if(!fixed(signature,64))throw Error('Relay handshake signature unavailable');

@@ -3,6 +3,12 @@
 const magic=new TextEncoder().encode('ALNRLY01'),HEADER=137,MAX=2149;
 const fixed=(b,n)=>b instanceof Uint8Array&&b.length===n;
 const same=(a,b)=>a.length===b.length&&a.every((v,i)=>v===b[i]);
+export function readRelayAddressedPacket(value,local,peer) {
+  if(!(value instanceof Uint8Array)||value.length<HEADER+1||value.length>HEADER+MAX
+      ||!same(value.subarray(0,8),magic)||![1,2,3].includes(value[8])
+      ||!same(value.subarray(9,41),peer)||!same(value.subarray(41,73),local))return null;
+  const copy=value.slice();return {bytes:copy,kind:copy[8],nonce:copy.slice(73,105),target:copy.slice(105,137),payload:copy.slice(HEADER)};
+}
 export async function createRelayPeerExchange({handshake,local,peer,send,onMessage,onReady=()=>{},timers=globalThis}) {
   if(!fixed(local,32)||!fixed(peer,32)||same(local,peer)||typeof send!=='function'||typeof onMessage!=='function')throw Error('Relay exchange unavailable');
   const me=local.slice(),other=peer.slice();

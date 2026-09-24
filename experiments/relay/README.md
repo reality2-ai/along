@@ -204,3 +204,32 @@ One instance covers one peer and one fresh transport session. Its caller must
 replace it on reconnection or a peer restart and must serialize application sends.
 Automatic multi-peer lifecycle, real enrolled WSS composition and Settings remain
 unfinished. The module is still not mounted or deployed.
+
+### Single-peer reconnection lifecycle
+
+`peer-lifecycle.mjs` replaces its encrypted exchange on a new transport connection.
+It invokes a supplied handshake factory each time; application wiring must supply
+`openLocalRelayHandshake` so real membership and permission are reread. Socket
+loss aborts the old instance. A peer's different contribution can replace the
+current session only after its device signature/context and authority checks pass.
+Known earlier nonces are ignored; up to 64 are retained in memory before further
+churn refuses. Restarting this controller does not provide durable replay history:
+fresh transcript/key confirmation remains the acceptance boundary after restart.
+Both lifecycle and exchange queues are bounded. This is one selected peer, not
+multi-peer discovery or persisted configuration.
+
+The WSS browser fixture now composes the lifecycle, closes just one device's
+socket at the server, and verifies both devices establish a second fresh session
+and deliver another encrypted message without manual signaling. It also injects
+an altered unsigned restart contribution and a previously seen old contribution,
+then verifies traffic continues. A rejected authority callback during sending
+aborts the session and changes status to `peer-unavailable`. These callbacks and
+identities are still synthetic in the network fixture; actual enrolled permission
+checks remain separately covered by `ENROLLED_RELAY=1`.
+
+Two lifecycle unit tests cover disconnect while identity restoration is pending
+(no late send/session leak) and failed restoration (no uncontrolled retry after
+permission refusal). Handshake tests remain passing. This development is not yet
+wired to Settings, saved-journey snapshots or a user-selected actual relay. The
+previous unexplained first-run stall remains recorded, despite these new passing
+reconnection and fault-injection cases.

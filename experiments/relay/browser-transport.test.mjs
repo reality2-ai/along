@@ -13,7 +13,7 @@ const {wsServer}=require('../../node_modules/playwright-core/lib/utilsBundle.js'
 const dir=await mkdtemp(join(tmpdir(),'along-relay-')); let browser,server,wss;
 try {
   execFileSync('openssl',['req','-x509','-newkey','rsa:2048','-nodes','-keyout',join(dir,'key'),'-out',join(dir,'cert'),'-days','1','-subj','/CN=localhost','-addext','subjectAltName=IP:127.0.0.1'],{stdio:'ignore'});
-  const modules=new Map(await Promise.all(['transport.mjs','hello.mjs','handshake.mjs','protection.mjs','peer-exchange.mjs'].map(async n=>['/'+n,await readFile(new URL(n,import.meta.url))])));
+  const modules=new Map(await Promise.all(['transport.mjs','hello.mjs','handshake.mjs','protection.mjs','peer-exchange.mjs','peer-lifecycle.mjs'].map(async n=>['/'+n,await readFile(new URL(n,import.meta.url))])));
   if (process.env.STORED_IDENTITY === '1') {
     for (const name of ['storage.mjs','membership.mjs','certificate.mjs']) modules.set('/tg-pairing/'+name,await readFile(join(process.env.R2_BROWSER_DIR,name)));
     for (const name of ['software-persona.mjs','local-persona.mjs']) modules.set('/tg-pairing/'+name,await readFile(new URL('../tg-pairing/'+name,import.meta.url)));
@@ -34,7 +34,7 @@ try {
           assert.ok(Math.abs(h.timestamp-Math.floor(Date.now()/1000))<60);
           const key=createPublicKey({format:'jwk',key:{kty:'OKP',crv:'Ed25519',x:Buffer.from(h.device_id,'hex').toString('base64url')}});
           assert.ok(verify(null,Buffer.from(`${h.trust_group}:${h.device_id}:${h.timestamp}`),key,Buffer.from(h.signature,'hex')));
-          hello=h;socket.routingGroup=h.trust_group;authenticated++;socket.send(JSON.stringify({type:'welcome',version:1,peers:1,buffer_oldest:0}));
+          hello=h;socket.routingGroup=h.trust_group;socket.routingMember=h.device_id;authenticated++;socket.send(JSON.stringify({type:'welcome',version:1,peers:1,buffer_oldest:0}));
         }catch{socket.close(4401,'Invalid greeting');} return;
       }
       if(binary){
@@ -78,7 +78,7 @@ try {
     assert.equal(restored,first);
     console.log('PASS: real IndexedDB identity signs WSS greetings and survives reload; identity revision races, cancellation and signed local revocation refuse.');
   }
-  if(process.env.PEER_HANDSHAKE==='1'){server.forwardPeers=true;await (await import('./peer-network-check.mjs')).checkPeerNetwork({browser,url:`https://127.0.0.1:${server.address().port}/`});}
+  if(process.env.PEER_HANDSHAKE==='1'){server.forwardPeers=true;await (await import('./peer-network-check.mjs')).checkPeerNetwork({browser,dropPeer:member=>{for(const socket of wss.clients)if(socket.routingMember===member)socket.close(1012,'Test peer reconnect');},url:`https://127.0.0.1:${server.address().port}/`});}
   console.log('PASS: Chromium WSS greeting independently verified; binary echo and fresh authenticated reconnect; explicit disconnect. Synthetic key/payload, not peer authorization or encrypted journey sync.');
 }finally{
   await browser?.close();for(const client of wss?.clients||[])client.terminate();
