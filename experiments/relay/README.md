@@ -233,3 +233,32 @@ permission refusal). Handshake tests remain passing. This development is not yet
 wired to Settings, saved-journey snapshots or a user-selected actual relay. The
 previous unexplained first-run stall remains recorded, despite these new passing
 reconnection and fault-injection cases.
+
+### Saved-journey connection composition
+
+`journey-connection.mjs` now combines relay transport/lifecycle with installed
+identity, explicit peer permission, and the existing bounded snapshot/commit-receipt
+exchange. Each new session reloads the authorized snapshot adapter and initiates
+synchronization. Send operations are serialized and capped; overlapping refresh
+requests schedule another latest snapshot rather than silently losing an edit.
+A received commit notifies the enclosing app; it does not itself reconcile planner
+preferences, navigate the UI or transfer local learning history.
+
+`ENROLLED_RELAY=1` now checks this composition with the actual enrolled identities
+and IndexedDB replicas using a controlled relay transport. Both replicas converge,
+a local edit made while one transport is disconnected arrives after fresh key
+agreement on reconnect, and permission removal refuses another synchronization.
+This exposed and fixed a teardown bug: an old exchange's expected session abort
+was wrongly disconnecting the newly opening lifecycle. The passing rerun covers
+that failure. Actual WSS and enrolled-state checks are still separate fixtures.
+The generation-aware codec/adapter path is present but not yet covered by this
+relay composition test; checkpoint catch-up is not automatic here.
+
+Peer exchange now retains at most 32 encrypted application frames arriving while
+local key confirmation is pending, then processes them after confirmation. This
+prevents a lost confirmation from making the first auto-sync chunk disappear.
+The dropped-confirmation test verifies no plaintext is delivered before confirmation,
+then the buffered and later messages arrive in order without resetting sequence.
+These source changes remain unmounted and undeployed. Next integration requirements
+include generation-aware receipt checks, actual enrolled WSS flow, chosen-relay
+Settings/persistence and planner reconciliation after incoming changes.

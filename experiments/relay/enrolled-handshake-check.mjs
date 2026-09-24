@@ -32,5 +32,31 @@ export async function checkEnrolledRelayHandshake({wasm,owner,receiver,group}) {
   }finally{stale.close();}
   const wrong=receiver.certificate.slice();wrong[0]^=1;
   check(await denied(()=>openLocalRelayHandshake({...options[0],certificate:wrong})),'invalid peer certificate refused');
+  const {openRelayJourneyConnection}=await import('./journey-connection.mjs');
+  const {openJourneyStore}=await import('../journey-sync/store.mjs');
+  const {projectJourney}=await import('../journey-sync/state.mjs');
+  const hex=b=>Array.from(b,v=>v.toString(16).padStart(2,'0')).join('');
+  const replicas=[owner,receiver].map(device=>openJourneyStore({store:device.store,group:hex(group),actor:hex(device.subject)}));
+  await replicas[0].save(projectJourney({from:{id:'relay-from',name:'Relay origin',lat:-36,lon:174},to:{id:'relay-to',name:'Relay destination',lat:-37,lon:175},savedRoutes:[{mode:'bus',route:'70'}]}));
+  const transports=[],statuses=[[],[]],connections=[];
+  const factory=i=>callbacks=>{
+    let active=false;
+    const transport={callbacks,get active(){return active;},start(){active=true;callbacks.onStatus('connected');},disconnect(){active=false;callbacks.onStatus('disconnected');},
+      send(packet){if(!active)throw Error('Test relay disconnected');const copy=packet.slice();queueMicrotask(()=>{if(transports[1-i]?.active)transports[1-i].callbacks.onFrame(copy);});}};
+    transports[i]=transport;return transport;
+  };
+  const wait=async predicate=>{for(let n=0;n<2000;n++){if(await predicate())return;await new Promise(r=>setTimeout(r,10));}throw Error('Relay journey fixture timed out: '+JSON.stringify(statuses));};
+  try{
+    for(let i=0;i<2;i++)connections[i]=await openRelayJourneyConnection({...options[i],url:'wss://unused.example/r2',transportFactory:factory(i),onStatus:s=>statuses[i].push(s)});
+    await wait(()=>statuses.every(list=>list.includes('peer-saved-snapshot')));
+    check(JSON.stringify((await replicas[0].read()).state)===JSON.stringify((await replicas[1].read()).state),'relay snapshot receipt follows convergence');
+    transports[0].disconnect();
+    await replicas[0].save(projectJourney({from:{id:'offline-from',name:'Offline origin',lat:-36,lon:174},to:{id:'offline-to',name:'Offline destination',lat:-37,lon:175},savedRoutes:[]}));
+    transports[0].start();
+    await wait(()=>statuses.every(list=>list.filter(s=>s==='peer-saved-snapshot').length>=2));
+    check(JSON.stringify((await replicas[0].read()).state)===JSON.stringify((await replicas[1].read()).state),'reconnection shares offline edit after fresh handshake');
+    await allow(0,false);
+    check(await denied(()=>connections[0].synchronize()),'removed consent stops replica send');
+  }finally{connections.forEach(c=>c.close());}
   await allow(0,false);await allow(1,false);
 }

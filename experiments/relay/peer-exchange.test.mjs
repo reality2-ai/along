@@ -39,9 +39,11 @@ test('lost confirmation is recovered without resetting encrypted sequence',async
     for(let i=0;i<2;i++)for(const packet of f.packets[i].splice(0))f.peers[1-i].receive(packet);
     for(let turn=0;turn<100&&!f.packets.every(list=>list.some(p=>p[8]===2));turn++)await new Promise(r=>setTimeout(r,2));
     const lost=f.packets[0].splice(0);assert.ok(lost.some(p=>p[8]===2));
-    await f.pump();f.tick();await f.pump();await Promise.all(f.peers.map(p=>p.ready));
+    await f.pump();await f.peers[0].ready;
+    await f.peers[0].send(new Uint8Array([8]));await f.pump();assert.deepEqual(f.received[1],[]);
+    f.tick();await f.pump();await Promise.all(f.peers.map(p=>p.ready));
     for(const packet of lost)f.peers[1].receive(packet);await f.pump();
     assert.equal(f.peers[1].signal.aborted,false);
-    await f.peers[0].send(new Uint8Array([9]));await f.pump();assert.deepEqual(f.received[1],[[9]]);
+    await f.peers[0].send(new Uint8Array([9]));await f.pump();assert.deepEqual(f.received[1],[[8],[9]]);
   }finally{f.peers.forEach(p=>p.close());}
 });

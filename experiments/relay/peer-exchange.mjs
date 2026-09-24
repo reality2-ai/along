@@ -12,9 +12,9 @@ export function readRelayAddressedPacket(value,local,peer) {
 export async function createRelayPeerExchange({handshake,local,peer,send,onMessage,onReady=()=>{},timers=globalThis}) {
   if(!fixed(local,32)||!fixed(peer,32)||same(local,peer)||typeof send!=='function'||typeof onMessage!=='function')throw Error('Relay exchange unavailable');
   const me=local.slice(),other=peer.slice();
-  let closed=false,started=false,channel,remoteContribution,remoteNonce,confirmation,peerConfirmation,retry,pending=0,queue=Promise.resolve();
+  let closed=false,started=false,channel,remoteContribution,remoteNonce,confirmation,peerConfirmation,retry,pending=0,queue=Promise.resolve(),early=[];
   let resolve,reject;const ready=new Promise((yes,no)=>{resolve=yes;reject=no;});void ready.catch(()=>{});
-  const close=()=>{if(closed)return;closed=true;timers.clearTimeout(retry);handshake.signal.removeEventListener('abort',close);handshake.close();reject(Error('Relay exchange ended'));};
+  const close=()=>{if(closed)return;closed=true;for(const bytes of early)bytes.fill(0);early=[];timers.clearTimeout(retry);handshake.signal.removeEventListener('abort',close);handshake.close();reject(Error('Relay exchange ended'));};
   handshake.signal.addEventListener('abort',close,{once:true});
   let contribution;
   try{contribution=await handshake.contribution();if(handshake.signal.aborted)throw Error('Relay handshake ended');}
@@ -30,6 +30,7 @@ export async function createRelayPeerExchange({handshake,local,peer,send,onMessa
     if(closed||channel)return;
     try{announce();retry=timers.setTimeout(repeat,1000);}catch{close();}
   };
+  const deliver=async payload=>{const plaintext=await channel.open(payload);try{if(!closed)await onMessage(plaintext,handshake.signal);}finally{plaintext.fill(0);}};
   const process=async bytes=>{
     if(closed)return;
     const kind=bytes[8],senderNonce=bytes.subarray(73,105),targetNonce=bytes.subarray(105,137),payload=bytes.subarray(HEADER);
@@ -51,9 +52,10 @@ export async function createRelayPeerExchange({handshake,local,peer,send,onMessa
         if(peerConfirmation){if(!same(payload,peerConfirmation))throw Error('Conflicting relay confirmation');return;}
         channel=await handshake.confirm(payload);if(closed)return;
         peerConfirmation=payload.slice();timers.clearTimeout(retry);resolve();onReady();
-      }else if(kind===3&&channel){
-        const plaintext=await channel.open(payload);
-        try{if(!closed)await onMessage(plaintext,handshake.signal);}finally{plaintext.fill(0);}
+        for(const buffered of early){try{await deliver(buffered);}finally{buffered.fill(0);}}early=[];
+      }else if(kind===3){
+        if(channel)await deliver(payload);
+        else{if(early.length>=32)throw Error('Too many early relay messages');early.push(payload.slice());}
       }
     }
   };
