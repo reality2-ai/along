@@ -131,7 +131,55 @@ try {
   await page.reload(); await open();
   await expect(page.getByText('Connections for this storage version are not enabled yet.',{exact:false})).toBeVisible();
   await expect(page.getByRole('button',{name:'Review saved-place differences',exact:true})).toHaveCount(0);
+  // Stage a genuinely signed next checkpoint as an inbox fixture. Transport is
+  // independently exercised with enrolled peers; this checks the receiving UI.
+  await page.evaluate(async group=>{
+    const wasm=await import('/experiments/tg-pairing/hive_wasm.js');await wasm.default();
+    const store=await(await import('/experiments/tg-pairing/storage.mjs')).openBrowserStorage('along-pairing-lab-v1');
+    const expectedGroup=Uint8Array.from(group.match(/../g),b=>parseInt(b,16));
+    const issuer=await(await import('/experiments/tg-pairing/software-persona.mjs')).loadSoftwareIssuer({wasm,store,expectedGroup});
+    try{
+      const current=await store.read('along-saved-journeys-v2',group);
+      const prepared=await issuer.prepareJourneyCheckpoint({expectedRevision:current.revision});
+      await store.compareAndSwapMany([{scope:'along-journey-checkpoint-inbox-v1',key:group,expectedRevision:0,
+        value:{format:1,previous:current.value,checkpoint:prepared.checkpoint,snapshot:prepared.snapshot}}]);
+    }finally{issuer.close();store.close();}
+  },input.group);
+  await page.getByRole('button',{name:'Check saved-journey recovery',exact:true}).click();
+  await page.setViewportSize({width:320,height:640});
+  await page.emulateMedia({reducedMotion:'reduce'});
+  await page.getByRole('button',{name:'Review received saved places',exact:true}).click();
+  await expect(page.getByRole('heading',{name:'Review received saved places',exact:true})).toBeFocused();
+  await page.getByRole('button',{name:'Back',exact:true}).click();
+  assert.equal(await page.evaluate(async()=>{
+    const prefs=await import('/experiments/journey-sync/app-preferences.mjs');return prefs.readEnvelope().sync.version.generation;
+  }),1);
+  await page.getByRole('button',{name:'Review received saved places',exact:true}).click();
+  await expect(page.getByRole('heading',{name:'Review received saved places',exact:true})).toBeFocused();
+  await page.evaluate(async group=>{
+    const store=await(await import('/experiments/tg-pairing/storage.mjs')).openBrowserStorage('along-pairing-lab-v1');
+    try{
+      const inbox=await store.read('along-journey-checkpoint-inbox-v1',group);
+      await store.compareAndSwapMany([{scope:'along-journey-checkpoint-inbox-v1',key:group,
+        expectedRevision:inbox.revision,value:inbox.value}]);
+    }finally{store.close();}
+  },input.group);
+  await page.getByRole('button',{name:'Continue to compare my places',exact:true}).click();
+  await expect(page.getByText('This update could not be confirmed.',{exact:false})).toBeVisible();
+  await page.getByRole('button',{name:'Back',exact:true}).click();
+  await page.getByRole('button',{name:'Review received saved places',exact:true}).click();
+  await page.getByRole('button',{name:'Continue to compare my places',exact:true}).focus();
+  await page.keyboard.press('Enter');
+  await page.getByRole('button',{name:'Apply choices on this device',exact:true}).click();
+  await expect(page.getByRole('heading',{name:'Saved-place choices applied here',exact:true})).toBeFocused();
+  await page.reload();await open();
+  await expect(page.getByRole('button',{name:'Review received saved places',exact:true})).toHaveCount(0);
+  assert.deepEqual(await page.evaluate(async()=>{
+    const prefs=await import('/experiments/journey-sync/app-preferences.mjs'),current=prefs.readEnvelope();
+    return {generation:current.sync.version.generation,route:current.data.journeys[0].savedRoutes[0].route,count:current.data.journeys[0].count};
+  }),{generation:2,route:'75',count:7});
   assert.deepEqual(errors,[]);
+  console.log('PASS: received-checkpoint Settings entry, narrow-screen keyboard confirmation, Back preservation, stale inbox refusal, guarded installation, local review and fresh-page restoration. Inbox population is a signed fixture; peer transport is checked separately.');
   console.log('PASS: generated Settings/bootstrap with actual identity and fixture migration records pauses legacy connections for incomplete/recovered generations, reports later old-tab edits, detects a removed isolated profile and returns to Settings without page errors. Actual migration writer is tested separately.');
   console.log('PASS: Settings opens a real signed-checkpoint review, retains draft choices after leaving, applies them through the guarded writer, preserves history/legacy copy and reopens the recovered generation. Initial generation/planner data are fixtures; issuer signing, checkpoint installation and review application use real Settings operations.');
 } finally {await browser?.close();await new Promise(resolve=>server.close(resolve));}

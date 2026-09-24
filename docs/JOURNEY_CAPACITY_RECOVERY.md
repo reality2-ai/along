@@ -584,6 +584,24 @@ This proves successive checkpoint handling with harness signaling, not automatic
 catch-up discovery, receiving UI or physical-device acceptance. Long-term recovery
 archive bounds/pruning remain unresolved.
 
+## Received checkpoint review in Settings
+
+For a ready generation, Settings reads and verifies the inbox before presenting
+**Review received saved places** as the primary recovery action. It shows received
+place and service details on demand. Back leaves the inbox, replica and planner
+unchanged. Continuing uses `installReceivedCheckpoint`, which binds the action to
+the reviewed inbox and replica revisions plus exact local preferences, and adds
+the inbox revision to the install transaction guards. It then opens the existing
+local-difference review; receipt alone never invokes installation.
+
+The generated-app test verifies Back, a changed inbox while review is open,
+keyboard confirmation at 320px with reduced motion, actual installation and local
+review, preserved route preference/history and fresh-page restoration without a
+repeat prompt. The signed inbox is populated by a fixture; the separate enrolled
+test verifies real wire delivery. These are not yet one Settings-to-Settings
+connection flow. Local review works offline over retained signed data, while new
+transfers continue to require peer authentication and current sharing consent.
+
 ## Required before integration
 
 1. Wire the tested migration and format-2 bridge to explicit reviewed opt-in,

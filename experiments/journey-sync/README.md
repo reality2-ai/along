@@ -548,3 +548,19 @@ after both recoveries and in a fresh page, and verifies the second retained
 checkpoint signature there. This uses harness signaling and adapter-driven review,
 not the receiving app UI or automatic missing-checkpoint discovery. Recovery archive
 pruning and bounded long-term archive growth remain unfinished.
+
+Experimental Settings now offers **Review received saved places** when a verified
+inbox checkpoint is the next local generation. The screen shows a count and an
+expandable places/service list, keeps Back non-mutating, and continues into the
+existing local-difference review. `received-checkpoint.mjs` binds confirmation to
+the reviewed inbox revision, replica revision and local preferences; the inbox
+revision is also a transaction guard on installation. Installed inbox entries do
+not keep prompting. Unreadable entries remain stored and are reported separately.
+
+This is an explicit local review of already-received signed data, available
+offline; removing a peer's sharing permission does not erase earlier local copies.
+Receiving new bytes still requires the separate authenticated consent checks.
+The generated Settings test checks the new entry, Back, changed-inbox refusal,
+keyboard confirmation at 320px with reduced motion, real installation/review and
+fresh-page restoration. Its inbox is a signed fixture. A complete Settings-based
+sender/receiver connection and automatic catch-up are still unfinished.

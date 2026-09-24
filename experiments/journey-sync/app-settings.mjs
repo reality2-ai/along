@@ -11,6 +11,7 @@ import {loadSoftwareIssuer} from '../tg-pairing/software-persona.mjs';
 import {checkpointSnapshot} from './generation-state.mjs';
 import {verifyJourneyCheckpoint} from './generation-checkpoint.mjs';
 import {installJourneyCheckpoint} from './checkpoint-installation.mjs';
+import {readReceivedCheckpoint,installReceivedCheckpoint} from './received-checkpoint.mjs';
 import {enableJourneyTracking, readEnvelope, changedEvent, preferenceKey} from './app-preferences.mjs';
 import {JourneyCapacityError} from './state.mjs';
 
@@ -26,6 +27,7 @@ export function mountAppJourneySettings({wasm, store, expectedGroup, member}) {
   const lifetime = new AbortController();
   let startup = {status: 'checking'};
   let reviewDraft;
+  let receivedCheckpoint,receivedError=false;
   let capacityReached = false;
   const startupMessage = () => ({
     checking: 'Checking this device’s saved journeys…',
@@ -36,6 +38,11 @@ export function mountAppJourneySettings({wasm, store, expectedGroup, member}) {
   })[startup.status];
   const checkStartup = async () => {
     startup = await readJourneyStartupState({wasm, store, expectedGroup, signal: lifetime.signal});
+    receivedCheckpoint=undefined;receivedError=false;
+    if(startup.status==='generation-ready'){
+      try{receivedCheckpoint=await readReceivedCheckpoint({store,expectedGroup});}
+      catch{receivedError=true;}
+    }
     if (startup.status !== 'legacy') { disconnect(); report(startupMessage()); }
     return startup.status;
   };
@@ -218,6 +225,36 @@ export function mountAppJourneySettings({wasm, store, expectedGroup, member}) {
     }catch(error){if(!disposed&&generation===selected)reportFailure(error);}
     finally{if(generation===selected)starting=false;}
   };
+  const reviewReceived = async () => {
+    if(starting)return;starting=true;
+    const selected=generation;
+    try{
+      if(await checkStartup()!=='generation-ready'||!receivedCheckpoint)throw Error('No pending checkpoint');
+      const pending=structuredClone(receivedCheckpoint),expectedLocalRaw=readEnvelope().raw;
+      if(disposed||!dialog.open||generation!==selected)return;
+      clear();screen='received-checkpoint';
+      const heading=node('h2','Review received saved places');heading.tabIndex=-1;
+      content.append(heading,node('p',`${pending.snapshot.journeys.length} shared saved places are ready to review. The group signature has been checked.`),
+        node('p','Continue to compare these with your local saved places. Your current places and queued edits are kept in a recovery copy. Back leaves this update waiting here.'));
+      const details=node('details',''),list=node('ul','');
+      details.append(node('summary','See received saved places'));
+      for(const entry of pending.snapshot.journeys)list.append(node('li',entry.value.from.name+' → '+entry.value.to.name+
+        (entry.value.savedRoutes?.length?' · '+entry.value.savedRoutes.map(route=>route.mode+' '+route.route).join(' → '):'')));
+      details.append(list);content.append(details);
+      const note=node('p','');note.setAttribute('role','status');content.append(note);
+      const controller=new AbortController();view={dispose:()=>controller.abort()};
+      const confirm=action('Continue to compare my places',async()=>{
+        confirm.disabled=true;note.textContent='Keeping your recovery copy…';disconnect();
+        try{
+          await installReceivedCheckpoint({wasm,store,expectedGroup,...pending,expectedLocalRaw,signal:controller.signal});
+          await checkStartup();if(controller.signal.aborted||disposed)return;
+          home();await reviewLocalDifferences();
+        }catch{if(!controller.signal.aborted&&!disposed)note.textContent='This update could not be confirmed. Your copies are kept. Go Back and check recovery status before trying again.';}
+      });confirm.className='pairing-primary';
+      action('Back',()=>{controller.abort();home();});heading.focus();
+    }catch(error){if(!disposed&&generation===selected)reportFailure(error);}
+    finally{if(generation===selected)starting=false;}
+  };
   const home = () => {
     clear(); screen = 'home';
     const heading = node('h2', session ? 'Your journeys are connected' : 'Share your saved journeys'); heading.tabIndex = -1;
@@ -228,12 +265,14 @@ export function mountAppJourneySettings({wasm, store, expectedGroup, member}) {
       if (startup.legacyChangesPending) content.append(node('p', 'An older app copy has additional edits. They remain separate and still need review.'));
       if (startup.status === 'isolation-required' && startup.generation === 0) action('Finish saved-journey setup',reviewMigrationSetup).className='pairing-primary';
       if (startup.status === 'local-review-required') action('Review saved-place differences', reviewLocalDifferences).className = 'pairing-primary';
-      const canCheckpoint=startup.status==='generation-ready'&&startup.canPrepareCheckpoint&&(startup.generation===0||capacityReached);
+      if(receivedError)content.append(node('p','A received update could not be checked. Its stored copy is kept; try checking recovery again.'));
+      if(receivedCheckpoint)action('Review received saved places',reviewReceived).className='pairing-primary';
+      const canCheckpoint=!receivedCheckpoint&&!receivedError&&startup.status==='generation-ready'&&startup.canPrepareCheckpoint&&(startup.generation===0||capacityReached);
       if(canCheckpoint)action('Review recovery checkpoint',reviewCheckpoint).className='pairing-primary';
       action('Check saved-journey recovery', async () => {
         const selected = generation; await checkStartup();
         if (!disposed && dialog.open && generation === selected) home();
-      }).className = canCheckpoint || startup.status === 'local-review-required' || (startup.status === 'isolation-required' && startup.generation === 0) ? '' : 'pairing-primary';
+      }).className = receivedCheckpoint || canCheckpoint || startup.status === 'local-review-required' || (startup.status === 'isolation-required' && startup.generation === 0) ? '' : 'pairing-primary';
     } else if (session) {
       action('Check for saved journey changes', () => reconcile(true)).className = 'pairing-primary';
       action('Disconnect journey sharing', () => { disconnect(); message = 'Disconnected. Saved changes stay here until you reconnect.'; home(); });
