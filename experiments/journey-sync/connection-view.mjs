@@ -4,9 +4,10 @@ import {showDeviceTransfer} from '../tg-pairing/transfer-view.mjs';
 import {readJourneyPermission} from './permission.mjs';
 import {showJourneyPermission} from './permission-view.mjs';
 import {openJourneySession} from './journey-session.mjs';
+import {openCheckpointSession} from './checkpoint-session.mjs';
 import {certificateCodec} from '../tg-pairing/certificate.mjs';
 import {exportRemovalSet, receiveRemovalSet} from '../tg-pairing/removal-set.mjs';
-const profile = 'along-journey-connect-v2', mounted = new WeakMap();
+const mounted = new WeakMap();
 const hex = bytes => Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
 const unhex = value => {
   if (typeof value !== 'string' || !/^[0-9a-f]{64}$/.test(value)) throw Error('Device identity unavailable');
@@ -14,12 +15,15 @@ const unhex = value => {
 };
 const fields = (value, names) => value && Object.keys(value).sort().join(',') === names.sort().join(',');
 export function showJourneyConnection(container, {wasm, store, expectedGroup, role, focus = false,
-  signal, onBack = () => {}, onConnected, onSaved}) {
+  signal, onBack = () => {}, onConnected, onSaved, purpose = 'journeys'}) {
   if (!['start', 'join'].includes(role) || typeof onConnected !== 'function'
+      || !['journeys','checkpoint'].includes(purpose)
       || !(expectedGroup instanceof Uint8Array) || expectedGroup.length !== 32) throw Error('Journey connection unavailable');
+  const checkpoint=purpose==='checkpoint';
+  const profile=checkpoint?'along-checkpoint-connect-v1':'along-journey-connect-v2';
   mounted.get(container)?.();
   const group = expectedGroup.slice(), document = container.ownerDocument, lifetime = new AbortController();
-  let disposed = false, failed = false, handedOff = false, child, session, local, own;
+  let disposed = false, failed = false, handedOff = false, child, session, local, own, peerCertificate;
   const current = () => { if (disposed || failed || lifetime.signal.aborted) throw Error('Connection ended'); };
   const dispose = () => {
     if (disposed) return; disposed = true; child?.dispose(); signal?.removeEventListener('abort', leave);
@@ -75,10 +79,11 @@ export function showJourneyConnection(container, {wasm, store, expectedGroup, ro
       child = showJourneyPermission(screen(), {wasm, store, expectedGroup: group, peer, certificate, focus, onBack: leave});
       await child.completed;
     }
-    current(); return peer;
+    current(); peerCertificate=certificate.slice();return peer;
   };
   const open = async (peer, sessionRole) => {
-    session = await openJourneySession({wasm, store, expectedGroup: group, peer, role: sessionRole, signal: lifetime.signal, onSaved});
+    session = await (checkpoint?openCheckpointSession:openJourneySession)({wasm, store, expectedGroup: group, peer,
+      certificate:peerCertificate,role: sessionRole, signal: lifetime.signal, onSaved,onRetained:onSaved});
     if (disposed || failed) { session.close(); current(); }
     session.signal.addEventListener('abort', fail, {once: true});
     if (session.signal.aborted) throw Error('Connection ended');
@@ -86,7 +91,9 @@ export function showJourneyConnection(container, {wasm, store, expectedGroup, ro
   const watch = async () => {
     try {
       await session.authenticated(); current();
-      message('Journey devices connected', 'Both enrolled identities and local sharing permission have been checked. No saved journeys have been sent by this setup screen.', 'Use journey connection', () => {
+      message(checkpoint?'Checkpoint devices connected':'Journey devices connected',
+        checkpoint?'Both enrolled identities and sharing permission have been checked. No checkpoint has been sent yet. Received places will wait for review.':'Both enrolled identities and local sharing permission have been checked. No saved journeys have been sent by this setup screen.',
+        checkpoint?'Use checkpoint connection':'Use journey connection', () => {
         current(); if (session.signal.aborted) throw Error('Connection ended');
         handedOff = true; dispose(); try { onConnected(session); } catch { session.close(); }
       });
@@ -134,4 +141,8 @@ export function showJourneyConnection(container, {wasm, store, expectedGroup, ro
     } catch { fail(); }
   })();
   return Object.freeze({ready, dispose});
+}
+
+export function showCheckpointConnection(container,options){
+  return showJourneyConnection(container,{...options,purpose:'checkpoint'});
 }

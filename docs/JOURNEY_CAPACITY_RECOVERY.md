@@ -602,6 +602,21 @@ test verifies real wire delivery. These are not yet one Settings-to-Settings
 connection flow. Local review works offline over retained signed data, while new
 transfers continue to require peer authentication and current sharing consent.
 
+## Visible checkpoint connection component
+
+The shared connection view now has a checkpoint-specific profile and controller.
+It keeps existing membership/removal checks and explicit journey-sharing consent,
+then authenticates through `openCheckpointSession`. A final handoff explains that
+no checkpoint has been sent yet and that received places will wait for review.
+Ordinary journey descriptors cannot enter this profile.
+
+The real enrollment fixture uses visible controls to reconnect after interrupted
+checkpoint delivery. It checks keyboard consent, axe results at narrow width,
+wrong-profile refusal without permission changes, and successful authenticated
+retention after the setup view is disposed. Signaling is still copied by the test
+harness. This component is not yet mounted by Settings; selecting the correct
+retained checkpoint and connecting the full sender/receiver app flow remain.
+
 ## Required before integration
 
 1. Wire the tested migration and format-2 bridge to explicit reviewed opt-in,

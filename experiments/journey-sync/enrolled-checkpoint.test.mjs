@@ -10,6 +10,7 @@ import {applyCheckpointChoices} from './checkpoint-choice-commit.mjs';
 import {preferenceKey,readEnvelope} from './app-preferences.mjs';
 import {openCheckpointSession} from './checkpoint-session.mjs';
 import {installJourneyCheckpoint} from './checkpoint-installation.mjs';
+import {showCheckpointConnection} from './connection-view.mjs';
 export async function checkEnrolledCheckpoint({wasm,owner,receiver,group}) {
   const hex=bytes=>Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('');
   const groupId=hex(group), check=(value,message)=>{if(!value)throw Error(message);};
@@ -67,7 +68,28 @@ export async function checkEnrolledCheckpoint({wasm,owner,receiver,group}) {
     }}});
   try{await refuses(interrupted[0].sendCheckpoint({checkpoint:prepared.checkpoint,snapshot:prepared.snapshot}));}
   finally{interrupted.forEach(s=>s.close());}
-  const delivered=await connect();
+  const rejectedPanel=document.createElement('div');rejectedPanel.id='journey-negative';document.querySelector('main').append(rejectedPanel);
+  let wrongHandoff=false;
+  const wrongView=showCheckpointConnection(rejectedPanel,{...consent,role:'join',focus:true,
+    onConnected:session=>{wrongHandoff=true;session.close();}});
+  const permissionBeforeWrong=(await readJourneyPermission(consent)).revision;
+  try{
+    await wrongView.ready;
+    await window.exerciseJourneyConnectionRejected(JSON.stringify({profile:'along-journey-connect-v2',group:groupId,
+      member:hex(owner.subject),certificate:[...owner.certificate],removals:''}),false);
+    check(!wrongHandoff&&(await readJourneyPermission(consent)).revision===permissionBeforeWrong,'legacy descriptor changed checkpoint permission');
+  }finally{wrongView.dispose();rejectedPanel.remove();}
+  const delivered=[];
+  const panels=['journey-start','journey-join'].map(id=>{
+    const panel=document.createElement('div');panel.id=id;document.querySelector('main').append(panel);return panel;
+  });
+  const views=[senderContext,consent].map((context,index)=>showCheckpointConnection(panels[index],{
+    ...context,role:index?'join':'start',focus:true,onConnected:session=>{delivered[index]=session;}}));
+  try{
+    await Promise.all(views.map(v=>v.ready));await window.exerciseJourneyConnection(true);
+    check(delivered.length===2&&delivered.every(Boolean),'checkpoint connection handoff failed');
+  }catch(error){delivered.forEach(s=>s.close());throw error;}
+  finally{views.forEach(v=>v.dispose());panels.forEach(p=>p.remove());}
   try {
     check((await delivered[0].sendCheckpoint({checkpoint:prepared.checkpoint,snapshot:prepared.snapshot})).status==='peer-retained-checkpoint',
       'authenticated retry did not confirm durable retention');

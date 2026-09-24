@@ -33,7 +33,7 @@ try {
       await panel.getByRole('button', {name: 'Back', exact: true}).click();
     } else await panel.getByRole('heading', {name: 'Journey connection unavailable', exact: true}).waitFor();
   });
-  await page.exposeFunction('exerciseJourneyConnection', async () => {
+  await page.exposeFunction('exerciseJourneyConnection', async (checkpoint=false) => {
     const start = page.locator('#journey-start'), join = page.locator('#journey-join');
     const move = async (from, to, label, action) => {
       const text = await from.getByLabel('Device message to copy').inputValue();
@@ -52,10 +52,10 @@ try {
     await start.getByRole('heading', {name: 'Send the journey connection reply', exact: true}).waitFor();
     await move(start, join, 'Journey connection reply', 'Connect journey devices');
     for (const panel of [start, join]) {
-      await panel.getByRole('heading', {name: 'Journey devices connected', exact: true}).waitFor();
+      await panel.getByRole('heading', {name: checkpoint?'Checkpoint devices connected':'Journey devices connected', exact: true}).waitFor();
       assert.deepEqual((await new AxeBuilder({page}).include('#' + await panel.getAttribute('id')).analyze()).violations.map(v => v.id), []);
-      await panel.getByRole('button', {name: 'Use journey connection', exact: true}).evaluate(button => button.click());
-      await panel.getByRole('button', {name: 'Use journey connection', exact: true}).click();
+      await panel.getByRole('button', {name: checkpoint?'Use checkpoint connection':'Use journey connection', exact: true}).evaluate(button => button.click());
+      await panel.getByRole('button', {name: checkpoint?'Use checkpoint connection':'Use journey connection', exact: true}).click();
     }
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
   });

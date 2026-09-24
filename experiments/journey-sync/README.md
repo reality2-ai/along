@@ -564,3 +564,14 @@ The generated Settings test checks the new entry, Back, changed-inbox refusal,
 keyboard confirmation at 320px with reduced motion, real installation/review and
 fresh-page restoration. Its inbox is a signed fixture. A complete Settings-based
 sender/receiver connection and automatic catch-up are still unfinished.
+
+`showCheckpointConnection` now provides the visible consent/signaling flow for
+checkpoint sessions. It uses `along-checkpoint-connect-v1`, refuses ordinary
+journey descriptors, carries the reviewed certificate into the authenticated
+session, and explicitly says that no checkpoint has yet been sent. The final
+**Use checkpoint connection** action hands off a controller that survives disposal
+of the setup screen. The enrolled-browser test uses these controls for the retry
+connection, including keyboard consent, narrow-screen/axe checks and refusing a
+legacy descriptor without changing permission. The harness transfers public
+signaling messages. Settings still needs to mount this flow and select the
+appropriate retained checkpoint for the receiving device.
