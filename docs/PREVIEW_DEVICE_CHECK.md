@@ -212,5 +212,6 @@ saved places, verified identity and exact encrypted key remain intact, as do the
 regular app's preferences, feedback, pairing record and byte-identical shell cache.
 The separate published-migration test also passes; it deliberately blocks service
 workers and is not installed-update evidence. These runs are development evidence,
-not a completed release qualification record. Older-copy edit review remains
-unfinished; do not package or deploy the candidate yet.
+not a completed release qualification record. Older-copy review, fresh review of unapplied stale choices, and recovery of newer
+local edits after partial application now have source and generated-app coverage.
+Run the full qualification against the final candidate before packaging it.
