@@ -4,7 +4,7 @@ import {readFile} from 'node:fs/promises';
 import {join} from 'node:path';
 const {chromium} = await import('@playwright/test');
 const sources = new Map();
-for (const name of ['state.mjs', 'store.mjs', 'generation-state.mjs', 'generation-migration.mjs', 'generation-app-store.mjs', 'app-preferences.mjs'])
+for (const name of ['state.mjs', 'store.mjs', 'generation-state.mjs', 'generation-migration.mjs', 'generation-app-store.mjs', 'app-preferences.mjs', 'generation-checkpoint.mjs', 'checkpoint-preparation.mjs', 'checkpoint-installation.mjs'])
   sources.set('/journey-sync/' + name, await readFile(new URL(name, import.meta.url)));
 sources.set('/public/preferences.js', await readFile(new URL('../../public/preferences.js', import.meta.url)));
 for (const name of ['software-persona.mjs', 'local-persona.mjs'])
@@ -97,7 +97,77 @@ try {
       }
       f.store.close();
     }
-    return {group: first.setup.group, member: first.setup.member, pending};
+    const {loadSoftwareIssuer} = await import('./tg-pairing/software-persona.mjs');
+    const {installJourneyCheckpoint} = await import('./journey-sync/checkpoint-installation.mjs');
+    let installationGroup;
+    for (const mode of ['valid', 'interrupted', 'permission-race', 'stale', 'changed-local', 'bad-signature', 'late-cancel', 'concurrent-local-edit']) {
+      const f = await fixture('checkpoint-install-' + mode);
+      await migrateJourneyGeneration(f.input);
+      const issuer = await loadSoftwareIssuer({wasm, store: f.store, expectedGroup: f.input.expectedGroup});
+      const prepared = await issuer.prepareJourneyCheckpoint({expectedRevision: 1}); issuer.close();
+      const raw = JSON.stringify({learning: true, journeys: [{...live, saved: true}],
+        journeySync: {format: 1, group: f.setup.group, pending: [{id: crypto.randomUUID(), changes: [{id: journeyId(live), value: null}]}]}});
+      const localKey = 'install-' + mode; localStorage.setItem(localKey, raw);
+      let expectedRawAfter = raw;
+      const local = {getItem: () => localStorage.getItem(localKey), setItem: () => { throw Error('installer must not write preferences'); }};
+      const abort = new AbortController();
+      let input = {...f.input, expectedRevision: 1, expectedLocalRaw: raw, checkpoint: prepared.checkpoint,
+        snapshot: prepared.snapshot, storage: local, signal: abort.signal};
+      if (mode === 'stale') input.expectedRevision = 2;
+      if (mode === 'bad-signature') { input.checkpoint = input.checkpoint.slice(); input.checkpoint[183] ^= 1; }
+      if (mode === 'changed-local') { expectedRawAfter = raw + ' '; localStorage.setItem(localKey, expectedRawAfter); }
+      if (mode === 'permission-race') input.store = {...f.store, compareAndSwapMany: async (...args) => {
+        await f.store.compareAndSwap('along-journey-sharing-v1', f.setup.group, 0, {format: 1, member: f.setup.member, peers: []});
+        return f.store.compareAndSwapMany(...args);
+      }};
+      if (mode === 'late-cancel' || mode === 'concurrent-local-edit') input.store = {...f.store, compareAndSwapMany: async (...args) => {
+        if (mode === 'concurrent-local-edit') {
+          const edited = JSON.parse(raw); edited.journeySync.pending.push({id: crypto.randomUUID(), changes: []});
+          expectedRawAfter = JSON.stringify(edited); localStorage.setItem(localKey, expectedRawAfter);
+        }
+        const result = await f.store.compareAndSwapMany(...args);
+        if (mode === 'late-cancel') abort.abort(); return result;
+      }};
+      if (mode === 'interrupted') {
+        const put = IDBObjectStore.prototype.put; let interrupted = false;
+        IDBObjectStore.prototype.put = function(...args) {
+          const result = put.apply(this, args);
+          if (args[1]?.[0] === 'along-journey-import-v2') { interrupted = true; this.transaction.abort(); }
+          return result;
+        };
+        try { await refuses(installJourneyCheckpoint(input)); } finally { IDBObjectStore.prototype.put = put; }
+        assert(interrupted, 'installer transaction not interrupted');
+      } else if (mode === 'valid') {
+        const results = await Promise.all([installJourneyCheckpoint(input), installJourneyCheckpoint(input)]);
+        assert(results.filter(r => !r.alreadyInstalled).length === 1, 'checkpoint installed twice');
+        assert(results.every(r => r.localReviewRequired), 'local differences silently resolved');
+        installationGroup = f.setup.group;
+      } else if (mode === 'concurrent-local-edit') await installJourneyCheckpoint(input);
+      else await refuses(installJourneyCheckpoint(input));
+      const current = await f.store.read(newScope, f.setup.group);
+      const recovered = await f.store.read('along-journey-checkpoint-recovery-v1', f.setup.group + ':1');
+      if (['valid', 'late-cancel', 'concurrent-local-edit'].includes(mode)) {
+        assert(current.value.generation === 1 && current.value.journeys.length === 1, 'checkpoint not installed');
+        assert(equal(recovered.value.previous.journeys, f.state.journeys) && recovered.value.localRaw === raw, 'recovery copy missing');
+        assert((await f.store.read('along-journey-import-v2', f.setup.group)).value.operation === null, 'old receipt carried into new generation');
+        const retry = await installJourneyCheckpoint({...input, store: f.store, signal: undefined});
+        assert(retry.alreadyInstalled && (await f.store.read(newScope, f.setup.group)).revision === current.revision, 'retry rewrote installation');
+        if (mode === 'valid') {
+          const corrupt = structuredClone(recovered.value); corrupt.snapshot.journeys[0].value.to.name = 'Damaged retained snapshot';
+          await f.store.compareAndSwap('along-journey-checkpoint-recovery-v1', f.setup.group + ':1', recovered.revision, corrupt);
+          await refuses(installJourneyCheckpoint(input));
+          assert((await f.store.read(newScope, f.setup.group)).revision === current.revision, 'corrupt recovery retry changed replica');
+          await f.store.compareAndSwap('along-journey-checkpoint-recovery-v1', f.setup.group + ':1', recovered.revision + 1, recovered.value);
+        }
+      } else {
+        assert(current.revision === 1 && current.value.generation === 0 && recovered === null, 'partial checkpoint installation');
+        assert(await f.store.read('along-journey-import-v2', f.setup.group) === null, 'partial new receipt');
+      }
+      assert(localStorage.getItem(localKey) === expectedRawAfter, 'installer changed preferences');
+      if (mode === 'concurrent-local-edit') assert(JSON.parse(localStorage.getItem(localKey)).journeySync.pending.length === 2, 'concurrent local edit lost');
+      f.store.close();
+    }
+    return {group: first.setup.group, member: first.setup.member, pending, installationGroup};
   });
   await page.reload();
   const reopened = await page.evaluate(async ({group, pending}) => {
@@ -112,6 +182,19 @@ try {
     } finally { store.close(); }
   }, result);
   assert.equal(reopened, true);
+  const installationRestored = await page.evaluate(async group => {
+    const wasm = await import('./hive_wasm.js'); await wasm.default();
+    const store = await (await import('./tg-pairing/storage.mjs')).openBrowserStorage('checkpoint-install-valid');
+    try {
+      const saved = await store.read('along-journey-checkpoint-recovery-v1', group + ':1');
+      const result = await (await import('./journey-sync/checkpoint-installation.mjs')).installJourneyCheckpoint({wasm, store,
+        expectedGroup: Uint8Array.from(group.match(/../g), n => parseInt(n, 16)), expectedRevision: saved.value.sourceRevision,
+        expectedLocalRaw: saved.value.localRaw, checkpoint: saved.value.checkpoint, snapshot: saved.value.snapshot,
+        storage: {getItem: () => localStorage.getItem('install-valid'), setItem: () => { throw Error('unexpected write'); }}});
+      return result.alreadyInstalled && result.localReviewRequired;
+    } finally { store.close(); }
+  }, result.installationGroup);
+  assert.equal(installationRestored, true);
   const bridgeResult = await page.evaluate(async ({group, member}) => {
     const {openGenerationAppJourneyStore} = await import('./journey-sync/generation-app-store.mjs');
     const {readEnvelope, readPreferences, writePreferences} = await import('./journey-sync/app-preferences.mjs');
@@ -158,5 +241,6 @@ try {
   }, result);
   assert.deepEqual(bridgeResult, {clock: 3, finalClock: 4, pending: 1, count: 7});
   console.log('PASS: actual software identity and IndexedDB migration preserve replica/tombstones/import receipt/local pending edits; concurrent/reloaded retries do not rewrite; stale review, permission race, cancellation and interrupted transaction preserve old state; old in-flight format-1 writer cannot overwrite migration. No app migration UI enabled.');
-  console.log('PASS: format-2 bridge consumes an archived receipt without duplicating its edit, imports queued deletion, retains history, recovers an IDB/localStorage interruption and refuses old queued edits after a fixture generation advance. No checkpoint installation claim.');
+  console.log('PASS: format-2 bridge consumes an archived receipt without duplicating its edit, imports queued deletion, retains history, recovers an IDB/localStorage interruption and refuses old queued edits after a fixture generation advance. The separate real installation cases follow.');
+  console.log('PASS: real issuer checkpoint installation atomically retains prior replica/local journal and starts a new receipt; retry/reload, permission races, interrupted writes, stale review, changed local data, signature damage, late cancellation and concurrent local edits preserve the documented boundary. Local review and peer delivery remain unfinished.');
 } finally { await browser?.close(); await new Promise(resolve => server.close(resolve)); }

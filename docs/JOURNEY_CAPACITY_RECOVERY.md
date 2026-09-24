@@ -2,8 +2,8 @@
 
 Status: generation model, signed-checkpoint verifier and guarded durable
 preparation implemented and tested in source, including the real software issuer
-adapter. Atomic format migration also passes browser tests. No checkpoint
-installation, network adoption or recovery control is enabled. Public
+adapter. Atomic format migration and local checkpoint installation also pass
+browser tests. No network adoption or app recovery control is enabled. Public
 preview 3805 retains its existing 256-pair replication limit and capacity message.
 
 ## Why deletion alone cannot free space
@@ -158,8 +158,43 @@ The existing two-tab legacy bridge/compaction test also still passes.
 The future checkpoint installer must use the same Web Lock, archive the current
 local journal/differences, and install a matching new-generation import receipt.
 It must not merely replace the replica and leave an old receipt or relabel an
-old queue. Those cutover and recovery operations are still unimplemented. The
+old queue. The installer below now handles the durable cutover while preserving localStorage;
+the local-difference review remains unimplemented. The
 format-2 bridge is not mounted by the app and its use is not public qualification.
+
+## Atomic checkpoint installation
+
+`checkpoint-installation.mjs` takes the exact reviewed replica revision and local
+preferences string, plus the signed checkpoint and its snapshot. Under the same
+per-group Web Lock as the journal bridge, it verifies current local membership,
+the exact signed successor and unchanged review inputs. A guarded transaction
+writes the new replica, a matching generation-specific empty import receipt, and
+`along-journey-checkpoint-recovery-v1` containing the old replica, old receipt,
+reviewed local preferences, signed checkpoint and snapshot.
+
+The installer never writes localStorage. Existing saved places and pending edits
+remain available, including edits made while the IndexedDB commit is in flight.
+They are not silently retagged for the new generation. The result explicitly
+requires local review; the new bridge refuses the old journal until that separate
+review/cutover is completed. This avoids pretending that IndexedDB and localStorage
+form one atomic transaction.
+
+A retry authenticates the retained checkpoint/snapshot and confirms the matching
+current generation and receipt without rewriting them. Cancellation after commit
+can report an interruption, but cannot undo durable installation. A retry restores
+that result. This is local installation evidence, not confirmation from a peer.
+
+The migration browser suite now also composes real issuer preparation and local
+installation. Cases include concurrent retry, reload, a damaged retained snapshot,
+permission changes during commit, an interrupted real transaction, stale replica
+or local-data review, altered signature, cancellation after commit and a local edit
+arriving during commit. Every pre-commit refusal preserves the old replica and
+leaves no partial receipt/recovery record. Local preferences remain unchanged by
+the installer itself. Enrolled-device and app-flow acceptance are still pending.
+
+Installation can free active-replica tombstone slots; retained recovery records and
+checkpoint history still consume browser storage. No archive-deletion policy is
+implemented, and a failed storage write must preserve the previous generation.
 
 ## Required before integration
 
@@ -169,9 +204,9 @@ format-2 bridge is not mounted by the app and its use is not public qualificatio
 2. Review the live places selected for the new generation. Keep the old replica,
    local saved places and unprocessed edits in a durable recovery record. Do not
    silently replace divergent local data or reinterpret old edits as new saves.
-3. Atomically install the verified successor and recovery record, with revision
-   guards on persona, membership, application permission and prior generation.
-   Tie journal import receipts to the generation so crash retries cannot cross it.
+3. Connect the tested installer to reviewed issuer/recipient flows and verify
+   enrolled-device installation, authorization changes and session invalidation.
+   Finish the separate local-difference review without relabelling old edits.
 4. Stop old-generation sessions and require ordered checkpoint catch-up. An old
    peer's ordinary snapshot must never establish or replace a generation. New
    peers need authenticated current-checkpoint acquisition as well as membership.

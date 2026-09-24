@@ -388,3 +388,12 @@ check covers real migration/reload, receipt corruption, duplicate prevention,
 local history and interrupted localStorage consumption. Checkpoint advance itself
 is a fixture; installation and reviewed cutover remain required. The app continues
 to mount the format-1 bridge until that flow is complete.
+
+
+`checkpoint-installation.mjs` now composes a real signed checkpoint with guarded
+atomic replacement of the replica and import receipt, retaining an exact local
+recovery record. It leaves planner localStorage untouched and returns
+`localReviewRequired: true`. The migration browser suite covers real preparation,
+installation, interruption, permission races, corrupt evidence, concurrent local
+edits and reload. Local-difference review, peer delivery and app controls remain
+unfinished; no installed preview calls this operation.

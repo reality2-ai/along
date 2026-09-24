@@ -1316,3 +1316,12 @@ permission to use the signing capability now: a stale review, changed permission
 record or old issuer handle refuses the operation. A checkpoint surviving reload
 and key rotation still does not imply that a peer adopted it or that local edits
 were reconciled. The remaining migration and installation gates remain explicit.
+
+
+Checkpoint installation exposes another boundary in offline-first design:
+IndexedDB and localStorage cannot be committed as one browser transaction. The
+implementation therefore installs the shared replica and its recovery record
+atomically in IndexedDB while leaving local preferences untouched. It reports
+that local review is still required. Tests inject both a transaction interruption
+and an edit arriving during commit. This preserves evidence and data rather than
+claiming that a successful shared-state write completed the whole user task.
