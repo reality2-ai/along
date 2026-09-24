@@ -1325,3 +1325,11 @@ atomically in IndexedDB while leaving local preferences untouched. It reports
 that local review is still required. Tests inject both a transaction interruption
 and an edit arriving during commit. This preserves evidence and data rather than
 claiming that a successful shared-state write completed the whole user task.
+
+
+The local-difference model makes user agency concrete at recovery: a saved address
+pair, a changed service preference and a deletion each need a visible decision
+when they differ from the installed shared state. Neither “newer generation” nor
+“local data” automatically wins. The model verifies evidence, refuses inconsistent
+copies and checks capacity before proposing changes. Its tests do not substitute
+for an accessible review screen or for guarding the later write against new edits.

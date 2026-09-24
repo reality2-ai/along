@@ -397,3 +397,11 @@ recovery record. It leaves planner localStorage untouched and returns
 installation, interruption, permission races, corrupt evidence, concurrent local
 edits and reload. Local-difference review, peer delivery and app controls remain
 unfinished; no installed preview calls this operation.
+
+
+`checkpoint-review.mjs` now produces a read-only local/shared difference model
+from verified recovery evidence. Each differing save, preference or deletion needs
+an explicit choice. It checks pending/local consistency and simulates capacity
+before proposing new-generation changes; it writes nothing. Run
+`node --test experiments/journey-sync/checkpoint-review.test.mjs`. The future review
+screen and writer must revalidate current evidence rather than trust an old model.

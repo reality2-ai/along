@@ -196,6 +196,36 @@ Installation can free active-replica tombstone slots; retained recovery records 
 checkpoint history still consume browser storage. No archive-deletion policy is
 implemented, and a failed storage write must preserve the previous generation.
 
+## Local-difference review model
+
+`checkpoint-review.mjs` now verifies retained checkpoint evidence against the
+installed generation and builds a read-only comparison. It combines the prior
+replica, current locally saved projections and final pending operations. A final
+pending operation must agree with the visible local saved state; inconsistent
+copies are refused rather than guessed. Old unmarked operations are only valid
+for the original generation. Learning counts, hours and mobility preferences are
+not included in the shared comparison or resulting changes.
+
+Every difference requires an explicit local/shared choice. A local deletion is a
+real option, not an absent value that defaults to a save. Shared entries unknown
+to the previous local state remain in the installed dataset. Resolving choices
+simulates the result against the actual replication bound, so it cannot silently
+trim entries or expand capacity. Inputs and editable display copies cannot alter
+the captured decision model. No storage write occurs.
+
+The review identifier binds the captured current state, predecessor, signed
+checkpoint, actor and exact local data. It is not an authorization token. The
+future writer must rederive the review from current guarded records and compare
+its identifier before accepting choices. A screen or caller holding an older
+model cannot authorize overwriting a newer local edit merely by returning its ID.
+
+`node --test experiments/journey-sync/checkpoint-review.test.mjs` checks changed
+service preferences, local-only saves, retained deletions, explicit shared choices,
+unknown peer additions, malformed choices, corrupted evidence, wrong generations,
+inconsistent pending data, changing review input and full-replica refusal. These
+are model checks; the accessible review screen and durable application of the
+chosen differences remain unimplemented.
+
 ## Required before integration
 
 1. Wire the tested migration and format-2 bridge to explicit reviewed opt-in,
