@@ -4,6 +4,7 @@ import {loadLocalPersona} from './local-persona.mjs';
 import {certificateCodec} from './certificate.mjs';
 import {prepareSoftwareTraffic, loadSoftwareTraffic} from './software-traffic.mjs';
 import {epochKeyDigest, verifyEpochTransition} from './epoch-transition.mjs';
+import {announceEpochChange} from './epoch-watch.mjs';
 const receiptScope = 'along-installed-epoch-v1';
 const fixed = (v, n) => v instanceof Uint8Array && v.length === n;
 const same = (a, b) => a.length === b.length && a.every((v, i) => v === b[i]);
@@ -43,6 +44,7 @@ export async function installRecipientEpoch({wasm, store, expectedGroup, transit
       try { if (!same(await epochKeyDigest(held.payloadKey, held.integrityKey), verified.keyDigest)) throw fail(); }
       finally { held.destroy(); }
       current();
+      try { await announceEpochChange(group); } catch { /* retained commit remains authoritative */ }
       return Object.freeze({status: 'installed-local', epoch: verified.to, alreadyInstalled: true});
     }
     if (persona.epoch !== from || receipt) throw fail();
@@ -70,6 +72,7 @@ export async function installRecipientEpoch({wasm, store, expectedGroup, transit
         value: {format: 1, member: persona.member, transition: message, certificate: cert}},
     ], {signal, checks: [{scope: 'enrollment-invitations', key: journalKey, expectedRevision: journal.revision}]});
     if (!result.applied) throw fail();
+    try { await announceEpochChange(group); } catch { /* commit remains authoritative */ }
     // A committed result remains true even if cancellation arrives afterwards.
     return Object.freeze({status: 'installed-local', epoch: verified.to, alreadyInstalled: false});
   } catch { throw fail(); } finally { payload.fill(0); integrity.fill(0); }

@@ -79,8 +79,22 @@ supplies a renewed certificate and keys from the real prepared synthetic issuer.
 It checks substitution refusal, transaction rollback, signed removal during the
 commit race, retained earlier removals, duplicate receipt recovery, invalidation
 of the old persona signing handle and a fresh-document epoch-one restore/sign.
-The fixture explicitly does not establish production delivery, issuer advancement
-or closure of active sessions on other tabs. The API is not mounted in the app.
+The same check now opens two authenticated old-epoch WebRTC connections, one in
+the installing tab and one in a sibling tab. Both close after commit and refuse
+later sends. A notification without a stored change leaves the sessions open.
+The fixture does not establish production delivery or issuer advancement. The
+installation API is not mounted in the app.
+
+`epoch-watch.mjs` is mounted at the shared local-persona session boundary used by
+journey sharing, AT-key connections and receipt recovery. It re-reads established
+local group/member/epoch state on an installation notification and on page wake
+events. Notifications contain no key material and cannot advance state. The
+installer announces successful commits and verified duplicate receipts; the
+installing document waits for its local checks. BroadcastChannel wakes sibling
+tabs where available, without claiming acknowledgment from them. Suspended tabs
+cannot promise immediate delivery; existing runtime checks still compare epoch
+and membership before protected send/receive operations. Read failures close the
+affected session rather than preserving a cached grant.
 
 1. Extend the retained preparation to renew certificates for retained recipients
    and support subsequent epochs. Release only the committed successor. Preserve
@@ -95,9 +109,9 @@ or closure of active sessions on other tabs. The API is not mounted in the app.
 3. Compose the tested one-step recipient installation with ordered offline catch-up
    and give the initial issuer equivalent atomic advancement. Do not reset identity,
    journey preferences or AT application permissions to work around a mismatch.
-4. Close old sessions across tabs when advancement commits. Resume interrupted
-   delivery using durable receipts, and distinguish local advancement from every
-   retained device acknowledging it. Refuse conflicts without replacing state.
+4. Compose the tested session invalidation with issuer advancement and interrupted
+   delivery recovery. Distinguish local advancement from every retained device
+   acknowledging it. Refuse conflicts without replacing state.
 5. Test removal during preparation/delivery, competing rotations, offline catch-up,
    replay and forks, crash boundaries, mixed-version devices and fresh-document
    restoration. Verify ordinary offline routing throughout. Only then expose the

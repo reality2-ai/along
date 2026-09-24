@@ -11,7 +11,7 @@ if (process.env.EPOCH_INSTALL === '1') {
   if (process.env.ABORT_TRAFFIC === '1') throw Error('Epoch installation needs completed enrollment');
   for (const name of ['epoch-transition.mjs', 'epoch-preparation.mjs', 'epoch-installation.mjs', 'epoch-install-check.mjs']) sources.set('/' + name, await readFile(new URL(name, import.meta.url)));
 }
-for (const name of ['enrollment-profile.mjs', 'enrollment-payloads.mjs', 'core-candidate-session.mjs', 'software-traffic.mjs', 'initial-persona.mjs', 'software-persona.mjs', 'software-invitation.mjs', 'invitation-proof.mjs', 'transfer-view.mjs', 'receive-invitation-view.mjs', 'stored-claim.mjs', 'installation-receipt.mjs', 'local-persona.mjs', 'local-persona-session.mjs', 'receipt-recovery.mjs']) sources.set('/' + name, await readFile(new URL('./' + name, import.meta.url)));
+for (const name of ['enrollment-profile.mjs', 'enrollment-payloads.mjs', 'core-candidate-session.mjs', 'software-traffic.mjs', 'initial-persona.mjs', 'software-persona.mjs', 'software-invitation.mjs', 'invitation-proof.mjs', 'transfer-view.mjs', 'receive-invitation-view.mjs', 'stored-claim.mjs', 'installation-receipt.mjs', 'local-persona.mjs', 'local-persona-session.mjs', 'epoch-watch.mjs', 'receipt-recovery.mjs']) sources.set('/' + name, await readFile(new URL('./' + name, import.meta.url)));
 if (process.env.RECOVERY_MODULE) sources.set('/receipt-recovery.mjs', await readFile(process.env.RECOVERY_MODULE));
 for (const name of ['hive_wasm.js', 'hive_wasm_bg.wasm']) sources.set('/' + name, await readFile(join(process.env.R2_WASM_DIR, name)));
 for (const name of ['qr-transfer.mjs', 'vendor/qrcode.mjs']) sources.set('/' + name, await readFile(new URL(name, import.meta.url)));
@@ -248,17 +248,49 @@ try {
         const removedSubject = crypto.getRandomValues(new Uint8Array(32));
         const otherRemoval = await heldIssuer.issueRevocation({subject: removedSubject, sequence: 1n, reason: 0});
         const selfRemoval = await heldIssuer.issueRevocation({subject: member, sequence: 2n, reason: 0});
-        return {expectedGroup: Array.from(group), transition: Array.from(prepared.transition), certificate: Array.from(codec.encode(member, group, 1n, signature)),
+        return {expectedGroup: Array.from(group), ownerSubject: Array.from(Uint8Array.from(heldIssuer.member.match(/../g), b => parseInt(b, 16))), transition: Array.from(prepared.transition), certificate: Array.from(codec.encode(member, group, 1n, signature)),
           payloadKey: Array.from(clear.subarray(0, 32)), integrityKey: Array.from(clear.subarray(32)),
           removedSubject: Array.from(removedSubject), removedSignature: Array.from(otherRemoval.signature), selfRemovalSignature: Array.from(selfRemoval.signature)};
       } finally { raw?.fill(0); clear?.fill(0); heldIssuer?.close(); s.close(); }
     }, subject);
+    const sibling = await contexts[0].newPage(); await sibling.goto(url);
+    for (const [index, recipient] of [reopened, sibling].entries()) {
+      const offer = await recipient.evaluate(async bundle => {
+        const wasm = await import('./hive_wasm.js'); await wasm.default();
+        window.epochTestStore = await (await import('./storage.mjs')).openBrowserStorage('software-enrollment');
+        window.epochPeer = await (await import('./local-persona-session.mjs')).openLocalPersonaSession({wasm, store: epochTestStore,
+          expectedGroup: new Uint8Array(bundle.expectedGroup), peer: new Uint8Array(bundle.ownerSubject), role: 'offer', onMessage: async () => {}});
+        return epochPeer.offer();
+      }, bundle);
+      const answer = await pages[1].evaluate(async ({offer, subject, index}) => {
+        window.epochOwnerStores ??= []; window.epochOwnerPeers ??= [];
+        epochOwnerStores[index] = await (await import('./storage.mjs')).openBrowserStorage('software-enrollment');
+        epochOwnerPeers[index] = await (await import('./local-persona-session.mjs')).openLocalPersonaSession({wasm, store: epochOwnerStores[index],
+          expectedGroup: group, peer: new Uint8Array(subject), role: 'answer', onMessage: async () => {}});
+        return epochOwnerPeers[index].accept(offer);
+      }, {offer, subject, index});
+      await recipient.evaluate(answer => epochPeer.accept(answer), answer);
+      await Promise.all([recipient.evaluate(() => epochPeer.authenticated()), pages[1].evaluate(index => epochOwnerPeers[index].authenticated(), index)]);
+    }
+    // An untrusted hint alone cannot close connections or advance local state.
+    await reopened.evaluate(async group => (await import('./epoch-watch.mjs')).announceEpochChange(new Uint8Array(group)), targetGroup);
+    for (const recipient of [reopened, sibling]) {
+      assert.equal(await recipient.evaluate(async () => { await epochPeer.authenticated(); return epochPeer.state(); }), 'authenticated');
+    }
     assert.equal(await reopened.evaluate(async bundle => {
       const wasm = await import('./hive_wasm.js'); await wasm.default();
       const s = await (await import('./storage.mjs')).openBrowserStorage('software-enrollment');
       try { return await (await import('./epoch-install-check.mjs')).checkEpochInstall(wasm, s, bundle); }
       finally { s.close(); }
     }, bundle), true);
+    for (const recipient of [reopened, sibling]) {
+      await recipient.waitForFunction(() => epochPeer.state() === 'closed');
+      assert.equal(await recipient.evaluate(() => epochPeer.send(new Uint8Array([1])).then(() => false, () => true)), true);
+      await recipient.evaluate(() => epochTestStore.close());
+    }
+    await pages[1].waitForFunction(() => epochOwnerPeers.every(peer => peer.state() === 'closed'));
+    await pages[1].evaluate(() => epochOwnerStores.forEach(store => store.close()));
+    await sibling.close();
     await reopened.close();
     const advanced = await contexts[0].newPage(); await advanced.goto(url);
     assert.equal(await advanced.evaluate(async group => {
@@ -272,7 +304,7 @@ try {
         finally { traffic.destroy(); }
       } finally { s.close(); }
     }, targetGroup), true);
-    console.log('PASS: enrolled recipient atomically installs prepared epoch-one material, restores/signs in a fresh document, rejects substitutions and stale writes, rolls back interrupted transactions, and recovers duplicate delivery. Test harness supplies renewed certificate/material; production delivery and active-session shutdown are not covered.');
+    console.log('PASS: enrolled recipient atomically installs prepared epoch-one material, restores/signs in a fresh document, rejects substitutions and stale writes, rolls back interrupted transactions, and recovers duplicate delivery. Authenticated old-epoch sessions close in the installing tab and a sibling tab; unchanged-state hints do not close them. Test harness supplies renewed certificate/material; production delivery is not covered.');
   }
   }
 } finally { await browser?.close(); await new Promise(resolve => server.close(resolve)); }

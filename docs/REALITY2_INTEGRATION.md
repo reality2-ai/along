@@ -20,8 +20,11 @@ in real browser storage including cancellation and custody-change boundaries.
 Recipient installation now atomically advances the certificate, membership and
 encrypted keys with a durable receipt. Its browser test starts from actual
 enrollment, uses harness-supplied successor material, and covers removal races,
-rollback and a fresh-document restore. Authenticated cross-epoch delivery, issuer
-advancement, cross-tab session closure, subsequent epochs and the user flow remain
+rollback and a fresh-document restore. A shared session watcher now closes old-epoch
+connections after checking committed local state; the test verifies authenticated
+connections in both the installing and a sibling tab, and unchanged-state hint
+refusal. Packet-level runtime epoch checks remain mandatory. Authenticated
+cross-epoch delivery, issuer advancement, subsequent epochs and the user flow remain
 unfinished; no rotation control is enabled.
 
 The restored software issuer now produces epoch-zero signed revocation evidence
