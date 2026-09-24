@@ -99,6 +99,15 @@ trusted hive can keep the sync state, but should not receive routing queries or
 public datasets merely to make sync work. Verify crypto/key storage and revocation
 against the selected implementation before claiming end-to-end guarantees.
 
+## Capacity recovery under development
+
+The [generation/checkpoint design](JOURNEY_CAPACITY_RECOVERY.md) now has a tested
+source model that refuses ordinary merges across generations. A signed successor
+binds its predecessor and exact live snapshot; verification does not install it.
+Guarded durable preparation, retention of local differences, journal migration,
+peer recovery and the reviewed app flow remain required before this can reclaim
+capacity in a release.
+
 ## What to synchronise
 
 | Data | Proposed policy |

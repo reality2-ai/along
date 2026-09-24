@@ -1291,3 +1291,20 @@ The change makes repeated pending edits more sustainable and capacity failures
 understandable. It does not reclaim replicated deletion records or make devices
 reconnect automatically. Keeping that distinction in release notes makes the
 course's evidence chain reviewable without narrowing the original goal.
+
+
+### Recovering capacity without undoing a user's deletion
+
+The request for offline independence creates a tension with bounded storage:
+retained deletion records prevent old devices from restoring removed journeys,
+but also consume the finite sharing capacity. A new generation model makes that
+boundary explicit. Ordinary snapshots cannot cross it; a signed checkpoint binds
+the exact predecessor and replacement snapshot.
+
+The source tests establish only this model and verification behavior. They do not
+establish current permission, durable installation, retention of divergent local
+edits or an understandable recovery screen. Those are separate implementation
+gates in the [recovery design](JOURNEY_CAPACITY_RECOVERY.md). This distinction is
+useful teaching material: a valid signature answers who approved some bytes, not
+whether applying them is timely, authorized in the current state or acceptable to
+the person using this device.

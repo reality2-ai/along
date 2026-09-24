@@ -340,3 +340,14 @@ writer. It checks reload, the visible capacity message, retry, exact retained
 journal/local saves, unchanged replica and identity, and automated accessibility.
 The fixture creates the large dataset programmatically; it is not 257 manual
 journey searches or a physical-device result.
+
+
+### Capacity recovery generation model (not integrated)
+
+`generation-state.mjs` and `generation-checkpoint.mjs` implement the first model
+and signature-verification layer for a deliberate restart of shared journey data.
+Normal merges require identical generation/checkpoint identity. Signed exact
+successors can propose a live-only snapshot without changing local data. This
+is not yet a recovery action: durable preparation/installation, journal retention,
+current authorization, peer catch-up and user review remain unfinished. See the
+[protocol and evidence](../../docs/JOURNEY_CAPACITY_RECOVERY.md).
