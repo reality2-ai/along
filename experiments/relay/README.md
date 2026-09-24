@@ -287,3 +287,26 @@ devices or the rendered Along Settings flow. The separate isolated-context WSS
 fixture covers browser separation with synthetic identities. External R2 relay
 interoperability, generation-aware relay snapshots, checkpoint catch-up, persisted
 endpoint selection, public app integration and release acceptance remain open.
+
+### Generation-aware enrolled WSS check
+
+`RELAY_GENERATION=1 node experiments/at-credentials/peer-delivery.test.mjs` now
+passes with the pinned runtime/Chromium environment. It runs the actual enrollment,
+reviewed migration and two signed checkpoint recoveries, then connects both
+reviewed generation-two replicas through real local WSS. The receipt is
+`peer-saved-generation-snapshot`; both replicas converge. The network receipt
+leaves planner preferences untouched until the existing reconciliation adapter is
+called, which exposes the shared saved place and preserves independent history.
+
+After a server-forced disconnect, a generation-two edit made during reconnect is
+shared automatically. A real signed checkpoint advances the owner to generation
+three; its old connection then refuses synchronization, and the recipient replica
+revision remains unchanged. The fixture intentionally leaves the owner's next
+review pending. Recipient generation-two saved data/history survives a fresh page.
+The broader checkpoint, consent and credential tests also pass in this run.
+
+This verifies the previously untested generation-aware relay path. It does not
+implement automatic checkpoint catch-up through the relay, merge differing
+generations, accept recovery choices automatically, or test rendered Settings.
+Endpoint persistence/selection, app reconciliation callbacks, multi-device lifecycle
+and the release/device acceptance work remain outstanding.

@@ -6,19 +6,20 @@ import {join} from 'node:path';
 const {chromium} = await import(process.env.PLAYWRIGHT_MODULE || '@playwright/test');
 const sources = new Map();
 for (const name of ['state.mjs', 'store.mjs', 'permission.mjs', 'permission-view.mjs', 'connection-view.mjs', 'exchange.mjs', 'journey-session.mjs', 'permission-check.test.mjs', 'session-check.test.mjs']) sources.set('/' + name, await readFile(new URL('../journey-sync/' + name, import.meta.url)));
-for (const name of ['app-preferences.mjs','preference-envelope.mjs','isolated-preferences.mjs','generation-state.mjs','generation-migration.mjs','generation-checkpoint.mjs','checkpoint-preparation.mjs','checkpoint-installation.mjs','checkpoint-review.mjs','checkpoint-choice-commit.mjs','startup-state.mjs','migration-setup.mjs','checkpoint-permission.mjs','checkpoint-inbox.mjs','checkpoint-exchange.mjs','checkpoint-session.mjs','checkpoint-selection.mjs','generation-store.mjs','generation-exchange.mjs','generation-permission.mjs','enrolled-checkpoint.test.mjs']) sources.set('/'+name,await readFile(new URL('../journey-sync/'+name,import.meta.url)));
+for (const name of ['app-preferences.mjs','preference-envelope.mjs','isolated-preferences.mjs','generation-state.mjs','generation-migration.mjs','generation-checkpoint.mjs','checkpoint-preparation.mjs','checkpoint-installation.mjs','checkpoint-review.mjs','checkpoint-choice-commit.mjs','startup-state.mjs','migration-setup.mjs','checkpoint-permission.mjs','checkpoint-inbox.mjs','checkpoint-exchange.mjs','checkpoint-session.mjs','checkpoint-selection.mjs','generation-store.mjs','generation-app-store.mjs','generation-exchange.mjs','generation-permission.mjs','enrolled-checkpoint.test.mjs']) sources.set('/'+name,await readFile(new URL('../journey-sync/'+name,import.meta.url)));
 sources.set('/preferences.js',await readFile(new URL('../../public/preferences.js',import.meta.url)));
 for (const name of ['storage.mjs', 'membership.mjs', 'certificate.mjs', 'peer-session.mjs', 'peer-link.mjs', 'challenge.mjs', 'session-statement.mjs', 'enrollment-session.mjs', 'invitation-journal.mjs', 'enrollment-link.mjs', 'enrollment-exchange.mjs', 'enrollment-protection.mjs', 'invitation.mjs']) sources.set('/' + name, await readFile(join(process.env.R2_BROWSER_DIR, name)));
 for (const name of ['../tg-pairing/removal-set.mjs', '../tg-pairing/initial-persona.mjs', '../tg-pairing/software-persona.mjs', '../tg-pairing/core-candidate-session.mjs', '../tg-pairing/software-traffic.mjs', '../tg-pairing/enrollment-payloads.mjs', '../tg-pairing/enrollment-profile.mjs', '../tg-pairing/installation-receipt.mjs', '../tg-pairing/stored-claim.mjs', '../tg-pairing/local-persona.mjs', 'local-owner.mjs', 'owner-certificate.mjs', 'owner-policy.mjs', 'owner-access-view.mjs', 'owner-policy-send.mjs', 'policy-sync.mjs', 'owner-delivery.mjs', 'delivery-history.mjs', 'delivery-recovery.mjs', 'remote-owner.mjs', 'policy-update.mjs', 'policy-update-message.mjs', 'remote-owner-view.mjs', 'settings-view.mjs', 'key-replacement-view.mjs', 'credential-view.mjs', '../tg-pairing/comparison.css', '../tg-pairing/local-persona-session.mjs', '../tg-pairing/epoch-watch.mjs', 'policy.mjs', 'policy-store.mjs', 'local-vault.mjs', 'delivery-ack.mjs', 'delivery-message.mjs']) sources.set('/' + name.split('/').pop(), await readFile(new URL(name, import.meta.url)));
 for (const name of ['hive_wasm.js', 'hive_wasm_bg.wasm']) sources.set('/' + name, await readFile(join(process.env.R2_WASM_DIR, name)));
 for (const name of ['scoped-session-client.mjs', 'policy-connection-view.mjs', '../tg-pairing/transfer-view.mjs', 'vehicle-live-view.mjs', '../../public/live-vehicles.js', '../../public/vendor/leaflet/leaflet.js', '../../public/vendor/leaflet/leaflet.css', 'journey-live-view.mjs', 'stop-live-view.mjs', '../../public/live-predictions.js', '../../public/live-context.js', '../../public/live-time.js', 'policy-session.mjs', 'saved-client.mjs', 'live-client.mjs', '../../public/at-client.js', '../../public/live-client.js']) sources.set('/' + name.split('/').pop(), await readFile(new URL(name, import.meta.url)));
-for (const name of ['protection.mjs','handshake.mjs','local-handshake.mjs','enrolled-handshake-check.mjs','hello.mjs','local-hello.mjs','transport.mjs','peer-exchange.mjs','peer-lifecycle.mjs','journey-connection.mjs']) sources.set('/'+name,await readFile(new URL('../relay/'+name,import.meta.url)));
+for (const name of ['protection.mjs','handshake.mjs','local-handshake.mjs','enrolled-handshake-check.mjs','hello.mjs','local-hello.mjs','transport.mjs','peer-exchange.mjs','peer-lifecycle.mjs','journey-connection.mjs','generation-check.mjs']) sources.set('/'+name,await readFile(new URL('../relay/'+name,import.meta.url)));
 const handleRequest = (req, res) => {
   const path = '/' + req.url.split('/').pop();
   res.setHeader('Content-Type', req.url.endsWith('.wasm') ? 'application/wasm' : req.url.endsWith('.css') ? 'text/css' : sources.has(path) ? 'text/javascript' : 'text/html');
   res.end(sources.get(path) || '<!doctype html><html lang="en"><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>Device consent</title><link rel="stylesheet" href="/comparison.css"></head><body><main><h1 style="font:600 1.5rem system-ui">Connect devices</h1><div id="consent"></div></main></body></html>');
 };
-const relayNetwork=process.env.ENROLLED_RELAY_NETWORK==='1';
+const relayGeneration=process.env.RELAY_GENERATION==='1';
+const relayNetwork=process.env.ENROLLED_RELAY_NETWORK==='1'||relayGeneration;
 const relayServer=relayNetwork?await (await import('../relay/test-server.mjs')).createLocalTestRelay(handleRequest):null;
 const server=relayServer?.server??createServer(handleRequest);
 const protocol=relayNetwork?'https':'http';
@@ -27,9 +28,10 @@ let browser;
 try {
   browser = await chromium.launch({headless: true, executablePath: process.env.CHROMIUM_PATH});
   const context = await browser.newContext({viewport: {width: 320, height: 640},ignoreHTTPSErrors:relayNetwork});
-  await context.addInitScript(enabled=>{globalThis.checkEnrolledJourneyCheckpoint=enabled;},process.env.ENROLLED_CHECKPOINT==='1');
-  await context.addInitScript(enabled=>{globalThis.checkEnrolledRelay=enabled;},process.env.ENROLLED_RELAY==='1'||relayNetwork);
+  await context.addInitScript(enabled=>{globalThis.checkEnrolledJourneyCheckpoint=enabled;},process.env.ENROLLED_CHECKPOINT==='1'||relayGeneration);
+  await context.addInitScript(enabled=>{globalThis.checkEnrolledRelay=enabled;},process.env.ENROLLED_RELAY==='1'||(relayNetwork&&!relayGeneration));
   await context.addInitScript(enabled=>{globalThis.relayNetwork=enabled;},relayNetwork);
+  await context.addInitScript(enabled=>{globalThis.relayGeneration=enabled;},relayGeneration);
   const page = await context.newPage(); await page.goto(`${protocol}://127.0.0.1:${server.address().port}`);
   if(relayNetwork)await page.exposeFunction('dropRelayPeer',member=>relayServer.drop(member));
   await page.exposeFunction('exerciseJourneyConnectionRejected', async (message, cancel) => {
@@ -603,14 +605,15 @@ try {
     } finally { policySync?.close(); clearTimeout(timeout); request?.close(); sending?.close(); receiving?.close(); owner.store.close(); receiver.store.close(); }
   });
   const restoredGroup = await page.evaluate(() => restoreGroup);
-  if(process.env.ENROLLED_RELAY==='1'||relayNetwork){
+  if(process.env.ENROLLED_RELAY==='1'||(relayNetwork&&!relayGeneration)){
     assert.equal(await page.evaluate(()=>globalThis.enrolledRelayPassed),true);
     if(relayNetwork){const stats=relayServer.stats();assert.ok(stats.greetings>=3);assert.ok(stats.frames>10);assert.equal(stats.plaintextObserved,false);}
     console.log('PASS: real enrolled relay handshake and snapshot convergence, offline edit/reconnect, committed receipts, consent removal, regrant invalidation and identity/certificate refusal; '+(relayNetwork?'real local WSS, verified greetings, no fixture journey labels observed in forwarded bytes.':'controlled relay carriage, not WSS.'));
   }
-  if(process.env.ENROLLED_CHECKPOINT==='1')assert.equal(await page.evaluate(()=>globalThis.enrolledCheckpointPassed),true);
+  if(relayGeneration){assert.equal(await page.evaluate(()=>generationRelayPassed),true);assert.ok(relayServer.stats().greetings>=3);console.log('PASS: generation-two snapshots over enrolled WSS, explicit planner reconciliation/history preservation, offline reconnect and generation advance refusal.');}
+  if(process.env.ENROLLED_CHECKPOINT==='1'||relayGeneration)assert.equal(await page.evaluate(()=>globalThis.enrolledCheckpointPassed),true);
   const reopened = await context.newPage(); await reopened.goto(page.url());
-  if(process.env.ENROLLED_CHECKPOINT==='1') {
+  if(process.env.ENROLLED_CHECKPOINT==='1'||relayGeneration) {
     assert.equal(await reopened.evaluate(async bytes=>{
       const group=bytes.map(b=>b.toString(16).padStart(2,'0')).join('');
       const {openIsolatedPlannerStorage}=await import('./isolated-preferences.mjs');

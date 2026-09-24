@@ -229,6 +229,7 @@ export async function checkEnrolledCheckpoint({wasm,owner,receiver,group}) {
       ===JSON.stringify((await receiver.store.read('along-saved-journeys-v2',groupId)).value),'generation snapshots did not converge');
     await grant(false);await refuses(sharing[0].synchronize());
   }finally{sharing.forEach(s=>s.close());}
+  if(globalThis.relayGeneration)await (await import('../relay/generation-check.mjs')).checkGenerationRelay({wasm,owner,receiver,group,roots,adapters});
   // Revoking application consent also denies retry of already installed evidence.
   await grant(false);await refuses(acceptPermittedJourneyCheckpoint(input));
   await refuses(retainPermittedJourneyCheckpoint(input));
