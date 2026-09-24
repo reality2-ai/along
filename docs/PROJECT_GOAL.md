@@ -200,5 +200,6 @@ verify the selected protocol before claiming interoperability. Do not enable a
 default public relay or claim continuous background operation on mobile browsers.
 
 The user also reports repeated timeouts during the requested preview device
-check. The failing step, actual installed version and browser/network details
-are not yet known. Physical pairing/sharing acceptance remains unresolved.
+check. The user clarified that scanning a QR code and choosing Use produced no visible
+progress before timeout. The exact screen, actual installed version and
+browser/network details are not yet known. Physical pairing/sharing acceptance remains unresolved.

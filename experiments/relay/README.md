@@ -112,3 +112,34 @@ caller mutation during asynchronous work. This is not yet an authenticated relay
 session: peer discovery, fresh signed key agreement, replay-resistant handshake,
 real membership/consent adapters and encrypted WSS integration remain required.
 No claim of standard wire compatibility or whole-protocol security review is made.
+
+### Fresh peer handshake prototype
+
+`handshake.mjs` now composes message protection with fresh X25519 key agreement,
+using the same Web Crypto curve as the pinned enrollment runtime. Each side signs
+its role, random 32-byte nonce and ephemeral public key, bound to the full group,
+epoch and ordered initiator/responder identities. Contributions are exactly 129
+bytes. The transcript hashes both contributions' bodies with that context. The
+raw shared secret is cleared after deriving directional protection keys; ephemeral
+private-key references are released. Each side must successfully open the other's
+protected confirmation before obtaining application send/receive methods. The
+confirmation consumes sequence one. A one-minute timeout, abort or failed step
+closes the instance. Protection errors after confirmation also abort its signal.
+
+`node --test experiments/relay/handshake.test.mjs` passes four tests, including
+bidirectional protected messages, mutated contributions, reflected roles, different
+epochs, premature confirmation, permission callback rejection and cancellation.
+A captured signed contribution plus its old confirmation fails against a fresh
+local contribution. These tests supply peer identities and authorization callbacks;
+they do not prove actual stored-peer membership/consent or relay interoperability.
+The existing protection suite also passes (nine combined checks).
+
+Inspection of pinned `r2-relay` `src/ws.rs` confirms that after greeting it buffers
+and broadcasts opaque binary messages within the routing group, excluding the
+sender connection. Thus an Along envelope need not pretend to be normative
+R2-WIRE for that inspected forwarding implementation. Other versions/relays can
+have different rules. The relay can retain ciphertext and handshake metadata;
+Along does not request catchup or infer delivery/durability from forwarding.
+Still required: actual two-browser encrypted WSS flow, real enrolled-peer
+membership/consent integration, bounded dispatch and reconnect orchestration,
+selected-relay settings and public release qualification.
