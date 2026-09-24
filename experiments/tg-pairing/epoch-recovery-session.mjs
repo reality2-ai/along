@@ -1,10 +1,12 @@
 // Recovery-only mutual identity over the real direct WebRTC transcript.
-// No application payload or network key delivery API is exposed by this stage.
+// Only ordered epoch recovery and signed installation receipts are carried.
 import {createPeerLink} from './peer-link.mjs';
 import {loadLocalPersona} from './local-persona.mjs';
 import {openMembership} from './membership.mjs';
 import {watchLocalEpoch} from './epoch-watch.mjs';
 import {createEpochRecoveryChallenge, answerEpochRecoveryChallenge} from './epoch-recovery-proof.mjs';
+import {installRecipientEpoch} from './epoch-installation.mjs';
+import {recoveryReceiptStatement, saveRecoveryReceipt} from './epoch-recovery-receipt.mjs';
 const fixed = (v, n) => v instanceof Uint8Array && v.length === n;
 const hex = v => Array.from(v, b => b.toString(16).padStart(2, '0')).join('');
 const unhex = v => Uint8Array.from(v.match(/../g), b => parseInt(b, 16));
@@ -21,11 +23,13 @@ export async function openEpochRecoverySession({wasm, store, expectedGroup, role
   const group = expectedGroup.slice(), remote = peer.slice(), peerCertificate = certificate?.slice();
   let closed = false, phase = 'opening', link, membership, watcher, unsubscribe, timer, challenge, transcript;
   let identity, memberStatement, ownerNonce, from, to, ready, queue = Promise.resolve();
+  let accepted = false, recipientAccepted = false, busy = false, pending, progress;
   const lifetime = new AbortController();
   const started = performance.now();
+  let deadline = started + 60000;
   const live = () => {
-    if (closed || signal?.aborted || (phase !== 'authenticated'
-        && (performance.now() < started || performance.now() - started >= 60000))) throw Error('Recovery ended');
+    if (closed || signal?.aborted || ((phase !== 'authenticated' || busy)
+        && (performance.now() < started || performance.now() >= deadline))) throw Error('Recovery ended');
   };
   let resolve, reject;
   const result = new Promise((yes, no) => { resolve = yes; reject = no; });
@@ -35,6 +39,7 @@ export async function openEpochRecoverySession({wasm, store, expectedGroup, role
     closed = true; phase = 'closed'; clearTimeout(timer); challenge?.close(); watcher?.close(); unsubscribe?.();
     signal?.removeEventListener('abort', close); link?.close(); membership?.close(); lifetime.abort();
     reject(Error('Recovery connection ended'));
+    pending?.reject(Error('Recovery interrupted; installation may already be saved'));
   };
   const current = async () => {
     live();
@@ -44,7 +49,8 @@ export async function openEpochRecoverySession({wasm, store, expectedGroup, role
     live();
   };
   const send = frame => { if (closed) throw Error('Recovery ended'); link.send(JSON.stringify(frame)); };
-  const authenticated = () => { phase = 'authenticated'; clearTimeout(timer); resolve(); };
+  const authenticated = () => { phase = 'authenticated'; progress = from; clearTimeout(timer); resolve(); };
+  const boundOperation = () => { deadline = performance.now() + 60000; clearTimeout(timer); timer = setTimeout(close, 60000); };
   signal?.addEventListener('abort', close, {once: true});
   try {
     if (signal?.aborted) throw Error('Recovery cancelled');
@@ -94,6 +100,34 @@ export async function openEpochRecoverySession({wasm, store, expectedGroup, role
         await current(); phase = 'waiting-ready'; send({type: 'ready'});
       } else if (phase === 'waiting-ready' && frame.type === 'ready' && fields(frame, ['type'])) {
         await current(); if (role === 'owner') send({type: 'ready'}); authenticated();
+      } else if (role === 'owner' && phase === 'authenticated' && frame.type === 'accept-recovery' && fields(frame, ['type']) && !recipientAccepted) {
+        recipientAccepted = true;
+      } else if (role === 'recipient' && phase === 'authenticated' && accepted && frame.type === 'epoch'
+          && fields(frame, ['type', 'epoch', 'transition', 'certificate', 'payload', 'integrity', 'nonce'])
+          && frame.epoch === String(identity.epoch + 1n) && identity.epoch < to) {
+        const epoch = identity.epoch + 1n, memberId = identity.member, transition = decode(frame.transition, 152), certificate = decode(frame.certificate, 136);
+        const payloadKey = decode(frame.payload, 32), integrityKey = decode(frame.integrity, 32), nonce = decode(frame.nonce, 16);
+        try {
+          boundOperation(); phase = 'installing';
+          // This recovery connection alone survives its expected installation so
+          // it can acknowledge the commit. Other old-epoch sessions still close.
+          watcher.close();
+          await installRecipientEpoch({wasm, store, expectedGroup: group, transition, certificate, payloadKey, integrityKey, signal: lifetime.signal});
+          identity = await loadLocalPersona({wasm, store, expectedGroup: group}); live();
+          if (identity?.epoch !== epoch || identity.member !== memberId || identity.origin !== 'enrolled') throw Error('Installed recovery identity differs');
+          watcher = watchLocalEpoch({store, group, subject: unhex(identity.member), epoch, onChange: close});
+          await watcher.check(); await current();
+          const receipt = await recoveryReceiptStatement({group, subject: unhex(identity.member), epoch, transition, certificate});
+          const proof = await identity.sign(wasm.tg_nonce_signing_bytes(receipt, nonce)); await current();
+          phase = 'authenticated'; clearTimeout(timer); send({type: 'installed', epoch: String(epoch), proof: Array.from(proof)});
+        } finally { payloadKey.fill(0); integrityKey.fill(0); frame.payload.fill(0); frame.integrity.fill(0); }
+      } else if (role === 'owner' && phase === 'waiting-install' && frame.type === 'installed'
+          && fields(frame, ['type', 'epoch', 'proof']) && frame.epoch === String(pending?.epoch)) {
+        await current();
+        await saveRecoveryReceipt({wasm, store, group, subject: remote, ...pending,
+          signature: decode(frame.proof, 64), signal: lifetime.signal});
+        await current(); progress = pending.epoch; phase = 'authenticated'; clearTimeout(timer);
+        const complete = pending.resolve; pending = undefined; complete();
       } else throw Error('Unexpected recovery message');
     };
     link = createPeerLink({role: role === 'owner' ? 'answer' : 'offer', onClose: close,
@@ -111,8 +145,38 @@ export async function openEpochRecoverySession({wasm, store, expectedGroup, role
       } else phase = 'waiting-member-challenge';
     })();
     void ready.catch(close);
-    return Object.freeze({offer: link.offer, accept: link.accept, close, signal: lifetime.signal,
+    const controller = Object.freeze({offer: link.offer, accept: link.accept, close, signal: lifetime.signal,
       state: () => phase,
+      canRecover: () => role === 'owner' && phase === 'authenticated' && recipientAccepted && !busy,
+      acceptRecovery: async () => {
+        if (role !== 'recipient' || phase !== 'authenticated') throw Error('Recovery review unavailable');
+        await current(); if (!accepted) { accepted = true; send({type: 'accept-recovery'}); }
+      },
+      recover: async () => {
+        if (role !== 'owner' || phase !== 'authenticated' || !recipientAccepted || busy) throw Error('Recovery is not ready');
+        busy = true; boundOperation();
+        try {
+          while (progress < to) {
+            const epoch = progress + 1n;
+            const material = await controller.recoveryMaterial(epoch);
+            try {
+              await current(); boundOperation();
+              const receipt = new Promise((resolve, reject) => {
+                pending = {epoch, transition: material.transition, certificate: material.certificate,
+                  nonce: crypto.getRandomValues(new Uint8Array(16)), resolve, reject};
+              });
+              void receipt.catch(() => {});
+              phase = 'waiting-install';
+              const frame = {type: 'epoch', epoch: String(epoch), transition: Array.from(material.transition), certificate: Array.from(material.certificate),
+                payload: Array.from(material.payloadKey), integrity: Array.from(material.integrityKey), nonce: Array.from(pending.nonce)};
+              try { send(frame); } finally { frame.payload.fill(0); frame.integrity.fill(0); material.destroy(); }
+              await receipt;
+            } finally { material.destroy(); }
+          }
+          return Object.freeze({status: 'peer-installation-confirmed', epoch: progress});
+        } catch (error) { close(); throw error; }
+        finally { busy = false; clearTimeout(timer); }
+      },
       recoveryMaterial: async epoch => {
         let issuer, material;
         try {
@@ -129,5 +193,6 @@ export async function openEpochRecoverySession({wasm, store, expectedGroup, role
         try { await result; await current(); return Object.freeze({from, to}); }
         catch (error) { close(); throw error; }
       }});
+    return controller;
   } catch (error) { close(); throw error; }
 }

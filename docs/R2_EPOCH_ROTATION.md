@@ -2,7 +2,7 @@
 
 Status: transition framing, signature verification, encrypted durable preparation
 and atomic issuer/recipient installation implemented and tested, including two
-successive issuer advances. No composed rotation flow is enabled, including in
+successive issuer advances. No user-facing rotation flow is enabled, including in
 preview 3803.
 This is an Along application profile using the R2 group authority; it is not a
 claim of a normative R2 rotation wire format or full R2 conformance.
@@ -165,10 +165,9 @@ The browser check authenticates epoch-one and epoch-two devices over real WebRTC
 rejects a forged issuer proof sent on that connection, rejects a different saved
 issuer and bad member certificate, and verifies both ends close after removal.
 The harness still transfers SDP on one host; physical reachability and discovery
-are separate. This session exposes no application-payload or key-delivery method.
+are separate. This session exposes no arbitrary application-payload method.
 Its authenticated state is recovery context, not permission to use an AT key or
-an assertion that the older member has current application membership. Ordered
-transition/key delivery and installation receipts still need composition.
+an assertion that the older member has current application membership.
 
 The owner session now exposes a local `recoveryMaterial(epoch)` operation only
 after mutual authentication and only for its bound peer and epoch range. It loads
@@ -176,7 +175,7 @@ the retained encrypted preparation, verifies its transition, issuer certificate
 and key digest, and produces a renewed recipient certificate. Current issuer
 custody, member removal status and preparation/membership revisions are checked
 again before returning temporary key arrays. The caller must destroy those arrays
-after use; there is still no network key-delivery method in this session.
+after use. The ordered delivery operation below owns this material while sending.
 
 Browser tests retrieve distinct retained epochs, check current stored keys against
 material returned by the real authenticated session, refuse requests before
@@ -184,6 +183,34 @@ authentication and from the recipient role, and refuse removed/out-of-range peer
 A removal inserted during actual AES-GCM decryption prevents return and the test
 checks that the decrypted buffer was zeroed. This does not erase other previously
 copied material or qualify browser memory as hardware-protected custody.
+
+## Ordered delivery and acknowledgment
+
+After mutual authentication, the recipient must explicitly call `acceptRecovery()`
+through a trusted controller before the issuer's `recover()` can send key material.
+The issuer sends one successor at a time over the authenticated WebRTC channel.
+The recipient verifies and atomically installs it, then signs a receipt bound to
+the group, member, exact epoch, transition/certificate digest and a fresh
+issuer-supplied nonce. The issuer verifies the proof against retained removals and
+saves it under `along-epoch-delivery-v1`, with membership/persona transaction guards.
+Only that saved acknowledgment allows the next successor or a confirmation result.
+
+The recovery session alone temporarily detaches its epoch watcher during its
+expected installation so it can send the receipt. Ordinary sessions still close.
+It restores checks against the new local epoch before replying. Each in-flight
+step has a timeout and a use-time deadline. Concurrent recovery calls refuse.
+Volatile key arrays are cleared after sending/installation; JavaScript strings and
+browser-internal transport copies cannot be promised zeroed by application code.
+
+The browser test now recovers epoch one → two → three across two profiles over real
+WebRTC, checks both durable signed issuer receipts and recipient installation
+records, and restores epoch-three keys/signing in a fresh document. It also checks
+recipient acceptance, forged receipts, a transaction interrupted during key write,
+no success claim after that failure, a subsequent successful connection and removal.
+The transport failure after a successful recipient commit but before its receipt
+reaches the issuer remains unfinished: equal-epoch receipt recovery and the UI must
+be added before offering the full rotation flow. A receipt is a signed peer claim,
+not independent attestation of a hostile device's storage.
 
 1. Compose certificate renewal for retained recipients with authenticated delivery.
    Release only the committed successor. Preserve
