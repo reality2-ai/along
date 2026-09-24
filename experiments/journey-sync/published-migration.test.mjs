@@ -182,5 +182,5 @@ try{
   assert.equal(await fresh.evaluate(async()=>(await import(window.testExperimentBase+'journey-sync/app-preferences.mjs')).readEnvelope().data.journeys[0].savedRoutes[0].route),'81');
   console.log('PASS: a retained unapplied decision made stale by a newer published-app edit refuses application, then Settings starts a fresh review and applies the latest route.');
   assert.deepEqual(errors,[]);
-  console.log('PASS: exact published '+(regularCandidate?'v37 creates saved places; candidate38 creates identity':'3805 creates saved places/identity')+', current candidate migrates and recovers through Settings, and the actual older writer retains edits without overwriting the recovered planner. Service workers blocked: not installed-update qualification.');
+  console.log('PASS: exact published '+(regularCandidate?'v37 creates saved places; candidate creates identity':'3805 creates saved places/identity')+', current candidate migrates and recovers through Settings, and the actual older writer retains edits without overwriting the recovered planner. Service workers blocked: not installed-update qualification.');
 }finally{await browser?.close();await new Promise(resolve=>server.close(resolve));}

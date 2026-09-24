@@ -13,8 +13,12 @@ const root=new URL('../../releases/along-regular-upgrade-candidate/',import.meta
 const manifest=JSON.parse(await readFile(join(root,'build-info.json'),'utf8'));
 assert.equal(manifest.profile,'along-regular-upgrade-candidate-v1');assert.equal(manifest.publishable,false);
 for(const [name,hash] of Object.entries(manifest.files))assert.equal(sha(await readFile(join(root,name))),hash,name);
-const prior=process.env.ALONG_V37_ZIP||'/tmp/along-v37-upgrade-source/along-web.zip';
-assert.equal(sha(await readFile(prior)),'8dda7d208934d6f61494e67860ffe79dfbe7a3b51957e34fa9cbb99e28abf4e9');
+const priorVersion=process.env.ALONG_PRIOR_VERSION||'37';
+assert.ok(['37','38'].includes(priorVersion));
+const prior=priorVersion==='38'?new URL('../../releases/along-web-v38.zip',import.meta.url).pathname:(process.env.ALONG_V37_ZIP||'/tmp/along-v37-upgrade-source/along-web.zip');
+assert.equal(sha(await readFile(prior)),priorVersion==='38'?'2d203b12ad1f1148e494165686435d66cacf6ec7853f0693b48cd46f15cccb3d':'8dda7d208934d6f61494e67860ffe79dfbe7a3b51957e34fa9cbb99e28abf4e9');
+const targetVersion=manifest.appVersion;
+assert.equal(targetVersion,'39');
 const temporary=await mkdtemp(join(tmpdir(),'along-regular-upgrade-'));
 execFileSync('unzip',['-q',prior,'-d',temporary]);
 let current=false,failShell=false,browser;const requests=[],errors=[];
@@ -47,6 +51,22 @@ try{
     localStorage.setItem('along-device-preview-journeys-v1','preview remains separate');
   });
   const persistence=()=>page.evaluate(()=>Object.fromEntries(['along-journeys-v1','along-feedback-v1','along-course-notice-v1','along-device-preview-journeys-v1'].map(key=>[key,localStorage.getItem(key)])));
+  const identity=()=>page.evaluate(async()=>{
+    const store=await(await import('./experiments/tg-pairing/storage.mjs')).openBrowserStorage('along-pairing-lab-v1');
+    try{const p=await store.read('candidate-persona','active');return {revision:p.revision,group:Array.from(p.value.record.group),member:Array.from(p.value.record.subject)};}finally{store.close();}
+  });
+  const setupDevice=async()=>{
+    await page.locator('#settings-open').click();
+    await page.getByRole('button',{name:'Device and AT-key setup',exact:true}).click();
+    await page.getByRole('button',{name:'Set up my device',exact:true}).click();
+    await page.getByRole('button',{name:'Create my device group',exact:true}).click();
+    await page.getByRole('heading',{name:'Your devices and AT key',exact:true}).waitFor();
+  };
+  let priorIdentity;
+  if(priorVersion==='38'){
+    await setupDevice();priorIdentity=await identity();
+    await page.reload();await expect(page.locator('#address-status')).toContainText('ready offline',{timeout:60000});
+  }
   let before=await persistence();
   const oldTab=await context.newPage();oldTab.on('pageerror',e=>errors.push(e.message));
   await oldTab.goto(url);await expect(oldTab.locator('#address-status')).toContainText('ready offline',{timeout:60000});
@@ -64,35 +84,28 @@ try{
   });
   assert.equal(failed,'redundant','incomplete shell must not install');
   assert.deepEqual(await persistence(),before);
-  assert.ok((await page.evaluate(()=>caches.keys())).includes('along-shell-v37'));
+  assert.ok((await page.evaluate(()=>caches.keys())).includes('along-shell-v'+priorVersion));
   await context.setOffline(true);await oldTab.reload();
   await expect(oldTab.locator('#address-status')).toContainText('ready offline',{timeout:60000});
-  await expect(oldTab.locator('#settings')).toContainText('App version 37');
+  await expect(oldTab.locator('#settings')).toContainText('App version '+priorVersion);
   await oldTab.evaluate(async()=>{window.oldPrefs=await import('./preferences.js');});
   await context.setOffline(false);failShell=false;
   await page.goto(url+'update.html');await page.locator('#recover-update').click();
-  await expect(page.locator('#recovery-status')).toContainText('38',{timeout:60000});
+  await expect(page.locator('#recovery-status')).toContainText(targetVersion,{timeout:60000});
   await page.locator('#recover-update').click();
   await expect(page.locator('#address-status')).toContainText('ready offline',{timeout:60000});
-  await expect(page.locator('#settings')).toContainText('App version 38');
+  await expect(page.locator('#settings')).toContainText('App version '+targetVersion);
   assert.deepEqual(await persistence(),before,'upgrade preserves raw saved preferences and local choices');
   await page.evaluate(async()=>{await(await import('./experiments/at-credentials/app-bootstrap.mjs')).restoration;});
   assert.equal(await page.evaluate(async()=>(await import('./experiments/at-credentials/app-live-bridge.mjs')).createLiveClient().configured),false);
-  const cachesAfter=await page.evaluate(()=>caches.keys());assert.ok(cachesAfter.includes('along-shell-v38'));assert.ok(!cachesAfter.includes('along-shell-v37'));
-  await page.locator('#settings-open').click();
-  await page.getByRole('button',{name:'Device and AT-key setup',exact:true}).click();
-  await page.getByRole('button',{name:'Set up my device',exact:true}).click();
-  await page.getByRole('button',{name:'Create my device group',exact:true}).click();
-  await page.getByRole('heading',{name:'Your devices and AT key',exact:true}).waitFor();
+  const cachesAfter=await page.evaluate(()=>caches.keys());assert.ok(cachesAfter.includes('along-shell-v'+targetVersion));assert.ok(!cachesAfter.includes('along-shell-v'+priorVersion));
+  if(priorVersion==='37')await setupDevice();
+  else assert.deepEqual(await identity(),priorIdentity,'existing v38 identity survives upgrade');
   assert.deepEqual(await persistence(),before,'optional device setup preserves previous journeys');
-  const identity=()=>page.evaluate(async()=>{
-    const store=await(await import('./experiments/tg-pairing/storage.mjs')).openBrowserStorage('along-pairing-lab-v1');
-    try{const p=await store.read('candidate-persona','active');return {revision:p.revision,group:Array.from(p.value.record.group),member:Array.from(p.value.record.subject)};}finally{store.close();}
-  });
   const enrolled=await identity();
   // The pre-update page remains v37 even after its controller switches. Its
   // actual published writer can still save a local edit before sharing starts.
-  await expect(oldTab.locator('#settings')).toContainText('App version 37');
+  await expect(oldTab.locator('#settings')).toContainText('App version '+priorVersion);
   await oldTab.evaluate(()=>{
     const data=oldPrefs.readPreferences();data.journeys[0].savedRoutes=[{mode:'bus',route:'75'}];
     data.journeys[0].count+=1;if(!oldPrefs.writePreferences(data))throw Error('Old-tab save failed');
@@ -118,5 +131,5 @@ try{
   await expect(page.locator('#address-status')).toContainText('ready offline',{timeout:60000});
   assert.deepEqual(await persistence(),before);
   assert.deepEqual(errors,[]);assert.deepEqual(requests.filter(path=>!path.startsWith('/along/')),[],'requests outside app scope');
-  console.log('PASS: exact published v37 upgrades in the same /along/ scope to local candidate38; failed shell download leaves v37 available offline; retry preserves saved places, bus70 preference, history, learning choice, feedback and preview sentinel. Device setup retains places; an already-open actual v37 writer saves a bus75 edit, then identity and latest preferences reopen offline. Offline installation/privacy/relay guidance fits 320px and passes axe; keyboard Back preserves places. Optional live remains off; no page errors or app requests outside subpath. Local candidate only, not a release qualification.');
+  console.log('PASS: exact published v'+priorVersion+' upgrades in the same /along/ scope to candidate '+targetVersion+'; failed shell download leaves prior version available offline; retry preserves saved places, bus70 preference, history, learning choice, feedback and preview sentinel. Device setup retains places; an already-open actual prior-version writer saves a bus75 edit, then identity and latest preferences reopen offline. Offline installation/privacy/relay guidance fits 320px and passes axe; keyboard Back preserves places. Optional live remains off; no page errors or app requests outside subpath. Local candidate only, not a release qualification.');
 }finally{await browser?.close();await new Promise(r=>server.close(r));await rm(temporary,{recursive:true,force:true});}

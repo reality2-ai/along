@@ -13,6 +13,11 @@ for (const name of ['../tg-pairing/removal-message.mjs', '../tg-pairing/removal-
 for (const name of ['hive_wasm.js', 'hive_wasm_bg.wasm']) sources.set('/' + name, await readFile(join(process.env.R2_WASM_DIR, name)));
 for (const name of ['scoped-session-client.mjs', 'policy-connection-view.mjs', '../tg-pairing/transfer-view.mjs', 'vehicle-live-view.mjs', '../../public/live-vehicles.js', '../../public/vendor/leaflet/leaflet.js', '../../public/vendor/leaflet/leaflet.css', 'journey-live-view.mjs', 'stop-live-view.mjs', '../../public/live-predictions.js', '../../public/live-context.js', '../../public/live-time.js', 'policy-session.mjs', 'saved-client.mjs', 'live-client.mjs', '../../public/at-client.js', '../../public/live-client.js']) sources.set('/' + name.split('/').pop(), await readFile(new URL(name, import.meta.url)));
 for (const name of ['protection.mjs','handshake.mjs','local-handshake.mjs','enrolled-handshake-check.mjs','hello.mjs','local-hello.mjs','transport.mjs','peer-exchange.mjs','peer-lifecycle.mjs','journey-connection.mjs','generation-check.mjs','discovery.mjs','discovery-check.mjs','configuration.mjs','sharing-service.mjs','service-check.mjs']) sources.set('/'+name,await readFile(new URL('../relay/'+name,import.meta.url)));
+if(process.env.REGULAR_CANDIDATE==='1'){
+  // This relay regression uses component URLs; bind its changed production
+  // service to the actual candidate bytes used by the qualification run.
+  assert.deepEqual(sources.get('/sharing-service.mjs'),await readFile(new URL('../../releases/along-regular-upgrade-candidate/experiments/relay/sharing-service.mjs',import.meta.url)));
+}
 const handleRequest = (req, res) => {
   const path = '/' + req.url.split('/').pop();
   res.setHeader('Content-Type', req.url.endsWith('.wasm') ? 'application/wasm' : req.url.endsWith('.css') ? 'text/css' : sources.has(path) ? 'text/javascript' : 'text/html');
