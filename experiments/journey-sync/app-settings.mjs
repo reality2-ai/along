@@ -1,3 +1,4 @@
+import {readOlderEditRecovery,applyOlderEditRecovery,finishOlderEditRecovery} from './older-edit-recovery.mjs';
 import {resetOlderEditDecision} from './older-edit-reset.mjs';
 import {readOlderEditProgress} from './older-edit-progress.mjs';
 import {createOlderEditReview} from './older-edit-review.mjs';
@@ -180,7 +181,8 @@ export function mountAppJourneySettings({wasm, store, expectedGroup, member}) {
         const finish=action('Finish applying my choices',async()=>{
           finish.disabled=true;note.textContent='Checking the retained choices…';
           try{
-            await applyOlderEditDecision({wasm,store,expectedGroup,reviewId,signal:controller.signal});
+            if(progress.recoveryId)await finishOlderEditRecovery({wasm,store,expectedGroup,recoveryId:progress.recoveryId,signal:controller.signal});
+            else await applyOlderEditDecision({wasm,store,expectedGroup,reviewId,signal:controller.signal});
             if(controller.signal.aborted||disposed)return;
             await checkStartup();message='Your retained saved-place choices have been applied on this device.';home();
           }catch{if(!controller.signal.aborted&&!disposed)note.textContent='The retained choices could not be finished. Your copies are kept. Newer edits may need a fresh review; do not clear device data.';}
@@ -195,6 +197,22 @@ export function mountAppJourneySettings({wasm, store, expectedGroup, member}) {
               if(disposed||controller.signal.aborted)return;
               await checkStartup();home();await reviewOlderEdits();
             }catch{if(!disposed&&!controller.signal.aborted)note.textContent='A fresh review could not be started. The earlier application may have begun; go Back and check its status.';}
+          });
+        }
+        if(application?.value.complete===false){
+          content.append(node('p','If you edited saved places after the interruption, compare those newer edits with your earlier committed choices. Your latest history and preferences will be kept.'));
+          action('Review newer edits',async()=>{
+            try{
+              const recovery=await readOlderEditRecovery({wasm,store,expectedGroup,signal:controller.signal});
+              if(disposed||controller.signal.aborted)return;
+              clear();screen='older-recovery';
+              view=showCheckpointReview(content,{review:recovery,interruptedCopy:true,focus:true,signal:lifetime.signal,
+                onConfirm:async({reviewId,choices,signal})=>{
+                  const result=await applyOlderEditRecovery({wasm,store,expectedGroup,reviewId,choices,signal});
+                  if(result.status!=='older-recovery-applied-locally')throw Error('Recovery unconfirmed');
+                  await checkStartup();return {status:'journey-recovery-applied-locally',reviewId};
+                },onBack:async()=>{const active=generation;await checkStartup();if(!disposed&&dialog.open&&generation===active)home();}});
+            }catch{if(!disposed&&!controller.signal.aborted)note.textContent='The newer edits could not be compared. Your copies are kept. Go Back and check recovery again.';}
           });
         }
         action('Back',home);heading.focus();return;

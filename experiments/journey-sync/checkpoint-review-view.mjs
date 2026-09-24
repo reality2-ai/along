@@ -3,7 +3,7 @@
 import {JourneyCapacityError} from './state.mjs';
 const mounted = new WeakMap();
 let sequence = 0;
-export function showCheckpointReview(container, {review, onConfirm, onBack = () => {}, initialChoices = [], focus = false, signal, olderCopy = false}) {
+export function showCheckpointReview(container, {review, onConfirm, onBack = () => {}, initialChoices = [], focus = false, signal, olderCopy = false, interruptedCopy = false}) {
   if (!review || !Array.isArray(review.differences) || typeof review.resolve !== 'function' || typeof onConfirm !== 'function') throw Error('Recovery review unavailable');
   mounted.get(container)?.();
   const document = container.ownerDocument, differences = structuredClone(review.differences), choices = new Map();
@@ -39,9 +39,9 @@ export function showCheckpointReview(container, {review, onConfirm, onBack = () 
       const difference = differences[index];
       panel.append(node('p', `Journey ${index + 1} of ${differences.length}`), node('h3', name(difference)));
       for (const use of ['local', 'shared']) {
-        const label = use === 'local' ? 'This device' : olderCopy ? 'Older app copy' : 'Shared version';
+        const label = use === 'local' ? 'This device' : interruptedCopy ? 'Earlier committed choice' : olderCopy ? 'Older app copy' : 'Shared version';
         const detail = node('p', label + ': ' + description(difference[use])); detail.id = 'journey-recovery-choice-' + (++sequence); panel.append(detail);
-        const action = button(use === 'local' ? 'Keep this device’s version' : olderCopy ? 'Use older copy’s version' : 'Use shared version', () => {
+        const action = button(use === 'local' ? 'Keep this device’s version' : interruptedCopy ? 'Use earlier committed choice' : olderCopy ? 'Use older copy’s version' : 'Use shared version', () => {
           choices.set(difference.id, use); index++; render();
         });
         action.setAttribute('aria-describedby', detail.id);

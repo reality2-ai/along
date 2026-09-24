@@ -762,10 +762,11 @@ after commit/retry, retained evidence, refusal after application starts and a
 successful new review. The published-writer Settings test also covers a stale
 retained decision followed by a fresh review of the latest route.
 
-If newer local data prevents finishing an already-started application, the current
-screen still retains the records and explains failure; it cannot yet guide that
-conflict through a new review. The complete older-edit release gate remains
-unfinished.
+If newer local data prevents finishing an already-started application, Settings
+now offers **Review newer edits**. It compares the latest local saved places with
+the earlier committed choices and preserves current history/preferences with
+either selection. See the durable recovery details below. Full candidate release
+qualification remains required before publishing.
 
 ### Comparing newer edits after a partial application
 
@@ -782,6 +783,21 @@ network writes happen in this module.
 `node --test experiments/journey-sync/older-edit-recovery-review.test.mjs` passes
 route-choice/history preservation, queued deletion, inconsistent pending state,
 input immutability, changed-review binding and completed/mismatched-application
-refusal. This does not authorize or apply recovery: the guarded durable writer and
-Settings integration still need to consume and revalidate the model, retain its
-compared bytes, and handle interruptions without duplicating replica edits.
+refusal. The model itself does not authorize or apply recovery.
+
+`older-edit-recovery.mjs` now provides the guarded writer and resumable completion.
+It checks the original retained choice, current identity, replica and exact review
+input. One IndexedDB transaction retains the new comparison/choices and replica
+result with a format-4 pending pointer. Planner replacement and final acknowledgment
+can retry without repeating replica edits. All compared bytes remain in recovery
+records. Another local edit refuses the old completion and can be explicitly
+reviewed against the latest retained result. Completion acknowledges only the
+original older-copy snapshot; later old-copy edits remain pending.
+
+The browser migration suite verifies planner and final-acknowledgment failures,
+a further edit during recovery, repeated completion, history preservation and an
+identity revision race at the atomic write. The generated-preview test uses the
+published 3805 writer, then interrupts application, creates a newer local route,
+and completes the new comparison through Settings. The shared review UI regression
+checks keyboard, focus, 320px/200% reflow and axe. These are local automated checks,
+not physical-device acceptance or a published release qualification.

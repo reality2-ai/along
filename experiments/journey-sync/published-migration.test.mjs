@@ -110,20 +110,33 @@ try{
   });
   await fresh.getByRole('button',{name:'Apply choices on this device',exact:true}).click();
   await expect(fresh.getByText('Your choices could not be confirmed.',{exact:false})).toBeVisible();
+  await fresh.evaluate(async()=>{
+    const prefs=await import('../experiments/journey-sync/app-preferences.mjs');
+    const data=prefs.readPreferences();data.journeys[0].savedRoutes=[{mode:'bus',route:'90'}];
+    if(!prefs.writePreferences(data))throw Error('newer local edit failed');
+  });
   await fresh.reload();await share();
   await expect(fresh.getByRole('button',{name:'Start journey connection',exact:true})).toHaveCount(0);
   await fresh.getByRole('button',{name:'Finish older-copy review',exact:true}).click();
   await expect(fresh.getByRole('heading',{name:'Finish your saved-place choices',exact:true})).toBeFocused();
   await fresh.getByRole('button',{name:'Finish applying my choices',exact:true}).click();
+  await expect(fresh.getByText('The retained choices could not be finished.',{exact:false})).toBeVisible();
+  await fresh.getByRole('button',{name:'Review newer edits',exact:true}).click();
+  await expect(fresh.getByText('Earlier committed choice: Saved places · Bus 75',{exact:true})).toBeVisible();
+  await expect(fresh.getByText('This device: Saved places · Bus 90',{exact:true})).toBeVisible();
+  await fresh.getByRole('button',{name:'Keep this device’s version',exact:true}).click();
+  await fresh.getByRole('button',{name:'Apply choices on this device',exact:true}).click();
+  await expect(fresh.getByRole('heading',{name:'Saved-place choices applied here',exact:true})).toBeFocused();
+  await fresh.getByRole('button',{name:'Back',exact:true}).click();
   await expect(fresh.getByRole('button',{name:'Review older-copy edits',exact:true})).toHaveCount(0);
   await expect(fresh.getByRole('button',{name:'Start journey connection',exact:true})).toBeVisible();
   const applied=await fresh.evaluate(async()=> (await import('../experiments/journey-sync/app-preferences.mjs')).readEnvelope().data);
-  assert.equal(applied.journeys[0].savedRoutes[0].route,'75');
+  assert.equal(applied.journeys[0].savedRoutes[0].route,'90');
   assert.equal(applied.journeys[0].count,JSON.parse(recovered).journeys[0].count);
   await fresh.reload();await share();
   await expect(fresh.getByRole('button',{name:'Review older-copy edits',exact:true})).toHaveCount(0);
   await expect(fresh.getByRole('button',{name:'Finish older-copy review',exact:true})).toHaveCount(0);
-  console.log('PASS: published older writer → narrow-screen keyboard review, Leave preservation, interrupted planner application, reload/resume, route/history preservation and acknowledgment without repeated prompts.');
+  console.log('PASS: published older writer → narrow-screen keyboard review, Leave preservation, interrupted planner application, newer local edits, explicit recovery comparison after reload, route/history preservation and acknowledgment without repeated prompts.');
   await old.evaluate(()=>{const data=oldPrefs.readPreferences();data.journeys[0].savedRoutes=[{mode:'bus',route:'80'}];if(!oldPrefs.writePreferences(data))throw Error('old writer failed');});
   // Fixture the interruption between retaining a decision and applying it;
   // its storage writer is real. The subsequent reset and re-review use the UI.

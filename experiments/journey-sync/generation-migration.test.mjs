@@ -4,7 +4,7 @@ import {readFile} from 'node:fs/promises';
 import {join} from 'node:path';
 const {chromium} = await import('@playwright/test');
 const sources = new Map();
-for (const name of ['state.mjs', 'store.mjs', 'generation-state.mjs', 'generation-migration.mjs', 'generation-app-store.mjs', 'app-preferences.mjs', 'preference-envelope.mjs', 'isolated-preferences.mjs', 'startup-state.mjs', 'migration-setup.mjs', 'generation-checkpoint.mjs', 'checkpoint-preparation.mjs', 'checkpoint-installation.mjs', 'checkpoint-review.mjs', 'checkpoint-choice-commit.mjs','older-edit-review.mjs','older-edit-progress.mjs','older-edit-reset.mjs','older-edit-decision.mjs','older-edit-application.mjs','older-edit-decision-check.test.mjs'])
+for (const name of ['state.mjs', 'store.mjs', 'generation-state.mjs', 'generation-migration.mjs', 'generation-app-store.mjs', 'app-preferences.mjs', 'preference-envelope.mjs', 'isolated-preferences.mjs', 'startup-state.mjs', 'migration-setup.mjs', 'generation-checkpoint.mjs', 'checkpoint-preparation.mjs', 'checkpoint-installation.mjs', 'checkpoint-review.mjs', 'checkpoint-choice-commit.mjs','older-edit-review.mjs','older-edit-progress.mjs','older-edit-reset.mjs','older-edit-recovery.mjs','older-edit-recovery-review.mjs','older-edit-decision.mjs','older-edit-application.mjs','older-edit-decision-check.test.mjs'])
   sources.set('/journey-sync/' + name, await readFile(new URL(name, import.meta.url)));
 sources.set('/public/preferences.js', await readFile(new URL('../../public/preferences.js', import.meta.url)));
 for (const name of ['software-persona.mjs', 'local-persona.mjs'])
@@ -468,6 +468,7 @@ try {
         &&pending.value.format===2&&application.value.complete;
     }finally{store.close();}
   },olderDecision),true);
+  console.log('PASS: partial-application recovery preserves newer local routes/history, refuses an identity race, resumes planner/final-acknowledgment failures, supports a further explicit review and does not duplicate replica edits.');
   console.log('PASS: retained older-edit work pauses startup and the planner bridge; three consecutive explicit reviews advance the acknowledgment baseline, detect a return to the original route, preserve history and retain original migration evidence.');
   console.log('PASS: older-tab application preserves history, survives planner/final-acknowledgment failure and retries without duplicate replica edits; newer local data refuses and later older edits remain pending.');
   console.log('PASS: older-tab choices and compared copies survive atomic staging, cancellation/retry and reload; quota, changed membership and replacing an unfinished decision refuse. Staging changes neither replica nor planner; later older-tab edits survive.');

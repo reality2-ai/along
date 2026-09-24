@@ -1,3 +1,4 @@
+import {readOlderEditRecovery,applyOlderEditRecovery,finishOlderEditRecovery} from './older-edit-recovery.mjs';
 import {resetOlderEditDecision} from './older-edit-reset.mjs';
 import {readJourneyStartupState} from './startup-state.mjs';
 import {readOlderEditProgress} from './older-edit-progress.mjs';
@@ -136,5 +137,38 @@ export async function checkOlderEditDecision({wasm,store}){
   const finalOptions={...options,reviewId:finalReview.id,choices:finalReview.differences.map(d=>({id:d.id,use:'older'}))};
   await retainOlderEditDecision(finalOptions);await applyOlderEditDecision(finalOptions);
   check(readEnvelope(isolated).data.journeys[0].savedRoutes[0].route==='81','fresh review missed the latest edit');
-  return {group:setup.group,reviewId:finalReview.id,olderRaw:storage.getItem(preferenceKey)};
+  edit('82');
+  const nextProgress=await readOlderEditProgress({store,group:setup.group,member:setup.member,sourceRaw:raw});
+  const interrupted=await createOlderEditReview({current:(await store.read('along-saved-journeys-v2',setup.group)).value,
+    currentRaw:readEnvelope(isolated).raw,sourceRaw:nextProgress.sourceRaw,olderRaw:storage.getItem(preferenceKey),actor:setup.member});
+  const interruptedOptions={...options,reviewId:interrupted.id,choices:interrupted.differences.map(d=>({id:d.id,use:'older'}))};
+  await retainOlderEditDecision(interruptedOptions);
+  const failPlanner={...storage,setItem:(key,value)=>{if(key.endsWith(':generation-profile-v1'))throw Error('planner quota');storage.setItem(key,value);}};
+  await refuses(applyOlderEditDecision({...interruptedOptions,storage:failPlanner}));
+  const newer=readEnvelope(isolated).data;newer.learning=true;newer.journeys[0].count=12;newer.journeys[0].savedRoutes=[{mode:'bus',route:'90'}];
+  check(writePreferences(newer,isolated),'newer planner edit failed');
+  const recovery=await readOlderEditRecovery(options),recoveryOptions={...options,reviewId:recovery.id,choices:recovery.differences.map(d=>({id:d.id,use:'local'}))};
+  const beforeRecoveryRace=await store.read('along-saved-journeys-v2',setup.group);let recoveryRace=false;
+  await refuses(applyOlderEditRecovery({...recoveryOptions,store:{...store,compareAndSwapMany:async(...args)=>{
+    if(!recoveryRace){recoveryRace=true;const membership=await store.read('membership',setup.group);await store.compareAndSwap('membership',setup.group,membership.revision,membership.value);}
+    return store.compareAndSwapMany(...args);
+  }}}));
+  check(recoveryRace&&(await store.read('along-saved-journeys-v2',setup.group)).revision===beforeRecoveryRace.revision,'recovery identity race changed replica');
+  await refuses(applyOlderEditRecovery({...recoveryOptions,storage:failPlanner}));
+  check((await readJourneyStartupState(options)).status==='older-edit-pending','partial recovery resumed sharing');
+  const newerAgain=readEnvelope(isolated).data;newerAgain.journeys[0].savedRoutes=[{mode:'bus',route:'91'}];
+  check(writePreferences(newerAgain,isolated),'later recovery edit failed');
+  await refuses(finishOlderEditRecovery({...options,recoveryId:recovery.id}));
+  const replacement=await readOlderEditRecovery(options),replacementOptions={...options,reviewId:replacement.id,choices:replacement.differences.map(d=>({id:d.id,use:'local'}))};
+  await refuses(applyOlderEditRecovery({...replacementOptions,store:{...store,compareAndSwapMany:async(changes,settings)=>{
+    if(changes.some(c=>c.scope==='along-older-edit-applications-v1'&&c.value.complete))throw Error('recovery acknowledgment quota');
+    return store.compareAndSwapMany(changes,settings);
+  }}}));
+  const recoveryRevision=(await store.read('along-saved-journeys-v2',setup.group)).revision;
+  check((await finishOlderEditRecovery({...options,recoveryId:replacement.id})).status==='older-recovery-applied-locally','retained recovery could not finish');
+  check((await finishOlderEditRecovery({...options,recoveryId:replacement.id})).alreadyApplied,'completed recovery retry failed');
+  check((await store.read('along-saved-journeys-v2',setup.group)).revision===recoveryRevision,'recovery retry duplicated replica edits');
+  check(readEnvelope(isolated).data.journeys[0].savedRoutes[0].route==='91'&&readEnvelope(isolated).data.journeys[0].count===12&&readEnvelope(isolated).data.learning,'recovery lost latest local data');
+  check((await readJourneyStartupState(options)).status==='generation-ready','completed recovery did not resume');
+  return {group:setup.group,reviewId:interrupted.id,olderRaw:storage.getItem(preferenceKey)};
 }
