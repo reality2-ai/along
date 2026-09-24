@@ -128,6 +128,31 @@ descriptor, v1 proof downgrade and malformed epoch values. Invitation review has
 keyboard, narrow-screen and automated accessibility coverage. These checks do not
 establish the recovery transport for already-enrolled devices on older epochs.
 
+## Recovery-only possession check
+
+`epoch-recovery-proof.mjs` now provides a bounded, verifier-owned challenge for
+an enrolled device with an older certificate. The issuer must still be current;
+the peer certificate must be authentic, older and not revoked against the issuer's
+held membership. The 152-byte Along statement binds domain `ALNGERC1`, group,
+issuer member, recovering member, both epochs and a 32-byte connection transcript.
+A fresh 16-byte nonce uses the runtime's canonical nonce signing bytes. Challenges
+are single-use, cancellable and expire within one minute with a use-time check.
+
+The requester reconstructs the statement from its local enrolled identity, saved
+inviter, epoch and caller-supplied connection transcript. Verification uses the
+actual core nonce verifier at the older certificate's epoch solely to check this
+recovery proof. Before and after verification, the issuer checks its current epoch
+and the peer's current removal status separately. A historical certificate is
+never promoted to a general current-member grant. A successful result is not a
+continuing key-release permission; delivery still needs fresh checks.
+
+The composed enrollment test advances the issuer to epoch two while the recipient
+remains at epoch one. It verifies possession, rejects statement/transcript changes,
+nonce replay, cancellation and expiry despite delayed timers, and rejects removal
+between challenge issuance and response. This test uses fixture transcript bytes;
+it does not yet establish binding to a real recovery WebRTC connection, mutual
+authentication, encrypted recovery delivery or installation through that flow.
+
 1. Compose certificate renewal for retained recipients with authenticated delivery.
    Release only the committed successor. Preserve
    prior removals and recheck recipient standing at delivery, rather than treating

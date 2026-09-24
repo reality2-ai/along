@@ -35,6 +35,14 @@ downgrade refuse. Both devices must update for new invitations. Public preview
 3803 still uses the earlier invitation format; older-device key recovery remains
 unfinished.
 
+The next recovery building block verifies possession of an older enrolled member
+key using a single-use nonce and a statement bound to group, identities, epochs
+and connection transcript. Current issuer standing and removals are checked before
+and after verification. The composed browser test covers replay, cancellation,
+expiry and removal during the challenge, with fixture transcript bytes. No keys
+are released by this check; real recovery transport and mutual authentication
+remain unfinished. See [the rotation design](R2_EPOCH_ROTATION.md#recovery-only-possession-check).
+
 The restored software issuer now produces epoch-zero signed revocation evidence
 using the runtime's actual signing bytes. The browser check applies this evidence
 through the membership verifier, rejects tampering, deduplicates replay and checks

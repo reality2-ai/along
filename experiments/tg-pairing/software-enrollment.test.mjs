@@ -3,13 +3,14 @@ import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
 import {readFile} from 'node:fs/promises';
 import {join} from 'node:path';
+import {checkRecoveryProof} from './epoch-recovery-check.mjs';
 const {chromium} = await import(process.env.PLAYWRIGHT_MODULE || '@playwright/test');
 if (!process.env.R2_BROWSER_DIR) throw new Error('Set R2_BROWSER_DIR to the experimental Reality2 browser module directory');
 if (!process.env.R2_WASM_DIR) throw new Error('Set R2_WASM_DIR');
 const sources = new Map(await Promise.all(['peer-session', 'challenge', 'session-statement', 'membership', 'certificate', 'enrollment-session', 'storage', 'invitation-journal', 'enrollment-link', 'enrollment-exchange', 'enrollment-protection', 'peer-link', 'invitation'].map(async name => ['/' + name + '.mjs', await readFile(join(process.env.R2_BROWSER_DIR, name + '.mjs'))])));
 if (process.env.EPOCH_INSTALL === '1') {
   if (process.env.ABORT_TRAFFIC === '1') throw Error('Epoch installation needs completed enrollment');
-  for (const name of ['epoch-transition.mjs', 'epoch-preparation.mjs', 'epoch-installation.mjs', 'epoch-install-check.mjs']) sources.set('/' + name, await readFile(new URL(name, import.meta.url)));
+  for (const name of ['epoch-transition.mjs', 'epoch-preparation.mjs', 'epoch-installation.mjs', 'epoch-install-check.mjs', 'epoch-recovery-proof.mjs', 'member-removal.mjs']) sources.set('/' + name, await readFile(new URL(name, import.meta.url)));
 }
 for (const name of ['enrollment-profile.mjs', 'enrollment-payloads.mjs', 'core-candidate-session.mjs', 'software-traffic.mjs', 'initial-persona.mjs', 'software-persona.mjs', 'software-invitation.mjs', 'invitation-proof.mjs', 'transfer-view.mjs', 'receive-invitation-view.mjs', 'stored-claim.mjs', 'installation-receipt.mjs', 'local-persona.mjs', 'local-persona-session.mjs', 'epoch-watch.mjs', 'receipt-recovery.mjs']) sources.set('/' + name, await readFile(new URL('./' + name, import.meta.url)));
 if (process.env.RECOVERY_MODULE) sources.set('/receipt-recovery.mjs', await readFile(process.env.RECOVERY_MODULE));
@@ -333,6 +334,8 @@ try {
         finally { traffic.destroy(); }
       } finally { s.close(); }
     }, targetGroup), true);
+    await checkRecoveryProof(pages[1], advanced);
+    console.log('PASS: older-device recovery proof checks real enrolled identity across epochs, rejects nonce replay, cancellation, delayed-timer expiry and removal after challenge. Transcript is a harness fixture; no recovery keys are delivered.');
     console.log('PASS: enrolled recipient atomically installs prepared epoch-one material, restores/signs in a fresh document, rejects substitutions and stale writes, rolls back interrupted transactions, and recovers duplicate delivery. Authenticated old-epoch sessions close in the installing tab and a sibling tab; unchanged-state hints do not close them. Test harness supplies renewed certificate/material; production delivery is not covered.');
   }
   }
