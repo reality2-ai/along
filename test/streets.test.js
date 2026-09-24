@@ -4,6 +4,23 @@ import {StreetGraph} from '../public/streets.js';
 import {Planner} from '../public/planner.js';
 
 function graph(){return new StreetGraph({version:1,accessibilityVersion:1,coords:[-36850000,174760000,-36850000,174762000,-36848000,174762000,-36848000,174760000],edges:[0,1,100,0,1,0,100,0,1,2,100,1,2,1,100,1,0,3,150,2,3,0,150,2,3,2,150,2,2,3,150,2],flags:[0,0,1,1,0,0,0,0],names:['Queen Street','Steps','Level footpath'],addresses:[['x','1 Queen Street, Auckland Central',-36.85,174.76,'Queen Street'],['y','2 Queen Street, Auckland Central',-36.848,174.762,'']]});}
+test('distance-only walks preserve reachability, pace and barriers without path allocations',()=>{
+  const g=graph(),place={lat:-36.85,lon:174.76};
+  for(const reverse of [false,true])for(const avoidSteps of [false,true])for(const pace of [0.8,1.25]){
+    g.profile={avoidSteps,pace};
+    const full=g.reach(place,600,reverse),distances=g.reach(place,600,reverse,{trackPath:false});
+    assert.ok(full.parent.size>0);
+    assert.equal(distances.parent.size,0);
+    assert.deepEqual(distances.distance,full.distance);
+    assert.deepEqual(distances.snap,full.snap);
+  }
+  // A later directions request still reconstructs the selected path.
+  g.profile={avoidSteps:true,pace:1.25};
+  const route=g.route(place,{lat:-36.848,lon:174.762},600);
+  assert.equal(route.seconds,300);
+  assert.ok(route.geometry.length>2);
+  assert.ok(route.steps.every(s=>s.name!=='Steps'));
+});
 test('street paths respect direction and avoid mapped steps when requested',()=>{
   const g=graph(),from={lat:-36.85,lon:174.76},to={lat:-36.848,lon:174.762};
   assert.equal(g.route(from,to,600).seconds,200);

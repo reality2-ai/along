@@ -57,14 +57,14 @@ export class StreetGraph {
     }
     return bestStreet||best;
   }
-  reach(place,maxSeconds,reverse=false){
+  reach(place,maxSeconds,reverse=false,{trackPath=true}={}){
     const snap=this.snap(place),distance=new Map(),parent=new Map();
     if(!snap||snap.seconds>maxSeconds)return {snap,distance,parent,reverse};
     const heap=new Heap();distance.set(snap.node,snap.seconds);heap.push(snap.node,snap.seconds);
     const head=reverse?this.reverseHead:this.head,next=reverse?this.reverseNext:this.next,edges=this.data.edges;
     while(heap.length){const [node,cost]=heap.pop();if(cost!==distance.get(node))continue;
       for(let e=head[node];e!==-1;e=next[e]){if(this.profile.avoidSteps&&this.data.flags[e])continue;const i=e*4,to=edges[i+(reverse?0:1)],arrival=cost+Math.ceil(edges[i+2]*1.25/this.profile.pace);
-        if(arrival<=maxSeconds&&arrival<(distance.get(to)??Infinity)){distance.set(to,arrival);parent.set(to,[node,e]);heap.push(to,arrival);}
+        if(arrival<=maxSeconds&&arrival<(distance.get(to)??Infinity)){distance.set(to,arrival);if(trackPath)parent.set(to,[node,e]);heap.push(to,arrival);}
       }
     }return {snap,distance,parent,reverse};
   }

@@ -1,0 +1,770 @@
+{
+  "status": "passed",
+  "baseline_source": "66e25c9",
+  "command": "node --expose-gc --max-old-space-size=384 scripts/check_routing_allocations.mjs",
+  "scope": "Five sequential fixed-snapshot desktop Node searches, GC between stages; selected itinerary times and mode sequences agree. Not a phone benchmark or complete path equality proof. Unit and raw GTFS checks cover routing semantics separately.",
+  "before": {
+    "node": "v26.4.0",
+    "records": [
+      {
+        "stage": "start",
+        "before": {
+          "rss": 54673408,
+          "heapTotal": 7213056,
+          "heapUsed": 5057976,
+          "external": 1993284,
+          "arrayBuffers": 139519
+        },
+        "retained": {
+          "rss": 54304768,
+          "heapTotal": 6426624,
+          "heapUsed": 4409304,
+          "external": 1993324,
+          "arrayBuffers": 139483
+        }
+      },
+      {
+        "stage": "timetable",
+        "before": {
+          "rss": 251203584,
+          "heapTotal": 126128128,
+          "heapUsed": 119894464,
+          "external": 56220030,
+          "arrayBuffers": 54366225
+        },
+        "retained": {
+          "rss": 158044160,
+          "heapTotal": 46841856,
+          "heapUsed": 31672896,
+          "external": 56220030,
+          "arrayBuffers": 40829503
+        }
+      },
+      {
+        "stage": "streets-addresses",
+        "before": {
+          "rss": 512049152,
+          "heapTotal": 311361536,
+          "heapUsed": 249578048,
+          "external": 112790783,
+          "arrayBuffers": 110938283
+        },
+        "retained": {
+          "rss": 507764736,
+          "heapTotal": 306208768,
+          "heapUsed": 230424880,
+          "external": 112790783,
+          "arrayBuffers": 110938283
+        }
+      },
+      {
+        "stage": "arrive 1",
+        "before": {
+          "rss": 656420864,
+          "heapTotal": 407822336,
+          "heapUsed": 323112000,
+          "external": 112850342,
+          "arrayBuffers": 110938283
+        },
+        "retained": {
+          "rss": 653979648,
+          "heapTotal": 353628160,
+          "heapUsed": 233909080,
+          "external": 112849107,
+          "arrayBuffers": 110938283
+        }
+      },
+      {
+        "stage": "arrive 2",
+        "before": {
+          "rss": 673247232,
+          "heapTotal": 357228544,
+          "heapUsed": 283737440,
+          "external": 112849107,
+          "arrayBuffers": 110938283
+        },
+        "retained": {
+          "rss": 670638080,
+          "heapTotal": 322695168,
+          "heapUsed": 233926248,
+          "external": 112849107,
+          "arrayBuffers": 110938283
+        }
+      },
+      {
+        "stage": "leave 3",
+        "before": {
+          "rss": 664453120,
+          "heapTotal": 397189120,
+          "heapUsed": 330862848,
+          "external": 112849107,
+          "arrayBuffers": 110938283
+        },
+        "retained": {
+          "rss": 662925312,
+          "heapTotal": 380891136,
+          "heapUsed": 235880184,
+          "external": 112849107,
+          "arrayBuffers": 110938283
+        }
+      },
+      {
+        "stage": "leave 4",
+        "before": {
+          "rss": 665939968,
+          "heapTotal": 383033344,
+          "heapUsed": 278487360,
+          "external": 112849107,
+          "arrayBuffers": 110938283
+        },
+        "retained": {
+          "rss": 664440832,
+          "heapTotal": 326889472,
+          "heapUsed": 235870648,
+          "external": 112849107,
+          "arrayBuffers": 110938283
+        }
+      },
+      {
+        "stage": "arrive 5",
+        "before": {
+          "rss": 667717632,
+          "heapTotal": 330006528,
+          "heapUsed": 262057464,
+          "external": 112849107,
+          "arrayBuffers": 110938283
+        },
+        "retained": {
+          "rss": 665169920,
+          "heapTotal": 327413760,
+          "heapUsed": 236053480,
+          "external": 112849107,
+          "arrayBuffers": 110938283
+        }
+      }
+    ],
+    "runs": [
+      {
+        "timeMode": "arrive",
+        "ms": 5345,
+        "calls": 5423,
+        "nodes": 6857866,
+        "parents": 6852670,
+        "journeys": [
+          {
+            "departure": 29374,
+            "arrival": 32327,
+            "legs": [
+              "walk",
+              "train",
+              "walk",
+              "ferry",
+              "walk"
+            ]
+          }
+        ],
+        "forwardCache": 0,
+        "reverseCache": 5417
+      },
+      {
+        "timeMode": "arrive",
+        "ms": 811,
+        "calls": 6,
+        "nodes": 12916,
+        "parents": 12910,
+        "journeys": [
+          {
+            "departure": 29374,
+            "arrival": 32327,
+            "legs": [
+              "walk",
+              "train",
+              "walk",
+              "ferry",
+              "walk"
+            ]
+          }
+        ],
+        "forwardCache": 0,
+        "reverseCache": 5417
+      },
+      {
+        "timeMode": "leave",
+        "ms": 3760,
+        "calls": 3486,
+        "nodes": 4162161,
+        "parents": 4158947,
+        "journeys": [
+          {
+            "departure": 32400,
+            "arrival": 35927,
+            "legs": [
+              "walk",
+              "train",
+              "walk",
+              "ferry",
+              "walk"
+            ]
+          }
+        ],
+        "forwardCache": 3480,
+        "reverseCache": 5417
+      },
+      {
+        "timeMode": "leave",
+        "ms": 974,
+        "calls": 6,
+        "nodes": 12916,
+        "parents": 12910,
+        "journeys": [
+          {
+            "departure": 32400,
+            "arrival": 35927,
+            "legs": [
+              "walk",
+              "train",
+              "walk",
+              "ferry",
+              "walk"
+            ]
+          }
+        ],
+        "forwardCache": 3480,
+        "reverseCache": 5417
+      },
+      {
+        "timeMode": "arrive",
+        "ms": 869,
+        "calls": 6,
+        "nodes": 12916,
+        "parents": 12910,
+        "journeys": [
+          {
+            "departure": 29374,
+            "arrival": 32327,
+            "legs": [
+              "walk",
+              "train",
+              "walk",
+              "ferry",
+              "walk"
+            ]
+          }
+        ],
+        "forwardCache": 3480,
+        "reverseCache": 5417
+      }
+    ]
+  },
+  "after": {
+    "node": "v26.4.0",
+    "records": [
+      {
+        "stage": "start",
+        "before": {
+          "rss": 54845440,
+          "heapTotal": 6426624,
+          "heapUsed": 5798400,
+          "external": 1993284,
+          "arrayBuffers": 139519
+        },
+        "retained": {
+          "rss": 54956032,
+          "heapTotal": 6426624,
+          "heapUsed": 4409536,
+          "external": 1993324,
+          "arrayBuffers": 139483
+        }
+      },
+      {
+        "stage": "timetable",
+        "before": {
+          "rss": 234008576,
+          "heapTotal": 120098816,
+          "heapUsed": 115835136,
+          "external": 42683308,
+          "arrayBuffers": 40829503
+        },
+        "retained": {
+          "rss": 152690688,
+          "heapTotal": 38715392,
+          "heapUsed": 31672880,
+          "external": 42683308,
+          "arrayBuffers": 40829503
+        }
+      },
+      {
+        "stage": "streets-addresses",
+        "before": {
+          "rss": 512106496,
+          "heapTotal": 309760000,
+          "heapUsed": 243327056,
+          "external": 112790783,
+          "arrayBuffers": 110938283
+        },
+        "retained": {
+          "rss": 508547072,
+          "heapTotal": 304635904,
+          "heapUsed": 230424928,
+          "external": 112790783,
+          "arrayBuffers": 110938283
+        }
+      },
+      {
+        "stage": "arrive 1",
+        "before": {
+          "rss": 573005824,
+          "heapTotal": 332357632,
+          "heapUsed": 272816792,
+          "external": 112850342,
+          "arrayBuffers": 110938283
+        },
+        "retained": {
+          "rss": 569995264,
+          "heapTotal": 324268032,
+          "heapUsed": 233988760,
+          "external": 112850342,
+          "arrayBuffers": 110938283
+        }
+      },
+      {
+        "stage": "arrive 2",
+        "before": {
+          "rss": 591753216,
+          "heapTotal": 327950336,
+          "heapUsed": 267488936,
+          "external": 112850342,
+          "arrayBuffers": 110938283
+        },
+        "retained": {
+          "rss": 588693504,
+          "heapTotal": 323481600,
+          "heapUsed": 234005624,
+          "external": 112850342,
+          "arrayBuffers": 110938283
+        }
+      },
+      {
+        "stage": "leave 3",
+        "before": {
+          "rss": 598523904,
+          "heapTotal": 332906496,
+          "heapUsed": 290912072,
+          "external": 112850342,
+          "arrayBuffers": 110938283
+        },
+        "retained": {
+          "rss": 596504576,
+          "heapTotal": 329773056,
+          "heapUsed": 235956336,
+          "external": 112850342,
+          "arrayBuffers": 110938283
+        }
+      },
+      {
+        "stage": "leave 4",
+        "before": {
+          "rss": 598994944,
+          "heapTotal": 332324864,
+          "heapUsed": 280704544,
+          "external": 112850342,
+          "arrayBuffers": 110938283
+        },
+        "retained": {
+          "rss": 596295680,
+          "heapTotal": 325054464,
+          "heapUsed": 235899392,
+          "external": 112850342,
+          "arrayBuffers": 110938283
+        }
+      },
+      {
+        "stage": "arrive 5",
+        "before": {
+          "rss": 593088512,
+          "heapTotal": 329441280,
+          "heapUsed": 262440464,
+          "external": 112850342,
+          "arrayBuffers": 110938283
+        },
+        "retained": {
+          "rss": 590639104,
+          "heapTotal": 325578752,
+          "heapUsed": 236121120,
+          "external": 112850342,
+          "arrayBuffers": 110938283
+        }
+      }
+    ],
+    "runs": [
+      {
+        "timeMode": "arrive",
+        "ms": 3819,
+        "calls": 5423,
+        "nodes": 6857866,
+        "parents": 6261,
+        "journeys": [
+          {
+            "departure": 29374,
+            "arrival": 32327,
+            "legs": [
+              "walk",
+              "train",
+              "walk",
+              "ferry",
+              "walk"
+            ]
+          }
+        ],
+        "forwardCache": 0,
+        "reverseCache": 5417
+      },
+      {
+        "timeMode": "arrive",
+        "ms": 737,
+        "calls": 6,
+        "nodes": 12916,
+        "parents": 6261,
+        "journeys": [
+          {
+            "departure": 29374,
+            "arrival": 32327,
+            "legs": [
+              "walk",
+              "train",
+              "walk",
+              "ferry",
+              "walk"
+            ]
+          }
+        ],
+        "forwardCache": 0,
+        "reverseCache": 5417
+      },
+      {
+        "timeMode": "leave",
+        "ms": 2445,
+        "calls": 3486,
+        "nodes": 4162161,
+        "parents": 6261,
+        "journeys": [
+          {
+            "departure": 32400,
+            "arrival": 35927,
+            "legs": [
+              "walk",
+              "train",
+              "walk",
+              "ferry",
+              "walk"
+            ]
+          }
+        ],
+        "forwardCache": 3480,
+        "reverseCache": 5417
+      },
+      {
+        "timeMode": "leave",
+        "ms": 571,
+        "calls": 6,
+        "nodes": 12916,
+        "parents": 6261,
+        "journeys": [
+          {
+            "departure": 32400,
+            "arrival": 35927,
+            "legs": [
+              "walk",
+              "train",
+              "walk",
+              "ferry",
+              "walk"
+            ]
+          }
+        ],
+        "forwardCache": 3480,
+        "reverseCache": 5417
+      },
+      {
+        "timeMode": "arrive",
+        "ms": 752,
+        "calls": 6,
+        "nodes": 12916,
+        "parents": 6261,
+        "journeys": [
+          {
+            "departure": 29374,
+            "arrival": 32327,
+            "legs": [
+              "walk",
+              "train",
+              "walk",
+              "ferry",
+              "walk"
+            ]
+          }
+        ],
+        "forwardCache": 3480,
+        "reverseCache": 5417
+      }
+    ]
+  },
+  "portable_script_repeat": {
+    "node": "v26.4.0",
+    "records": [
+      {
+        "stage": "start",
+        "before": {
+          "rss": 54620160,
+          "heapTotal": 6688768,
+          "heapUsed": 5074192,
+          "external": 1993284,
+          "arrayBuffers": 139519
+        },
+        "retained": {
+          "rss": 54661120,
+          "heapTotal": 6164480,
+          "heapUsed": 4410168,
+          "external": 1993324,
+          "arrayBuffers": 139483
+        }
+      },
+      {
+        "stage": "timetable",
+        "before": {
+          "rss": 250875904,
+          "heapTotal": 126390272,
+          "heapUsed": 119890472,
+          "external": 56220030,
+          "arrayBuffers": 54366225
+        },
+        "retained": {
+          "rss": 160051200,
+          "heapTotal": 46841856,
+          "heapUsed": 31676632,
+          "external": 56220030,
+          "arrayBuffers": 40829503
+        }
+      },
+      {
+        "stage": "streets-addresses",
+        "before": {
+          "rss": 510537728,
+          "heapTotal": 310050816,
+          "heapUsed": 262410096,
+          "external": 112790783,
+          "arrayBuffers": 110938283
+        },
+        "retained": {
+          "rss": 507215872,
+          "heapTotal": 305160192,
+          "heapUsed": 230428384,
+          "external": 112790783,
+          "arrayBuffers": 110938283
+        }
+      },
+      {
+        "stage": "arrive 1",
+        "before": {
+          "rss": 577921024,
+          "heapTotal": 333475840,
+          "heapUsed": 268282600,
+          "external": 112850342,
+          "arrayBuffers": 110938283
+        },
+        "retained": {
+          "rss": 574603264,
+          "heapTotal": 322957312,
+          "heapUsed": 233995224,
+          "external": 112850342,
+          "arrayBuffers": 110938283
+        }
+      },
+      {
+        "stage": "arrive 2",
+        "before": {
+          "rss": 588627968,
+          "heapTotal": 327454720,
+          "heapUsed": 261301992,
+          "external": 112850342,
+          "arrayBuffers": 110938283
+        },
+        "retained": {
+          "rss": 584679424,
+          "heapTotal": 322695168,
+          "heapUsed": 234011992,
+          "external": 112850342,
+          "arrayBuffers": 110938283
+        }
+      },
+      {
+        "stage": "leave 3",
+        "before": {
+          "rss": 596213760,
+          "heapTotal": 332296192,
+          "heapUsed": 290905408,
+          "external": 112850342,
+          "arrayBuffers": 110938283
+        },
+        "retained": {
+          "rss": 594243584,
+          "heapTotal": 329510912,
+          "heapUsed": 235966168,
+          "external": 112850342,
+          "arrayBuffers": 110938283
+        }
+      },
+      {
+        "stage": "leave 4",
+        "before": {
+          "rss": 595947520,
+          "heapTotal": 332062720,
+          "heapUsed": 284533792,
+          "external": 112850342,
+          "arrayBuffers": 110938283
+        },
+        "retained": {
+          "rss": 593469440,
+          "heapTotal": 324005888,
+          "heapUsed": 235910624,
+          "external": 112850342,
+          "arrayBuffers": 110938283
+        }
+      },
+      {
+        "stage": "arrive 5",
+        "before": {
+          "rss": 597532672,
+          "heapTotal": 330280960,
+          "heapUsed": 262270784,
+          "external": 112850342,
+          "arrayBuffers": 110938283
+        },
+        "retained": {
+          "rss": 593723392,
+          "heapTotal": 325054464,
+          "heapUsed": 236130016,
+          "external": 112850342,
+          "arrayBuffers": 110938283
+        }
+      }
+    ],
+    "runs": [
+      {
+        "timeMode": "arrive",
+        "ms": 3530,
+        "calls": 5423,
+        "nodes": 6857866,
+        "parents": 6261,
+        "journeys": [
+          {
+            "departure": 29374,
+            "arrival": 32327,
+            "legs": [
+              "walk",
+              "train",
+              "walk",
+              "ferry",
+              "walk"
+            ]
+          }
+        ],
+        "forwardCache": 0,
+        "reverseCache": 5417
+      },
+      {
+        "timeMode": "arrive",
+        "ms": 597,
+        "calls": 6,
+        "nodes": 12916,
+        "parents": 6261,
+        "journeys": [
+          {
+            "departure": 29374,
+            "arrival": 32327,
+            "legs": [
+              "walk",
+              "train",
+              "walk",
+              "ferry",
+              "walk"
+            ]
+          }
+        ],
+        "forwardCache": 0,
+        "reverseCache": 5417
+      },
+      {
+        "timeMode": "leave",
+        "ms": 2482,
+        "calls": 3486,
+        "nodes": 4162161,
+        "parents": 6261,
+        "journeys": [
+          {
+            "departure": 32400,
+            "arrival": 35927,
+            "legs": [
+              "walk",
+              "train",
+              "walk",
+              "ferry",
+              "walk"
+            ]
+          }
+        ],
+        "forwardCache": 3480,
+        "reverseCache": 5417
+      },
+      {
+        "timeMode": "leave",
+        "ms": 616,
+        "calls": 6,
+        "nodes": 12916,
+        "parents": 6261,
+        "journeys": [
+          {
+            "departure": 32400,
+            "arrival": 35927,
+            "legs": [
+              "walk",
+              "train",
+              "walk",
+              "ferry",
+              "walk"
+            ]
+          }
+        ],
+        "forwardCache": 3480,
+        "reverseCache": 5417
+      },
+      {
+        "timeMode": "arrive",
+        "ms": 794,
+        "calls": 6,
+        "nodes": 12916,
+        "parents": 6261,
+        "journeys": [
+          {
+            "departure": 29374,
+            "arrival": 32327,
+            "legs": [
+              "walk",
+              "train",
+              "walk",
+              "ferry",
+              "walk"
+            ]
+          }
+        ],
+        "forwardCache": 3480,
+        "reverseCache": 5417
+      }
+    ]
+  },
+  "unit_tests": 80,
+  "unit_log_sha256": "8ea51e3b84a0457545ff2f8a6e91c61f071a63c871965331e078b946057cb859",
+  "script_sha256": "b147601487b11697829b602d47bf59aedd2ae0e4429d94d645aa4ecfea19b910",
+  "full_itinerary_comparison": "All three arrival itineraries, including walking directions/geometry, exactly match the v42 arrival snapshot.",
+  "raw_gtfs": "Three transit legs independently match original GTFS"
+}

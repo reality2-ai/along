@@ -128,3 +128,22 @@ between versions. The public browser verifies functional offline arrival routing
 it does not establish Samsung S23 performance. No human coding is needed to test
 responsiveness: report the device/browser, journey, approximate waiting time and
 any reload or lost state.
+
+
+## Version 43 candidate: avoid unused walking paths
+
+[Allocation evidence](evidence/routing-path-allocations.json) compares five
+sequential searches under a 384 MiB Node heap limit. This is a desktop diagnostic,
+with collection between stages; external buffers and RSS are outside that limit.
+Transfer/access searches now request distances without constructing predecessor
+paths. Walking directions still request and reconstruct the full path.
+
+In the first arrival search, cumulative predecessor entries fell from 6,852,670
+to 6,261; those remaining belong to displayed walking routes. The run took
+5.345 s before and 3.819 s after. Retained heap after five searches stayed near
+236 MB, so the demonstrated change reduces temporary allocation, not the stored
+network's size. Three complete arrival itineraries, including directions and
+geometry, match v42 exactly, and three transit legs pass the original-GTFS check.
+The 80 unit tests include distance-only equivalence across direction, pace and
+barrier profiles. These observations do not promise the same speedup on phones.
+This candidate has not yet completed release qualification or public deployment.

@@ -38,12 +38,12 @@ def candidate(runtime):
                 elif name.startswith('experiments/'):
                     text = text.replace('../../public/', '../../')
                 if name == 'public/sw.js':
-                    text = text.replace('along-experimental-shell-', 'along-shell-').replace('along-shell-v37', 'along-shell-v42')
+                    text = text.replace('along-experimental-shell-', 'along-shell-').replace('along-shell-v37', 'along-shell-v43')
                 if name == 'public/index.html':
-                    text = text.replace('App version 37', 'App version 42')
+                    text = text.replace('App version 37', 'App version 43')
                     text = text.replace('<p role="note">Local integration experiment — use dummy AT keys only. Do not publish this build. Device and AT-key setup is in Settings.</p>', '')
                 if name == 'public/update.html':
-                    text = text.replace('recovery=37', 'recovery=42').replace('Recovery page 37', 'Recovery page 42')
+                    text = text.replace('recovery=37', 'recovery=43').replace('Recovery page 37', 'Recovery page 43')
                 body = text.encode()
             target.write_bytes(body)
         prepare_regular_connected_content(stage)
@@ -51,7 +51,7 @@ def candidate(runtime):
             shutil.copy2(ROOT / name, stage / name)
         (stage / '.nojekyll').touch()
         (stage / 'build-info.json').write_text(json.dumps({
-            'profile': PROFILE, 'appVersion': '42', 'publishable': False,
+            'profile': PROFILE, 'appVersion': '43', 'publishable': False,
             'files': {str(p.relative_to(stage)): hashlib.sha256(p.read_bytes()).hexdigest()
                       for p in sorted(stage.rglob('*')) if p.is_file()},
         }, indent=2) + '\n')
