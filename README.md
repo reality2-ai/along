@@ -222,7 +222,7 @@ also let you run your own copy.
 **For the current version 39 app, follow [Building Along](docs/BUILDING.md).**
 It includes the browser device-group runtime, optional direct AT access and
 saved-journey sharing. The commands below run the **legacy planner development
-server**; `npm start` and `npm run build` alone do not reproduce version 39.
+server**; `npm start` does not reproduce version 39.
 They remain useful for isolated routing and interface work.
 
 Requirements: Python 3.10+, a current browser supporting service workers,
@@ -262,7 +262,9 @@ and `.mjs` as JavaScript and `.wasm` as `application/wasm`, without an HTML fall
 
 See [current source builds and qualification](docs/BUILDING.md),
 [hosting](docs/HOSTING.md), and the [version 39 device check](docs/DEVICE_CHECK.md).
-The older `python3 scripts/build_static.py` / `npm run build` path produces the
+`npm run build` now prepares the current candidate using the pinned runtime.
+`npm run serve:built` serves that candidate locally. The explicit legacy
+`python3 scripts/build_static.py` / `npm run build:legacy` path produces the
 legacy planner in `dist/`; it does not include version 39's connected features.
 
 ## Updates

@@ -8,9 +8,12 @@
     "import": "python3 scripts/import_gtfs.py data/gtfs.zip",
     "test": "node --test test/*.test.js && python3 -m unittest discover -s test -v",
     "test:browser": "playwright test",
-    "build": "python3 scripts/build_static.py",
+    "build": "python3 scripts/build_upgrade_candidate.py --runtime releases/along-r2-runtime-1b9229ad",
     "test:updates": "node test/check_updates.mjs",
-    "test:static": "node test/check_static.mjs"
+    "test:static": "node test/check_static.mjs --regular",
+    "build:legacy": "python3 scripts/build_static.py",
+    "serve:built": "python3 -m http.server 3082 --directory releases/along-regular-upgrade-candidate",
+    "test:static:legacy": "node test/check_static.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",

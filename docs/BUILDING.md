@@ -7,13 +7,17 @@ The package needs no Along server. See [installation](INSTALL.md) and
 [hosting](HOSTING.md). Course learners ask their AI assistant to perform all
 commands, implementation and technical checks below; no human coding is required.
 
+The [default-command check](evidence/current-build-commands.json) verifies that
+`npm run build`, `npm run serve:built` and `npm run test:static` select and serve
+the current app with prepared inputs.
+
 ## Choose the right development path
 
 | Path | What it produces |
 | --- | --- |
 | `npm start` / `python3 server.py` | Base planner development server |
-| `npm run build` / `scripts/build_static.py` | Legacy static planner in `dist/`, without integrated device sharing |
-| `scripts/build_upgrade_candidate.py --runtime …` | Current regular v39 candidate, including device groups, sharing and direct AT access |
+| `npm run build:legacy` / `scripts/build_static.py` | Legacy static planner in `dist/`, without integrated device sharing |
+| `npm run build` / `scripts/build_upgrade_candidate.py --runtime …` | Current regular v39 candidate, including device groups, sharing and direct AT access |
 | Published `along-web-v39.zip` | Qualified, immutable v39 distribution |
 
 The integrated build currently combines `public/` with reachable modules under
@@ -50,9 +54,13 @@ selected runtime files and provenance, not the complete rebuild input bundle.
 ## Build and inspect locally
 
 ```sh
-python3 scripts/build_upgrade_candidate.py --runtime releases/along-r2-runtime-1b9229ad
-python3 -m http.server 3082 --directory releases/along-regular-upgrade-candidate
+npm run build
+npm run serve:built
 ```
+
+The default build uses `releases/along-r2-runtime-1b9229ad`. To use a verified
+runtime at another path, invoke
+`python3 scripts/build_upgrade_candidate.py --runtime /path/to/runtime` directly.
 
 Open `http://localhost:3082` and check version 39. Localhost permits service
 workers; phones need an HTTPS host. Keep this development origin separate from
@@ -93,14 +101,15 @@ and fresh qualification, rather than overwriting the published v39 archive.
 Run the committed static browser check against the same candidate:
 
 ```sh
-REGULAR_CANDIDATE=1 CHROMIUM_PATH=/path/to/chromium npm run test:static
+CHROMIUM_PATH=/path/to/chromium npm run test:static
 ```
 
 This verifies the candidate manifest's file hashes before testing installability,
 keyboard/accessible names, contrast, 200% zoom, 320px reflow, offline new-address
 routing, saved service preferences and failed/successful timetable refresh.
-Screenshots and measurements use `test-results/regular-candidate-*`. Without
-`REGULAR_CANDIDATE=1`, the command still checks the legacy `dist/` build.
+Screenshots and measurements use `test-results/regular-candidate-*`. Use
+`npm run test:static:legacy` for the legacy `dist/` build. Direct test invocation
+with `REGULAR_CANDIDATE=1` remains supported.
 Deployed-file verification and physical acceptance are additional checks in the
 [release record](REGULAR_UPGRADE.md) and [release checklist](RELEASE_CHECKLIST.md).
 

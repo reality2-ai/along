@@ -17,7 +17,7 @@ the learner's judgment, not how much code the assistant generates.
 | Teach the full course | Use the six sessions and rubric in the [course guide](../COURSE_GUIDE.md). Have the AI prepare a separate teaching copy before class. |
 | Run one discussion session | Use the 45–60 minute [release-evidence lab](RELEASE_EVIDENCE_LAB.md), retaining its historical preview version, or the v39 exercise below. |
 | Inspect the requirements | Read the [design drivers](../../README.md#what-drives-the-design), [goal](../PROJECT_GOAL.md) and [thematic analysis](../CONVERSATION_ANALYSIS.md). |
-| Rebuild or host it | Give the AI [Building Along](../BUILDING.md). The legacy `npm run build` command alone does not produce the connected v39 app. |
+| Rebuild or host it | Give the AI [Building Along](../BUILDING.md). `npm run build` prepares the connected candidate once its runtime and data are ready; the legacy planner has an explicit `build:legacy` command. |
 
 ## Prepare a teaching copy
 

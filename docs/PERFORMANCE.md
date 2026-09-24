@@ -66,8 +66,8 @@ and offline behaviour, with correctness and accessibility unchanged.
 ## Reproduce the legacy planner checks
 
 ```sh
-npm run build
-npm run test:static
+npm run build:legacy
+npm run test:static:legacy
 node --expose-gc scripts/check_real_journeys.mjs
 python3 test/check_gtfs_journeys.py
 ```

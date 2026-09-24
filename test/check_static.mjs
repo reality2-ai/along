@@ -7,7 +7,7 @@ import {createHash} from 'node:crypto';
 import {gunzipSync,gzipSync} from 'node:zlib';
 import {chromium,expect} from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-const regular=process.env.REGULAR_CANDIDATE==='1';
+const regular=process.argv.includes('--regular')||process.env.REGULAR_CANDIDATE==='1';
 const root=fileURLToPath(new URL(regular?'../releases/along-regular-upgrade-candidate/':'../dist/',import.meta.url));
 await stat(root);
 const buildBytes=await readFile(resolve(root,'build-info.json'));

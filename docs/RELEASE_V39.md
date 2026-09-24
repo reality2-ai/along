@@ -35,7 +35,8 @@ receipt. It does not make all trust-group state synchronize automatically.
 
 The Device Preview and pairing-lab deployments remain separate and unchanged.
 Read [Building Along](BUILDING.md) before rebuilding: the base planner's
-`npm run build` does not produce the integrated release.
+`npm run build:legacy` does not produce the integrated release; current source
+uses `npm run build` for the connected candidate.
 
 ## Install and remaining checks
 

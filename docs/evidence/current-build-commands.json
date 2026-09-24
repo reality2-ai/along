@@ -1,0 +1,16 @@
+{
+  "status": "passed",
+  "recorded_at": "2026-09-24T20:09:54.501169+00:00",
+  "version": 39,
+  "commands": {
+    "npm run build": "301 application files match published v39 manifest and file set",
+    "npm run serve:built -- --bind 127.0.0.1": "Serves version39 manifest, JavaScript/WASM MIME types and raw gzip; temporary server stopped after check",
+    "npm run test:static": "Current candidate selected without REGULAR_CANDIDATE environment variable; full static/offline/browser check passes"
+  },
+  "build_log_sha256": "60d4c73be8fb27e0d7c288a4ccf780881650627bc749a395df80265b1d68c72f",
+  "static_log_sha256": "99faece3966f96de5a421e99e871fbb25cfe91fd3c40735bb0fcc9489cf14f0d",
+  "package_json_sha256": "f80ef15c63768e3411121c453356612fee4971186d49eac8db49710d63ba2360",
+  "test_source_sha256": "3cc3b534da0222429a1f6159df5cf66eb2ea70440e2a4fa854485db61f981c8b",
+  "candidate_manifest_sha256": "4df5c141e82f7e1464845e6166d6970b12bb463695feb06517a50b00feceaf71",
+  "scope": "Developer entry points on this Linux host with prepared data/runtime. Same application bytes as v39; no public app change or new physical-device claim."
+}
