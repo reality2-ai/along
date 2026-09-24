@@ -11,13 +11,17 @@ export async function createOlderEditReview({current,currentRaw,sourceRaw,olderR
   if(!/^[0-9a-f]{64}$/.test(actor)||[currentRaw,sourceRaw,olderRaw].some(raw=>typeof raw!=='string'))throw fail();
   const parse=(raw,older)=>{
     const envelope=readEnvelope({getItem:()=>raw});
-    if(envelope.sync?.group!==state.group)throw fail();
-    const version=envelope.sync.version??{generation:0,checkpoint:zero};
+    // Released v37 strips unknown sharing metadata when saving preferences.
+    // Its local older-copy data is reviewable, never authority for the current
+    // group. Current state must still carry its verified group/version binding.
+    const plainOlder=older&&!Object.hasOwn(envelope.data,'journeySync');
+    if(!plainOlder&&envelope.sync?.group!==state.group)throw fail();
+    const version=envelope.sync?.version??{generation:0,checkpoint:zero};
     if(older?(version.generation!==0||version.checkpoint!==zero)
-      :(version.generation!==state.generation||version.checkpoint!==state.checkpoint||envelope.sync.pending.length))throw fail();
+      :(version.generation!==state.generation||version.checkpoint!==state.checkpoint||envelope.sync?.pending.length))throw fail();
     const saved=savedValues(envelope.data),pending=new Map();
     if(saved.size!==envelope.data.journeys.filter(journey=>journey.saved).length)throw fail();
-    for(const operation of envelope.sync.pending){
+    for(const operation of envelope.sync?.pending??[]){
       const origin=operation.version??{generation:0,checkpoint:zero};
       if(typeof operation.id!=='string'||!/^[0-9a-f-]{36}$/.test(operation.id)
           ||!Array.isArray(operation.changes)||operation.changes.length>512

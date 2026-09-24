@@ -1499,3 +1499,22 @@ That connection is an analyst interpretation; the user did not specify the stora
 protocol or report all simulated faults. The [release-evidence lab](course/RELEASE_EVIDENCE_LAB.md)
 asks learners to test that interpretation without claiming that a local regression
 suite resolved the reported S23 pairing failure.
+
+
+### Implementation reflection: released writers expose assumptions (25 September 2026)
+
+This is implementation evidence, not a new user observation. Testing the actual
+released v37 preference writer revealed that it removes unknown sharing metadata.
+Preview-to-preview recovery had passed, but that evidence did not establish the
+regular-app transition. The new candidate detected the older edit while failing
+to open its review. A bounded compatibility fix now allows the plain older local
+copy into an explicit comparison, retaining current-state authority checks.
+
+The thematic connection is between local ownership and verification scope: keeping
+a user's edits requires testing what their installed version actually writes,
+not just the shape expected by the new implementation. The retained failing run,
+corrected UI test and storage tests are linked in
+[older-copy recovery evidence](evidence/regular-older-copy-recovery.json). A course
+exercise can ask learners to distinguish accepting local data for review from
+accepting it as authority, and explain why earlier green preview tests were too
+narrow to prove this transition.

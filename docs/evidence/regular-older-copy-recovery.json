@@ -1,0 +1,60 @@
+{
+  "date": "2026-09-24T19:01:04.231012+00:00",
+  "status": "passed",
+  "source_base_commit": "44da21c8f10c439da5efd22869f10e5a1bf903a0",
+  "candidate_manifest_sha256": "e50e8157ebddb6ca4c9484f859fd999ac6ff35a0c9f855b1a8e7aeab34063b7f",
+  "sources": {
+    "experiments/journey-sync/older-edit-review.mjs": "a37cd473e95b05be985bf5c13ed532df2288ac8c176c0cf93468ef518a5f1399",
+    "experiments/journey-sync/older-edit-review.test.mjs": "6f494f5422920bcc7c7424d45c980a114347fb1f0f04d834314ae4305f625608",
+    "experiments/journey-sync/published-migration.test.mjs": "e0f6b00d90e7944d2f2f8e4885921e024a7c8384a4e6a6515ff8937a423aa990",
+    "experiments/journey-sync/generation-migration.test.mjs": "cdb535b2d7050a4fc544e1562f55853c1264a7a133ac42f32b835689ff324d94"
+  },
+  "prior_release_zip_sha256": "8dda7d208934d6f61494e67860ffe79dfbe7a3b51957e34fa9cbb99e28abf4e9",
+  "unit_tests": {
+    "command": "node --test experiments/journey-sync/older-edit-review.test.mjs",
+    "passed": 5,
+    "failed": 0
+  },
+  "initial_failure": {
+    "log_sha256": "8ba6fa8d9758b102c8083a6dc9c33dc063ff07955955d20163cc59b86c1b3f8d",
+    "cause": "Actual released v37 preference reader/writer strips journeySync metadata. Older-copy review required a group-bound envelope and refused the review.",
+    "fix": "Allow missing sharing metadata only for the older local copy/baseline in explicit review; retain current-state group/version checks and reject present malformed/foreign metadata."
+  },
+  "runs": {
+    "ui": {
+      "status": "passed",
+      "command": "REGULAR_CANDIDATE=1 node experiments/journey-sync/published-migration.test.mjs",
+      "log_sha256": "17af811ed5f368dc5536c02bd9fa68fe1143ecfa1d3f8ff5913eb1a4ab654419",
+      "output": [
+        "PASS: published older writer \u2192 narrow-screen keyboard review, Leave preservation, interrupted planner application, newer local edits, explicit recovery comparison after reload, route/history preservation and acknowledgment without repeated prompts.",
+        "PASS: a retained unapplied decision made stale by a newer published-app edit refuses application, then Settings starts a fresh review and applies the latest route.",
+        "PASS: exact published v37 creates saved places; candidate38 creates identity, current candidate migrates and recovers through Settings, and the actual older writer retains edits without overwriting the recovered planner. Service workers blocked: not installed-update qualification."
+      ]
+    },
+    "storage": {
+      "status": "passed",
+      "command": "REGULAR_CANDIDATE=1 node experiments/journey-sync/generation-migration.test.mjs",
+      "log_sha256": "9a9bd81a605a94868156c92157d471d1fb898ee079643314e84afb8fd8ed9fdd",
+      "output": [
+        "PASS: actual recovery choices commit once and survive reload; stale review, changed choices, permission race and interrupted transaction refuse; final cutover retains history, handles local write failure, refuses newer local data and retries without duplicate replica edits. This suite checks storage APIs; app integration is checked separately.",
+        "PASS: two real tabs using the locked writer cannot overwrite each other from the same stale input; exactly one new-generation operation remains and history is preserved. Legacy synchronous callers are not covered by this guarantee.",
+        "PASS: partial-application recovery preserves newer local routes/history, refuses an identity race, resumes planner/final-acknowledgment failures, supports a further explicit review and does not duplicate replica edits.",
+        "PASS: retained older-edit work pauses startup and the planner bridge; three consecutive explicit reviews advance the acknowledgment baseline, detect a return to the original route, preserve history and retain original migration evidence.",
+        "PASS: older-tab application preserves history, survives planner/final-acknowledgment failure and retries without duplicate replica edits; newer local data refuses and later older edits remain pending.",
+        "PASS: older-tab choices and compared copies survive atomic staging, cancellation/retry and reload; quota, changed membership and replacing an unfinished decision refuse. Staging changes neither replica nor planner; later older-tab edits survive.",
+        "PASS: default planner startup and generation bridge use the isolated profile; journal import, later planner saves and reload preserve recovered generation/history while legacy writes stay separate. This suite checks storage primitives; recovery UI and peer delivery are checked separately.",
+        "PASS: actual software identity and IndexedDB migration preserve replica/tombstones/import receipt/local pending edits; concurrent/reloaded retries do not rewrite; stale review, permission race, cancellation and interrupted transaction preserve old state; old in-flight format-1 writer cannot overwrite migration. This suite invokes migration storage APIs directly.",
+        "PASS: format-2 bridge consumes an archived receipt without duplicating its edit, imports queued deletion, retains history, recovers an IDB/localStorage interruption and refuses old queued edits after a fixture generation advance. The separate real installation cases follow.",
+        "PASS: real issuer checkpoint installation atomically retains prior replica/local journal and starts a new receipt; retry/reload, permission races, interrupted writes, stale review, changed local data, signature damage, late cancellation and concurrent local edits preserve the documented boundary. Settings review and authenticated peer delivery are checked separately."
+      ]
+    }
+  },
+  "limits": [
+    "Two tabs on one browser host; service workers blocked for UI recovery test, so not installed-update evidence.",
+    "Candidate38 creates the identity after actual v37 saves places; v37 has no TG setup.",
+    "Tracking is initialized through the actual app store API; subsequent checkpoint/recovery interactions use Settings.",
+    "Storage suite serves hash-verified generated candidate modules behind fixture URLs; assertion module is test source.",
+    "Source fix changes candidate bytes; earlier broader candidate evidence remains historical pending final frozen-candidate qualification.",
+    "No physical S23/TalkBack or external relay acceptance."
+  ]
+}

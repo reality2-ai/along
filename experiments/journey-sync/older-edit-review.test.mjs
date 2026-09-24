@@ -51,3 +51,18 @@ test('capacity overflow refuses the selected combination without trimming',async
   assert.throws(()=>review.resolve([{id:journeyId(value('Extra')),use:'older'}]),JourneyCapacityError);
   assert.equal(review.resolve([{id:journeyId(value('Extra')),use:'current'}]).saved.length,256);
 });
+
+test('v37 plain older saves are reviewable without accepting unbound current state or a foreign group',async()=>{
+  const args=input([value('Work')],[value('Work','75')],[value('Work')]);
+  const plain=raw=>{const data=JSON.parse(raw);delete data.journeySync;return JSON.stringify(data);};
+  const olderRaw=plain(args.olderRaw);
+  const review=await createOlderEditReview({...args,olderRaw});
+  assert.equal(review.differences[0].older.savedRoutes[0].route,'75');
+  assert.equal(review.resolve([{id:review.differences[0].id,use:'older'}]).changes.length,1);
+  // After acknowledging a v37 save, that plain copy is the next baseline.
+  assert.equal((await createOlderEditReview({...args,sourceRaw:plain(args.sourceRaw),olderRaw})).differences.length,1);
+  await assert.rejects(createOlderEditReview({...args,currentRaw:plain(args.currentRaw),olderRaw}));
+  for(const journeySync of [null,{format:1,group:'d'.repeat(64),pending:[]}]){
+    await assert.rejects(createOlderEditReview({...args,olderRaw:JSON.stringify({...JSON.parse(olderRaw),journeySync})}));
+  }
+});

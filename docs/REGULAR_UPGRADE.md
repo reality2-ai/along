@@ -59,6 +59,24 @@ journey, and offline routing remains available. This does not revoke a key at AT
 or erase data already copied by a device. Recovery Settings uses fixture starting
 records, with real signing, review and guarded writes.
 
+## Actual v37 older-copy recovery
+
+[Recovery evidence](evidence/regular-older-copy-recovery.json) records a compatibility
+bug found with the exact published v37 writer: it strips unknown sharing metadata,
+so the newer review refused its local edits. The fix permits missing metadata for
+the older local copy and acknowledged baseline only. Current shared state still
+requires its group/version binding; present malformed or foreign-group metadata
+is rejected. Import remains a reviewed choice under the existing guarded writer.
+
+Five targeted tests and the complete UI/storage recovery runs pass. They cover
+leaving review without changes, a failed planner write after the shared commit,
+newer local edits, explicit comparison after reload, preserved route/history,
+acknowledgement without repeated prompts, and restarting an unapplied stale review.
+The storage run includes quota failures, membership races and concurrent writers.
+The initial failure is retained in the evidence. This changes candidate bytes:
+earlier connected-feature results are historical until final qualification runs
+against the frozen candidate.
+
 ## Reproduce without publishing
 
 ```sh
@@ -78,9 +96,9 @@ files remain ignored under `releases/`.
 
 - Remove candidate-only status text only when release qualification and promotion
   are complete. The connected guide is sourced from `CONNECTED_INSTALL.md`.
-- Complete interrupted older-copy recovery coverage against the regular
-  candidate, including quota/race recovery. The connected and shared-key runs
-  above supplement upgrade/setup, but do not cover every path.
+- Freeze and qualify the final candidate after the older-copy compatibility fix.
+  Reconcile the complete required check list with the exact final manifest; do not
+  treat passing runs on previous bytes as final release qualification.
 - Check existing-device cases and shared-generation old-tab behavior where
   applicable. The local pre-sharing old-tab and failed-update checks above pass;
   preview migration evidence is not proof of every regular-app upgrade.

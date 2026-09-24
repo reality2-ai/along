@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {createHash} from 'node:crypto';
 import {createServer} from 'node:http';
 import {readFile} from 'node:fs/promises';
 import {join} from 'node:path';
@@ -12,6 +13,21 @@ for (const name of ['software-persona.mjs', 'local-persona.mjs'])
 for (const name of ['storage.mjs', 'membership.mjs', 'certificate.mjs'])
   sources.set('/tg-pairing/' + name, await readFile(join(process.env.R2_BROWSER_DIR, name)));
 for (const name of ['hive_wasm.js', 'hive_wasm_bg.wasm']) sources.set('/' + name, await readFile(join(process.env.R2_WASM_DIR, name)));
+// Exercise exact generated regular-candidate modules behind the fixture routes.
+// Only the browser assertion module itself comes from test source.
+if(process.env.REGULAR_CANDIDATE==='1'){
+  const root=new URL('../../releases/along-regular-upgrade-candidate/',import.meta.url);
+  const manifest=JSON.parse(await readFile(new URL('build-info.json',root)));
+  assert.equal(manifest.profile,'along-regular-upgrade-candidate-v1');
+  for(const path of sources.keys()){
+    if(path.endsWith('.test.mjs'))continue;
+    const name=path==='/public/preferences.js'?'preferences.js':path.startsWith('/hive_')?'experiments/tg-pairing'+path:'experiments'+path;
+    const body=await readFile(new URL(name,root));
+    assert.equal(createHash('sha256').update(body).digest('hex'),manifest.files[name],name);
+    sources.set(path,body);
+  }
+  sources.set('/preferences.js',sources.get('/public/preferences.js'));
+}
 const server = createServer((req, res) => {
   const body = req.url === '/' ? '<!doctype html><title>Journey migration</title>' : sources.get(req.url);
   res.writeHead(body ? 200 : 404, {'Content-Type': req.url.endsWith('.wasm') ? 'application/wasm' : req.url === '/' ? 'text/html' : 'text/javascript'}); res.end(body);
