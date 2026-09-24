@@ -119,16 +119,98 @@ export async function checkRecoveryProof(owner, recipient) {
       }
     }
   }
-  const removed = await answer(await begin());
   assert.equal(await owner.evaluate(() => recoverySession.recover().then(() => true, () => false)), false, 'recipient review required');
   await recipient.evaluate(() => recoverySession.acceptRecovery());
   await owner.waitForFunction(() => recoverySession.canRecover());
-  assert.deepEqual(await owner.evaluate(async () => {
+  await recipient.evaluate(() => {
+    const original = RTCDataChannel.prototype.send;
+    RTCDataChannel.prototype.send = function(text) {
+      const frame = JSON.parse(text);
+      if (frame.type === 'installed' && frame.epoch === '3') {
+        RTCDataChannel.prototype.send = original; this.close(); return;
+      }
+      return original.call(this, text);
+    };
+  });
+  assert.equal(await owner.evaluate(async () => {
     const operation = recoverySession.recover();
     if (await recoverySession.recover().then(() => true, () => false)) throw Error('Concurrent recovery accepted');
-    const result = await operation;
-    return {status: result.status, epoch: String(result.epoch)};
+    return operation.then(() => true, () => false);
+  }), false, 'lost acknowledgment cannot confirm delivery');
+  assert.equal(await owner.evaluate(async () => {
+    const bytes = new Uint8Array(64); bytes.set(group); bytes.set(recoveryPeer.subject, 32);
+    const key = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)), b => b.toString(16).padStart(2, '0')).join('');
+    return !(await recoveryStore.read('along-epoch-delivery-v1', key + ':3'))
+      && (await recoveryStore.read('along-epoch-delivery-v1', key + ':2')).value.epoch === 2n;
+  }), true, 'only received confirmations are saved');
+  // Reload both documents: the recovery must use durable records, not old closures.
+  await Promise.all([owner, recipient].map(page => page.reload()));
+  peer.certificate = await recipient.evaluate(async () => {
+    window.recoveryWasm = await import('./hive_wasm.js'); await recoveryWasm.default();
+    window.recoveryStore = await (await import('./storage.mjs')).openBrowserStorage('software-enrollment');
+    return Array.from((await recoveryStore.read('candidate-persona', 'active')).value.record.certificate);
+  });
+  await owner.evaluate(async peer => {
+    window.wasm = await import('./hive_wasm.js'); await wasm.default();
+    window.group = new Uint8Array(peer.group);
+    window.recoveryStore = await (await import('./storage.mjs')).openBrowserStorage('software-enrollment');
+    window.recoveryModule = await import('./epoch-recovery-proof.mjs');
+    window.recoveryPeer = peer; window.recoveryTranscript = crypto.getRandomValues(new Uint8Array(32));
+    window.sentRecoveryKeys = 0;
+    const original = RTCDataChannel.prototype.send;
+    RTCDataChannel.prototype.send = function(text) {
+      if (JSON.parse(text).type === 'epoch') sentRecoveryKeys++;
+      return original.call(this, text);
+    };
+  }, peer);
+  const installationRevisions = () => recipient.evaluate(async group => {
+    const id = Array.from(group, b => b.toString(16).padStart(2, '0')).join('');
+    return Promise.all([['candidate-persona', 'active'], ['membership', id], ['along-browser-traffic', id],
+      ['along-installed-epoch-v1', id + ':3']].map(async ([scope, key]) => (await recoveryStore.read(scope, key)).revision));
+  }, peer.group);
+  const reconnect = async () => {
+    const reconnectOffer = await recipient.evaluate(async ({peer, ownerId}) => {
+      window.recoverySession = await (await import('./epoch-recovery-session.mjs')).openEpochRecoverySession({
+        wasm: recoveryWasm, store: recoveryStore, expectedGroup: new Uint8Array(peer.group), role: 'recipient', peer: new Uint8Array(ownerId)});
+      return recoverySession.offer();
+    }, {peer, ownerId});
+    const reconnectReply = await owner.evaluate(async offer => {
+      window.recoverySession = await (await import('./epoch-recovery-session.mjs')).openEpochRecoverySession({
+        wasm, store: recoveryStore, expectedGroup: group, role: 'owner', peer: new Uint8Array(recoveryPeer.subject),
+        certificate: new Uint8Array(recoveryPeer.certificate)});
+      return recoverySession.accept(offer);
+    }, reconnectOffer);
+    await recipient.evaluate(reply => recoverySession.accept(reply), reconnectReply);
+    for (const page of [owner, recipient]) assert.deepEqual(await page.evaluate(async () => {
+      const result = await recoverySession.authenticated(); return [String(result.from), String(result.to)];
+    }), ['3', '3']);
+  };
+  await reconnect();
+  await recipient.evaluate(async group => {
+    const key = Array.from(group, b => b.toString(16).padStart(2, '0')).join('') + ':3';
+    const record = await recoveryStore.read('along-installed-epoch-v1', key);
+    window.heldInstallationReceipt = structuredClone(record.value);
+    const changed = structuredClone(record.value); changed.transition[151] ^= 1;
+    await recoveryStore.compareAndSwap('along-installed-epoch-v1', key, record.revision, changed);
+    await recoverySession.acceptRecovery();
+  }, peer.group);
+  await owner.waitForFunction(() => recoverySession.canRecover());
+  assert.equal(await owner.evaluate(() => recoverySession.recover().then(() => true, () => false)), false, 'corrupted installation cannot produce confirmation');
+  await recipient.evaluate(async group => {
+    const key = Array.from(group, b => b.toString(16).padStart(2, '0')).join('') + ':3';
+    const record = await recoveryStore.read('along-installed-epoch-v1', key);
+    await recoveryStore.compareAndSwap('along-installed-epoch-v1', key, record.revision, heldInstallationReceipt);
+  }, peer.group);
+  const revisions = await installationRevisions();
+  await reconnect();
+  assert.equal(await owner.evaluate(() => recoverySession.recover().then(() => true, () => false)), false, 'receipt recovery also requires acceptance');
+  await recipient.evaluate(() => recoverySession.acceptRecovery());
+  await owner.waitForFunction(() => recoverySession.canRecover());
+  for (let retry = 0; retry < 2; retry++) assert.deepEqual(await owner.evaluate(async () => {
+    const result = await recoverySession.recover(); return {status: result.status, epoch: String(result.epoch)};
   }), {status: 'peer-installation-confirmed', epoch: '3'});
+  assert.deepEqual(await installationRevisions(), revisions, 'receipt recovery does not rewrite installation');
+  assert.equal(await owner.evaluate(() => sentRecoveryKeys), 0, 'receipt recovery sends no epoch keys');
   assert.equal(await recipient.evaluate(async () => {
     const saved = await recoveryStore.read('candidate-persona', 'active');
     const groupId = Array.from(saved.value.record.group, b => b.toString(16).padStart(2, '0')).join('');
@@ -147,6 +229,7 @@ export async function checkRecoveryProof(owner, recipient) {
     const previous = await recoveryStore.read('along-epoch-delivery-v1', key.slice(0, -1) + '2');
     return previous?.value?.epoch === 2n && (await recoveryStore.read('along-epoch-delivery-v1', key)).revision === receipt.revision;
   }), true, 'owner retains signed installation evidence');
+  const removed = await answer(await begin());
   await owner.evaluate(async () => {
     await (await import('./member-removal.mjs')).removeSoftwareMember({wasm, store: recoveryStore, expectedGroup: group,
       subject: new Uint8Array(recoveryPeer.subject), certificate: new Uint8Array(recoveryPeer.certificate)});

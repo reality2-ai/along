@@ -5,6 +5,8 @@ import {loadLocalPersona} from './local-persona.mjs';
 import {openMembership} from './membership.mjs';
 import {watchLocalEpoch} from './epoch-watch.mjs';
 import {createEpochRecoveryChallenge, answerEpochRecoveryChallenge} from './epoch-recovery-proof.mjs';
+import {loadSoftwareTraffic} from './software-traffic.mjs';
+import {verifyEpochTransition} from './epoch-transition.mjs';
 import {installRecipientEpoch} from './epoch-installation.mjs';
 import {recoveryReceiptStatement, saveRecoveryReceipt} from './epoch-recovery-receipt.mjs';
 const fixed = (v, n) => v instanceof Uint8Array && v.length === n;
@@ -23,7 +25,7 @@ export async function openEpochRecoverySession({wasm, store, expectedGroup, role
   const group = expectedGroup.slice(), remote = peer.slice(), peerCertificate = certificate?.slice();
   let closed = false, phase = 'opening', link, membership, watcher, unsubscribe, timer, challenge, transcript;
   let identity, memberStatement, ownerNonce, from, to, ready, queue = Promise.resolve();
-  let accepted = false, recipientAccepted = false, busy = false, pending, progress;
+  let accepted = false, recipientAccepted = false, busy = false, pending, progress, confirmationChecked = false;
   const lifetime = new AbortController();
   const started = performance.now();
   let deadline = started + 60000;
@@ -66,7 +68,7 @@ export async function openEpochRecoverySession({wasm, store, expectedGroup, role
     await watcher.check(); await current();
     if (role === 'owner') {
       from = new DataView(peerCertificate.buffer).getBigUint64(64); to = identity.epoch;
-      if (from >= to) throw Error('Peer does not need older-epoch recovery');
+      if (from > to || to === 0n) throw Error('Peer recovery epoch unavailable');
     }
     const receive = async text => {
       await ready; await current();
@@ -121,6 +123,25 @@ export async function openEpochRecoverySession({wasm, store, expectedGroup, role
           const proof = await identity.sign(wasm.tg_nonce_signing_bytes(receipt, nonce)); await current();
           phase = 'authenticated'; clearTimeout(timer); send({type: 'installed', epoch: String(epoch), proof: Array.from(proof)});
         } finally { payloadKey.fill(0); integrityKey.fill(0); frame.payload.fill(0); frame.integrity.fill(0); }
+      } else if (role === 'recipient' && phase === 'authenticated' && accepted && frame.type === 'receipt-request'
+          && fields(frame, ['type', 'epoch', 'nonce']) && frame.epoch === String(identity.epoch) && identity.epoch === to) {
+        const epoch = identity.epoch, nonce = decode(frame.nonce, 16);
+        boundOperation(); phase = 'checking-installation';
+        const saved = await store.read('along-installed-epoch-v1', hex(group) + ':' + epoch);
+        if (saved?.value?.format !== 1) throw Error('Saved installation receipt unavailable');
+        const {transition, certificate} = saved.value;
+        const material = await loadSoftwareTraffic({wasm, store, expectedGroup: group, signal: lifetime.signal});
+        try {
+          // The duplicate path verifies the receipt against current identity and
+          // decrypted keys, without rewriting any installation record.
+          const installed = await installRecipientEpoch({wasm, store, expectedGroup: group, transition, certificate,
+            payloadKey: material.payloadKey, integrityKey: material.integrityKey, signal: lifetime.signal});
+          if (!installed.alreadyInstalled || installed.epoch !== epoch) throw Error('Saved installation differs');
+        } finally { material.destroy(); }
+        await current();
+        const receipt = await recoveryReceiptStatement({group, subject: unhex(identity.member), epoch, transition, certificate});
+        const proof = await identity.sign(wasm.tg_nonce_signing_bytes(receipt, nonce)); await current();
+        phase = 'authenticated'; clearTimeout(timer); send({type: 'installed', epoch: String(epoch), proof: Array.from(proof)});
       } else if (role === 'owner' && phase === 'waiting-install' && frame.type === 'installed'
           && fields(frame, ['type', 'epoch', 'proof']) && frame.epoch === String(pending?.epoch)) {
         await current();
@@ -156,6 +177,20 @@ export async function openEpochRecoverySession({wasm, store, expectedGroup, role
         if (role !== 'owner' || phase !== 'authenticated' || !recipientAccepted || busy) throw Error('Recovery is not ready');
         busy = true; boundOperation();
         try {
+          await current();
+          if (from === to && !confirmationChecked) {
+            const prepared = await store.read('along-prepared-epoch-v1', hex(group) + ':' + to);
+            const transition = prepared?.value?.transition;
+            await verifyEpochTransition({bytes: transition, expectedGroup: group, currentEpoch: to - 1n});
+            await current();
+            const receipt = new Promise((resolve, reject) => {
+              pending = {epoch: to, transition, certificate: peerCertificate,
+                nonce: crypto.getRandomValues(new Uint8Array(16)), resolve, reject};
+            });
+            void receipt.catch(() => {}); phase = 'waiting-install';
+            send({type: 'receipt-request', epoch: String(to), nonce: Array.from(pending.nonce)});
+            await receipt; confirmationChecked = true;
+          }
           while (progress < to) {
             const epoch = progress + 1n;
             const material = await controller.recoveryMaterial(epoch);

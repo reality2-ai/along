@@ -50,7 +50,10 @@ during decryption and matching current keys. Ordered network delivery now requir
 recipient acceptance, installs each successor atomically and waits for a durably
 saved signed receipt before continuing. The real WebRTC test recovers two missed
 epochs, refuses interrupted installation and restores in a fresh document.
-Lost-acknowledgment recovery and the UI remain unfinished. See
+A lost final acknowledgment now recovers after both documents reload through a
+fresh authenticated, recipient-approved receipt exchange at the same epoch. No
+keys are redelivered or installation records rewritten; a corrupted saved
+installation refuses confirmation. The recovery UI remains unfinished. See
 [the rotation design](R2_EPOCH_ROTATION.md#recovery-only-possession-check).
 
 The restored software issuer now produces epoch-zero signed revocation evidence

@@ -207,9 +207,21 @@ WebRTC, checks both durable signed issuer receipts and recipient installation
 records, and restores epoch-three keys/signing in a fresh document. It also checks
 recipient acceptance, forged receipts, a transaction interrupted during key write,
 no success claim after that failure, a subsequent successful connection and removal.
-The transport failure after a successful recipient commit but before its receipt
-reaches the issuer remains unfinished: equal-epoch receipt recovery and the UI must
-be added before offering the full rotation flow. A receipt is a signed peer claim,
+If the connection drops after the recipient's final installation but before its
+acknowledgment reaches the issuer, both documents can reopen and authenticate at
+the same nonzero epoch. After recipient acceptance, the issuer requests a fresh
+signed receipt using its retained public transition and the peer's current
+certificate. The recipient verifies its saved installation against its identity
+and decrypted traffic keys through the duplicate-installation verification path.
+It sends no keys and rewrites no installation record. Missing or corrupt records
+refuse confirmation; the browser test corrupts the saved transition and verifies
+refusal before restoring the fixture and successfully reconnecting. The test also
+drops the actual final WebRTC acknowledgment, reloads both documents and verifies
+recovery, unchanged installation revisions and zero key-delivery frames.
+
+This confirms the final installed epoch. Reconnecting after partial catch-up starts
+from the recipient's saved epoch; it does not reconstruct missing intermediate
+receipts. The reviewed recovery UI remains unfinished. A receipt is a signed peer claim,
 not independent attestation of a hostile device's storage.
 
 1. Compose certificate renewal for retained recipients with authenticated delivery.

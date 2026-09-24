@@ -32,7 +32,7 @@ export async function createEpochRecoveryChallenge({wasm, store, expectedGroup, 
     const owner = await loadLocalPersona({wasm, store, expectedGroup: group});
     if (owner?.origin !== 'initial' || !certificateCodec(wasm).authentic(cert, subject, group)) throw fail();
     const from = new DataView(cert.buffer).getBigUint64(64), to = owner.epoch;
-    if (from >= to || owner.member === hex(subject)) throw fail();
+    if (from > to || to === 0n || owner.member === hex(subject)) throw fail();
     membership = openMembership(store, wasm, group, unhex(owner.member));
     const check = async () => {
       live();
@@ -73,7 +73,7 @@ export async function answerEpochRecoveryChallenge({wasm, store, expectedGroup, 
   const saved = await store.read('candidate-persona', 'active');
   if (identity?.origin !== 'enrolled' || !fixed(saved?.value?.invitation?.issuer, 32)) throw fail();
   const view = new DataView(message.buffer), from = view.getBigUint64(104), to = view.getBigUint64(112);
-  if (from !== identity.epoch || to <= from || !same(message,
+  if (from !== identity.epoch || to < from || to === 0n || !same(message,
       statement(group, saved.value.invitation.issuer, unhex(identity.member), from, to, link))) throw fail();
   if (signal?.aborted) throw fail();
   const proof = await identity.sign(wasm.tg_nonce_signing_bytes(message, challenge));

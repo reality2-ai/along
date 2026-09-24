@@ -335,7 +335,7 @@ try {
       } finally { s.close(); }
     }, targetGroup), true);
     await checkRecoveryProof(pages[1], advanced);
-    console.log('PASS: real WebRTC recovery mutually authenticates epoch-one/three devices, requires recipient acceptance, delivers epochs two and three in order, and retains signed installation acknowledgments. Forged proofs/receipts, concurrent recovery and interrupted installation refuse; a fresh document restores delivered keys. Harness transfers SDP; lost-acknowledgment recovery and UI remain unfinished.');
+    console.log('PASS: real WebRTC recovery mutually authenticates epoch-one/three devices, requires recipient acceptance, delivers epochs two and three in order, and retains signed installation acknowledgments. Forged proofs/receipts, concurrent recovery and interrupted installation refuse; a fresh document restores delivered keys. A dropped final acknowledgment recovers after both documents reload, without resending keys or rewriting installation. Corrupted saved installation refuses confirmation. Harness transfers SDP; the recovery UI remains unfinished.');
     console.log('PASS: direct atomic-installation fixture restores/signs in a fresh document, rejects substitutions and stale writes, rolls back interrupted transactions, and recovers duplicate delivery. Old-epoch sessions close in the installing tab and a sibling tab; unchanged-state hints do not close them. Network recovery is checked separately above; UI acceptance remains untested.');
   }
   }
