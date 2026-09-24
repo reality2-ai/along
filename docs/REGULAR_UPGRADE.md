@@ -95,6 +95,23 @@ flow also passes. The fix changes candidate bytes, so the initial failed result
 is retained and does not count as final qualification. Core tests separately
 passed 68 JavaScript and 18 Python cases.
 
+## Qualified package — not yet deployed
+
+The [second qualification](evidence/regular-v38-qualification.json) passes all
+16 distinct scenarios (18 requirement entries), with unchanged source and
+candidate hashes throughout. [Static-host checks](evidence/regular-v38-static.json)
+also pass, including installability, accessibility, 200% zoom/320px reflow,
+failed/successful data refresh, saved preferences and offline new-address routing.
+Two adapter mismatches were corrected and retained in that evidence.
+
+The [verified package](evidence/regular-v38-package.json), `along-web-v38.zip`, is
+41,762,118 bytes. Every archived payload matches its release manifest, and all
+candidate payloads except the non-serving do-not-publish marker are unchanged.
+Qualification, source/licence notices and hosting/install instructions are included.
+This package is not yet deployed; public-file and installed-update checks follow
+deployment. Desktop measurements were collected while other checks were running
+and do not establish phone performance.
+
 ## Reproduce without publishing
 
 ```sh

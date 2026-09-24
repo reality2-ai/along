@@ -1,0 +1,11 @@
+{
+  "archive": "along-web-v38.zip",
+  "sha256": "2d203b12ad1f1148e494165686435d66cacf6ec7853f0693b48cd46f15cccb3d",
+  "bytes": 41762118,
+  "payload_files": 303,
+  "release_manifest_sha256": "d12c61a39d4770ce0c153792cecd6ba6e1302e17fc93a2191e07733fa6de598d",
+  "status": "packaged-not-deployed",
+  "source_commit": "643c6eebe4a748afca5ed6dc00d8b756dbbe8386",
+  "candidate_payloads_unchanged": true,
+  "archive_contents_verified": true
+}

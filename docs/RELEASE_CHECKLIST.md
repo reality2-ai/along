@@ -67,7 +67,9 @@ this audit. Later public-hosting work supplements that brief.
    cover replacement, removal, different-owner rotation, interrupted delivery and
    recovery Settings. [Actual v37 older-copy recovery](evidence/regular-older-copy-recovery.json)
    found and fixed missing-metadata compatibility; UI and quota/race checks pass.
-   Final frozen-candidate qualification and physical acceptance remain. Preview storage stays separate;
+   [Final candidate qualification](evidence/regular-v38-qualification.json) and
+   [static checks](evidence/regular-v38-static.json) now pass; the verified v38
+   archive is prepared. Deployment/public-byte checks and physical acceptance remain. Preview storage stays separate;
    this does not migrate preview credentials into regular Along.
 4. Complete the signed-in GitHub composer/submission check for contextual feedback.
    Actual CLI submission and anonymous browser receipt are already evidenced in

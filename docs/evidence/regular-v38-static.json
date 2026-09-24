@@ -1,0 +1,41 @@
+{
+  "status": "passed",
+  "candidate_manifest_sha256": "06fc8446a8e15e348a287b50519d4881ed8b58cbb4324ee8d45e7c7e85748379",
+  "metrics": {
+    "runtime": "v26.4.0",
+    "browser": "151.0.7922.34",
+    "host": "Local static HTTP, repository subpath, Chromium desktop",
+    "physicalPhone": false,
+    "coldReadyMs": 19715,
+    "installability": {
+      "installabilityErrors": []
+    },
+    "mixedModeRouteMs": 9442,
+    "datasetBytes": 41308937,
+    "storage": {
+      "quota": 10809122396,
+      "usage": 71704156,
+      "usageDetails": {
+        "caches": 1957120,
+        "indexedDB": 69737246,
+        "serviceWorkerRegistrations": 9790
+      }
+    },
+    "mainPageResourceTransferBytes": 1153517,
+    "offlineReadyMs": 5514
+  },
+  "log_sha256": "baa87282db51b09065f4a1f2dcd17eb3475834cfad57389833705447f6d962b9",
+  "adapter_sha256": "c4a7d07c863d07821b09524f46aecebc4280158bb281b3613d86aed3c6ba48f0",
+  "basis": "test/check_static.mjs at source 643c6eebe4a7; temporary adapter serves candidate root, adds mjs/wasm MIME, counts actual data-file sizes and checks the updated privacy phrase.",
+  "initial_attempts": [
+    {
+      "log_sha256": "038db0effa9d7dad603533121373dc4ec8b6f14c378a27922cc59a51fd017d16",
+      "failure": "Old manifest dataset fields absent; count actual gzip files."
+    },
+    {
+      "log_sha256": "06762b2d1365c0db5f29f94eb7419564b1ee4361b18ebeb3e9491c02115635be",
+      "failure": "Expected old installation privacy wording; assert current wording."
+    }
+  ],
+  "limits": "One-host Chromium with other qualification jobs running; timings are not phone performance or isolated benchmarks. No physical installation/TalkBack claim."
+}
