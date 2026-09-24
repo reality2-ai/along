@@ -4,7 +4,7 @@ import {readFile} from 'node:fs/promises';
 import {join} from 'node:path';
 const {chromium} = await import('@playwright/test');
 const sources = new Map();
-for (const name of ['state.mjs', 'store.mjs', 'generation-state.mjs', 'generation-migration.mjs', 'generation-app-store.mjs', 'app-preferences.mjs', 'preference-envelope.mjs', 'isolated-preferences.mjs', 'startup-state.mjs', 'migration-setup.mjs', 'generation-checkpoint.mjs', 'checkpoint-preparation.mjs', 'checkpoint-installation.mjs', 'checkpoint-review.mjs', 'checkpoint-choice-commit.mjs','older-edit-review.mjs','older-edit-progress.mjs','older-edit-decision.mjs','older-edit-application.mjs','older-edit-decision-check.test.mjs'])
+for (const name of ['state.mjs', 'store.mjs', 'generation-state.mjs', 'generation-migration.mjs', 'generation-app-store.mjs', 'app-preferences.mjs', 'preference-envelope.mjs', 'isolated-preferences.mjs', 'startup-state.mjs', 'migration-setup.mjs', 'generation-checkpoint.mjs', 'checkpoint-preparation.mjs', 'checkpoint-installation.mjs', 'checkpoint-review.mjs', 'checkpoint-choice-commit.mjs','older-edit-review.mjs','older-edit-progress.mjs','older-edit-reset.mjs','older-edit-decision.mjs','older-edit-application.mjs','older-edit-decision-check.test.mjs'])
   sources.set('/journey-sync/' + name, await readFile(new URL(name, import.meta.url)));
 sources.set('/public/preferences.js', await readFile(new URL('../../public/preferences.js', import.meta.url)));
 for (const name of ['software-persona.mjs', 'local-persona.mjs'])

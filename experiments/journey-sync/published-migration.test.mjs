@@ -124,6 +124,35 @@ try{
   await expect(fresh.getByRole('button',{name:'Review older-copy edits',exact:true})).toHaveCount(0);
   await expect(fresh.getByRole('button',{name:'Finish older-copy review',exact:true})).toHaveCount(0);
   console.log('PASS: published older writer → narrow-screen keyboard review, Leave preservation, interrupted planner application, reload/resume, route/history preservation and acknowledgment without repeated prompts.');
+  await old.evaluate(()=>{const data=oldPrefs.readPreferences();data.journeys[0].savedRoutes=[{mode:'bus',route:'80'}];if(!oldPrefs.writePreferences(data))throw Error('old writer failed');});
+  // Fixture the interruption between retaining a decision and applying it;
+  // its storage writer is real. The subsequent reset and re-review use the UI.
+  await fresh.evaluate(async database=>{
+    const wasm=await import('../experiments/tg-pairing/hive_wasm.js');await wasm.default();
+    const store=await(await import('../experiments/tg-pairing/storage.mjs')).openBrowserStorage(database);
+    try{
+      const persona=await store.read('candidate-persona','active'),expectedGroup=persona.value.record.group;
+      const hex=bytes=>Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join(''),group=hex(expectedGroup),member=hex(persona.value.record.subject);
+      const isolated=(await import('../experiments/journey-sync/isolated-preferences.mjs')).openIsolatedPlannerStorage({group}),legacy=isolated.inspectLegacy();
+      const progress=await(await import('../experiments/journey-sync/older-edit-progress.mjs')).readOlderEditProgress({store,group,member,sourceRaw:legacy.sourceRaw});
+      const prefs=await import('../experiments/journey-sync/app-preferences.mjs');
+      const review=await(await import('../experiments/journey-sync/older-edit-review.mjs')).createOlderEditReview({current:(await store.read('along-saved-journeys-v2',group)).value,
+        currentRaw:prefs.readEnvelope().raw,sourceRaw:progress.sourceRaw,olderRaw:legacy.currentLegacyRaw,actor:member});
+      await(await import('../experiments/journey-sync/older-edit-decision.mjs')).retainOlderEditDecision({wasm,store,expectedGroup,reviewId:review.id,choices:review.differences.map(d=>({id:d.id,use:'older'}))});
+    }finally{store.close();}
+  },candidate.namespaces.devices);
+  await old.evaluate(()=>{const data=oldPrefs.readPreferences();data.journeys[0].savedRoutes=[{mode:'bus',route:'81'}];if(!oldPrefs.writePreferences(data))throw Error('old writer failed');});
+  await fresh.reload();await share();
+  await fresh.getByRole('button',{name:'Finish older-copy review',exact:true}).click();
+  await fresh.getByRole('button',{name:'Finish applying my choices',exact:true}).click();
+  await expect(fresh.getByText('The retained choices could not be finished.',{exact:false})).toBeVisible();
+  await fresh.getByRole('button',{name:'Start a fresh review',exact:true}).click();
+  await expect(fresh.getByText('Older app copy: Saved places · Bus 81',{exact:true})).toBeVisible();
+  await fresh.getByRole('button',{name:'Use older copy’s version',exact:true}).click();
+  await fresh.getByRole('button',{name:'Apply choices on this device',exact:true}).click();
+  await expect(fresh.getByRole('heading',{name:'Saved-place choices applied here',exact:true})).toBeFocused();
+  assert.equal(await fresh.evaluate(async()=>(await import('../experiments/journey-sync/app-preferences.mjs')).readEnvelope().data.journeys[0].savedRoutes[0].route),'81');
+  console.log('PASS: a retained unapplied decision made stale by a newer published-app edit refuses application, then Settings starts a fresh review and applies the latest route.');
   assert.deepEqual(errors,[]);
   console.log('PASS: exact published 3805 app creates saved places/identity, current candidate migrates and recovers through Settings, and an older open app writes its retained copy without overwriting the recovered planner. Reopening preserves identity and reports older edits. Service workers are blocked: not installed-update qualification.');
 }finally{await browser?.close();await new Promise(resolve=>server.close(resolve));}

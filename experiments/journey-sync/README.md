@@ -752,7 +752,17 @@ replica commit, reload/resume, route and history preservation, and disappearance
 the acknowledged-review prompt. Service workers are blocked in this test. The
 separate coexistence test covers installed updates.
 
-A stale decision that has not started applying still needs an explicit replacement
-flow. If newer local data prevents finishing an application, the current screen
-retains the records and explains failure; it cannot yet guide every such conflict
-through a new review. The complete older-edit release gate remains unfinished.
+An unapplied stale decision now offers **Start a fresh review**. The guarded
+`resetOlderEditDecision` writer changes only the pending pointer to format 3,
+retaining its decision and compared copies. It preserves the prior acknowledged
+baseline, so resetting does not accept newer old-copy changes. A concurrent or
+already-started application prevents reset. A later explicit review records new
+choices against current data. Storage tests cover quota failure, cancellation
+after commit/retry, retained evidence, refusal after application starts and a
+successful new review. The published-writer Settings test also covers a stale
+retained decision followed by a fresh review of the latest route.
+
+If newer local data prevents finishing an already-started application, the current
+screen still retains the records and explains failure; it cannot yet guide that
+conflict through a new review. The complete older-edit release gate remains
+unfinished.

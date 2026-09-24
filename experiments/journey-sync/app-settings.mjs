@@ -1,3 +1,4 @@
+import {resetOlderEditDecision} from './older-edit-reset.mjs';
 import {readOlderEditProgress} from './older-edit-progress.mjs';
 import {createOlderEditReview} from './older-edit-review.mjs';
 import {retainOlderEditDecision} from './older-edit-decision.mjs';
@@ -183,7 +184,20 @@ export function mountAppJourneySettings({wasm, store, expectedGroup, member}) {
             if(controller.signal.aborted||disposed)return;
             await checkStartup();message='Your retained saved-place choices have been applied on this device.';home();
           }catch{if(!controller.signal.aborted&&!disposed)note.textContent='The retained choices could not be finished. Your copies are kept. Newer edits may need a fresh review; do not clear device data.';}
-        });finish.className='pairing-primary';action('Back',home);heading.focus();return;
+        });finish.className='pairing-primary';
+        const application=await store.read('along-older-edit-applications-v1',reviewId);
+        if(disposed||controller.signal.aborted)return;
+        if(!application){
+          content.append(node('p','If newer edits changed what you want to keep, start a fresh review. The earlier choices and copies remain in recovery records; unapplied choices will not be carried out.'));
+          action('Start a fresh review',async()=>{
+            try{
+              await resetOlderEditDecision({wasm,store,expectedGroup,reviewId,signal:controller.signal});
+              if(disposed||controller.signal.aborted)return;
+              await checkStartup();home();await reviewOlderEdits();
+            }catch{if(!disposed&&!controller.signal.aborted)note.textContent='A fresh review could not be started. The earlier application may have begun; go Back and check its status.';}
+          });
+        }
+        action('Back',home);heading.focus();return;
       }
       const record=await store.read('along-saved-journeys-v2',group);
       const review=await createOlderEditReview({current:record.value,currentRaw:isolated.getItem(preferenceKey),

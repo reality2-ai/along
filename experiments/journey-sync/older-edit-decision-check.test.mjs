@@ -1,3 +1,4 @@
+import {resetOlderEditDecision} from './older-edit-reset.mjs';
 import {readJourneyStartupState} from './startup-state.mjs';
 import {readOlderEditProgress} from './older-edit-progress.mjs';
 import {openGenerationAppJourneyStore} from './generation-app-store.mjs';
@@ -66,6 +67,7 @@ export async function checkOlderEditDecision({wasm,store}){
   await refuses(applyOlderEditDecision({...options,storage:{...storage,setItem:(key,value)=>{
     if(key.endsWith(':generation-profile-v1'))throw Error('planner quota');storage.setItem(key,value);
   }}}));
+  await refuses(resetOlderEditDecision(options));
   const committed=await store.read('along-saved-journeys-v2',setup.group);
   check(committed.value.journeys[0].value.savedRoutes[0].route==='75','replica application was not retained');
   check(readEnvelope(isolated).raw===currentRaw,'failed planner write changed local data');
@@ -110,5 +112,29 @@ export async function checkOlderEditDecision({wasm,store}){
   check((await readJourneyStartupState(options)).status==='generation-ready'&&!(await readJourneyStartupState(options)).legacyChangesPending,'finished review did not resume startup');
   check(readEnvelope(isolated).data.journeys[0].savedRoutes[0].route==='70'&&readEnvelope(isolated).data.journeys[0].count===7,'later review lost history or route');
   check(isolated.inspectLegacy().sourceRaw===raw,'review overwrote original migration evidence');
-  return {group:setup.group,reviewId:third.id,olderRaw:storage.getItem(preferenceKey)};
+  edit('80');
+  // Use the actual last acknowledged snapshot, not the newly edited old copy.
+  const held=await readOlderEditProgress({store,group:setup.group,member:setup.member,sourceRaw:raw});
+  const stale=await createOlderEditReview({current:(await store.read('along-saved-journeys-v2',setup.group)).value,
+    currentRaw:readEnvelope(isolated).raw,sourceRaw:held.sourceRaw,olderRaw:storage.getItem(preferenceKey),actor:setup.member});
+  const staleOptions={...options,reviewId:stale.id,choices:stale.differences.map(d=>({id:d.id,use:'older'}))};
+  await retainOlderEditDecision(staleOptions);edit('81');
+  await refuses(applyOlderEditDecision(staleOptions));
+  const replicaBeforeReset=await store.read('along-saved-journeys-v2',setup.group),plannerBeforeReset=readEnvelope(isolated).raw;
+  await refuses(resetOlderEditDecision({...staleOptions,store:{...store,compareAndSwapMany:async()=>{throw Error('quota');}}}));
+  check((await readJourneyStartupState(options)).status==='older-edit-pending','failed reset resumed sharing');
+  const resetCancel=new AbortController();
+  await refuses(resetOlderEditDecision({...staleOptions,signal:resetCancel.signal,store:{...store,compareAndSwapMany:async(...args)=>{const result=await store.compareAndSwapMany(...args);resetCancel.abort();return result;}}}));
+  check((await resetOlderEditDecision(staleOptions)).status==='older-review-reset','reset retry unavailable');
+  check(JSON.stringify(await store.read('along-saved-journeys-v2',setup.group))===JSON.stringify(replicaBeforeReset)&&readEnvelope(isolated).raw===plannerBeforeReset,'reset changed saved places');
+  check((await store.read(decisions,stale.id)).value.input.olderRaw.includes('80'),'reset discarded compared copies');
+  await refuses(applyOlderEditDecision(staleOptions));
+  const refreshed=await readOlderEditProgress({store,group:setup.group,member:setup.member,sourceRaw:raw});
+  check(refreshed.sourceRaw===held.sourceRaw,'reset acknowledged unreviewed edits');
+  const finalReview=await createOlderEditReview({current:replicaBeforeReset.value,currentRaw:plannerBeforeReset,
+    sourceRaw:refreshed.sourceRaw,olderRaw:storage.getItem(preferenceKey),actor:setup.member});
+  const finalOptions={...options,reviewId:finalReview.id,choices:finalReview.differences.map(d=>({id:d.id,use:'older'}))};
+  await retainOlderEditDecision(finalOptions);await applyOlderEditDecision(finalOptions);
+  check(readEnvelope(isolated).data.journeys[0].savedRoutes[0].route==='81','fresh review missed the latest edit');
+  return {group:setup.group,reviewId:finalReview.id,olderRaw:storage.getItem(preferenceKey)};
 }

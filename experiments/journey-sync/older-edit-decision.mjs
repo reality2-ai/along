@@ -30,7 +30,8 @@ export async function retainOlderEditDecision({wasm,store,expectedGroup,reviewId
     const progress=await readOlderEditProgress({store:audited,group:groupId,member:identity.member,sourceRaw:legacy.sourceRaw});
     const pending=progress.pointer,saved=await audited.read(scope,reviewId);
     if(progress.pendingReviewId&&progress.pendingReviewId!==reviewId)throw fail();
-    if(Boolean(progress.pendingReviewId)!==Boolean(saved))throw fail();
+    const restaging=pending?.value.format===3&&pending.value.reviewId===reviewId&&Boolean(saved);
+    if(Boolean(progress.pendingReviewId)!==Boolean(saved)&&!restaging)throw fail();
     const input=saved?structuredClone(saved.value.input):{current:replica.value,currentRaw:local.raw,
       sourceRaw:progress.sourceRaw,profileSourceRaw:legacy.sourceRaw,olderRaw:legacy.currentLegacyRaw,actor:identity.member};
     if(saved&&(saved.value?.format!==1||saved.value.member!==identity.member||saved.value.reviewId!==reviewId
@@ -48,13 +49,13 @@ export async function retainOlderEditDecision({wasm,store,expectedGroup,reviewId
       active();
     };
     await check();
-    if(saved)return {status:'older-edit-decision-retained',reviewId,alreadyRetained:true,reviewCurrent:reviewCurrent(),applied:false};
+    if(saved&&!restaging)return {status:'older-edit-decision-retained',reviewId,alreadyRetained:true,reviewCurrent:reviewCurrent(),applied:false};
     if(!reviewCurrent())throw fail();
     const value={format:1,member:identity.member,reviewId,input,choices:selected,decision};
     const result=await store.compareAndSwapMany([
-      {scope,key:reviewId,expectedRevision:0,value},
+      {scope,key:reviewId,expectedRevision:saved?.revision??0,value},
       {scope:pendingScope,key:groupId,expectedRevision:pending?.revision??0,value:{format:1,member:identity.member,reviewId}},
-    ],{signal,checks:[...observed.values()].filter(g=>g.scope!==scope&&g.scope!==pendingScope)});
+    ],{signal,checks:[...observed.values()].filter(g=>!(g.scope===scope&&g.key===reviewId)&&g.scope!==pendingScope)});
     if(!result.applied)throw fail();active();
     observed.delete(scope+'\0'+reviewId);observed.delete(pendingScope+'\0'+groupId);
     await check();
