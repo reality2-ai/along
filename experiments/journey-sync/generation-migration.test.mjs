@@ -4,7 +4,7 @@ import {readFile} from 'node:fs/promises';
 import {join} from 'node:path';
 const {chromium} = await import('@playwright/test');
 const sources = new Map();
-for (const name of ['state.mjs', 'store.mjs', 'generation-state.mjs', 'generation-migration.mjs', 'generation-app-store.mjs', 'app-preferences.mjs', 'generation-checkpoint.mjs', 'checkpoint-preparation.mjs', 'checkpoint-installation.mjs'])
+for (const name of ['state.mjs', 'store.mjs', 'generation-state.mjs', 'generation-migration.mjs', 'generation-app-store.mjs', 'app-preferences.mjs', 'generation-checkpoint.mjs', 'checkpoint-preparation.mjs', 'checkpoint-installation.mjs', 'checkpoint-review.mjs', 'checkpoint-choice-commit.mjs'])
   sources.set('/journey-sync/' + name, await readFile(new URL(name, import.meta.url)));
 sources.set('/public/preferences.js', await readFile(new URL('../../public/preferences.js', import.meta.url)));
 for (const name of ['software-persona.mjs', 'local-persona.mjs'])
@@ -167,7 +167,64 @@ try {
       if (mode === 'concurrent-local-edit') assert(JSON.parse(localStorage.getItem(localKey)).journeySync.pending.length === 2, 'concurrent local edit lost');
       f.store.close();
     }
-    return {group: first.setup.group, member: first.setup.member, pending, installationGroup};
+    const {createCheckpointReview} = await import('./journey-sync/checkpoint-review.mjs');
+    const {commitCheckpointChoices, choiceScope} = await import('./journey-sync/checkpoint-choice-commit.mjs');
+    let choiceRetry;
+    for (const mode of ['valid', 'stale', 'permission-race', 'interrupted', 'late-cancel', 'local-edit']) {
+      const f = await fixture('checkpoint-choice-' + mode);
+      await migrateJourneyGeneration(f.input);
+      const issuer = await loadSoftwareIssuer({wasm, store: f.store, expectedGroup: f.input.expectedGroup});
+      const prepared = await issuer.prepareJourneyCheckpoint({expectedRevision: 1}); issuer.close();
+      const localValue = {...live, savedRoutes: [{mode: 'bus', route: '75'}]};
+      const raw = JSON.stringify({learning: false, journeys: [{...localValue, saved: true, count: 7}],
+        journeySync: {format: 1, group: f.setup.group, pending: [{id: crypto.randomUUID(), changes: [{id: journeyId(live), value: localValue}]}]}});
+      const localKey = 'choice-' + mode; localStorage.setItem(localKey, raw);
+      const storage = {getItem: () => localStorage.getItem(localKey), setItem: () => { throw Error('must not replace local data'); }};
+      await installJourneyCheckpoint({...f.input, expectedLocalRaw: raw, checkpoint: prepared.checkpoint, snapshot: prepared.snapshot, storage});
+      const replica = await f.store.read(newScope, f.setup.group);
+      const recovery = await f.store.read('along-journey-checkpoint-recovery-v1', f.setup.group + ':1');
+      const review = await createCheckpointReview({current: replica.value, recovery: recovery.value, localRaw: raw, actor: f.setup.member});
+      assert(review.differences.length === 1, 'expected preference difference');
+      const abort = new AbortController();
+      const input = {wasm, store: f.store, expectedGroup: f.input.expectedGroup, generation: 1, reviewId: review.id,
+        choices: [{id: journeyId(live), use: 'local'}], storage, signal: abort.signal};
+      let expectedRaw = raw;
+      if (mode === 'stale') { expectedRaw += ' '; localStorage.setItem(localKey, expectedRaw); }
+      if (['permission-race', 'late-cancel', 'local-edit'].includes(mode)) input.store = {...f.store, compareAndSwapMany: async (...args) => {
+        if (mode === 'permission-race') await f.store.compareAndSwap('along-journey-sharing-v1', f.setup.group, 0, {format: 1, member: f.setup.member, peers: []});
+        if (mode === 'local-edit') { expectedRaw += ' '; localStorage.setItem(localKey, expectedRaw); }
+        const result = await f.store.compareAndSwapMany(...args);
+        if (mode === 'late-cancel') abort.abort(); return result;
+      }};
+      if (mode === 'interrupted') {
+        const put = IDBObjectStore.prototype.put; let hit = false;
+        IDBObjectStore.prototype.put = function(...args) {
+          const result = put.apply(this, args);
+          if (args[1]?.[0] === choiceScope) { hit = true; this.transaction.abort(); }
+          return result;
+        };
+        try { await refuses(commitCheckpointChoices(input)); } finally { IDBObjectStore.prototype.put = put; }
+        assert(hit, 'decision transaction not interrupted');
+      } else if (['stale', 'permission-race', 'late-cancel'].includes(mode)) await refuses(commitCheckpointChoices(input));
+      else {
+        const results = await Promise.all([commitCheckpointChoices(input), commitCheckpointChoices(input)]);
+        assert(results.filter(r => !r.alreadyCommitted).length === 1 && results.every(r => r.localReviewRequired), 'decision repeated or false completion');
+      }
+      const after = await f.store.read(newScope, f.setup.group);
+      const retained = await f.store.read(choiceScope, review.id);
+      if (['valid', 'late-cancel', 'local-edit'].includes(mode)) {
+        assert(after.value.clock === replica.value.clock + 1 && after.value.journeys[0].value.savedRoutes[0].route === '75', 'chosen preference missing or duplicated');
+        assert(retained.value.localRaw === raw && equal(retained.value.before, replica.value), 'original review not retained');
+        const retry = {...input, store: f.store, signal: undefined};
+        assert((await commitCheckpointChoices(retry)).alreadyCommitted, 'retained retry failed');
+        assert((await f.store.read(newScope, f.setup.group)).revision === after.revision, 'retry wrote again');
+        await refuses(commitCheckpointChoices({...retry, choices: [{id: journeyId(live), use: 'shared'}]}));
+        if (mode === 'valid') choiceRetry = {group: f.setup.group, reviewId: review.id, choices: input.choices};
+      } else assert(after.revision === replica.revision && retained === null, 'partial decision');
+      assert(localStorage.getItem(localKey) === expectedRaw, 'decision replaced local edits');
+      f.store.close();
+    }
+    return {group: first.setup.group, member: first.setup.member, pending, installationGroup, choiceRetry};
   });
   await page.reload();
   const reopened = await page.evaluate(async ({group, pending}) => {
@@ -195,6 +252,17 @@ try {
     } finally { store.close(); }
   }, result.installationGroup);
   assert.equal(installationRestored, true);
+  assert.equal(await page.evaluate(async ({group, reviewId, choices}) => {
+    const wasm = await import('./hive_wasm.js'); await wasm.default();
+    const store = await (await import('./tg-pairing/storage.mjs')).openBrowserStorage('checkpoint-choice-valid');
+    try {
+      const result = await (await import('./journey-sync/checkpoint-choice-commit.mjs')).commitCheckpointChoices({wasm, store,
+        expectedGroup: Uint8Array.from(group.match(/../g), n => parseInt(n, 16)), generation: 1, reviewId, choices,
+        storage: {getItem: () => localStorage.getItem('choice-valid'), setItem: () => { throw Error('unexpected local write'); }}});
+      return result.alreadyCommitted && result.localReviewRequired;
+    } finally { store.close(); }
+  }, result.choiceRetry), true);
+  console.log('PASS: actual recovery choices commit once and survive reload; stale review, changed choices, permission race and interrupted transaction refuse; late cancellation and concurrent local edits retain original decision evidence without replacing planner storage. Final local cutover is not implemented.');
   const bridgeResult = await page.evaluate(async ({group, member}) => {
     const {openGenerationAppJourneyStore} = await import('./journey-sync/generation-app-store.mjs');
     const {readEnvelope, readPreferences, writePreferences} = await import('./journey-sync/app-preferences.mjs');

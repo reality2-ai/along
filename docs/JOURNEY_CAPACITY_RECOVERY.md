@@ -223,8 +223,8 @@ model cannot authorize overwriting a newer local edit merely by returning its ID
 service preferences, local-only saves, retained deletions, explicit shared choices,
 unknown peer additions, malformed choices, corrupted evidence, wrong generations,
 inconsistent pending data, changing review input and full-replica refusal. These
-are model checks; durable application of the chosen differences remains
-unimplemented.
+are model checks; the durable decision stage below now applies the chosen
+differences to the shared replica, while planner cutover remains unimplemented.
 
 ## Local-difference review screen
 
@@ -245,6 +245,32 @@ recovery or physical screen-reader usability. The first run exposed a test-harne
 issue (axe requires an explicit browser context); the corrected harness passes.
 The screen is not mounted in the installed app. A real guarded writer and composed
 recovery-flow tests are still required before publishing it.
+
+## Durable recovery decisions
+
+`checkpoint-choice-commit.mjs` implements the first storage stage. It reloads the
+actual browser identity, membership, permission and recovery evidence, rebuilds
+the review and requires the exact reviewed identifier and complete choices.
+One guarded IndexedDB transaction commits the resulting replica, import receipt
+and retained decision. The retained record includes the original replica, exact
+local preferences, choices and resulting replica; retries reconstruct and verify
+that decision rather than incrementing clocks again. Records use the review digest
+as their key because concatenated group/review digests exceed the runtime key limit.
+
+This operation never writes localStorage. Its result is explicitly
+`journey-recovery-choices-committed` with `localReviewRequired: true`, which cannot
+be mistaken for the review screen's completed-recovery result. An edit arriving
+during the transaction remains in the planner. Cancellation after commit may
+report an unconfirmed result; retry finds the retained decision. A later replica
+change requires fresh review rather than replaying the retained decision over it.
+
+The real runtime/IndexedDB migration suite now also checks concurrent and reloaded
+decision retries, changed choices, stale local review, permission changes,
+transaction abortion, late cancellation and a local edit during commit. The
+initial run exposed the key-length constraint; the corrected suite passes.
+Final planner cutover still needs a guarded, recoverable protocol, including
+cross-tab local writes. No installed-app flow invokes this operation, and no
+archive pruning policy is implied by retaining another recovery record.
 
 ## Required before integration
 

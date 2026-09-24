@@ -1341,3 +1341,12 @@ an in-flight storage commit was undone. Browser checks cover keyboard focus,
 enlarged text, narrow layout and failure states, but use a fixture writer. This
 provides a course example of separating usable presentation from persistence
 evidence: a passing interface test cannot establish that data was safely saved.
+
+The next storage stage records the actual reviewed decision alongside its replica
+change, allowing a retry after cancellation or reload to prove that an edit was
+already committed. It still reports incomplete local recovery because planner
+preferences live in a separate storage system. Fault tests distinguish refusal
+before commit from uncertainty after commit, preserving concurrent planner edits.
+The real runtime also rejected an overlong storage key that a simplified model
+would have accepted. This demonstrates why composed runtime tests add evidence
+beyond isolated logic tests, without establishing complete user-flow acceptance.

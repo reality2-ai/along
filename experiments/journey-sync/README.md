@@ -411,3 +411,11 @@ with retained Back choices, explicit final confirmation and cancellable pending
 confirmation. Run `checkpoint-review-view.test.mjs` with `CHROMIUM_PATH` set for
 keyboard, 320px/200% text, axe and failure-state checks. Its writer is a fixture;
 the screen is not yet connected to durable recovery or mounted in the app.
+
+`checkpoint-choice-commit.mjs` now revalidates the review against actual local
+identity and retained checkpoint evidence, atomically commits replica changes
+with a retained decision, and recognizes retries without repeating edits. The
+real-runtime `generation-migration.test.mjs` covers this stage and its storage,
+permission, cancellation and local-edit races. It deliberately leaves planner
+localStorage unchanged and reports that local review is still required. The final
+planner cutover and composed review-screen flow remain unfinished.
