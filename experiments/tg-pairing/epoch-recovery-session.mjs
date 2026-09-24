@@ -33,7 +33,9 @@ export async function openEpochRecoverySession({wasm, store, expectedGroup, role
     if (closed || signal?.aborted || ((phase !== 'authenticated' || busy)
         && (performance.now() < started || performance.now() >= deadline))) throw Error('Recovery ended');
   };
-  let resolve, reject, installedResolve, installedReject;
+  let resolve, reject, installedResolve, installedReject, acceptedResolve, acceptedReject;
+  const acceptance = new Promise((yes, no) => { acceptedResolve = yes; acceptedReject = no; });
+  void acceptance.catch(() => {});
   const installation = new Promise((yes, no) => { installedResolve = yes; installedReject = no; });
   void installation.catch(() => {});
   const result = new Promise((yes, no) => { resolve = yes; reject = no; });
@@ -43,6 +45,7 @@ export async function openEpochRecoverySession({wasm, store, expectedGroup, role
     closed = true; phase = 'closed'; clearTimeout(timer); challenge?.close(); watcher?.close(); unsubscribe?.();
     signal?.removeEventListener('abort', close); link?.close(); membership?.close(); lifetime.abort();
     reject(Error('Recovery connection ended'));
+    acceptedReject(Error('Recipient acceptance unavailable'));
     installedReject(Error('Local installation was not confirmed by this connection'));
     pending?.reject(Error('Recovery interrupted; installation may already be saved'));
   };
@@ -106,7 +109,7 @@ export async function openEpochRecoverySession({wasm, store, expectedGroup, role
       } else if (phase === 'waiting-ready' && frame.type === 'ready' && fields(frame, ['type'])) {
         await current(); if (role === 'owner') send({type: 'ready'}); authenticated();
       } else if (role === 'owner' && phase === 'authenticated' && frame.type === 'accept-recovery' && fields(frame, ['type']) && !recipientAccepted) {
-        recipientAccepted = true;
+        recipientAccepted = true; acceptedResolve();
       } else if (role === 'recipient' && phase === 'authenticated' && accepted && frame.type === 'epoch'
           && fields(frame, ['type', 'epoch', 'transition', 'certificate', 'payload', 'integrity', 'nonce'])
           && frame.epoch === String(identity.epoch + 1n) && identity.epoch < to) {
@@ -176,6 +179,10 @@ export async function openEpochRecoverySession({wasm, store, expectedGroup, role
       installation: async () => {
         if (role !== 'recipient') throw Error('Local recipient installation unavailable');
         return installation;
+      },
+      accepted: async () => {
+        if (role !== 'owner') throw Error('Remote acceptance unavailable');
+        await acceptance; await current();
       },
       canRecover: () => role === 'owner' && phase === 'authenticated' && recipientAccepted && !busy,
       acceptRecovery: async () => {

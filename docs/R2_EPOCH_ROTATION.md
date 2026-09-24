@@ -165,7 +165,7 @@ close the connection. Cancellation and a use-time handshake deadline also apply.
 The browser check authenticates epoch-one and epoch-two devices over real WebRTC,
 rejects a forged issuer proof sent on that connection, rejects a different saved
 issuer and bad member certificate, and verifies both ends close after removal.
-The harness still transfers SDP on one host; physical reachability and discovery
+These low-level checks transfer SDP on one host; physical reachability and discovery
 are separate. This session exposes no arbitrary application-payload method.
 Its authenticated state is recovery context, not permission to use an AT key or
 an assertion that the older member has current application membership.
@@ -222,7 +222,7 @@ recovery, unchanged installation revisions and zero key-delivery frames.
 
 This confirms the final installed epoch. Reconnecting after partial catch-up starts
 from the recipient's saved epoch; it does not reconstruct missing intermediate
-receipts. The recipient review is implemented below; its signaling flow and app integration remain unfinished. A receipt is a signed peer claim,
+receipts. The recipient review is implemented below; its visible signaling flow is described below, while app integration remains unfinished. A receipt is a signed peer claim,
 not independent attestation of a hostile device's storage.
 
 1. Compose certificate renewal for retained recipients with authenticated delivery.
@@ -271,8 +271,8 @@ fresh-document reopening, stale approval, pre- and post-commit cancellation,
 obsolete asynchronous views, unreadable custody, 320px layout at 200% text size,
 and axe checks. Physical screen-reader testing is still separate.
 
-This screen is not yet wired into app Settings. The recipient review's signaling
-connection and the complete app permission flow must be composed before enabling it and qualifying a public preview. A signed
+This screen is not yet wired into app Settings. The complete app permission flow
+must be composed with the visible recovery connection before enabling it and qualifying a public preview. A signed
 receipt must be verified before a device is labelled as having confirmed an update;
 a saved membership certificate alone is insufficient.
 
@@ -325,6 +325,35 @@ from the owner's lost acknowledgment. After both documents reload, equal-version
 confirmation is approved through the same review. Narrow 320px layout at 200%
 text size and axe checks pass. Physical TalkBack is not established by these tests.
 
-Signaling is still supplied by the test harness. The public-facing message/QR
-exchange and Settings composition remain pending; this standalone review is not
-an enabled public recovery flow and does not change preview 3803.
+The earlier review checks supply signaling from the test harness. The visible
+message exchange is now composed below. Settings composition remains pending;
+this does not enable a public recovery flow or change preview 3803.
+
+
+## Device-message recovery flow
+
+`epoch-recovery-flow.mjs` composes the actual transfer and recipient-review
+screens. The owner selects a known device and provides a starting message with
+signed removals. The recipient checks it against its saved group/inviter, merges
+valid removals, opens a recovery-only session, and returns a request with its
+current certificate, held removals and connection offer. The owner checks the
+selected identity and exchange identifier, merges removals before opening its
+session, and returns the connection answer. The underlying mutual proof binds
+identities and epochs to the real WebRTC transcript.
+
+Both sides must act: the recipient reviews and accepts; only then does the owner
+see a send/confirm action. The owner reports success after its durable signed
+receipt. The recipient reports its local installation independently. Messages
+contain public identities, removal evidence and network connection details, not
+traffic keys or AT credentials. The existing transfer component provides manual
+copy/paste and QR controls; physical camera scanning is not proven by this test.
+
+The composed browser test now copies the visible messages through their actual
+text areas and buttons. It checks a mismatched reply identifier, equal-version
+confirmation, delivery of a new fourth key version, separate completion results,
+recipient acceptance without premature key delivery, signed-removal catch-up and
+fresh-document restoration. It no longer injects SDP directly for these cases.
+The earlier low-level failure tests still supply signaling directly.
+
+Settings entry points and renewed journey/AT permission integration remain
+unfinished. This source flow is not yet deployed in public preview 3803.

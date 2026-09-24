@@ -58,7 +58,11 @@ passes real-browser keyboard, cancellation, stale-approval and accessibility che
 It confirms local installation only and is not yet wired into Settings. The
 recipient review now runs over real authenticated sessions, including keyboard
 acceptance, cancellation, failed installation and equal-version confirmation.
-Device-message signaling and full Settings composition remain unfinished. The source device list now verifies saved
+The visible three-message flow now composes signed-removal catch-up, authenticated
+connection, recipient acceptance and owner send/confirmation. Browser tests copy
+its displayed messages, reject a mismatched reply, confirm existing keys and
+deliver a new version. Settings and full application permission composition remain
+unfinished. The source device list now verifies saved
 per-device receipts and distinguishes missing, unreadable and removed-device
 status without claiming online presence. Composed browser checks use real
 WebRTC receipts and corrupt/race their stored evidence. See

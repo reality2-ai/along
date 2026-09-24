@@ -953,3 +953,13 @@ over real WebRTC and checks keyboard operation, cancellation, failure messages,
 lost acknowledgment, narrow/200% layout and axe. Signaling remains harness-driven;
 message/QR exchange and app Settings integration still need completion before a
 new public preview is qualified.
+
+
+`epoch-recovery-flow.mjs` now composes that review with the actual device-message
+transfer screens. A starting owner message, recipient request and owner reply
+carry public connection context and signed-removal catch-up. The recipient accepts
+before the owner's send action appears. `EPOCH_INSTALL=1` exercises the visible
+text areas/buttons for a mismatched reply, saved-key confirmation and delivery of
+a new key version. QR controls reuse the transfer component; physical scanning
+and Settings/full app integration still need verification. Public preview 3803
+remains unchanged.
