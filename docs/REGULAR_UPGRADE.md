@@ -19,6 +19,15 @@ that the recovery page caused the browser's fallback `/favicon.ico` request. A
 relative Along icon link fixes that; the complete rerun passes. The old shell
 cache is replaced only when the new worker activates.
 
+The [expanded resilience check](evidence/regular-upgrade-resilience.json) injects
+a missing WASM download: the new worker fails installation and v37 reopens
+offline. A complete retry then succeeds. An already-open v37 tab uses its actual
+released preference writer to save a Bus 75 change before sharing is enabled;
+the candidate retains it offline. This does not prove arbitrary stale whole-object
+writes are safe. The connected installation guide now describes personal AT keys,
+sharing and relay privacy; offline rendering fits 320px, passes axe and supports
+keyboard Back. Automated axe results are not spoken screen-reader acceptance.
+
 ## Reproduce without publishing
 
 ```sh
@@ -36,13 +45,13 @@ files remain ignored under `releases/`.
 
 ## Before promotion
 
-- Update candidate installation/privacy wording for optional direct AT and device
-  sharing; the local candidate still inherits some regular-app wording.
+- Remove candidate-only status text only when release qualification and promotion
+  are complete. The connected guide is sourced from `CONNECTED_INSTALL.md`.
 - Run the full live/TG, recovery, accessibility and offline-planning checks against
   the flattened candidate. This test covers upgrade/setup, not every feature.
-- Check an old open regular-app tab, failed update recovery, and existing-device
-  cases where applicable. Do not treat preview migration evidence as proof of a
-  regular-app upgrade.
+- Check existing-device cases and shared-generation old-tab behavior where
+  applicable. The local pre-sharing old-tab and failed-update checks above pass;
+  preview migration evidence is not proof of every regular-app upgrade.
 - Complete the outstanding physical S23 pairing, installation and spoken
   screen-reader checks. Initial pairing is still an explicit exchange.
 - Produce an immutable release package and verify its deployed bytes before

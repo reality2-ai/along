@@ -59,8 +59,9 @@ this audit. Later public-hosting work supplements that brief.
    user withdrew an earlier TalkBack-success statement; treat it as untested.
 3. Complete regular-app promotion checks. The [local upgrade candidate](REGULAR_UPGRADE.md)
    passes exact published-v37 update, saved-data retention, optional identity setup
-   and offline reopening on the same `/along/` scope. Candidate wording, complete
-   live/TG regression and physical acceptance remain. Preview storage stays separate;
+   and offline reopening on the same `/along/` scope. The expanded check covers
+   failed-download recovery, a pre-sharing old-tab edit and connected installation
+   wording. Complete live/TG regression and physical acceptance remain. Preview storage stays separate;
    this does not migrate preview credentials into regular Along.
 4. Complete the signed-in GitHub composer/submission check for contextual feedback.
    Actual CLI submission and anonymous browser receipt are already evidenced in

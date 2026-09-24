@@ -8,6 +8,7 @@ import tempfile
 
 from build_experimental_app import build
 from runtime_provenance import verify_runtime
+from regular_connected_content import prepare_regular_connected_content
 
 ROOT = Path(__file__).resolve().parents[1]
 PROFILE = 'along-regular-upgrade-candidate-v1'
@@ -44,6 +45,7 @@ def candidate(runtime):
                     text = text.replace('recovery=37', 'recovery=38').replace('Recovery page 37', 'Recovery page 38')
                 body = text.encode()
             target.write_bytes(body)
+        prepare_regular_connected_content(stage)
         (stage / 'build-info.json').write_text(json.dumps({
             'profile': PROFILE, 'appVersion': '38', 'publishable': False,
             'files': {str(p.relative_to(stage)): hashlib.sha256(p.read_bytes()).hexdigest()
