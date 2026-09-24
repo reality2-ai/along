@@ -2,7 +2,8 @@
 
 Status: transition framing, signature verification, encrypted durable preparation
 and atomic issuer/recipient installation implemented and tested, including two
-successive issuer advances. No user-facing rotation flow is enabled, including in
+successive issuer advances. The standalone owner review screen is implemented
+and browser-tested; the full rotation/recovery flow is not enabled in the app or
 preview 3803.
 This is an Along application profile using the R2 group authority; it is not a
 claim of a normative R2 rotation wire format or full R2 conformance.
@@ -247,3 +248,31 @@ not independent attestation of a hostile device's storage.
 Browser software custody still does not resist hostile same-origin code or a
 restored copy of old browser storage. Local epoch checks are not hardware-backed
 rollback protection or proof that no newer update exists on another device.
+
+
+## Owner review screen
+
+`epoch-rotation-view.mjs` reviews one explicit successor before calling the real
+software issuer and atomic installer. Its heading asks whether to update group
+keys; the text explains that other devices will need an update connection, local
+journeys remain available, and an AT API key is a separate credential. It advises
+removing an unwanted member before changing group keys. The primary action saves
+on this device only. Success explicitly does not claim peer delivery.
+
+The review binds the current member and epoch. If another operation advances the
+keys while the screen is open, its old approval cannot create the next successor.
+Back/Escape cancels pending work where possible; a completed atomic installation
+remains saved, and a disposed view cannot overwrite the returned screen. Reopening
+reads the actual saved version. Unreadable custody never recreates an identity.
+
+`epoch-rotation-view.test.mjs` exercises the real encrypted issuer and installation
+with trusted keyboard activation, synthetic-click refusal, Back/Escape,
+fresh-document reopening, stale approval, pre- and post-commit cancellation,
+obsolete asynchronous views, unreadable custody, 320px layout at 200% text size,
+and axe checks. Physical screen-reader testing is still separate.
+
+This screen is not yet wired into app Settings. The recipient's reviewed recovery
+connection, the per-device confirmation list and the complete app permission flow
+must be composed before enabling it and qualifying a public preview. A signed
+receipt must be verified before a device is labelled as having confirmed an update;
+a saved membership certificate alone is insufficient.

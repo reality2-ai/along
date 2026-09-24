@@ -53,7 +53,10 @@ epochs, refuses interrupted installation and restores in a fresh document.
 A lost final acknowledgment now recovers after both documents reload through a
 fresh authenticated, recipient-approved receipt exchange at the same epoch. No
 keys are redelivered or installation records rewritten; a corrupted saved
-installation refuses confirmation. The recovery UI remains unfinished. See
+installation refuses confirmation. A standalone owner key-update review now
+passes real-browser keyboard, cancellation, stale-approval and accessibility checks.
+It confirms local installation only and is not yet wired into Settings; recipient
+connection controls and per-device confirmation remain unfinished. See
 [the rotation design](R2_EPOCH_ROTATION.md#recovery-only-possession-check).
 
 The restored software issuer now produces epoch-zero signed revocation evidence

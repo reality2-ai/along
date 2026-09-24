@@ -916,3 +916,18 @@ signatures are verified before a guarded atomic merge; retained removals are nev
 deleted by a smaller or stale set. Replay performs no write or needless local
 invalidation. The result confirms only a local merge, not globally fresh group
 knowledge. This is Along-specific framing, not a normative R2 wire format.
+
+
+### Group key-update review (not enabled in the public preview)
+
+`epoch-rotation-view.mjs` provides the owner review for one key-version change.
+It uses real encrypted preparation and atomic installation, refuses approval after
+the reviewed version changes, and states that local installation does not confirm
+delivery to another device. Back preserves any transaction that already committed.
+
+Run `node experiments/tg-pairing/epoch-rotation-view.test.mjs` with the same
+`R2_WASM_DIR`, `R2_BROWSER_DIR` and `CHROMIUM_PATH` used by the other browser tests.
+The test checks keyboard activation, cancellation on each side of commit,
+fresh-document restoration, stale views/approval and narrow-screen/axe behavior.
+The complete recipient recovery and app integration remain pending; see the
+[rotation design](../../docs/R2_EPOCH_ROTATION.md#owner-review-screen).
