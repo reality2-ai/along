@@ -34,6 +34,7 @@ export function mountAppJourneySettings({wasm, store, expectedGroup, member}) {
   let capacityReached = false;
   const startupMessage = () => ({
     checking: 'Checking this device’s saved journeys…',
+    'older-edit-pending':'An older-copy review was retained and still needs to finish. Your copies are kept; sharing is paused.',
     'isolation-required': 'Saved-journey migration needs to finish on this device. Your existing copies are kept; sharing is paused.',
     'local-review-required': 'Review the retained saved-place differences before sharing again. Your existing copies are kept.',
     'generation-ready': (startup.generation === 0 ? 'Saved-journey storage is prepared on this device. ' : 'This device has recovered saved journeys. ') + 'Connect to share saved-place changes with a device at the same checkpoint. If it needs to catch up, transfer a checkpoint for review first.',

@@ -1,3 +1,6 @@
+import {readJourneyStartupState} from './startup-state.mjs';
+import {readOlderEditProgress} from './older-edit-progress.mjs';
+import {openGenerationAppJourneyStore} from './generation-app-store.mjs';
 import {initializeSoftwarePersona} from '../tg-pairing/software-persona.mjs';
 import {emptyState,changeJourney,journeyId,projectJourney} from './state.mjs';
 import {setupJourneyGeneration} from './migration-setup.mjs';
@@ -42,6 +45,8 @@ export async function checkOlderEditDecision({wasm,store}){
   await refuses(retainOlderEditDecision({...options,signal:cancelled.signal,store:{...store,compareAndSwapMany:async(...args)=>{
     const result=await store.compareAndSwapMany(...args);cancelled.abort();return result;
   }}}));
+  check((await readJourneyStartupState(options)).status==='older-edit-pending','retained work did not pause startup');
+  await refuses(openGenerationAppJourneyStore({store,group:setup.group,actor:setup.member,storage:isolated}).reconcile());
   const retry=await retainOlderEditDecision(options);
   check(retry.alreadyRetained&&retry.reviewCurrent&&!retry.applied,'retained retry status incorrect');
   check(JSON.stringify(await store.read('along-saved-journeys-v2',setup.group))===JSON.stringify(before),'staging changed replica');
@@ -86,5 +91,24 @@ export async function checkOlderEditDecision({wasm,store}){
   check((await store.read(pending,setup.group)).value.olderRaw===input.olderRaw,'acknowledgment consumed newer older bytes');
   check((await applyOlderEditDecision(options)).alreadyApplied,'completed application retry failed');
   check(JSON.parse(storage.getItem(preferenceKey)).journeys[0].savedRoutes[0].route==='80','application rewrote old tab');
-  return {group:setup.group,reviewId:review.id,olderRaw:input.olderRaw};
+  const progress=await readOlderEditProgress({store,group:setup.group,member:setup.member,sourceRaw:raw});
+  check(progress.sourceRaw===input.olderRaw&&!progress.pendingReviewId,'completed review not used as next baseline');
+  const current=await store.read('along-saved-journeys-v2',setup.group);
+  const secondInput={current:current.value,currentRaw:readEnvelope(isolated).raw,sourceRaw:progress.sourceRaw,olderRaw:storage.getItem(preferenceKey),actor:setup.member};
+  const second=await createOlderEditReview(secondInput);
+  const secondOptions={...options,reviewId:second.id,choices:second.differences.map(d=>({id:d.id,use:'current'}))};
+  await retainOlderEditDecision(secondOptions);await applyOlderEditDecision(secondOptions);
+  check((await readJourneyStartupState(options)).legacyChangesPending===false,'acknowledged older edits keep reappearing');
+  check(readEnvelope(isolated).data.journeys[0].savedRoutes[0].route==='75','keeping current route lost the chosen route');
+  edit('70'); // Back to the original migration value is still a new old-tab edit.
+  const baseline=await readOlderEditProgress({store,group:setup.group,member:setup.member,sourceRaw:raw});
+  const third=await createOlderEditReview({...secondInput,current:(await store.read('along-saved-journeys-v2',setup.group)).value,
+    currentRaw:readEnvelope(isolated).raw,sourceRaw:baseline.sourceRaw,olderRaw:storage.getItem(preferenceKey)});
+  check(third.differences.length===1,'edit returning to migration value was missed');
+  const thirdOptions={...options,reviewId:third.id,choices:third.differences.map(d=>({id:d.id,use:'older'}))};
+  await retainOlderEditDecision(thirdOptions);await applyOlderEditDecision(thirdOptions);
+  check((await readJourneyStartupState(options)).status==='generation-ready'&&!(await readJourneyStartupState(options)).legacyChangesPending,'finished review did not resume startup');
+  check(readEnvelope(isolated).data.journeys[0].savedRoutes[0].route==='70'&&readEnvelope(isolated).data.journeys[0].count===7,'later review lost history or route');
+  check(isolated.inspectLegacy().sourceRaw===raw,'review overwrote original migration evidence');
+  return {group:setup.group,reviewId:third.id,olderRaw:storage.getItem(preferenceKey)};
 }

@@ -59,6 +59,8 @@ export function openGenerationAppJourneyStore({store, group, actor, storage = se
   };
   const reconcile = ({signal} = {}) => locks.request('along-journey-import:' + group, {signal}, async () => {
     for (;;) {
+      const olderReview=await store.read('along-older-edit-pending-v1',group);
+      if(olderReview&&olderReview.value?.format!==2)throw Error('Finish the retained older-copy review before sharing');
       if (signal?.aborted) throw Error('Sharing ended');
       const before = readEnvelope(storage);
       if (before.sync?.group !== group) throw Error('Journey sharing is not enabled');

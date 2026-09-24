@@ -709,3 +709,28 @@ newer local data, preservation of a later older edit and completed-record reload
 This writer is not mounted yet. Startup handling of unfinished applications,
 review/refresh of stale decisions, using completed acknowledgments as the next
 baseline and the Settings interaction remain integration requirements.
+
+### Repeated older-copy reviews and interrupted application
+
+`older-edit-progress.mjs` validates the retained decision/acknowledgment pointer
+and uses the last explicitly acknowledged old-copy snapshot as the next comparison
+baseline. The original migration snapshot is kept intact. A new decision replaces
+a completed pointer using its storage revision; an unfinished decision still
+cannot be replaced silently. Application checks the original profile snapshot
+separately from the advancing review baseline.
+
+Startup now reports `older-edit-pending` while a retained decision needs finishing.
+The app pauses sharing for that state, the generation bridge refuses reconciliation,
+and generation peer authorization observes the pending-record revision. The
+retention/application APIs accept that recovery state so an interrupted operation
+can be retried. No network or automatic planner merge finishes a choice for the user.
+
+The real IndexedDB/browser migration suite verifies three consecutive reviews,
+including keeping the current route and later accepting an old-tab edit back to
+the original route. Acknowledged changes stop reappearing; history and original
+migration evidence survive. Existing quota, identity-race, cancellation,
+planner-write failure and final-acknowledgment retry checks also pass.
+
+Settings still needs the explicit older-copy review/resume interaction and a safe
+way to replace stale unapplied decisions. This work is not deployed and does not
+complete the `older_edit_settings` release gate.

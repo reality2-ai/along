@@ -1,3 +1,4 @@
+import {readOlderEditProgress} from './older-edit-progress.mjs';
 // Read-only startup diagnosis, never an authorization token for a later write.
 import {loadLocalPersona} from '../tg-pairing/local-persona.mjs';
 import {validateState} from './state.mjs';
@@ -56,8 +57,10 @@ export async function readJourneyStartupState({wasm, store, expectedGroup, stora
         const isolated = openIsolatedPlannerStorage({group: groupId, storage});
         const local = readEnvelope(isolated), version = local.sync?.version ?? {generation: 0, checkpoint: '0'.repeat(64)};
         if (local.sync?.group !== groupId) return unavailable;
-        const legacyChangesPending = isolated.inspectLegacy().changed;
-        if (matches(version, state)) result = {status: 'generation-ready', generation: state.generation, legacyChangesPending};
+        const legacy=isolated.inspectLegacy();
+        const progress=await readOlderEditProgress({store:{read},group:groupId,member:identity.member,sourceRaw:legacy.sourceRaw});
+        const legacyChangesPending=legacy.currentLegacyRaw!==progress.sourceRaw;
+        if (matches(version, state)) result = {status: progress.pendingReviewId?'older-edit-pending':'generation-ready', generation: state.generation, legacyChangesPending, ...(progress.pendingReviewId?{olderReviewId:progress.pendingReviewId}:{})};
         else if (previous && matches(version, previous)) result = {status: 'local-review-required', generation: state.generation, legacyChangesPending};
         else return unavailable;
       }

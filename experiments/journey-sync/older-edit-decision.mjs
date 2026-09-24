@@ -1,3 +1,4 @@
+import {readOlderEditProgress} from './older-edit-progress.mjs';
 // Stage an explicit decision without applying it. Both preference copies and
 // the replica remain unchanged until a separate guarded application step.
 import {readJourneyStartupState} from './startup-state.mjs';
@@ -22,15 +23,16 @@ export async function retainOlderEditDecision({wasm,store,expectedGroup,reviewId
       if(observed.has(id)&&observed.get(id).expectedRevision!==revision)throw fail();
       observed.set(id,{scope:s,key:k,expectedRevision:revision});return record;
     }};
-    if((await readJourneyStartupState({wasm,store:audited,expectedGroup:group,storage,signal})).status!=='generation-ready')throw fail();
+    if(!['generation-ready','older-edit-pending'].includes((await readJourneyStartupState({wasm,store:audited,expectedGroup:group,storage,signal})).status))throw fail();
     const identity=await loadLocalPersona({wasm,store:audited,expectedGroup:group});if(!identity)throw fail();
     const replica=await audited.read(replicas,groupId);
     const isolated=openIsolatedPlannerStorage({group:groupId,storage}),local=readEnvelope(isolated),legacy=isolated.inspectLegacy();
-    const pending=await audited.read(pendingScope,groupId),saved=await audited.read(scope,reviewId);
-    if(pending&&(pending.value?.format!==1||pending.value.reviewId!==reviewId||pending.value.member!==identity.member))throw fail();
-    if(Boolean(pending)!==Boolean(saved))throw fail();
+    const progress=await readOlderEditProgress({store:audited,group:groupId,member:identity.member,sourceRaw:legacy.sourceRaw});
+    const pending=progress.pointer,saved=await audited.read(scope,reviewId);
+    if(progress.pendingReviewId&&progress.pendingReviewId!==reviewId)throw fail();
+    if(Boolean(progress.pendingReviewId)!==Boolean(saved))throw fail();
     const input=saved?structuredClone(saved.value.input):{current:replica.value,currentRaw:local.raw,
-      sourceRaw:legacy.sourceRaw,olderRaw:legacy.currentLegacyRaw,actor:identity.member};
+      sourceRaw:progress.sourceRaw,profileSourceRaw:legacy.sourceRaw,olderRaw:legacy.currentLegacyRaw,actor:identity.member};
     if(saved&&(saved.value?.format!==1||saved.value.member!==identity.member||saved.value.reviewId!==reviewId
         ||!equal(saved.value.choices,selected)||input.actor!==identity.member))throw fail();
     const review=await createOlderEditReview(input);
@@ -39,7 +41,7 @@ export async function retainOlderEditDecision({wasm,store,expectedGroup,reviewId
     if(saved&&!equal(saved.value.decision,decision))throw fail();
     const reviewCurrent=()=>{
       const now=isolated.inspectLegacy();return readEnvelope(isolated).raw===input.currentRaw
-        &&now.sourceRaw===input.sourceRaw&&now.currentLegacyRaw===input.olderRaw&&equal(replica.value,input.current);
+        &&now.sourceRaw===(input.profileSourceRaw??input.sourceRaw)&&now.currentLegacyRaw===input.olderRaw&&equal(replica.value,input.current);
     };
     const check=async()=>{
       active();for(const guard of observed.values())if(((await store.read(guard.scope,guard.key))?.revision??0)!==guard.expectedRevision)throw fail();
@@ -51,7 +53,7 @@ export async function retainOlderEditDecision({wasm,store,expectedGroup,reviewId
     const value={format:1,member:identity.member,reviewId,input,choices:selected,decision};
     const result=await store.compareAndSwapMany([
       {scope,key:reviewId,expectedRevision:0,value},
-      {scope:pendingScope,key:groupId,expectedRevision:0,value:{format:1,member:identity.member,reviewId}},
+      {scope:pendingScope,key:groupId,expectedRevision:pending?.revision??0,value:{format:1,member:identity.member,reviewId}},
     ],{signal,checks:[...observed.values()].filter(g=>g.scope!==scope&&g.scope!==pendingScope)});
     if(!result.applied)throw fail();active();
     observed.delete(scope+'\0'+reviewId);observed.delete(pendingScope+'\0'+groupId);

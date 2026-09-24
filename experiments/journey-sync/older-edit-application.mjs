@@ -25,7 +25,7 @@ export async function applyOlderEditDecision({wasm,store,expectedGroup,reviewId,
       if(observed.has(key)&&observed.get(key).expectedRevision!==revision)throw fail();
       observed.set(key,{scope:s,key:k,expectedRevision:revision});return record;
     }};
-    if((await readJourneyStartupState({wasm,store:audited,expectedGroup:group,storage,signal})).status!=='generation-ready')throw fail();
+    if(!['generation-ready','older-edit-pending'].includes((await readJourneyStartupState({wasm,store:audited,expectedGroup:group,storage,signal})).status))throw fail();
     const identity=await loadLocalPersona({wasm,store:audited,expectedGroup:group});if(!identity)throw fail();
     const saved=await audited.read(decisions,reviewId),pointer=await audited.read(pendingScope,groupId);
     const application=await audited.read(applications,reviewId),replica=await audited.read(replicas,groupId);
@@ -63,7 +63,7 @@ export async function applyOlderEditDecision({wasm,store,expectedGroup,reviewId,
     if(!application){
       const legacy=isolated.inspectLegacy();
       if(!equal(replica.value,input.current)||readEnvelope(isolated).raw!==input.currentRaw
-          ||legacy.sourceRaw!==input.sourceRaw||legacy.currentLegacyRaw!==input.olderRaw)throw fail();
+          ||legacy.sourceRaw!==(input.profileSourceRaw??input.sourceRaw)||legacy.currentLegacyRaw!==input.olderRaw)throw fail();
       const result=await store.compareAndSwapMany([
         {scope:replicas,key:groupId,expectedRevision:replica.revision,value:after},
         {scope:applications,key:reviewId,expectedRevision:0,value:proposed},
