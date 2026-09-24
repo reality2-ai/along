@@ -78,6 +78,7 @@ async function persist(){
   preferencesSaving=true;
   const focused=document.activeElement;
   const controls=['save-places','prefer-services','clear-history','learning-enabled','max-walk','walking-pace','avoid-steps','confirmed-access'].map(id=>[$(id),$(id).disabled]);
+  for(const control of document.querySelectorAll('[data-remove-shortcut]'))controls.push([control,control.disabled]);
   for(const [control] of controls)control.disabled=true;
   let saved=false;
   try{saved=await writePreferences(state.preferences);}catch{}
@@ -92,16 +93,29 @@ let usualRefreshPending=false;
 function renderUsual({background=false}={}){
   // Keep the shortcut under a keyboard user's focus stable while peer updates
   // arrive. Apply the latest list when focus leaves this group of choices.
-  if(background&&$('usual-journeys').contains(document.activeElement)){usualRefreshPending=true;return;}
+  if(background&&document.querySelector('.usual-section').contains(document.activeElement)){usualRefreshPending=true;return;}
   usualRefreshPending=false;
   const usual=suggestions(state.preferences,context());
   $('usual-journeys').innerHTML=usual.length?usual.map((j,i)=>`<button type="button" class="usual-card" data-usual="${i}"><span class="usual-icon" aria-hidden="true">${j.saved?'☆':'↗'}</span><span><strong>${escape(j.to.name)}</strong><small>${message('usual.from',{place:j.from.name})}</small><small>${j.saved?(j.savedRoutes?message('usual.saved')+' · '+serviceMarkup(j.savedRoutes):message('usual.savedJourney')):message('usual.searches',{count:j.count})}</small></span></button>`).join(''):`<div class="usual-placeholder"><span class="usual-icon" aria-hidden="true">↗</span><div><strong>${message(state.preferences.learning?'usual.begin':'usual.different')}</strong>${message(state.preferences.learning?'usual.learnHelp':'usual.pausedHelp')}</div></div>`;
   document.querySelectorAll('[data-usual]').forEach(button=>button.onclick=()=>{state.intent='plan';const trip=usual[Number(button.dataset.usual)];state.savedPreference=trip.saved&&trip.savedRoutes?{from:trip.from.id,to:trip.to.id,routes:trip.savedRoutes}:null;setPlace('origin',trip.from);setPlace('destination',trip.to);setNow();searchJourney();});
+  $('shortcut-actions').innerHTML=usual.map((j,i)=>`<div class="shortcut-action"><p id="shortcut-label-${i}"><strong>${escape(j.to.name)}</strong><br>${message('usual.from',{place:j.from.name})}</p><button type="button" class="secondary-button" data-remove-shortcut="${i}" aria-describedby="shortcut-label-${i}">Remove shortcut</button></div>`).join('');
+  document.querySelectorAll('[data-remove-shortcut]').forEach(button=>button.onclick=async()=>{
+    if(preferencesSaving)return;
+    const trip=usual[Number(button.dataset.removeShortcut)];
+    state.preferences.journeys=state.preferences.journeys.filter(j=>j.from.id!==trip.from.id||j.to.id!==trip.to.id);
+    const saved=await persist();
+    if(saved){
+      if(state.savedPreference?.from===trip.from.id&&state.savedPreference?.to===trip.to.id){state.savedPreference=null;for(const option of state.journeys)delete option.preferred;}
+      $('announcement').textContent='Shortcut removed, including saved services and learning history for these places.';
+    }
+    if(document.querySelector('.usual-section').hidden)$('destination').focus();
+    else $('manage-shortcuts').querySelector('summary').focus();
+  });
   document.querySelector('.usual-section').hidden=!usual.length;
   $('learning-enabled').checked=state.preferences.learning;
   translated('learning-note',state.preferences.learning?'learning.active':'learning.paused');
 }
-$('usual-journeys').addEventListener('focusout',()=>{
+document.querySelector('.usual-section').addEventListener('focusout',()=>{
   if(usualRefreshPending)queueMicrotask(()=>renderUsual({background:true}));
 });
 function setNow(){const now=aucklandNow();$('date').value=now.date;$('time').value=now.time;updatePreferenceSummary();}
