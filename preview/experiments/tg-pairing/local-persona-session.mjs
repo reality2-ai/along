@@ -3,15 +3,17 @@
 import {loadLocalPersona} from './local-persona.mjs';
 import {openMembership} from './membership.mjs';
 import {createPeerSession} from './peer-session.mjs';
+import {watchLocalEpoch} from './epoch-watch.mjs';
 
 export async function openLocalPersonaSession({wasm, store, expectedGroup, peer, role, signal, onMessage}) {
   if (!(expectedGroup instanceof Uint8Array) || expectedGroup.length !== 32
       || !(peer instanceof Uint8Array) || peer.length !== 32
       || !['offer', 'answer'].includes(role)) throw new Error('Peer context unavailable');
   const group = expectedGroup.slice(), remote = peer.slice();
-  let membership, session, ended = false;
+  let membership, session, watcher, ended = false;
   const dispose = () => {
     ended = true; signal?.removeEventListener('abort', dispose);
+    watcher?.close();
     const heldSession = session, heldMembership = membership;
     session = undefined; membership = undefined;
     try { heldSession?.close(); } finally { heldMembership?.close(); }
@@ -27,10 +29,12 @@ export async function openLocalPersonaSession({wasm, store, expectedGroup, peer,
     if (!record) throw new Error('Installed identity unavailable');
     membership = openMembership(store, wasm, group, record.subject);
     const context = await membership.sessionContext(); current();
+    watcher = watchLocalEpoch({store, group, subject: context.subject, epoch: context.epoch, onChange: dispose});
+    await watcher.check(); current();
     session = createPeerSession({wasm, role, group, epoch: context.epoch,
       local: context.subject, peer: remote, certificate: record.certificate,
       identity: {publicId: identity.member, sign: identity.sign}, membership,
       onClose: dispose, onMessage});
-    current(); return session;
+    await watcher.check(); current(); return session;
   } catch (error) { dispose(); throw error; }
 }

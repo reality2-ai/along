@@ -2,10 +2,12 @@ import {showLocalSetup} from '../tg-pairing/setup-view.mjs';
 import {showPairingFlow} from '../tg-pairing/pairing-flow.mjs';
 import {showRecoveryFlow} from '../tg-pairing/recovery-flow.mjs';
 import {loadLocalPersona} from '../tg-pairing/local-persona.mjs';
-import {loadATBinding} from './local-owner.mjs';
+import {loadATBinding, loadATConnectionBinding} from './local-owner.mjs';
 import {showATSettings} from './settings-view.mjs';
 import {showKeySharingFlow} from './key-sharing-flow.mjs';
 import {showOwnerDevices} from './owner-devices-view.mjs';
+import {showEpochRotation} from '../tg-pairing/epoch-rotation-view.mjs';
+import {showEpochRecoveryFlow} from '../tg-pairing/epoch-recovery-flow.mjs';
 import {showMemberDevices} from '../tg-pairing/member-devices-view.mjs';
 import {showRemovalTransfer} from '../tg-pairing/removal-transfer-view.mjs';
 
@@ -78,23 +80,53 @@ export function mountAppDeviceSettings({onChanged}) {
         });
         const identity = await loadLocalPersona({wasm, store, expectedGroup: group}); if (!active(selected)) return;
         if (!identity) throw Error('Saved identity unavailable');
-        const binding = await loadATBinding({wasm, store, expectedGroup: group}); if (!active(selected)) return;
+        let binding, bindingAvailable = true;
+        try { binding = await loadATBinding({wasm, store, expectedGroup: group}); }
+        catch {
+          bindingAvailable = false;
+          try { binding = await loadATConnectionBinding({wasm, store, expectedGroup: group}); } catch { /* Keep unreadable state. */ }
+        }
+        if (!active(selected)) return;
         onChanged({wasm, store, group, binding, member: identity.member});
-        status.textContent = binding?.role === 'recipient'
+        status.textContent = !bindingAvailable
+          ? 'Your saved AT setup could not be verified. It has been kept. Group connection and recovery options remain available below.'
+          : binding?.role === 'recipient'
           ? 'This device has a saved sharing choice. Use the connection option in Settings when you want live information.'
           : 'Your device identity is saved. Choose only the optional setup you need.';
-        const show = (view, options = {}) => { clear(); child = view(content, {wasm, store, expectedGroup: group, focus: true, onBack: home, ...options}); };
-        action(panel, binding ? 'Manage my AT key' : 'Use my own AT key', () => show(showATSettings), true);
-        action(panel, binding?.role === 'owner' ? 'Share my AT key' : 'Receive a shared AT key', () => show(showKeySharingFlow, {role: binding?.role === 'owner' ? 'owner' : 'recipient'}));
-        if (binding?.role === 'owner') action(panel, 'Manage AT access on other devices', () => show(showOwnerDevices));
+        const show = (view, options = {}) => {
+          clear(); child = view(content, {wasm, store, expectedGroup: group, focus: true, onBack: home, ...options});
+          if (view === showEpochRecoveryFlow && options.role === 'recipient') {
+            // Renew evidence for an existing AT owner only. Group-key recovery
+            // does not create an AT binding or change its policy/credential.
+            void child.completed.then(async installed => {
+              if (disposed) return;
+              const {renewATOwnerCertificate} = await import('./owner-certificate.mjs');
+              if (disposed) return;
+              await renewATOwnerCertificate({wasm, store, expectedGroup: group, certificate: installed.ownerCertificate});
+              const restored = await loadATBinding({wasm, store, expectedGroup: group});
+              const local = await loadLocalPersona({wasm, store, expectedGroup: group});
+              if (!disposed && local) onChanged({wasm, store, group, binding: restored, member: local.member});
+            }).catch(() => { /* Group installation remains saved; unreadable AT state is preserved. */ });
+          }
+        };
+        if (bindingAvailable) {
+          action(panel, binding ? 'Manage my AT key' : 'Use my own AT key', () => show(showATSettings), true);
+          action(panel, binding?.role === 'owner' ? 'Share my AT key' : 'Receive a shared AT key', () => show(showKeySharingFlow, {role: binding?.role === 'owner' ? 'owner' : 'recipient'}));
+          if (binding?.role === 'owner') action(panel, 'Manage AT access on other devices', () => show(showOwnerDevices));
+        }
         const details = node('details', ''); details.append(node('summary', 'Connect or recover another device'));
-        if (identity.origin === 'initial' || !identity.peerAcknowledged) panel.append(details);
+        panel.append(details);
         if (identity.origin === 'initial') {
           action(details, 'Invite my other device', () => show(showPairingFlow, {role: 'provisioner'}));
+          action(details, 'Update group keys on this device', () => show(showEpochRotation));
+          if (identity.epoch > 0n) action(details, 'Send a group key update', () => show(showMemberDevices, {databaseName: 'along-device-preview-devices-v1', purpose: 'update'}));
           action(details, 'Review group devices', () => show(showMemberDevices, {databaseName: 'along-device-preview-devices-v1'}));
           action(details, 'Join my other device', () => show(showPairingFlow, {role: 'candidate'}));
           action(details, 'Confirm an interrupted connection', () => show(showRecoveryFlow, {role: 'provisioner'}));
-        } else if (!identity.peerAcknowledged) action(details, 'Recover installation confirmation', () => show(showRecoveryFlow, {role: 'candidate'}));
+        } else {
+          action(details, 'Receive a group key update', () => show(showEpochRecoveryFlow, {role: 'recipient'}));
+          if (!identity.peerAcknowledged) action(details, 'Recover installation confirmation', () => show(showRecoveryFlow, {role: 'candidate'}));
+        }
       }
       // Put the return action after the current task's choices.
       panel.append(returnButton);

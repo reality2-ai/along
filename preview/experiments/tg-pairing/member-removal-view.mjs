@@ -81,7 +81,7 @@ export function showMemberRemoval(container, {wasm, store, expectedGroup, subjec
         const evidence = saved?.value?.revocations.find(value => Array.from(value.subject, b => b.toString(16).padStart(2, '0')).join('') === peerId);
         if (!evidence) throw Error('Removal unavailable');
         offerTransfer(evidence);
-      } else if (standing === 'current') {
+      } else if (['current', 'stale'].includes(standing)) {
         status.textContent = 'Check the device identity before saving this removal.'; remove.hidden = false;
       } else throw Error('Membership unavailable');
     } catch {

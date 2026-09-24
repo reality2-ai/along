@@ -1,9 +1,9 @@
 // Along browser-subset public challenge envelopes, not standard R2 wire formats.
-// Initial epoch zero only. The caller must establish the invitation's source by
+// The caller must establish the invitation's source by
 // local review; this exchange proves the named inviter holds its member key.
 import {decodeSoftwareInvitation, encodeSoftwareInvitation} from './software-invitation.mjs';
 import {invitationStatement} from './invitation.mjs';
-const profile = 'along-browser-proof-v1';
+const profile = 'along-browser-proof-v2';
 const fail = () => new Error('Invitation proof unavailable');
 const hex = bytes => Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
 const bytes = (text, length) => {
@@ -49,7 +49,7 @@ export function createInvitationProof({wasm, reviewed, lifetimeMs = 60000}) {
         current();
         const value = parse(response, 'response');
         if (value.descriptor !== selected || value.nonce !== hex(nonce)) throw fail();
-        membership = wasm.BrowserMembership.establish(invitation.group, 0n, 0n);
+        membership = wasm.BrowserMembership.establish(invitation.group, invitation.epoch, 0n);
         authorized = membership.authorise_invitation(invitationStatement(wasm, invitation), bytes(value.certificate, 136), nonce, bytes(value.proof, 64));
         if (!authorized) throw fail();
         current(); consumed = true; close();
