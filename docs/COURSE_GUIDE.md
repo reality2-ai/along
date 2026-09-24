@@ -4,6 +4,10 @@ Along was created as a course exercise. It is an experimental educational app,
 provided for use at the user’s own risk; it is not an official AT service or a
 claim of production readiness. The verification work is part of the lesson.
 
+For a short entry point tied to the current release, use the
+[version 39 course handover](course/HANDOVER.md). Historical labs retain their
+original versions and evidence.
+
 ## Aim and audience
 
 Use a working commuter app to practise turning evolving human intentions into

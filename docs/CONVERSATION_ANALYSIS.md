@@ -8,7 +8,7 @@ result**. It is intended for an AI-assisted coding course, not as a transcript o
 usability research or a claim that the design is universally usable.
 
 The corpus is the available design conversation, reviewed on 23 September 2026,
-with development observations updated on 24 September 2026,
+with development observations updated through 25 September 2026,
 including the requests for public hosting, installation guidance, privacy, course
 status, consistent screenshots with a real map, and this README summary of the
 original drivers, followed by the contextual live-data, independent hosting and
@@ -1518,3 +1518,37 @@ corrected UI test and storage tests are linked in
 exercise can ask learners to distinguish accepting local data for review from
 accepting it as authority, and explain why earlier green preview tests were too
 narrow to prove this transition.
+
+
+### Release and handover reflection: evidence needs a next action (25 September 2026)
+
+The user's “what next?” follows a collaboration repeatedly guided by making the
+likely next action clear. Applying that principle to development communication,
+as well as to the app, is an analyst interpretation: a long sequence of test
+records can make the next useful human action harder to identify. The response
+should distinguish work the assistant can perform from observations only the
+user can supply, while preserving the full original goal. It should not repeatedly
+present publication or another passing suite as project completion.
+
+The regular release exposed a documentation mismatch: the README's ordinary build
+command still produced the legacy planner while the published app included device
+sharing. This implementation observation supports *reproducibility as part of the
+experience*. A course learner should not need to discover an undocumented build
+path. The revised build guide distinguishes the paths; committed-source exports
+reproduced the v38 application bytes using the published snapshot and an existing
+verified runtime. That result does not establish a clean-machine toolchain rebuild.
+
+Version 39 provides a useful negative case for *scope of verification*. A real
+relay regression found that receiving a membership change could leave an existing
+session using obsolete authority. The old code timed out; the fix renews sessions
+and permits further sharing. This is separate from the user's initial QR → Use
+report. It cannot establish the cause of that report, prove the phone's scan works,
+or demonstrate automatic delivery of group updates. The
+[v39 release record](RELEASE_V39.md) and [course handover](course/HANDOVER.md)
+keep those distinctions visible.
+
+These are secondary implementation observations connected to existing themes,
+not new participant accounts or proof of course effectiveness. The unresolved
+physical check is retained as contrary evidence to any broad claim of seamless
+cross-device use. A further observation may require revising the interpretation,
+not simply adding another passing test to the record.

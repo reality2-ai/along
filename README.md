@@ -384,7 +384,8 @@ need downloaded data. See [architecture](docs/ARCHITECTURE.md), [performance evi
 
 ## AI-assisted coding course
 
-Start with the [course guide](docs/COURSE_GUIDE.md) and
+Start with the [current course handover](docs/course/HANDOVER.md), then the
+[course guide](docs/COURSE_GUIDE.md) and
 [thematic analysis of the conversation](docs/CONVERSATION_ANALYSIS.md). They cover
 how concrete user feedback changed the requirements, the mistakes uncovered by
 verification, and how to distinguish implemented behaviour from supported claims.
