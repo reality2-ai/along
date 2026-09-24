@@ -238,3 +238,7 @@ button,.secondary-button,.tab,.setting,select,input[type=date],input[type=time]{
 .guided-app #information.map-expanded #map-location-status{margin:8px 0 0;flex-shrink:0}
 
 .brand-copy{display:block}.brand-copy small{display:block;font-size:12px;letter-spacing:0;font-weight:500;line-height:1.3;margin-top:2px}
+
+.guided-app #manage-shortcuts{margin-top:12px}
+.guided-app .shortcut-action{margin:16px 0}
+.guided-app .shortcut-action .secondary-button{width:100%}

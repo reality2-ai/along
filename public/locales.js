@@ -318,7 +318,7 @@ Object.assign(messages, {
     "mi": "☆ Kōwhiria ēnei ratonga kē hei manakohanga"
   },
   "service.help": {
-    "en": "Optionally remember these service numbers for next time. This also saves the places; departure times are checked again.",
+    "en": "Optionally remember these service numbers for next time. Tap Preferred services again to remove only the service preference. To remove the saved places too, use Manage shortcuts on the home screen. Departure times are checked again.",
     "mi": "Ki te hiahia koe, puritia ēnei tau ratonga mō muri ake. Ka tiakina hoki ngā wāhi; ka tirohia anō ngā wā wehe."
   },
   "service.removed": {

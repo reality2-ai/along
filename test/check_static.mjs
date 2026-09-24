@@ -15,7 +15,7 @@ const build=JSON.parse(buildBytes);
 const digest=bytes=>createHash('sha256').update(bytes).digest('hex');
 if(regular){
   expect(build.profile).toBe('along-regular-upgrade-candidate-v1');
-  expect(build.appVersion).toBe('40');
+  expect(build.appVersion).toBe('41');
   for(const [name,hash] of Object.entries(build.files)){
     const file=resolve(root,name);
     expect(file.startsWith(root)).toBe(true);
@@ -81,6 +81,12 @@ try{
  await page.locator('#full-itinerary > summary').focus();await page.keyboard.press('Enter');
  await expect(page.locator('.leg').first()).toBeVisible();
  await page.locator('#prefer-services').click();await expect(page.locator('#prefer-services')).toHaveAttribute('aria-pressed','true');
+ // Removing a service preference keeps the saved endpoints, explicitly.
+ await page.locator('#prefer-services').click();
+ await expect(page.locator('#prefer-services')).toHaveAttribute('aria-pressed','false');
+ expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('along-journeys-v1')).journeys.find(j=>j.saved).savedRoutes)).toBeNull();
+ await page.locator('#prefer-services').click();
+ await expect(page.locator('#prefer-services')).toHaveAttribute('aria-pressed','true');
  await expect(page.locator('.journey-steps').first()).toHaveAttribute('open','');
  await expect(page.locator('#prefer-services')).toBeFocused();
  const audit=await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa','wcag22aa']).analyze();expect(audit.violations).toEqual([]);
@@ -135,6 +141,26 @@ try{
  await choose('origin','277 Broadway Newmarket');await page.locator('#origin-next').click();
  await page.locator('#journey-preferences > summary').click();await page.locator('#date').fill('2026-09-23');await page.locator('#time').fill('09:00');
  await page.locator('#find').click();await expect(page.locator('.journey-card').first()).toBeVisible({timeout:30000});
+ // Remove a repeatedly searched saved shortcut, not just its route preference.
+ await page.reload();await expect(page.locator('#address-status')).toContainText('ready offline');
+ await page.locator('#manage-shortcuts > summary').click();
+ const shortcut=page.locator('.shortcut-action').filter({hasText:'Devonport'});
+ await expect(shortcut).toHaveCount(1);
+ expect((await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa']).analyze()).violations).toEqual([]);
+ const beforeRemoval=await page.evaluate(()=>JSON.parse(localStorage.getItem('along-journeys-v1')));
+ expect(beforeRemoval.journeys.find(j=>j.to.name.includes('Devonport')).count).toBeGreaterThanOrEqual(2);
+ await page.evaluate(()=>{window.originalSetItem=Storage.prototype.setItem;Storage.prototype.setItem=function(k,v){if(k==='along-journeys-v1')throw new DOMException('Test write failure','QuotaExceededError');return window.originalSetItem.call(this,k,v);};});
+ await shortcut.getByRole('button',{name:'Remove shortcut',exact:true}).click();
+ await expect(page.locator('#preference-write-status')).toBeVisible();await expect(shortcut).toHaveCount(1);
+ expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('along-journeys-v1')))).toEqual(beforeRemoval);
+ await page.evaluate(()=>{Storage.prototype.setItem=window.originalSetItem;delete window.originalSetItem;});
+ await shortcut.getByRole('button',{name:'Remove shortcut',exact:true}).focus();await page.keyboard.press('Enter');
+ await expect(shortcut).toHaveCount(0);await expect(page.locator('#destination')).toBeFocused();
+ const retained=beforeRemoval.journeys.filter(j=>!j.to.name.includes('Devonport')).map(j=>({...j,savedRoutes:j.savedRoutes??null}));
+ expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('along-journeys-v1')).journeys)).toEqual(retained);
+ await page.reload();await expect(page.locator('#address-status')).toContainText('ready offline');
+ await expect(page.locator('.usual-card')).toHaveCount(0);
+ expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('along-journeys-v1')).journeys)).toEqual(retained);
  // The help itself remains available when the host is unreachable.
  await page.goto(origin+prefix+'install.html');await expect(page.locator('h1:visible')).toContainText('offline');
  await expect(page.locator('main')).toContainText(regular?'Search history and current location stay on your device.':'Your journey searches');

@@ -4,7 +4,7 @@
 official Auckland Transport service. Check important journey and accessibility
 information with AT.
 
-These instructions describe Along version 40. Check the version in Settings.
+These instructions describe Along version 41. Check the version in Settings.
 Along Device Preview is a separate installation; its saved places and device
 keys are not imported automatically. Do not clear website data to update: that
 can erase saved places and device keys.

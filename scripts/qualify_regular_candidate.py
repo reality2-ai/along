@@ -19,8 +19,8 @@ def main():
     source = git('rev-parse', 'HEAD')
     manifest_path = ROOT / 'releases/along-regular-upgrade-candidate/build-info.json'
     manifest = json.loads(manifest_path.read_text())
-    if manifest['profile'] != 'along-regular-upgrade-candidate-v1' or manifest['appVersion'] != '40':
-        raise RuntimeError('Build regular candidate 40 before qualification')
+    if manifest['profile'] != 'along-regular-upgrade-candidate-v1' or manifest['appVersion'] != '41':
+        raise RuntimeError('Build regular candidate 41 before qualification')
     actual = {p.relative_to(manifest_path.parent).as_posix() for p in manifest_path.parent.rglob('*') if p.is_file()}
     if actual != set(manifest['files']) | {'build-info.json'}:
         raise RuntimeError('Candidate file set differs from manifest')
@@ -50,6 +50,7 @@ def main():
         ('installed_upgrade', {}, 'experiments/journey-sync/regular-upgrade.test.mjs'),
         ('installed_connected_upgrade', {'ALONG_PRIOR_VERSION':'38'}, 'experiments/journey-sync/regular-upgrade.test.mjs'),
         ('installed_previous_release', {'ALONG_PRIOR_VERSION':'39'}, 'experiments/journey-sync/regular-upgrade.test.mjs'),
+        ('installed_v40_upgrade', {'ALONG_PRIOR_VERSION':'40'}, 'experiments/journey-sync/regular-upgrade.test.mjs'),
         ('relay_membership_reconnect', {'ENROLLED_RELAY_NETWORK':'1'}, 'experiments/at-credentials/peer-delivery.test.mjs'),
         ('relay_settings', {}, 'experiments/relay/app-settings.test.mjs'),
         ('recovery_settings', {}, 'experiments/journey-sync/startup-settings.test.mjs'),
