@@ -142,8 +142,8 @@ and [source at 3738a5e](evidence/regular-v38-current-source-rebuild.json)
 each rebuilt all **301 application files byte for byte** against the published ZIP.
 Both used the release data and existing verified runtime on the same host.
 The public runtime has since been rebuilt in an isolated container with publicly
-downloaded tools and dependencies. A separate [isolated app rebuild](evidence/regular-v40-public-source-rebuild.json)
-now reproduces all 283 v40 application files from anonymous public source and
+downloaded tools and dependencies. A separate [isolated app rebuild](evidence/regular-v42-public-source-rebuild.json)
+now reproduces all 283 v42 application files from anonymous public source and
 verified release downloads. It uses the published runtime bundle; runtime source
 compilation is evidenced separately.
 
@@ -166,20 +166,20 @@ A mismatch after an intentional app change is expected: qualify a new release
 instead of changing this check to call different bytes identical.
 
 
-## Repeat the isolated public v40 app build
+## Repeat the isolated public v42 app build
 
-This historical release check uses no local app source, data, browser profile or
-credentials. It fetches the pinned public commit and v40 assets, verifies archive
+This release check uses no local app source, data, browser profile or
+credentials. It fetches the pinned public v42 commit, v42 data and public v40 runtime assets, verifies archive
 hashes, runs the integrated builder and compares every application file with the
 release. Packaging README, qualification and build manifests are outside the
 application comparison. It does not refresh AT data or run physical-device checks.
 Ask the AI to run this with Podman and a new output directory:
 
 ```sh
-mkdir releases/public-v40-rebuild-check
+mkdir releases/public-v42-rebuild-check
 podman run --rm --memory 2g --cpus 2 \
-  -v "$PWD/scripts/check_public_v40_build.py:/input/check.py:ro" \
-  -v "$PWD/releases/public-v40-rebuild-check:/output:rw" \
+  -v "$PWD/scripts/check_public_release_build.py:/input/check.py:ro" \
+  -v "$PWD/releases/public-v42-rebuild-check:/output:rw" \
   docker.io/library/python:3.13-bookworm python3 /input/check.py
 ```
 

@@ -57,6 +57,9 @@ iteration; see the [current-standard review](R2_CURRENT_STANDARD_REVIEW.md).
 No relay is selected by default. Group security updates retain their explicit transfer flows.
 Feedback's signed-in GitHub submission step remains an acceptance check.
 See [Building Along](BUILDING.md) for setup and scoped historical reproduction
-checks; v40 byte-for-byte results are not claims of v42 reproduction.
+checks. The [isolated v42 source rebuild](evidence/regular-v42-public-source-rebuild.json)
+reproduces all 283 application files byte for byte from anonymous public source
+and verified public downloads. Release metadata is excluded; the public prebuilt
+runtime is used, with its compiler reproduction evidenced separately.
 
 Experimental AI-coding course app, used at your own risk; not an official AT service.

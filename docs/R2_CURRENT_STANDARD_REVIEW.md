@@ -53,3 +53,18 @@ software-custody limits and existing local data during any migration.
 The server AI retains server configuration ownership. Along does not select a
 relay by default. Offline planning and direct AT access remain independent.
 Do not ask the server owner to deploy the older relay merely to fit Along.
+
+## Current monorepo follow-up
+
+Read-only inspection on 25 September located the current `hive-wasm` loopback
+implementation (file's last commit `17059117172a11667603fc49573572ae69bdb359`).
+It exercises local frame carriage; it is not a demonstrated network connection
+between Along and the deployed server. A targeted search of the current Rust
+implementation did not locate a production WebSocket browser binding. The server
+may have a separate adapter, so its contract remains to be obtained from its owner.
+
+The loopback source commentary says a browser bearer lacks an ordinal. Do not
+promote that commentary into a current-standard restriction: published L1 8.2.4
+permits bindings to share an ordinal subject to the specified profile conditions.
+A browser binding needs to satisfy that contract; it is not inherently excluded.
+No source from the private monorepo was copied or published in this review.

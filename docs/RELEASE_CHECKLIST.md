@@ -926,3 +926,8 @@ managed-server rerun passed. A caller-supplied `TEST_BASE_URL` remains supported
 This updates the ordinary planner's full-browser baseline. It does not qualify a
 new preview, deploy an app update, establish real-provider access or substitute
 for physical-device/spoken screen-reader acceptance.
+
+Version 42 distribution follow-up: the [isolated public-source rebuild](evidence/regular-v42-public-source-rebuild.json)
+reproduces all 283 application files using only public source and verified release
+inputs. No host checkout, local data or credentials are mounted. This closes the
+current application reproduction check, not physical-device or relay acceptance.
