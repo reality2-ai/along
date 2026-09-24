@@ -1,0 +1,29 @@
+{
+  "profile": "along-group-rotation-app-checks-v1",
+  "checkedAt": "2026-09-24T01:28:34.830853+00:00",
+  "artifact": "local along-experimental-app; not a public preview release",
+  "manifestSHA256": "44c802005911783ce12c7957af2263b5a3a18b735fe5bbdd0a3f1b0677f3b1db",
+  "payloadFiles": 255,
+  "testSHA256": {
+    "experiments/at-credentials/two-app-integration.test.mjs": "219b73b87e5a143d44132950aa202a003ac01424e63d44cee8a5c87c6db4add3",
+    "experiments/at-credentials/rotation-app-check.mjs": "9e9b44e862f34590958018cbb2484a762fcb593ba373e3713a9764543566dbd3",
+    "experiments/journey-sync/app-integration.test.mjs": "370be0bb48d972c2cd020970d742215e4441de01952aa9eee8dcc511b3c532f8"
+  },
+  "checks": [
+    {
+      "command": "MAIN_APP_SETUP=1 ROTATE_GROUP_KEYS=1 node experiments/at-credentials/two-app-integration.test.mjs",
+      "exitCode": 0,
+      "result": "Settings rotation/delivery, AT-owner certificate renewal, unchanged identity/binding/policy/encrypted credentials, reload, reconnect, contextual mocked AT requests, permission removal and offline routing passed."
+    },
+    {
+      "command": "ROTATE_GROUP_KEYS=1 node experiments/journey-sync/app-integration.test.mjs",
+      "exitCode": 0,
+      "result": "Settings rotation/delivery, unchanged journey permissions, reload, offline edits, reconnection/convergence, journey permission removal and offline group removal passed."
+    }
+  ],
+  "limits": [
+    "Two browser profiles on one host; no physical-device or real-provider claim.",
+    "Group issuer is also AT owner in the shared-AT test.",
+    "Public preview 3803 is unchanged; full release qualification remains required."
+  ]
+}

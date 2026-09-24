@@ -4,7 +4,7 @@ Status: transition framing, signature verification, encrypted durable preparatio
 and atomic issuer/recipient installation implemented and tested, including two
 successive issuer advances. Owner review, device selection and recovery are connected in the local
 experimental app Settings. Pinned AT-owner certificate renewal is implemented;
-full post-rotation app exchanges remain unverified. None
+two-profile post-rotation shared AT and journey exchanges now pass. None
 of this rotation UI is enabled in public preview 3803.
 This is an Along application profile using the R2 group authority; it is not a
 claim of a normative R2 rotation wire format or full R2 conformance.
@@ -386,8 +386,8 @@ Journey permission records are keyed by stable member identities; the journey
 connection obtains a fresh certificate from its incoming descriptor. Shared AT
 restoration additionally checks the pinned owner's saved certificate for current
 epoch membership. The renewal operation below replaces that certificate without
-changing the pinned owner, credential identity, consent or policy. Full shared-device AT and
-journey exchanges after rotation are not yet verified and remain release blockers.
+changing the pinned owner, credential identity, consent or policy. Shared-device AT and journey exchanges after rotation now pass the two-profile
+checks below; different AT-owner renewal and release qualification remain pending.
 Only `along-experimental-app` was rebuilt; the qualified preview 3803 artifacts and
 public deployments are unchanged.
 
@@ -420,3 +420,32 @@ policy and enrollment evidence changed during the transaction. Exact retry does
 not rewrite, and the restored binding loads in a fresh document. This does not yet
 prove AT-key delivery/provider reads or journey exchange after rotation in the
 complete app; those tests and release qualification remain required.
+
+
+## Composed app evidence after rotation
+
+The generated static app now passes both `ROTATE_GROUP_KEYS=1` variants:
+
+- `MAIN_APP_SETUP=1 ROTATE_GROUP_KEYS=1 node experiments/at-credentials/two-app-integration.test.mjs`
+- `ROTATE_GROUP_KEYS=1 node experiments/journey-sync/app-integration.test.mjs`
+
+Both use real Settings enrollment, rotation, device selection and recovery. The AT
+case waits for the actual Settings certificate-renewal callback rather than calling
+the helper itself. Identities, pinned binding, signed policy and encrypted AT-key
+bytes/revisions are unchanged, except for the group epoch and renewed certificates.
+Both apps reload, reconnect, make the expected contextual mocked AT requests for a
+bus/ferry journey, refuse subsequent requests after permission removal, and reopen
+with offline routing. No real AT key or real-provider call is involved.
+
+The journey case first shares saved places and service preferences. It then
+rotates group keys, verifies unchanged permission records, reloads, makes offline
+edits and reconnects. Copies converge using the saved permissions and fresh
+membership certificates; removal, local-history preservation and offline planning
+checks still pass. The tests transfer displayed public connection messages through
+the visible controls. They do not establish automatic discovery or physical-device
+reachability.
+
+[Evidence and exact manifest/test hashes](evidence/group-rotation-app-checks.json)
+identify the local build used. These checks do not qualify or deploy a new public
+preview. Renewal where the AT owner differs from the group issuer, remaining
+capacity/recovery cases, physical acceptance and full release qualification remain.

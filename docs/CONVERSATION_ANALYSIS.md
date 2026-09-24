@@ -1186,3 +1186,27 @@ between fewer interaction steps and verified state: the added step is explicit,
 and is not presented as seamless automatic reconnection. Both devices must update.
 Six release checks cover the exact candidate, including published 3802 upgrade
 and 3801 enrollment recovery. Physical-device acceptance remains a separate claim.
+
+
+### Key rotation: preserving intent across changing credentials
+
+This development evidence extends the themes of user control and honest status;
+it is not an additional quotation or requirement from the user. Tests distinguish
+keys saved on one device, a confirmation sent, and a signed confirmation retained
+by the other device. Dropping the final acknowledgment requires a fresh exchange,
+not a reset of identity or permissions. The interface reflects those different
+outcomes.
+
+Composing rotation with the full app exposed a dependency: shared AT restoration
+checked an old owner certificate, which could also prevent access to recovery
+controls. The controls now remain reachable while the saved binding is preserved.
+Renewal changes only verified membership evidence for the already chosen owner;
+it does not reinterpret key rotation as new consent.
+
+Two-profile app tests now rotate through Settings and then exercise shared AT
+access and saved-journey convergence across reopening and offline edits. This is a
+course exercise in testing the next user action after a successful operation,
+rather than stopping at its success screen. Learners should identify which state
+must change, which choices must remain stable, and what evidence would justify
+claiming success. The remaining different-owner and physical-device cases keep
+the boundary between tested behavior and intended behavior explicit.

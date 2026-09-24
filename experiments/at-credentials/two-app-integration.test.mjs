@@ -1,16 +1,19 @@
 // Actual generated journey app on a static subpath, with a real local software
 // identity/vault and mocked provider. No production key or proxy is involved.
 import assert from 'node:assert/strict';
+import {checkAppRotation} from './rotation-app-check.mjs';
 import AxeBuilder from '@axe-core/playwright';
 import {createHash} from 'node:crypto';
 import {createServer} from 'node:http';
 import {readFile} from 'node:fs/promises';
 import {join, extname} from 'node:path';
 const {chromium, expect} = await import(process.env.PLAYWRIGHT_MODULE || '@playwright/test');
-const variants = ['INTERRUPT_GRANT', 'INTERRUPT_ACCEPTANCE', 'LOSE_KEY_CONFIRMATION', 'LOSE_KEY_DELIVERY', 'REPLACE_SHARED_KEY', 'REMOVE_GROUP_MEMBER'].filter(name => process.env[name] === '1');
+const variants = ['INTERRUPT_GRANT', 'INTERRUPT_ACCEPTANCE', 'LOSE_KEY_CONFIRMATION', 'LOSE_KEY_DELIVERY', 'REPLACE_SHARED_KEY', 'REMOVE_GROUP_MEMBER', 'ROTATE_GROUP_KEYS'].filter(name => process.env[name] === '1');
 assert.ok(variants.length <= 1, 'Select one interruption scenario per run');
 let pendingLostDelivery;
 const mainSetup = process.env.MAIN_APP_SETUP === '1';
+const rotateGroupKeys = process.env.ROTATE_GROUP_KEYS === '1';
+assert.ok(!rotateGroupKeys || mainSetup, 'Group rotation uses actual app Settings');
 const removeGroupMember = process.env.REMOVE_GROUP_MEMBER === '1';
 assert.ok(!removeGroupMember || mainSetup, 'Group removal uses actual app Settings');
 const replaceSharedKey = process.env.REPLACE_SHARED_KEY === '1';
@@ -387,6 +390,7 @@ try {
     }
   } else await Promise.all(pages.map(page => page.goto(origin + 'public/')));
   await Promise.all(pages.map(page => expect(page.locator('#data-status')).toContainText('offline ready', {timeout: 90000})));
+  if (rotateGroupKeys) await checkAppRotation({owner, recipient: candidate, move});
   const updates = await owner.evaluate(async () => {
     const wasm = await import('../experiments/tg-pairing/hive_wasm.js'); await wasm.default();
     const store = await (await import('../experiments/tg-pairing/storage.mjs')).openBrowserStorage(window.testDeviceDatabase);

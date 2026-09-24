@@ -1,6 +1,7 @@
 // Generated journey app in two isolated profiles. Real UI enrollment and saved
 // places; the harness copies public connection text. No AT key or provider needed.
 import assert from 'node:assert/strict';
+import {checkAppRotation} from '../at-credentials/rotation-app-check.mjs';
 import AxeBuilder from '@axe-core/playwright';
 import {createHash} from 'node:crypto';
 import {createServer} from 'node:http';
@@ -289,6 +290,7 @@ try {
   assert.equal(await owner.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
   assert.deepEqual((await new AxeBuilder({page: owner}).analyze()).violations.map(v => v.id), []);
   await owner.getByRole('button', {name: 'Disconnect journey sharing', exact: true}).click(); await closeSharing(owner);
+  if (process.env.ROTATE_GROUP_KEYS === '1') await checkAppRotation({owner, recipient: candidate, move, atBinding: false, databaseName: namespaces.devices});
   await Promise.all(pages.map(page => expect.poll(() => page.evaluate(() => !!navigator.serviceWorker.controller)).toBe(true)));
   await Promise.all(contexts.map(context => context.setOffline(true)));
   await Promise.all(pages.map(page => page.reload()));

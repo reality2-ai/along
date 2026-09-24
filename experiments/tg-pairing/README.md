@@ -985,3 +985,12 @@ binding before/after rotation, invalid evidence, concurrent changes, idempotence
 and fresh-document restoration. The certificate comes from the authenticated
 recovery result. A different AT owner is not silently replaced with the group
 issuer. Full post-rotation shared AT use and journey exchange remain unverified.
+
+
+The generated-app `ROTATE_GROUP_KEYS=1` checks now pass for both shared AT access
+(`MAIN_APP_SETUP=1` in the AT two-app test) and saved-journey sharing (journey app
+test). They rotate through Settings, preserve existing consent/key ciphertext,
+reload, reconnect and continue mocked contextual AT reads or offline journey-edit
+convergence. See [the recorded evidence](../../docs/evidence/group-rotation-app-checks.json).
+This covers the AT owner also being the group issuer; a different AT owner,
+physical-device checks and release qualification remain outstanding.

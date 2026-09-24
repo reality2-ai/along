@@ -66,8 +66,11 @@ rotation, selected-device delivery and recipient recovery. Its generated-app che
 keeps group recovery reachable when a saved AT binding cannot be verified. Shared
 AT-owner certificate renewal now preserves the pinned binding and signed policy
 using the authenticated recovery certificate. Real-browser checks cover invalid
-evidence, concurrent changes, retry and fresh restoration. Full post-rotation
-application checks and renewal from a different AT-owner member remain unfinished; public preview 3803 is unchanged. The source device list now verifies saved
+evidence, concurrent changes, retry and fresh restoration. Post-rotation
+shared-AT and journey exchanges now pass in two generated-app browser profiles,
+including the real Settings renewal callback, unchanged permissions/key ciphertext,
+reload, reconnection and offline edits. Renewal from a different AT-owner member
+and full release qualification remain unfinished; public preview 3803 is unchanged. The source device list now verifies saved
 per-device receipts and distinguishes missing, unreadable and removed-device
 status without claiming online presence. Composed browser checks use real
 WebRTC receipts and corrupt/race their stored evidence. See
