@@ -48,6 +48,17 @@ The harness copies public connection messages. This is not physical pairing or
 external relay acceptance. A preview relay test also passes after the harness was
 adapted to support both directory layouts. Published app bytes are unchanged.
 
+The [shared-key and recovery checks](evidence/regular-candidate-shared-keys.json)
+add six passing runs: replacement of a shared synthetic key, device removal,
+group-key updates with a different AT-key owner, lost key receipt, interrupted
+owner acceptance, and recovery Settings. Lost receipts resume without replacing
+either encrypted key; interrupted acceptance retains the selected owner and
+requires an explicit resume. The recipient refuses superseded key access after
+learning the update. Removal closes live access without changing the selected
+journey, and offline routing remains available. This does not revoke a key at AT
+or erase data already copied by a device. Recovery Settings uses fixture starting
+records, with real signing, review and guarded writes.
+
 ## Reproduce without publishing
 
 ```sh
@@ -67,9 +78,9 @@ files remain ignored under `releases/`.
 
 - Remove candidate-only status text only when release qualification and promotion
   are complete. The connected guide is sourced from `CONNECTED_INSTALL.md`.
-- Complete remaining regular-candidate coverage, including shared AT-key
-  delivery/replacement and interrupted older-copy recovery. The four connected
-  feature runs above supplement upgrade/setup, but do not cover every path.
+- Complete interrupted older-copy recovery coverage against the regular
+  candidate, including quota/race recovery. The connected and shared-key runs
+  above supplement upgrade/setup, but do not cover every path.
 - Check existing-device cases and shared-generation old-tab behavior where
   applicable. The local pre-sharing old-tab and failed-update checks above pass;
   preview migration evidence is not proof of every regular-app upgrade.

@@ -21,16 +21,20 @@ assert.ok(!removeGroupMember || mainSetup, 'Group removal uses actual app Settin
 const replaceSharedKey = process.env.REPLACE_SHARED_KEY === '1';
 assert.ok(!replaceSharedKey || mainSetup, 'Replacement scenario uses actual app Settings');
 const preview = process.env.PREVIEW === '1';
-const root = new URL(preview ? '../../releases/along-device-preview/' : '../../releases/along-experimental-app/', import.meta.url).pathname;
+const regularCandidate=process.env.REGULAR_CANDIDATE==='1';
+assert.ok(!(regularCandidate&&preview));
+assert.ok(!regularCandidate||mainSetup, 'Regular candidate uses actual app Settings');
+const appPath=regularCandidate?'':'public/';
+const root = new URL(regularCandidate ? '../../releases/along-regular-upgrade-candidate/' : preview ? '../../releases/along-device-preview/' : '../../releases/along-experimental-app/', import.meta.url).pathname;
 const manifest = JSON.parse(await readFile(join(root, 'build-info.json'), 'utf8'));
-assert.equal(manifest.profile, preview ? 'along-device-preview-v1' : 'along-experimental-app-v1');
+assert.equal(manifest.profile, regularCandidate ? 'along-regular-upgrade-candidate-v1' : preview ? 'along-device-preview-v1' : 'along-experimental-app-v1');
 const deviceDatabase = manifest.namespaces?.devices ?? 'along-pairing-lab-v1';
 assert.equal(Object.keys(manifest.files).some(name => /APIKey|\.test\./.test(name)), false);
 const sources = new Map(await Promise.all(Object.entries(manifest.files).map(async ([name, hash]) => {
   const bytes = await readFile(join(root, name));
   assert.equal(createHash('sha256').update(bytes).digest('hex'), hash); return [name, bytes];
 })));
-const prefix = '/along-exp/';
+const prefix = regularCandidate ? '/along/' : '/along-exp/';
 const server = createServer((req, res) => {
   const path = new URL(req.url, 'http://localhost').pathname;
   const name = path.startsWith(prefix) ? path.slice(prefix.length) + (path.endsWith('/') ? 'index.html' : '') : '';
@@ -45,7 +49,7 @@ try {
   browser = await chromium.launch({headless: true, executablePath: process.env.CHROMIUM_PATH});
   const contexts = await Promise.all([browser.newContext(), browser.newContext()]);
   const pages = await Promise.all(contexts.map(context => context.newPage()));
-  for (const page of pages) await page.addInitScript(name => { window.testDeviceDatabase = name; }, deviceDatabase);
+  for (const page of pages) await page.addInitScript(({name,base}) => { window.testDeviceDatabase = name; window.testExperimentBase=base; }, {name:deviceDatabase,base:prefix+'experiments/'});
   const origin = `http://127.0.0.1:${server.address().port}${prefix}`;
   const providerRequests = [], errors = [];
   for (const page of pages) page.on('pageerror', error => errors.push(error.message));
@@ -65,7 +69,7 @@ try {
     } else await page.getByRole('button', {name: 'Restore saved test device', exact: true}).click();
   };
   await Promise.all(pages.map(async (page, index) => {
-    await page.goto(origin + (mainSetup ? 'public/' : 'experiments/'));
+    await page.goto(origin + (mainSetup ? appPath : 'experiments/'));
     if (mainSetup) {
       await page.locator('#settings-open').click();
       await page.getByRole('button', {name: 'Device and AT-key setup', exact: true}).click();
@@ -123,7 +127,7 @@ try {
   await candidate.getByRole('button', {name: 'Receive a shared AT key', exact: true}).click();
   await move(owner, candidate, 'AT-key sharing message', 'Review sharing device');
   const noAcceptedOwner = () => candidate.evaluate(async () => {
-    const store = await (await import('../experiments/tg-pairing/storage.mjs')).openBrowserStorage(window.testDeviceDatabase);
+    const store = await (await import((window.testExperimentBase ?? '../experiments/') + 'tg-pairing/storage.mjs')).openBrowserStorage(window.testDeviceDatabase);
     try {
       const record = (await store.read('candidate-persona', 'active')).value.record;
       const group = Array.from(record.group, b => b.toString(16).padStart(2, '0')).join('');
@@ -145,7 +149,7 @@ try {
   await acceptKey.waitFor();
   if (process.env.INTERRUPT_GRANT === '1') {
     const snapshot = page => page.evaluate(async () => {
-      const store = await (await import('../experiments/tg-pairing/storage.mjs')).openBrowserStorage(window.testDeviceDatabase);
+      const store = await (await import((window.testExperimentBase ?? '../experiments/') + 'tg-pairing/storage.mjs')).openBrowserStorage(window.testDeviceDatabase);
       try {
         const record = (await store.read('candidate-persona', 'active')).value.record;
         const hex = bytes => Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
@@ -207,7 +211,7 @@ try {
     if (process.env.LOSE_KEY_DELIVERY === '1') await owner.waitForFunction(() => window.droppedKeyDelivery > 0);
     else await candidate.waitForFunction(() => window.withheldSharingMessages > 0);
     const snapshot = () => candidate.evaluate(async () => {
-      const store = await (await import('../experiments/tg-pairing/storage.mjs')).openBrowserStorage(window.testDeviceDatabase);
+      const store = await (await import((window.testExperimentBase ?? '../experiments/') + 'tg-pairing/storage.mjs')).openBrowserStorage(window.testDeviceDatabase);
       try {
         const record = (await store.read('candidate-persona', 'active')).value.record;
         const hex = bytes => Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
@@ -222,8 +226,8 @@ try {
     assert.equal(before.missingKey, true); assert.equal(await noAcceptedOwner(), false);
     if (process.env.LOSE_KEY_DELIVERY === '1') {
       pendingLostDelivery = await owner.evaluate(async saved => {
-        const store = await (await import('../experiments/tg-pairing/storage.mjs')).openBrowserStorage(window.testDeviceDatabase);
-        try { return await (await import('../experiments/at-credentials/delivery-history.mjs')).openDeliveryHistory({store, ...saved, recipient: saved.member}).read(); }
+        const store = await (await import((window.testExperimentBase ?? '../experiments/') + 'tg-pairing/storage.mjs')).openBrowserStorage(window.testDeviceDatabase);
+        try { return await (await import((window.testExperimentBase ?? '../experiments/') + 'at-credentials/delivery-history.mjs')).openDeliveryHistory({store, ...saved, recipient: saved.member}).read(); }
         finally { store.close(); }
       }, before);
       assert.equal(pendingLostDelivery.status, 'pending');
@@ -267,7 +271,7 @@ try {
   if (process.env.LOSE_KEY_CONFIRMATION === '1') {
     await candidate.waitForFunction(() => window.droppedConfirmation > 0);
     const snapshot = page => page.evaluate(async () => {
-      const store = await (await import('../experiments/tg-pairing/storage.mjs')).openBrowserStorage(window.testDeviceDatabase);
+      const store = await (await import((window.testExperimentBase ?? '../experiments/') + 'tg-pairing/storage.mjs')).openBrowserStorage(window.testDeviceDatabase);
       try {
         const record = (await store.read('candidate-persona', 'active')).value.record;
         const hex = bytes => Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
@@ -282,9 +286,9 @@ try {
     });
     const before = await Promise.all(pages.map(snapshot));
     const historyState = () => owner.evaluate(async recipient => {
-      const store = await (await import('../experiments/tg-pairing/storage.mjs')).openBrowserStorage(window.testDeviceDatabase);
+      const store = await (await import((window.testExperimentBase ?? '../experiments/') + 'tg-pairing/storage.mjs')).openBrowserStorage(window.testDeviceDatabase);
       try {
-        return await (await import('../experiments/at-credentials/delivery-history.mjs')).openDeliveryHistory({store, ...recipient.binding, recipient: recipient.member}).read();
+        return await (await import((window.testExperimentBase ?? '../experiments/') + 'at-credentials/delivery-history.mjs')).openDeliveryHistory({store, ...recipient.binding, recipient: recipient.member}).read();
       } finally { store.close(); }
     }, before[0]);
     assert.equal((await historyState()).status, 'pending');
@@ -318,8 +322,8 @@ try {
   await owner.getByRole('heading', {name: 'Other device saved the key', exact: true}).waitFor();
   if (pendingLostDelivery) {
     const confirmed = await owner.evaluate(async previous => {
-      const store = await (await import('../experiments/tg-pairing/storage.mjs')).openBrowserStorage(window.testDeviceDatabase);
-      try { return await (await import('../experiments/at-credentials/delivery-history.mjs')).openDeliveryHistory({store, ...previous.context}).read(); }
+      const store = await (await import((window.testExperimentBase ?? '../experiments/') + 'tg-pairing/storage.mjs')).openBrowserStorage(window.testDeviceDatabase);
+      try { return await (await import((window.testExperimentBase ?? '../experiments/') + 'at-credentials/delivery-history.mjs')).openDeliveryHistory({store, ...previous.context}).read(); }
       finally { store.close(); }
     }, pendingLostDelivery);
     assert.equal(confirmed.status, 'recipient-confirmed-saved');
@@ -331,13 +335,13 @@ try {
   assert.equal(providerRequests.length, 0);
   if (replaceSharedKey) {
     const keyState = page => page.evaluate(async () => {
-      const wasm = await import('../experiments/tg-pairing/hive_wasm.js');
-      const store = await (await import('../experiments/tg-pairing/storage.mjs')).openBrowserStorage(window.testDeviceDatabase);
+      const wasm = await import((window.testExperimentBase ?? '../experiments/') + 'tg-pairing/hive_wasm.js');
+      const store = await (await import((window.testExperimentBase ?? '../experiments/') + 'tg-pairing/storage.mjs')).openBrowserStorage(window.testDeviceDatabase);
       try {
         const record = (await store.read('candidate-persona', 'active')).value.record;
-        const {binding} = await (await import('../experiments/at-credentials/local-owner.mjs')).loadATBinding({wasm, store, expectedGroup: record.group});
-        const vault = (await import('../experiments/at-credentials/local-vault.mjs')).openLocalATVault({wasm, store, ...binding});
-        const policy = await (await import('../experiments/at-credentials/policy-store.mjs')).openCredentialPolicyStore({store, ...binding}).read();
+        const {binding} = await (await import((window.testExperimentBase ?? '../experiments/') + 'at-credentials/local-owner.mjs')).loadATBinding({wasm, store, expectedGroup: record.group});
+        const vault = (await import((window.testExperimentBase ?? '../experiments/') + 'at-credentials/local-vault.mjs')).openLocalATVault({wasm, store, ...binding});
+        const policy = await (await import((window.testExperimentBase ?? '../experiments/') + 'at-credentials/policy-store.mjs')).openCredentialPolicyStore({store, ...binding}).read();
         const usable = await vault.getKey().then(() => true, () => false);
         return {member: [...record.subject], generation: String(policy.policy.generation), devices: policy.policy.devices,
           state: (await vault.inspect()).status, usable};
@@ -392,28 +396,28 @@ try {
       await page.getByRole('button', {name: 'Back to settings', exact: true}).click();
       await page.getByRole('button', {name: 'Close settings', exact: true}).click();
     }
-  } else await Promise.all(pages.map(page => page.goto(origin + 'public/')));
+  } else await Promise.all(pages.map(page => page.goto(origin + appPath)));
   await Promise.all(pages.map(page => expect(page.locator('#data-status')).toContainText('offline ready', {timeout: 90000})));
   if (rotateGroupKeys) await checkAppRotation({owner: groupIssuer, recipient: differentATOwner ? owner : candidate, move, expectRenewal: !differentATOwner});
   const updates = await groupIssuer.evaluate(async () => {
-    const wasm = await import('../experiments/tg-pairing/hive_wasm.js'); await wasm.default();
-    const store = await (await import('../experiments/tg-pairing/storage.mjs')).openBrowserStorage(window.testDeviceDatabase);
+    const wasm = await import((window.testExperimentBase ?? '../experiments/') + 'tg-pairing/hive_wasm.js'); await wasm.default();
+    const store = await (await import((window.testExperimentBase ?? '../experiments/') + 'tg-pairing/storage.mjs')).openBrowserStorage(window.testDeviceDatabase);
     let issuer;
     try {
       const group = (await store.read('candidate-persona', 'active')).value.record.group;
-      issuer = await (await import('../experiments/tg-pairing/software-persona.mjs')).loadSoftwareIssuer({wasm, store, expectedGroup: group});
-      const {encodeRemoval, receiveRemoval} = await import('../experiments/tg-pairing/removal-message.mjs');
+      issuer = await (await import((window.testExperimentBase ?? '../experiments/') + 'tg-pairing/software-persona.mjs')).loadSoftwareIssuer({wasm, store, expectedGroup: group});
+      const {encodeRemoval, receiveRemoval} = await import((window.testExperimentBase ?? '../experiments/') + 'tg-pairing/removal-message.mjs');
       const updates = [];
       for (const sequence of [1n, 2n]) updates.push(encodeRemoval(group, await issuer.issueRevocation({subject: crypto.getRandomValues(new Uint8Array(32)), sequence, reason: 0})));
       await receiveRemoval({wasm, store, expectedGroup: group, text: updates[0]}); return updates;
     } finally { issuer?.close(); store.close(); }
   });
   await (differentATOwner ? owner : candidate).evaluate(async text => {
-    const wasm = await import('../experiments/tg-pairing/hive_wasm.js'); await wasm.default();
-    const store = await (await import('../experiments/tg-pairing/storage.mjs')).openBrowserStorage(window.testDeviceDatabase);
+    const wasm = await import((window.testExperimentBase ?? '../experiments/') + 'tg-pairing/hive_wasm.js'); await wasm.default();
+    const store = await (await import((window.testExperimentBase ?? '../experiments/') + 'tg-pairing/storage.mjs')).openBrowserStorage(window.testDeviceDatabase);
     try {
       const group = (await store.read('candidate-persona', 'active')).value.record.group;
-      await (await import('../experiments/tg-pairing/removal-message.mjs')).receiveRemoval({wasm, store, expectedGroup: group, text});
+      await (await import((window.testExperimentBase ?? '../experiments/') + 'tg-pairing/removal-message.mjs')).receiveRemoval({wasm, store, expectedGroup: group, text});
     } finally { store.close(); }
   }, updates[1]);
   for (const page of pages) {
@@ -441,7 +445,7 @@ try {
   await owner.getByRole('heading', {name: 'Reply to your other device', exact: true}).waitFor();
   await move(owner, candidate, 'Connection reply', 'Connect devices');
   for (const page of pages) assert.deepEqual(await page.evaluate(async () => {
-    const store = await (await import('../experiments/tg-pairing/storage.mjs')).openBrowserStorage(window.testDeviceDatabase);
+    const store = await (await import((window.testExperimentBase ?? '../experiments/') + 'tg-pairing/storage.mjs')).openBrowserStorage(window.testDeviceDatabase);
     try {
       const group = (await store.read('candidate-persona', 'active')).value.record.group;
       const key = Array.from(group, byte => byte.toString(16).padStart(2, '0')).join('');
@@ -499,12 +503,12 @@ try {
     // Save removal through Settings without pushing it: the next contextual read
     // must learn the signed owner change before AT receives another request.
     const ownerPolicy = () => owner.evaluate(async () => {
-      const wasm = await import('../experiments/tg-pairing/hive_wasm.js');
-      const store = await (await import('../experiments/tg-pairing/storage.mjs')).openBrowserStorage(window.testDeviceDatabase);
+      const wasm = await import((window.testExperimentBase ?? '../experiments/') + 'tg-pairing/hive_wasm.js');
+      const store = await (await import((window.testExperimentBase ?? '../experiments/') + 'tg-pairing/storage.mjs')).openBrowserStorage(window.testDeviceDatabase);
       try {
         const record = (await store.read('candidate-persona', 'active')).value.record;
-        const {binding} = await (await import('../experiments/at-credentials/local-owner.mjs')).loadATBinding({wasm, store, expectedGroup: record.group});
-        const loaded = await (await import('../experiments/at-credentials/policy-store.mjs')).openCredentialPolicyStore({store, ...binding}).read();
+        const {binding} = await (await import((window.testExperimentBase ?? '../experiments/') + 'at-credentials/local-owner.mjs')).loadATBinding({wasm, store, expectedGroup: record.group});
+        const loaded = await (await import((window.testExperimentBase ?? '../experiments/') + 'at-credentials/policy-store.mjs')).openCredentialPolicyStore({store, ...binding}).read();
         return {owner: binding.owner, devices: loaded.policy.devices, revision: String(loaded.policy.revision)};
       } finally { store.close(); }
     });

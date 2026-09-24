@@ -6,13 +6,16 @@ import {readFile} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import {extname} from 'node:path';
 const {chromium, expect} = await import('@playwright/test');
-const root = new URL(process.env.PREVIEW==='1'?'../../releases/along-device-preview/':'../../releases/along-experimental-app/', import.meta.url);
+const regularCandidate=process.env.REGULAR_CANDIDATE==='1';
+assert.ok(!(regularCandidate&&process.env.PREVIEW==='1'));
+const prefix=regularCandidate?'/along/':'/';
+const root = new URL(regularCandidate?'../../releases/along-regular-upgrade-candidate/':process.env.PREVIEW==='1'?'../../releases/along-device-preview/':'../../releases/along-experimental-app/', import.meta.url);
 const manifest = JSON.parse(await readFile(new URL('build-info.json', root)));
-assert.equal(manifest.profile, process.env.PREVIEW==='1'?'along-device-preview-v1':'along-experimental-app-v1');
+assert.equal(manifest.profile, regularCandidate?'along-regular-upgrade-candidate-v1':process.env.PREVIEW==='1'?'along-device-preview-v1':'along-experimental-app-v1');
 const sources = new Map();
 for (const [path, hash] of Object.entries(manifest.files)) {
   const bytes = await readFile(new URL(path, root));
-  assert.equal(createHash('sha256').update(bytes).digest('hex'), hash); sources.set('/' + path, bytes);
+  assert.equal(createHash('sha256').update(bytes).digest('hex'), hash); sources.set(prefix + path, bytes);
 }
 const server = createServer((req, res) => {
   const name = req.url.endsWith('/') ? req.url + 'index.html' : req.url, body = sources.get(name);
@@ -23,22 +26,22 @@ let browser;
 try {
   browser = await chromium.launch({headless: true, executablePath: process.env.CHROMIUM_PATH});
   const context = await browser.newContext(), page = await context.newPage();
-  await page.addInitScript(name=>{window.testDeviceStore=name;},manifest.namespaces?.devices||'along-pairing-lab-v1');
+  await page.addInitScript(({name,base})=>{window.testDeviceStore=name;window.testExperimentBase=base;},{name:manifest.namespaces?.devices||'along-pairing-lab-v1',base:prefix+'experiments/'});
   const errors = []; page.on('pageerror', error => errors.push(error.message));
-  await page.goto(`http://127.0.0.1:${server.address().port}/public/`);
+  await page.goto(`http://127.0.0.1:${server.address().port}${prefix}${regularCandidate?'':'public/'}`);
   const input = await page.evaluate(async () => {
-    const wasm = await import('/experiments/tg-pairing/hive_wasm.js'); await wasm.default();
-    const store = await (await import('/experiments/tg-pairing/storage.mjs')).openBrowserStorage(window.testDeviceStore);
+    const wasm = await import(window.testExperimentBase+'tg-pairing/hive_wasm.js'); await wasm.default();
+    const store = await (await import(window.testExperimentBase+'tg-pairing/storage.mjs')).openBrowserStorage(window.testDeviceStore);
     try {
-      const setup = await (await import('/experiments/tg-pairing/software-persona.mjs')).initializeSoftwarePersona({wasm, store});
-      const {emptyState} = await import('/experiments/journey-sync/state.mjs');
+      const setup = await (await import(window.testExperimentBase+'tg-pairing/software-persona.mjs')).initializeSoftwarePersona({wasm, store});
+      const {emptyState} = await import(window.testExperimentBase+'journey-sync/state.mjs');
       const sourceState = emptyState(setup.group);
       await store.compareAndSwapMany([
         {scope:'along-saved-journeys-v1',key:setup.group,expectedRevision:0,value:{format:2,profile:'along-journey-generation-migration-v1',group:setup.group}},
         {scope:'along-saved-journeys-v2',key:setup.group,expectedRevision:0,value:{...sourceState,format:2,generation:0,checkpoint:'0'.repeat(64)}},
         {scope:'along-journey-migration-v1',key:setup.group,expectedRevision:0,value:{format:1,member:setup.member,sourceRevision:0,sourceState,importReceipt:null}},
       ]);
-      const prefs = await import('/experiments/journey-sync/app-preferences.mjs');
+      const prefs = await import(window.testExperimentBase+'journey-sync/app-preferences.mjs');
       const raw = JSON.stringify({learning:false,journeys:[],journeySync:{format:1,group:setup.group,pending:[]}});
       localStorage.setItem(prefs.preferenceKey,raw); return {group:setup.group,raw,key:prefs.preferenceKey};
     } finally {store.close();}
@@ -72,7 +75,7 @@ try {
   // The planner's local-only save is a fixture; checkpoint preparation,
   // installation and choice application below all use the real Settings flow.
   await page.evaluate(async ({group,key}) => {
-    const {projectJourney} = await import('/experiments/journey-sync/state.mjs');
+    const {projectJourney} = await import(window.testExperimentBase+'journey-sync/state.mjs');
     const point = id=>({id,name:id,lat:-36,lon:174});
     const value = projectJourney({from:point('Home'),to:point('Work'),savedRoutes:[{mode:'bus',route:'75'}]});
     const raw = JSON.stringify({learning:false,journeys:[{...value,saved:true,count:7,hours:Array(24).fill(0),days:Array(7).fill(0),last:5}],
@@ -86,7 +89,7 @@ try {
   await expect(page.getByRole('heading',{name:'Start a new sharing checkpoint?',exact:true})).toBeFocused();
   await page.getByRole('button',{name:'Back',exact:true}).click();
   assert.equal(await page.evaluate(async group=>{
-    const store=await(await import('/experiments/tg-pairing/storage.mjs')).openBrowserStorage(window.testDeviceStore);
+    const store=await(await import(window.testExperimentBase+'tg-pairing/storage.mjs')).openBrowserStorage(window.testDeviceStore);
     try{return (await store.read('along-saved-journeys-v2',group)).value.generation;}finally{store.close();}
   },input.group),0);
   await page.getByRole('button',{name:'Review recovery checkpoint',exact:true}).click();
@@ -123,7 +126,7 @@ try {
   await page.getByRole('button',{name:'Apply choices on this device',exact:true}).click();
   await expect(page.getByRole('heading',{name:'Saved-place choices applied here',exact:true})).toBeFocused();
   const recovered = await page.evaluate(async key => {
-    const prefs = await import('/experiments/journey-sync/app-preferences.mjs');
+    const prefs = await import(window.testExperimentBase+'journey-sync/app-preferences.mjs');
     const current = prefs.readEnvelope();
     return {route:current.data.journeys[0].savedRoutes[0].route,count:current.data.journeys[0].count,learning:current.data.learning,
       generation:current.sync.version.generation,pending:current.sync.pending.length,legacy:JSON.parse(localStorage.getItem(key)).journeySync.pending.length};
@@ -135,10 +138,10 @@ try {
   // Stage a genuinely signed next checkpoint as an inbox fixture. Transport is
   // independently exercised with enrolled peers; this checks the receiving UI.
   await page.evaluate(async group=>{
-    const wasm=await import('/experiments/tg-pairing/hive_wasm.js');await wasm.default();
-    const store=await(await import('/experiments/tg-pairing/storage.mjs')).openBrowserStorage(window.testDeviceStore);
+    const wasm=await import(window.testExperimentBase+'tg-pairing/hive_wasm.js');await wasm.default();
+    const store=await(await import(window.testExperimentBase+'tg-pairing/storage.mjs')).openBrowserStorage(window.testDeviceStore);
     const expectedGroup=Uint8Array.from(group.match(/../g),b=>parseInt(b,16));
-    const issuer=await(await import('/experiments/tg-pairing/software-persona.mjs')).loadSoftwareIssuer({wasm,store,expectedGroup});
+    const issuer=await(await import(window.testExperimentBase+'tg-pairing/software-persona.mjs')).loadSoftwareIssuer({wasm,store,expectedGroup});
     try{
       const current=await store.read('along-saved-journeys-v2',group);
       const prepared=await issuer.prepareJourneyCheckpoint({expectedRevision:current.revision});
@@ -153,12 +156,12 @@ try {
   await expect(page.getByRole('heading',{name:'Review received saved places',exact:true})).toBeFocused();
   await page.getByRole('button',{name:'Back',exact:true}).click();
   assert.equal(await page.evaluate(async()=>{
-    const prefs=await import('/experiments/journey-sync/app-preferences.mjs');return prefs.readEnvelope().sync.version.generation;
+    const prefs=await import(window.testExperimentBase+'journey-sync/app-preferences.mjs');return prefs.readEnvelope().sync.version.generation;
   }),1);
   await page.getByRole('button',{name:'Review received saved places',exact:true}).click();
   await expect(page.getByRole('heading',{name:'Review received saved places',exact:true})).toBeFocused();
   await page.evaluate(async group=>{
-    const store=await(await import('/experiments/tg-pairing/storage.mjs')).openBrowserStorage(window.testDeviceStore);
+    const store=await(await import(window.testExperimentBase+'tg-pairing/storage.mjs')).openBrowserStorage(window.testDeviceStore);
     try{
       const inbox=await store.read('along-journey-checkpoint-inbox-v1',group);
       await store.compareAndSwapMany([{scope:'along-journey-checkpoint-inbox-v1',key:group,
@@ -176,7 +179,7 @@ try {
   await page.reload();await open();
   await expect(page.getByRole('button',{name:'Review received saved places',exact:true})).toHaveCount(0);
   assert.deepEqual(await page.evaluate(async()=>{
-    const prefs=await import('/experiments/journey-sync/app-preferences.mjs'),current=prefs.readEnvelope();
+    const prefs=await import(window.testExperimentBase+'journey-sync/app-preferences.mjs'),current=prefs.readEnvelope();
     return {generation:current.sync.version.generation,route:current.data.journeys[0].savedRoutes[0].route,count:current.data.journeys[0].count};
   }),{generation:2,route:'75',count:7});
   assert.deepEqual(errors,[]);

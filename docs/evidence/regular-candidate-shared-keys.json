@@ -1,0 +1,75 @@
+{
+  "date": "2026-09-24T07:00:47.704948+00:00",
+  "status": "passed",
+  "scope": "Regular candidate38 on /along/, two isolated browser profiles on one host for credential scenarios; synthetic keys and intercepted AT responses.",
+  "source_base_commit": "6feafc1b2bd17499a2d1808a774b9c88986e3042",
+  "candidate_manifest_sha256": "0731cb65ff91985b46f48b5eef3755a3d03d593b8a900a0ac4f24fa34ce69a01",
+  "sources": {
+    "experiments/at-credentials/two-app-integration.test.mjs": "8405e1f964ca412ccff5c07249da9eb21aa801468ff8975d74d8f277267f04c9",
+    "experiments/journey-sync/startup-settings.test.mjs": "01ce14ad19a3126b16b47820fdcc48689b7c987b58f31ce45a6b7112e36e501e"
+  },
+  "runs": {
+    "shared-replacement": {
+      "status": "passed",
+      "command": "REGULAR_CANDIDATE=1 MAIN_APP_SETUP=1 REPLACE_SHARED_KEY=1 node experiments/at-credentials/two-app-integration.test.mjs",
+      "log_sha256": "cd4e7103ca2966293ff77641c58d06c7895a036934c9a9b7b68ea4b523984cff",
+      "output": [
+        "PASS: owner replacement resumes after Back, advances generation once, and reaches recipient through existing consent without changing identities or grants; old keys are refused after generation catch-up.",
+        "PASS: two isolated browser app instances restore actual enrollment and encrypted WebRTC-delivered key, reconnect through Settings, close Settings, request contextual mocked AT feeds for a real bus/ferry journey, learn withheld removal before further provider I/O, disconnect without changing the selected step, and reopen/route offline. Setup, grant, consent and removal use visible controls; one host, not physical devices or real provider verification."
+      ]
+    },
+    "shared-removal": {
+      "status": "passed",
+      "command": "REGULAR_CANDIDATE=1 MAIN_APP_SETUP=1 REMOVE_GROUP_MEMBER=1 node experiments/at-credentials/two-app-integration.test.mjs",
+      "log_sha256": "4657b1dff8b4c0899edd26cdbfa55946ac191d958f95cf07f2ebe344c69c351d",
+      "output": [
+        "PASS: actual enrollment, encrypted shared AT key and contextual mocked AT reads; group removal through Settings closes the live connection without another provider request, signed removal is received by the candidate, and offline reopening/routing works. One-host browser evidence, not real-provider revocation or deletion of previously copied keys."
+      ]
+    },
+    "shared-rotation": {
+      "status": "passed",
+      "command": "REGULAR_CANDIDATE=1 MAIN_APP_SETUP=1 ROTATE_GROUP_KEYS=1 DIFFERENT_AT_OWNER=1 node experiments/at-credentials/two-app-integration.test.mjs",
+      "log_sha256": "3db1c19c35b7f105c8c647054ed9fb6286cac38a91a1bf4eb705338d174799dd",
+      "output": [
+        "PASS: different AT owner retains its binding and encrypted keys through rotation; stale owner evidence is usable only for reconnect review.",
+        "PASS: two isolated browser app instances restore actual enrollment and encrypted WebRTC-delivered key, reconnect through Settings, close Settings, request contextual mocked AT feeds for a real bus/ferry journey, learn withheld removal before further provider I/O, disconnect without changing the selected step, and reopen/route offline. Setup, grant, consent and removal use visible controls; one host, not physical devices or real provider verification."
+      ]
+    },
+    "lose_key_confirmation": {
+      "status": "passed",
+      "command": "REGULAR_CANDIDATE=1 MAIN_APP_SETUP=1 LOSE_KEY_CONFIRMATION=1 node experiments/at-credentials/two-app-integration.test.mjs",
+      "log_sha256": "7b8336ad966e675c1f2113c3b26740911e4ef85796c0f5422e0c83f8fe3643f7",
+      "output": [
+        "Lost confirmation: actual pending delivery recovered through visible receipt controls without replacing either encrypted key.",
+        "PASS: two isolated browser app instances restore actual enrollment and encrypted WebRTC-delivered key, reconnect through Settings, close Settings, request contextual mocked AT feeds for a real bus/ferry journey, learn withheld removal before further provider I/O, disconnect without changing the selected step, and reopen/route offline. Setup, grant, consent and removal use visible controls; one host, not physical devices or real provider verification."
+      ]
+    },
+    "interrupt_acceptance": {
+      "status": "passed",
+      "command": "REGULAR_CANDIDATE=1 MAIN_APP_SETUP=1 INTERRUPT_ACCEPTANCE=1 node experiments/at-credentials/two-app-integration.test.mjs",
+      "log_sha256": "13d190ad284cc8fec5962a73da6b15172c3978a048a4adb4218dee3ec73f43f5",
+      "output": [
+        "Acceptance interruption: restored the actual saved owner choice and explicitly resumed delivery.",
+        "PASS: two isolated browser app instances restore actual enrollment and encrypted WebRTC-delivered key, reconnect through Settings, close Settings, request contextual mocked AT feeds for a real bus/ferry journey, learn withheld removal before further provider I/O, disconnect without changing the selected step, and reopen/route offline. Setup, grant, consent and removal use visible controls; one host, not physical devices or real provider verification."
+      ]
+    },
+    "recovery-settings": {
+      "status": "passed",
+      "command": "REGULAR_CANDIDATE=1 node experiments/journey-sync/startup-settings.test.mjs",
+      "log_sha256": "8ab88e44c2e1ee41a4633ea7dfa7acdfd408bce72145db3a983d3f4fbf40ea2a",
+      "output": [
+        "PASS: received-checkpoint Settings entry, narrow-screen keyboard confirmation, Back preservation, stale inbox refusal, guarded installation, local review and fresh-page restoration. Inbox population is a signed fixture; peer transport is checked separately.",
+        "PASS: generated Settings/bootstrap with actual identity and fixture migration records pauses legacy connections for incomplete/recovered generations, reports later old-tab edits, detects a removed isolated profile and returns to Settings without page errors. Actual migration writer is tested separately.",
+        "PASS: Settings opens a real signed-checkpoint review, retains draft choices after leaving, applies them through the guarded writer, preserves history/legacy copy and reopens the recovered generation. Initial generation/planner data are fixtures; issuer signing, checkpoint installation and review application use real Settings operations."
+      ]
+    }
+  },
+  "limits": [
+    "Harness copies public connection messages; no physical phone/camera/network acceptance.",
+    "Group removal reaches the recipient explicitly; it does not erase prior copies or revoke a key at AT.",
+    "Recovery Settings starts with explicit migration/inbox fixtures; runtime signing, review and guarded application are real.",
+    "Synthetic key replacement is not a production AT rotation.",
+    "Older-copy interrupted application and quota/race recovery still require regular-candidate coverage.",
+    "Published v37 and preview3806 unchanged."
+  ]
+}

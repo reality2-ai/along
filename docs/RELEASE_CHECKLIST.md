@@ -63,8 +63,9 @@ this audit. Later public-hosting work supplements that brief.
    failed-download recovery, a pre-sharing old-tab edit and connected installation
    wording. [Connected integration checks](evidence/regular-candidate-integration.json)
    cover personal-key live fallback, actual-relay Settings, two-profile saved-journey
-   sharing/group updates and checkpoints. Shared-key/recovery coverage and physical
-   acceptance remain. Preview storage stays separate;
+   sharing/group updates and checkpoints. [Shared-key checks](evidence/regular-candidate-shared-keys.json)
+   cover replacement, removal, different-owner rotation, interrupted delivery and
+   recovery Settings. Interrupted older-copy recovery and physical acceptance remain. Preview storage stays separate;
    this does not migrate preview credentials into regular Along.
 4. Complete the signed-in GitHub composer/submission check for contextual feedback.
    Actual CLI submission and anonymous browser receipt are already evidenced in
