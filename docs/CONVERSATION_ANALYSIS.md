@@ -1240,3 +1240,24 @@ TalkBack and automatic reconnection. This is a useful course exercise in tracing
 an architectural requirement through implementation, composed tests, published
 bytes and clearly stated limits; passing component tests is only one step.
 See [qualification evidence](evidence/device-preview-3804-qualification.json).
+
+
+### Offline capacity: distinguish pending edits from retained deletions
+
+The offline-first requirement also applies when a user repeatedly changes saved
+service preferences without the sharing bridge running. Inspection found two
+different bounds: 256 queued operations and 256 distinct replicated address pairs,
+including deletion markers. Treating them as one limit risks a misleading fix.
+
+The next source change coalesces only unstarted queued edits. It preserves the
+operation that may already have a durable receipt, gives replacement batches new
+IDs and retains each final deletion. A two-tab browser test pauses the committing
+head, compacts from the other tab, simulates interruption and reloads. This tests
+the crash boundary, not only a function's return value. It also demonstrates why
+silently deleting replicated tombstones would be a different and unsafe shortcut:
+an offline peer could later restore a removed journey.
+
+The 3804 published evidence stays immutable. This source improvement is not yet a
+new deployed release and does not solve distinct-pair capacity or automatic
+reconnection. The course lesson is to identify which resource is exhausted and
+which durable evidence must survive before choosing a recovery mechanism.

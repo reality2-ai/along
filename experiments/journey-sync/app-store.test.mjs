@@ -74,3 +74,57 @@ test('replication capacity refusal retains every local save and the outbound jou
   assert.equal(readEnvelope(f.storage).sync.pending[0].changes.length, 257);
   assert.equal(await f.state(), undefined, 'failed batch never partially imports places');
 });
+
+function queuedEdits(f, count) {
+  for (let n = 0; n < count; n++) {
+    const data = readPreferences(f.storage);
+    data.journeys[0].savedRoutes = [{mode: 'bus', route: String(n + 1)}];
+    assert.equal(writePreferences(data, f.storage), true, 'offline edits remain writable');
+  }
+}
+test('compacts repeated offline edits, retaining the head, final deletion and local history', async () => {
+  const f = fixture();
+  writePreferences({learning: false, journeys: [journey(1), journey(2)]}, f.storage);
+  enableJourneyTracking(group, f.storage);
+  const head = structuredClone(readEnvelope(f.storage).sync.pending[0]);
+  queuedEdits(f, 255);
+  const data = readPreferences(f.storage); data.journeys[1].saved = false;
+  assert.equal(writePreferences(data, f.storage), true);
+  const pending = readEnvelope(f.storage).sync.pending;
+  assert.equal(pending.length, 2);
+  assert.deepEqual(pending[0], head);
+  assert.equal(pending[1].changes.length, 2);
+  assert.equal(pending[1].changes[1].value, null);
+  await f.bridge.reconcile();
+  const state = await f.state();
+  assert.equal(state.journeys.find(e => e.id === journeyId(projectJourney(journey(2)))).value, null);
+  assert.deepEqual(state.journeys.find(e => e.value)?.value.savedRoutes, [{mode: 'bus', route: '255'}]);
+  assert.equal(readPreferences(f.storage).learning, false);
+  assert.equal(readPreferences(f.storage).journeys[0].count, 3);
+  assert.equal(readEnvelope(f.storage).sync.pending.length, 0);
+});
+test('compaction during a head commit preserves its receipt across a failed journal write', async () => {
+  const f = fixture(); writePreferences({journeys: [journey(1)]}, f.storage);
+  enableJourneyTracking(group, f.storage); queuedEdits(f, 255);
+  const head = structuredClone(readEnvelope(f.storage).sync.pending[0]);
+  f.before(() => {
+    queuedEdits(f, 1);
+    assert.deepEqual(readEnvelope(f.storage).sync.pending[0], head);
+    assert.equal(readEnvelope(f.storage).sync.pending.length, 2);
+    f.fail(true);
+  });
+  await assert.rejects(f.bridge.reconcile());
+  assert.equal((await f.state()).clock, 1);
+  f.fail(false); await f.bridge.reconcile();
+  assert.equal((await f.state()).clock, 2, 'head was not replayed with a new operation ID');
+  assert.equal((await f.state()).journeys[0].value.savedRoutes[0].route, '1');
+  assert.equal(readEnvelope(f.storage).sync.pending.length, 0);
+});
+test('compaction storage failure leaves the exact previous journal and preferences intact', () => {
+  const f = fixture(); writePreferences({journeys: [journey(1)]}, f.storage);
+  enableJourneyTracking(group, f.storage); queuedEdits(f, 255);
+  const before = f.storage.getItem(preferenceKey), data = readPreferences(f.storage);
+  data.journeys[0].saved = false; f.fail(true);
+  assert.equal(writePreferences(data, f.storage), false);
+  assert.equal(f.storage.getItem(preferenceKey), before);
+});

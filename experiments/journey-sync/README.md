@@ -228,8 +228,22 @@ database or provide rollback resistance. Web Locks are required for sharing.
 Saved places are retained separately from the thirty-item learned-history bound.
 The replication model's 256-pair bound also includes retained tombstones; reaching
 it can prevent further sharing changes without discarding local saves. The journal is bounded
-at 256 pending operations. Compaction, a user-facing capacity recovery path and
-broader preference sync are still required before release.
+at 256 pending operations. The source now compacts unstarted operations when a
+new edit would exceed that bound: repeated changes to a pair retain its last value
+or deletion. The head is unchanged because it may already be committing or have a
+saved receipt; replacement batches receive fresh IDs and retain final-edit order.
+No replicated tombstones are removed. This avoids blocking repeated offline edits,
+but does not recover the separate 256-distinct-pair limit. A user-facing capacity
+recovery path and broader preference sync remain required.
+
+`node --test experiments/journey-sync/app-store.test.mjs` covers compaction,
+commit/replay interruption and failed local writes. With `CHROMIUM_PATH` set,
+`node experiments/journey-sync/app-store-browser.test.mjs` checks real localStorage,
+IndexedDB and Web Locks across two tabs: one compacts while the other is paused
+before committing its head; after a simulated interruption and reload, the receipt
+prevents duplicate import and final deletion/service preference/history survive.
+These new compaction changes are source-only; published preview 3804 retains the
+previous journal behavior until a new candidate is qualified.
 
 **Manage journey-sharing devices** lists locally saved permissions, including when
 the other device is offline. Selecting a device opens the existing removal review,
