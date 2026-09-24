@@ -61,14 +61,14 @@ export class Planner {
   access(place,maxSeconds,reverse=false){
     if(place.placeType!=='address')return new Map(this.group(place.id).filter(i=>!this.profile?.confirmedAccess||this.accessibleStop(i)).map(i=>[i,0]));
     if(!this.streets)throw new Error('Street data is still loading. Stop-to-stop journeys are available now.');
-    const tree=this.streets.reach(place,maxSeconds,reverse),stops=new Map();
+    const tree=this.streets.reach(place,maxSeconds,reverse,{trackPath:false}),stops=new Map();
     this.stopSnaps.forEach((snap,i)=>{if(!snap||this.stops[i].kind!==0||(this.profile?.confirmedAccess&&!this.accessibleStop(i)))return;const seconds=tree.distance.get(snap.node);if(seconds!==undefined&&seconds+snap.seconds<=maxSeconds)stops.set(i,Math.ceil(seconds+snap.seconds));});
     return stops;
   }
   transfersFrom(stop){
     if(!this.streets)return this.links.get(stop)||new Map();
     if(this.streetTransfers.has(stop))return this.streetTransfers.get(stop);
-    const links=this.profile?.avoidSteps?new Map():new Map(this.links.get(stop)||[]),tree=this.streets.reach(this.stops[stop],600);
+    const links=this.profile?.avoidSteps?new Map():new Map(this.links.get(stop)||[]),tree=this.streets.reach(this.stops[stop],600,false,{trackPath:false});
     for(const [node,cost] of tree.distance)for(const target of this.stopsByNode.get(node)||[]){
       if(target===stop)continue;const seconds=Math.ceil(cost+this.stopSnaps[target].seconds),rule=this.rules.get(`${stop}:${target}`);
       if(seconds>600||rule?.type===3)continue;
@@ -81,7 +81,7 @@ export class Planner {
   transfersTo(stop){
     if(!this.streets)return this.reverseLinks.get(stop)||new Map();
     if(this.reverseStreetTransfers.has(stop))return this.reverseStreetTransfers.get(stop);
-    const links=this.profile?.avoidSteps?new Map():new Map(this.reverseLinks.get(stop)||[]),tree=this.streets.reach(this.stops[stop],600,true);
+    const links=this.profile?.avoidSteps?new Map():new Map(this.reverseLinks.get(stop)||[]),tree=this.streets.reach(this.stops[stop],600,true,{trackPath:false});
     for(const [node,cost] of tree.distance)for(const source of this.stopsByNode.get(node)||[]){
       if(source===stop)continue;const seconds=Math.ceil(cost+this.stopSnaps[source].seconds),rule=this.rules.get(`${source}:${stop}`);
       if(seconds>600||rule?.type===3)continue;
