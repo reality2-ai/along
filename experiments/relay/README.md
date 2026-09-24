@@ -82,3 +82,33 @@ This is a use-time check, not a grant for the socket lifetime: application send 
 receive still need current peer membership, consent, epoch and replay checks.
 No actual AT key, user identity or saved journey is used in this fixture. Real
 enrolled-member relay coverage, protected frames and app integration remain.
+
+### Protected application envelope prototype
+
+`protection.mjs` is an Along browser-subset envelope, not R2-WIRE and not yet
+connected to the transport. It requires a **fresh pairwise session secret** and
+an authenticated transcript supplied by the future peer handshake; passing an AT
+key or shared TG traffic key is not permitted by its contract. It uses Web Crypto
+HKDF-SHA256 for directional AES-256-GCM keys and Ed25519 device signatures.
+Bindings include the full group public key, epoch, transcript, sender and recipient.
+The receiver verifies the device signature before decrypting; current-authority
+callbacks run before and after asynchronous operations. Callers must implement
+those callbacks using actual membership and journey-sharing permission checks.
+
+The binary packet is version byte 1, an eight-byte big-endian sequence, twelve-byte
+random GCM IV, ciphertext with a sixteen-byte tag, then a 64-byte Ed25519 signature.
+Plaintext is limited to 2048 bytes to match the existing journey exchange chunks.
+Signatures bind direction/context plus the header and ciphertext. AES associated
+data binds direction/context plus the header. HKDF uses the transcript as salt
+and `along/relay/application/v1` followed by NUL and the context as directional info.
+Sequence starts at one in each direction. Replay, ordering, authentication or
+permission failure closes this envelope instance. Concurrent operations in the
+same direction refuse; the session controller must serialize them and bound queues.
+
+`node --test experiments/relay/protection.test.mjs` passes five model checks for
+bidirectional encryption; duplicate/out-of-order input; changed epoch, transcript,
+key, signature or direction; authority loss while signing; maximum size; and
+caller mutation during asynchronous work. This is not yet an authenticated relay
+session: peer discovery, fresh signed key agreement, replay-resistant handshake,
+real membership/consent adapters and encrypted WSS integration remain required.
+No claim of standard wire compatibility or whole-protocol security review is made.
