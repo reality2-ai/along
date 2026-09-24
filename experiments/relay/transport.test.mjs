@@ -12,7 +12,7 @@ function fixture(createHello = async () => '{"type":"hello"}') {
   const transport = createRelayTransport({url:'wss://relay.example/r2', createHello, WebSocket:Socket, timers, random:()=>0,
     onStatus:s=>statuses.push(s), onFrame:f=>frames.push(f)});
   const tick = ms => { const pair = [...tasks].find(([,v])=>v.ms===ms); assert.ok(pair, `timer ${ms}`); tasks.delete(pair[0]); pair[1].fn(); };
-  const welcome = async () => { const s=sockets.at(-1); await s.onopen(); s.onmessage({data:'{"type":"welcome","peers":1}'}); return s; };
+  const welcome = async () => { const s=sockets.at(-1); await s.onopen(); s.onmessage({data:'{"type":"welcome","version":1,"peers":1}'}); return s; };
   return {transport,tasks,sockets,statuses,frames,tick,welcome};
 }
 test('endpoint requires explicit secure URL without embedded secrets',()=>{
@@ -38,7 +38,7 @@ test('pre-auth frame and unauthorized close stop without reconnect',async()=>{
   f.transport.start(); await f.welcome(); f.sockets.at(-1).onclose({code:4403}); assert.equal(f.tasks.size,0); assert.equal(f.statuses.at(-1),'refused');
 });
 test('welcome before greeting completion is refused',async()=>{
-  const f=fixture(); f.transport.start(); f.sockets[0].onmessage({data:'{"type":"welcome","peers":1}'});
+  const f=fixture(); f.transport.start(); f.sockets[0].onmessage({data:'{"type":"welcome","version":1,"peers":1}'});
   assert.equal(f.statuses.at(-1),'refused');
 });
 test('status observer may disconnect without leaving socket or retry',()=>{

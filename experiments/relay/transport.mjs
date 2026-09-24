@@ -56,7 +56,7 @@ export function createRelayTransport({url, createHello, onFrame, onStatus = () =
           if (event.data.length > 8192) throw Error('Oversize control');
           const message = JSON.parse(event.data);
           if (!ready) {
-            if (!greeted || message.type !== 'welcome' || !Number.isSafeInteger(message.peers) || message.peers < 0) throw Error('Invalid welcome');
+            if (!greeted || message.type !== 'welcome' || message.version !== 1 || !Number.isSafeInteger(message.peers) || message.peers < 0) throw Error('Invalid welcome');
             ready = true; attempt = 0; timers.clearTimeout(deadline); status('connected');
             if (!current()) return;
             heartbeat = timers.setTimeout(ping, 30000);
