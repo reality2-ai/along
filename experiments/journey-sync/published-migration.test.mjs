@@ -95,6 +95,35 @@ try{
     finally{store.close();}
   },candidate.namespaces.devices);
   assert.deepEqual(result,{raw:recovered,version:1,personaRevision:baseline.personaRevision,legacy:'75'});
+  await fresh.setViewportSize({width:360,height:780});
+  await fresh.getByRole('button',{name:'Review older-copy edits',exact:true}).click();
+  await expect(fresh.getByRole('heading',{name:'Choose what to keep',exact:true})).toBeFocused();
+  await expect(fresh.getByText('Older app copy: Saved places · Bus 75',{exact:true})).toBeVisible();
+  await fresh.getByRole('button',{name:'Leave review',exact:true}).click();
+  assert.equal(await fresh.evaluate(async()=>(await import('../experiments/journey-sync/app-preferences.mjs')).readEnvelope().raw),recovered);
+  await fresh.getByRole('button',{name:'Review older-copy edits',exact:true}).click();
+  await fresh.getByRole('button',{name:'Use older copy’s version',exact:true}).focus();await fresh.keyboard.press('Enter');
+  // The shared-state commit succeeds but the planner replacement fails once.
+  await fresh.evaluate(()=>{
+    const original=Storage.prototype.setItem;let failed=false;
+    Storage.prototype.setItem=function(key,value){if(!failed&&key.endsWith(':generation-profile-v1')){failed=true;throw Error('Fixture planner quota');}return original.call(this,key,value);};
+  });
+  await fresh.getByRole('button',{name:'Apply choices on this device',exact:true}).click();
+  await expect(fresh.getByText('Your choices could not be confirmed.',{exact:false})).toBeVisible();
+  await fresh.reload();await share();
+  await expect(fresh.getByRole('button',{name:'Start journey connection',exact:true})).toHaveCount(0);
+  await fresh.getByRole('button',{name:'Finish older-copy review',exact:true}).click();
+  await expect(fresh.getByRole('heading',{name:'Finish your saved-place choices',exact:true})).toBeFocused();
+  await fresh.getByRole('button',{name:'Finish applying my choices',exact:true}).click();
+  await expect(fresh.getByRole('button',{name:'Review older-copy edits',exact:true})).toHaveCount(0);
+  await expect(fresh.getByRole('button',{name:'Start journey connection',exact:true})).toBeVisible();
+  const applied=await fresh.evaluate(async()=> (await import('../experiments/journey-sync/app-preferences.mjs')).readEnvelope().data);
+  assert.equal(applied.journeys[0].savedRoutes[0].route,'75');
+  assert.equal(applied.journeys[0].count,JSON.parse(recovered).journeys[0].count);
+  await fresh.reload();await share();
+  await expect(fresh.getByRole('button',{name:'Review older-copy edits',exact:true})).toHaveCount(0);
+  await expect(fresh.getByRole('button',{name:'Finish older-copy review',exact:true})).toHaveCount(0);
+  console.log('PASS: published older writer → narrow-screen keyboard review, Leave preservation, interrupted planner application, reload/resume, route/history preservation and acknowledgment without repeated prompts.');
   assert.deepEqual(errors,[]);
   console.log('PASS: exact published 3805 app creates saved places/identity, current candidate migrates and recovers through Settings, and an older open app writes its retained copy without overwriting the recovered planner. Reopening preserves identity and reports older edits. Service workers are blocked: not installed-update qualification.');
 }finally{await browser?.close();await new Promise(resolve=>server.close(resolve));}

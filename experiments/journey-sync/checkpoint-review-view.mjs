@@ -3,7 +3,7 @@
 import {JourneyCapacityError} from './state.mjs';
 const mounted = new WeakMap();
 let sequence = 0;
-export function showCheckpointReview(container, {review, onConfirm, onBack = () => {}, initialChoices = [], focus = false, signal}) {
+export function showCheckpointReview(container, {review, onConfirm, onBack = () => {}, initialChoices = [], focus = false, signal, olderCopy = false}) {
   if (!review || !Array.isArray(review.differences) || typeof review.resolve !== 'function' || typeof onConfirm !== 'function') throw Error('Recovery review unavailable');
   mounted.get(container)?.();
   const document = container.ownerDocument, differences = structuredClone(review.differences), choices = new Map();
@@ -39,9 +39,9 @@ export function showCheckpointReview(container, {review, onConfirm, onBack = () 
       const difference = differences[index];
       panel.append(node('p', `Journey ${index + 1} of ${differences.length}`), node('h3', name(difference)));
       for (const use of ['local', 'shared']) {
-        const label = use === 'local' ? 'This device' : 'Shared version';
+        const label = use === 'local' ? 'This device' : olderCopy ? 'Older app copy' : 'Shared version';
         const detail = node('p', label + ': ' + description(difference[use])); detail.id = 'journey-recovery-choice-' + (++sequence); panel.append(detail);
-        const action = button(use === 'local' ? 'Keep this device’s version' : 'Use shared version', () => {
+        const action = button(use === 'local' ? 'Keep this device’s version' : olderCopy ? 'Use older copy’s version' : 'Use shared version', () => {
           choices.set(difference.id, use); index++; render();
         });
         action.setAttribute('aria-describedby', detail.id);
@@ -50,7 +50,7 @@ export function showCheckpointReview(container, {review, onConfirm, onBack = () 
       panel.append(node('p', 'Nothing is applied until you confirm all your choices.'));
     } else {
       panel.append(node('p', differences.length ? 'Review your choices, then apply them on this device. Other devices receive changes when sharing reconnects.'
-        : 'Your retained saved places agree with the shared version. Continue to finish recovery on this device.'));
+        : olderCopy ? 'These saved places already agree. Continue to acknowledge the older copy’s edits.' : 'Your retained saved places agree with the shared version. Continue to finish recovery on this device.'));
       if (differences.length) {
         const details = node('details', ''), summary = node('summary', 'Review all choices'), list = node('ul', '');
         for (const difference of differences) list.append(node('li', name(difference) + ': ' + description(difference[choices.get(difference.id)])));

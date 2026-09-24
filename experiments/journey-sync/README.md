@@ -734,3 +734,25 @@ planner-write failure and final-acknowledgment retry checks also pass.
 Settings still needs the explicit older-copy review/resume interaction and a safe
 way to replace stale unapplied decisions. This work is not deployed and does not
 complete the `older_edit_settings` release gate.
+
+### Older-copy Settings review and resume
+
+The experimental Settings dialog now offers **Review older-copy edits** when the
+isolated planner has unacknowledged old-copy changes. It reuses the one-journey
+review layout with explicit **This device** and **Older app copy** labels. Leaving
+before confirmation applies nothing. Confirmation retains the decision before
+applying it through the guarded writer. An interrupted application exposes
+**Finish older-copy review**, including after a page reload; sharing stays paused
+until that retained application completes.
+
+`published-migration.test.mjs` now drives this UI after the byte-verified published
+3805 app writes a changed service preference. At 360px width it checks keyboard
+selection, leaving without applying, a deliberately failed planner write after the
+replica commit, reload/resume, route and history preservation, and disappearance of
+the acknowledged-review prompt. Service workers are blocked in this test. The
+separate coexistence test covers installed updates.
+
+A stale decision that has not started applying still needs an explicit replacement
+flow. If newer local data prevents finishing an application, the current screen
+retains the records and explains failure; it cannot yet guide every such conflict
+through a new review. The complete older-edit release gate remains unfinished.

@@ -1,3 +1,8 @@
+import {readOlderEditProgress} from './older-edit-progress.mjs';
+import {createOlderEditReview} from './older-edit-review.mjs';
+import {retainOlderEditDecision} from './older-edit-decision.mjs';
+import {applyOlderEditDecision} from './older-edit-application.mjs';
+import {openIsolatedPlannerStorage} from './isolated-preferences.mjs';
 import {showRelaySettings} from '../relay/settings-view.mjs';
 import {createAppRelayController} from '../relay/app-controller.mjs';
 import {showJourneyConnection,showCheckpointConnection} from './connection-view.mjs';
@@ -154,6 +159,50 @@ export function mountAppJourneySettings({wasm, store, expectedGroup, member}) {
       });
     } catch (error) { if (!disposed && dialog.open && generation === selected) reportFailure(error); }
     finally { if (generation === selected) starting = false; }
+  };
+  const reviewOlderEdits = async () => {
+    if(starting)return;starting=true;const selected=generation;
+    try{
+      const state=await checkStartup();
+      if(!['generation-ready','older-edit-pending'].includes(state))throw Error('Review state changed');
+      if(state==='generation-ready')await reconcile();
+      const isolated=openIsolatedPlannerStorage({group}),legacy=isolated.inspectLegacy();
+      const progress=await readOlderEditProgress({store,group,member,sourceRaw:legacy.sourceRaw});
+      if(disposed||!dialog.open||generation!==selected)return;
+      if(progress.pendingReviewId){
+        const reviewId=progress.pendingReviewId;
+        clear();screen='older-resume';
+        const heading=node('h2','Finish your saved-place choices');heading.tabIndex=-1;
+        content.append(heading,node('p','Your earlier choices are retained. Finish applying them on this device before sharing resumes. Your older copy and recovery records are kept.'));
+        const note=node('p','');note.setAttribute('role','status');content.append(note);
+        const controller=new AbortController();view={dispose:()=>controller.abort()};
+        const finish=action('Finish applying my choices',async()=>{
+          finish.disabled=true;note.textContent='Checking the retained choices…';
+          try{
+            await applyOlderEditDecision({wasm,store,expectedGroup,reviewId,signal:controller.signal});
+            if(controller.signal.aborted||disposed)return;
+            await checkStartup();message='Your retained saved-place choices have been applied on this device.';home();
+          }catch{if(!controller.signal.aborted&&!disposed)note.textContent='The retained choices could not be finished. Your copies are kept. Newer edits may need a fresh review; do not clear device data.';}
+        });finish.className='pairing-primary';action('Back',home);heading.focus();return;
+      }
+      const record=await store.read('along-saved-journeys-v2',group);
+      const review=await createOlderEditReview({current:record.value,currentRaw:isolated.getItem(preferenceKey),
+        sourceRaw:progress.sourceRaw,olderRaw:legacy.currentLegacyRaw,actor:member});
+      if(disposed||!dialog.open||generation!==selected)return;
+      const translate=choices=>choices.map(c=>({id:c.id,use:c.use==='local'?'current':'older'}));
+      const presented={id:review.id,differences:review.differences.map(d=>({id:d.id,local:d.current,shared:d.older})),resolve:choices=>review.resolve(translate(choices))};
+      clear();screen='older-review';
+      view=showCheckpointReview(content,{review:presented,olderCopy:true,focus:true,signal:lifetime.signal,
+        onConfirm:async({reviewId,choices,signal})=>{
+          disconnect();
+          await retainOlderEditDecision({wasm,store,expectedGroup,reviewId,choices:translate(choices),signal});
+          const result=await applyOlderEditDecision({wasm,store,expectedGroup,reviewId,signal});
+          await checkStartup();
+          if(result.status!=='older-edits-applied-locally')throw Error('Unconfirmed older edits');
+          return {status:'journey-recovery-applied-locally',reviewId};
+        },onBack:async()=>{const active=generation;await checkStartup();if(!disposed&&dialog.open&&generation===active)home();}});
+    }catch(error){if(!disposed&&generation===selected)reportFailure(error);}
+    finally{if(generation===selected)starting=false;}
   };
   const reviewMigrationSetup = async () => {
     if (starting) return; starting = true;
@@ -314,6 +363,8 @@ export function mountAppJourneySettings({wasm, store, expectedGroup, member}) {
     if (startup.status !== 'legacy') {
       status.textContent = session?message:startupMessage();
       if (startup.legacyChangesPending) content.append(node('p', 'An older app copy has additional edits. They remain separate and still need review.'));
+      if(startup.status==='older-edit-pending')action('Finish older-copy review',reviewOlderEdits).className='pairing-primary';
+      else if(startup.status==='generation-ready'&&startup.legacyChangesPending)action('Review older-copy edits',reviewOlderEdits).className='pairing-primary';
       if (startup.status === 'isolation-required' && startup.generation === 0) action('Finish saved-journey setup',reviewMigrationSetup).className='pairing-primary';
       if (startup.status === 'local-review-required') action('Review saved-place differences', reviewLocalDifferences).className = 'pairing-primary';
       if(receivedError)content.append(node('p','A received update could not be checked. Its stored copy is kept; try checking recovery again.'));
