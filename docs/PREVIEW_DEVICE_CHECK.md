@@ -14,6 +14,18 @@ If preview 3801, 3802, 3803 or 3804 is already installed, open
 and choose **Update and reopen**. Check that saved places and setup remain and
 Settings shows 3805. Do not recreate an existing group to test an update.
 
+## Reported timeout — investigation pending
+
+The user reports repeated timeouts when attempting the earlier preview check.
+The user clarified that scanning the QR code and choosing the action to use it
+produced no visible progress, eventually timing out. The exact screen, installed
+version, browsers and network are not yet confirmed; this is not a passing
+pairing or sharing check. Preserve device data. If a timeout
+occurs, record the screen title and error wording, whether both devices were on
+the same Wi-Fi, and browser/version on each. Do not publish connection messages
+or keys. The current preview has no relay fallback; optional user-selected relay
+support is approved for development, but is not deployed.
+
 ## Install and plan offline
 
 1. Open the supplied preview URL in the browser used for installation. In Settings,

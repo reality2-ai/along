@@ -56,9 +56,9 @@ servers and closes a disconnected connection. Neither implementation supplies
 automatic server-free discovery after both browser sessions end.
 The [WebRTC specification](https://www.w3.org/TR/webrtc/) requires an out-of-band
 exchange of connection information; a saved group identity does not supply that
-transport. An optional user-selected relay has been put to the user as an explicit
-change to the server constraint. No answer, relay configuration or interoperability
-claim is assumed. Improving transient connection recovery alone would not complete
+transport. The user has approved an optional, user-selected R2 relay as a scoped
+exception to the server constraint. No relay endpoint is selected yet and
+interoperability remains to be verified. This capability is not deployed. Improving transient connection recovery alone would not complete
 automatic reconnection after reopening.
 
 ## Evidence inspected (historical)
@@ -84,9 +84,9 @@ Keep the current local route engine and data downloads. Add a dedicated sync
 adapter around personal state, backed by IndexedDB. Reuse the relevant R2 WASM
 trust/wire machinery and browser transport rather than inventing cryptography.
 The preview uses authenticated direct WebRTC with manually transferred connection
-messages and no configured STUN/TURN or signaling service. A WSS bridge or relay
-is a possible alternative requiring a change to the user's stricter server rule;
-it is not an approved default or an existing Along capability.
+messages and no configured STUN/TURN or signaling service. An optional user-selected WSS relay is now authorized for discovery and
+reconnection. It remains unimplemented, with no approved default endpoint.
+Offline planning and direct AT access must not depend on it.
 A browser-held R2 persona is an app/browser identity, not automatically every app
 or browser on the physical device. Tailscale reachability is not R2 membership.
 

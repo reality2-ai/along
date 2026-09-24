@@ -185,3 +185,20 @@ Use MIT, matching Along, for the R2 subset included in Along, as explicitly
 requested by the project owner. Preserve upstream attribution and third-party
 licences. Document the included scope and complete runtime distribution notices;
 this direction does not change the licence of the wider R2 standard.
+
+
+## Approved exception: optional user-selected relay (24 September 2026)
+
+The user authorizes an optional, user-selected R2 relay for device discovery and
+reconnection. This supersedes the original-provider-only restriction for this
+specific purpose; it does not authorize a required Along server or AT proxy.
+Planning, saved places and direct AT access must remain independent of the relay.
+Keep relay use opt-in, with a visible endpoint, disconnect/remove controls and
+quiet offline failure. Preserve trust-group authentication, explicit sharing
+permissions and protected payloads; document observable connection metadata and
+verify the selected protocol before claiming interoperability. Do not enable a
+default public relay or claim continuous background operation on mobile browsers.
+
+The user also reports repeated timeouts during the requested preview device
+check. The failing step, actual installed version and browser/network details
+are not yet known. Physical pairing/sharing acceptance remains unresolved.
