@@ -4,8 +4,9 @@ import {readFile} from 'node:fs/promises';
 import {join} from 'node:path';
 const {chromium} = await import('@playwright/test');
 const sources = new Map();
-for (const name of ['state.mjs', 'store.mjs', 'generation-state.mjs', 'generation-migration.mjs'])
+for (const name of ['state.mjs', 'store.mjs', 'generation-state.mjs', 'generation-migration.mjs', 'generation-app-store.mjs', 'app-preferences.mjs'])
   sources.set('/journey-sync/' + name, await readFile(new URL(name, import.meta.url)));
+sources.set('/public/preferences.js', await readFile(new URL('../../public/preferences.js', import.meta.url)));
 for (const name of ['software-persona.mjs', 'local-persona.mjs'])
   sources.set('/tg-pairing/' + name, await readFile(new URL('../tg-pairing/' + name, import.meta.url)));
 for (const name of ['storage.mjs', 'membership.mjs', 'certificate.mjs'])
@@ -45,10 +46,11 @@ try {
       return {store, setup, state, input: {wasm, store, expectedGroup: group, expectedRevision: empty ? 0 : 1}};
     }
     const first = await fixture('journey-migration');
-    const pending = JSON.stringify({learning: true, journeys: [live], journeySync: {format: 1, group: first.setup.group,
-      pending: [{id: crypto.randomUUID(), changes: [{id: journeyId(live), value: null}]}]}});
-    localStorage.setItem('along-journeys-v1', pending);
     const receipt = await first.store.read('along-journey-import-v1', first.setup.group);
+    const pending = JSON.stringify({learning: true, journeys: [{...live, saved: true, count: 7, hours: Array(24).fill(0), days: Array(7).fill(0)}], journeySync: {format: 1, group: first.setup.group,
+      pending: [{id: receipt.value.operation, changes: [{id: journeyId(live), value: live}]},
+        {id: crypto.randomUUID(), changes: [{id: journeyId(live), value: null}]}]}});
+    localStorage.setItem('along-journeys-v1', pending);
     const both = await Promise.all([migrateJourneyGeneration(first.input), migrateJourneyGeneration(first.input)]);
     assert(both.filter(r => !r.alreadyMigrated).length === 1, 'migration committed twice');
     const migrated = await first.store.read(newScope, first.setup.group), archive = await first.store.read(archiveScope, first.setup.group);
@@ -95,7 +97,7 @@ try {
       }
       f.store.close();
     }
-    return {group: first.setup.group, pending};
+    return {group: first.setup.group, member: first.setup.member, pending};
   });
   await page.reload();
   const reopened = await page.evaluate(async ({group, pending}) => {
@@ -110,5 +112,51 @@ try {
     } finally { store.close(); }
   }, result);
   assert.equal(reopened, true);
+  const bridgeResult = await page.evaluate(async ({group, member}) => {
+    const {openGenerationAppJourneyStore} = await import('./journey-sync/generation-app-store.mjs');
+    const {readEnvelope, readPreferences, writePreferences} = await import('./journey-sync/app-preferences.mjs');
+    const store = await (await import('./tg-pairing/storage.mjs')).openBrowserStorage('journey-migration');
+    try {
+      const bridge = openGenerationAppJourneyStore({store, group, actor: member});
+      const archive = await store.read('along-journey-migration-v1', group), damaged = structuredClone(archive.value);
+      damaged.importReceipt.value.operation = 'damaged';
+      const rawBefore = readEnvelope().raw;
+      await store.compareAndSwap('along-journey-migration-v1', group, archive.revision, damaged);
+      if (await bridge.reconcile().then(() => true, () => false)) throw Error('corrupt archived receipt accepted');
+      if (readEnvelope().raw !== rawBefore) throw Error('corrupt receipt consumed pending edit');
+      await store.compareAndSwap('along-journey-migration-v1', group, archive.revision + 1, archive.value);
+      const migrated = await bridge.reconcile();
+      if (migrated.clock !== 3 || migrated.journeys.some(j => j.value !== null)) throw Error('migration replay duplicated old receipt or lost deletion');
+      if (readEnvelope().sync.pending.length !== 0 || readPreferences().journeys[0].count !== 7) throw Error('pending/history mismatch');
+      // Deliberately fail the local journal write after its real IDB commit.
+      const data = readPreferences(); data.journeys[0].saved = true;
+      if (!writePreferences(data)) throw Error('resave failed');
+      const fault = openGenerationAppJourneyStore({store, group, actor: member,
+        storage: {getItem: key => localStorage.getItem(key), setItem: () => { throw Error('storage full'); }}});
+      if (await fault.reconcile().then(() => true, () => false)) throw Error('expected journal failure');
+      const committed = await store.read('along-saved-journeys-v2', group);
+      if (committed.value.clock !== 4 || readEnvelope().sync.pending.length !== 1) throw Error('failed journal write lost edit');
+      await bridge.reconcile();
+      if ((await store.read('along-saved-journeys-v2', group)).value.clock !== 4) throw Error('duplicate format-2 import');
+      const nextEdit = readPreferences(); nextEdit.journeys[0].saved = false; writePreferences(nextEdit);
+      const retained = readEnvelope().raw;
+      const before = await store.read('along-saved-journeys-v2', group);
+      // Boundary fixture only: a future installer will authenticate this advance.
+      await store.compareAndSwap('along-saved-journeys-v2', group, before.revision,
+        {...before.value, generation: 1, checkpoint: 'a'.repeat(64)});
+      if (await bridge.reconcile().then(() => true, () => false)) throw Error('old journal entered new generation');
+      if (readEnvelope().raw !== retained) throw Error('mismatched generation consumed local edits');
+      const marked = readEnvelope().data; marked.journeySync.version = {generation: 1, checkpoint: 'a'.repeat(64)};
+      localStorage.setItem('along-journeys-v1', JSON.stringify(marked));
+      if (await bridge.reconcile().then(() => true, () => false)) throw Error('queue marker retagged an old operation');
+      delete marked.journeySync.pending[0].version;
+      localStorage.setItem('along-journeys-v1', JSON.stringify(marked));
+      if (await bridge.reconcile().then(() => true, () => false)) throw Error('unmarked older-app edit entered new generation');
+      return {clock: migrated.clock, finalClock: (await store.read('along-saved-journeys-v2', group)).value.clock,
+        pending: readEnvelope().sync.pending.length, count: readPreferences().journeys[0].count};
+    } finally { store.close(); }
+  }, result);
+  assert.deepEqual(bridgeResult, {clock: 3, finalClock: 4, pending: 1, count: 7});
   console.log('PASS: actual software identity and IndexedDB migration preserve replica/tombstones/import receipt/local pending edits; concurrent/reloaded retries do not rewrite; stale review, permission race, cancellation and interrupted transaction preserve old state; old in-flight format-1 writer cannot overwrite migration. No app migration UI enabled.');
+  console.log('PASS: format-2 bridge consumes an archived receipt without duplicating its edit, imports queued deletion, retains history, recovers an IDB/localStorage interruption and refuses old queued edits after a fixture generation advance. No checkpoint installation claim.');
 } finally { await browser?.close(); await new Promise(resolve => server.close(resolve)); }

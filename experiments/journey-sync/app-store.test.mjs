@@ -128,3 +128,22 @@ test('compaction storage failure leaves the exact previous journal and preferenc
   assert.equal(writePreferences(data, f.storage), false);
   assert.equal(f.storage.getItem(preferenceKey), before);
 });
+test('versioned edits and compaction keep their generation; mixed generations are never relabelled', () => {
+  const f = fixture(); writePreferences({journeys: [journey(1)]}, f.storage); enableJourneyTracking(group, f.storage);
+  const data = readEnvelope(f.storage).data;
+  data.journeySync.version = {generation: 1, checkpoint: 'a'.repeat(64)};
+  data.journeySync.pending = [];
+  f.storage.setItem(preferenceKey, JSON.stringify(data));
+  queuedEdits(f, 257);
+  let envelope = readEnvelope(f.storage);
+  assert.equal(envelope.sync.pending.length, 2);
+  for (const operation of envelope.sync.pending) assert.deepEqual(operation.version, data.journeySync.version);
+  // A retained older operation in the unstarted tail must not get a fresh tag.
+  delete envelope.sync.pending[1].version;
+  while (envelope.sync.pending.length < 256) envelope.sync.pending.push({id: crypto.randomUUID(), changes: [], version: data.journeySync.version});
+  f.storage.setItem(preferenceKey, JSON.stringify(envelope.data));
+  const before = f.storage.getItem(preferenceKey), next = readPreferences(f.storage);
+  next.journeys[0].saved = false;
+  assert.equal(writePreferences(next, f.storage), false);
+  assert.equal(f.storage.getItem(preferenceKey), before);
+});

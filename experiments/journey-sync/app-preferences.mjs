@@ -10,11 +10,14 @@ const hex = /^[0-9a-f]{64}$/;
 // tab. Keep it byte-for-byte; only its unstarted successors can be coalesced.
 // Retain final deletions even when an earlier pending save is removed: another
 // device may still hold that journey. New operation IDs cannot match old receipts.
-function compactPending(pending, group) {
+function compactPending(pending, group, version) {
   const latest = new Map();
   for (const operation of pending.slice(1)) {
     if (!operation || !/^[0-9a-f-]{36}$/.test(operation.id)
         || !Array.isArray(operation.changes) || operation.changes.length > 512) throw Error('Sharing journal unavailable');
+    const origin = operation.version ?? {generation: 0, checkpoint: '0'.repeat(64)};
+    const target = version ?? {generation: 0, checkpoint: '0'.repeat(64)};
+    if (origin.generation !== target.generation || origin.checkpoint !== target.checkpoint) throw Error('Sharing journal needs recovery');
     for (const change of operation.changes) {
       validateState({format: 1, group, clock: 1, journeys: [
         {id: change.id, value: change.value, actor: group, clock: 1},
@@ -25,7 +28,7 @@ function compactPending(pending, group) {
   }
   const result = pending.slice(0, 1), changes = [...latest.values()];
   for (let offset = 0; offset < changes.length; offset += 512)
-    result.push({id: crypto.randomUUID(), changes: changes.slice(offset, offset + 512)});
+    result.push({id: crypto.randomUUID(), changes: changes.slice(offset, offset + 512), ...(version ? {version: structuredClone(version)} : {})});
   return result;
 }
 export function savedValues(data) {
@@ -42,6 +45,9 @@ export function readEnvelope(storage = globalThis.localStorage) {
   const sync = data.journeySync;
   if (sync !== undefined && (sync?.format !== 1 || !hex.test(sync.group) || !Array.isArray(sync.pending)
       || sync.pending.length > 256)) throw Error('Saved sharing journal unavailable');
+  if (sync?.version !== undefined && (!Number.isSafeInteger(sync.version?.generation) || sync.version.generation < 0
+      || sync.version.generation >= Number.MAX_SAFE_INTEGER || !hex.test(sync.version.checkpoint)
+      || (sync.version.generation === 0) !== (sync.version.checkpoint === '0'.repeat(64)))) throw Error('Saved sharing generation unavailable');
   return {raw, data, sync};
 }
 export function writePreferences(data, storage = globalThis.localStorage) {
@@ -51,8 +57,8 @@ export function writePreferences(data, storage = globalThis.localStorage) {
       const before = savedValues(previous.data), after = savedValues(data), changes = [];
       for (const [id, value] of after) if (JSON.stringify(before.get(id)) !== JSON.stringify(value)) changes.push({id, value});
       for (const id of before.keys()) if (!after.has(id)) changes.push({id, value: null});
-      if (changes.length) sync.pending.push({id: crypto.randomUUID(), changes});
-      if (sync.pending.length > 256) sync.pending = compactPending(sync.pending, sync.group);
+      if (changes.length) sync.pending.push({id: crypto.randomUUID(), changes, ...(sync.version ? {version: structuredClone(sync.version)} : {})});
+      if (sync.pending.length > 256) sync.pending = compactPending(sync.pending, sync.group, sync.version);
       if (sync.pending.length > 256) throw Error('Sharing journal full');
     }
     storage.setItem(preferenceKey, JSON.stringify({...data, ...(sync ? {journeySync: sync} : {})}));

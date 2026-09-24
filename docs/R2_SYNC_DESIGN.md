@@ -107,7 +107,7 @@ binds its predecessor and exact live snapshot; verification does not install it.
 Guarded durable preparation now passes real IndexedDB checks with both a synthetic
 authority adapter and the real software issuer. Atomic format-2 migration now
 preserves the legacy replica and blocks old writers in browser tests. App opt-in,
-retention of local differences, journal migration,
+retention of local differences and reviewed journal cutover,
 peer recovery and the reviewed app flow remain required before this can reclaim
 capacity in a release.
 

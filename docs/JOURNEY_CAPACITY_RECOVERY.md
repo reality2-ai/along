@@ -131,11 +131,41 @@ the group issuer; enrolled-device migration still needs composed verification.
 No installed app invokes migration yet. Enabling it before the format-2 bridge,
 review and network handling are ready would intentionally stop legacy sharing.
 
+## Planner journal bridge
+
+`generation-app-store.mjs` now imports the existing local journal into an already
+migrated replica, under the same per-group Web Lock as the legacy bridge. It never
+migrates, trusts an incoming checkpoint or changes the active generation itself.
+Generation-zero import can consume the receipt archived during migration without
+reapplying an operation committed just before the old document stopped. A new
+format-2 receipt records operation ID, generation and checkpoint with the replica
+in one IndexedDB transaction. Corrupt receipts refuse rather than silently replay.
+
+Both the queue and each new operation carry a generation/checkpoint marker.
+Unmarked legacy operations are only eligible in generation zero. Changing the
+queue marker cannot relabel an older operation. Compaction keeps operation markers
+and refuses mixed-generation tails; it does not promote their edits. The planner
+preferences writer retains these optional markers but ordinary format-1 behavior
+remains the default in the installed app.
+
+The migration browser test now runs the bridge after real migration and reload.
+It checks archived-receipt deduplication, queued deletion, retained local learning
+counts, interruption between IndexedDB commit and local journal consumption,
+corrupt receipt refusal and old/untagged edits after a fixture generation advance.
+The advance is deliberately a storage fixture, not authenticated installation.
+The existing two-tab legacy bridge/compaction test also still passes.
+
+The future checkpoint installer must use the same Web Lock, archive the current
+local journal/differences, and install a matching new-generation import receipt.
+It must not merely replace the replica and leave an old receipt or relabel an
+old queue. Those cutover and recovery operations are still unimplemented. The
+format-2 bridge is not mounted by the app and its use is not public qualification.
+
 ## Required before integration
 
-1. Wire the tested migration to explicit reviewed opt-in together with the
-   format-2 planner bridge, and verify enrolled-device migration. The existing
-   bridge still uses format 1. Never use an arbitrary peer snapshot as authority.
+1. Wire the tested migration and format-2 bridge to explicit reviewed opt-in,
+   and verify enrolled-device migration. The installed app still uses format 1.
+   Never use an arbitrary peer snapshot as authority.
 2. Review the live places selected for the new generation. Keep the old replica,
    local saved places and unprocessed edits in a durable recovery record. Do not
    silently replace divergent local data or reinterpret old edits as new saves.

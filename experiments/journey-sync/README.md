@@ -378,3 +378,13 @@ Saved values, tombstones and the local pending journal survive. No startup or UI
 calls this migration; the format-2 planner bridge and reviewed app flow remain
 required before enabling it. See `generation-migration.test.mjs` with the pinned
 runtime environment used by the issuer preparation test.
+
+
+`generation-app-store.mjs` imports pending edits after migration, transferring an
+archived import receipt into the new receipt scope without duplicating the edit.
+Queue and per-operation generation markers prevent old or unmarked edits from
+crossing a checkpoint. Compaction preserves those markers. The browser migration
+check covers real migration/reload, receipt corruption, duplicate prevention,
+local history and interrupted localStorage consumption. Checkpoint advance itself
+is a fixture; installation and reviewed cutover remain required. The app continues
+to mount the format-1 bridge until that flow is complete.
