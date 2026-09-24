@@ -223,8 +223,28 @@ model cannot authorize overwriting a newer local edit merely by returning its ID
 service preferences, local-only saves, retained deletions, explicit shared choices,
 unknown peer additions, malformed choices, corrupted evidence, wrong generations,
 inconsistent pending data, changing review input and full-replica refusal. These
-are model checks; the accessible review screen and durable application of the
-chosen differences remain unimplemented.
+are model checks; durable application of the chosen differences remains
+unimplemented.
+
+## Local-difference review screen
+
+`checkpoint-review-view.mjs` presents one differing journey at a time, with
+full-width local/shared choices and a final confirmation. Back retains selections;
+leaving returns the draft choices to the owning flow without applying them. The
+final screen checks the model's capacity limit and exposes the complete choice
+summary on request. A pending write can be cancelled, but the screen does not
+promise to undo an already committed write. Late callbacks cannot replace the
+screen after leaving. Unconfirmed writes direct the user back to recovery to
+check the retained result.
+
+`checkpoint-review-view.test.mjs` checks keyboard focus, Back/Escape retention,
+320px layout with 200% text, full-width controls, automated axe checks, capacity
+refusal, empty comparisons, failed confirmation and completion after leaving.
+The test uses a fixture writer: it proves presentation behavior, not persistent
+recovery or physical screen-reader usability. The first run exposed a test-harness
+issue (axe requires an explicit browser context); the corrected harness passes.
+The screen is not mounted in the installed app. A real guarded writer and composed
+recovery-flow tests are still required before publishing it.
 
 ## Required before integration
 

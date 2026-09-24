@@ -1333,3 +1333,11 @@ when they differ from the installed shared state. Neither “newer generation”
 “local data” automatically wins. The model verifies evidence, refuses inconsistent
 copies and checks capacity before proposing changes. Its tests do not substitute
 for an accessible review screen or for guarding the later write against new edits.
+
+The recovery screen applies progressive disclosure to a consequential decision:
+one journey and two explicit versions, followed by a final confirmation and an
+optional complete summary. Back preserves decisions; leaving does not imply that
+an in-flight storage commit was undone. Browser checks cover keyboard focus,
+enlarged text, narrow layout and failure states, but use a fixture writer. This
+provides a course example of separating usable presentation from persistence
+evidence: a passing interface test cannot establish that data was safely saved.

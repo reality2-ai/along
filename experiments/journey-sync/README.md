@@ -404,4 +404,10 @@ from verified recovery evidence. Each differing save, preference or deletion nee
 an explicit choice. It checks pending/local consistency and simulates capacity
 before proposing new-generation changes; it writes nothing. Run
 `node --test experiments/journey-sync/checkpoint-review.test.mjs`. The future review
-screen and writer must revalidate current evidence rather than trust an old model.
+flow and writer must revalidate current evidence rather than trust an old model.
+
+`checkpoint-review-view.mjs` now supplies the one-journey-at-a-time review screen,
+with retained Back choices, explicit final confirmation and cancellable pending
+confirmation. Run `checkpoint-review-view.test.mjs` with `CHROMIUM_PATH` set for
+keyboard, 320px/200% text, axe and failure-state checks. Its writer is a fixture;
+the screen is not yet connected to durable recovery or mounted in the app.
