@@ -653,3 +653,18 @@ The test also confirms the ongoing connection survives closing/reopening Setting
 and can be explicitly disconnected. This remains a two-profile, one-host test
 with copied public signaling. Physical-device acceptance, automatic discovery,
 multi-checkpoint app catch-up and exact release qualification remain outstanding.
+
+`published-migration.test.mjs` now verifies the exact published 3805 ZIP, manifest
+and every payload hash, then runs that app and the current preview candidate on
+one origin with the same preview persistence names. The published app creates a
+real saved journey and software identity; the candidate performs migration,
+checkpoint creation and local review through Settings. An old app tab then writes
+a route preference using its original cached code. The recovered planner and
+identity survive reopening, and Settings reports the separately retained older
+edit. Saved-place/history preservation is checked against the original data.
+
+Run this after `python3 scripts/build_experimental_app.py --preview --runtime
+releases/along-r2-runtime-1b9229ad`. It requires the DO-NOT-PUBLISH candidate marker.
+The two app paths use blocked service workers: this verifies namespace/data
+migration and older-tab behavior, **not** installed-app update discovery, cache
+replacement or release qualification. The public ZIP is never rewritten.

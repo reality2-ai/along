@@ -707,6 +707,23 @@ reopening Settings preserves the connection; explicit disconnection ends it. Thi
 is browser evidence on one host with harness signaling, not physical-device or
 automatic discovery/reconnect acceptance.
 
+## Published 3805 app migration evidence
+
+The new `published-migration.test.mjs` pins the released 3805 ZIP SHA-256 and
+manifest SHA-256 and verifies every published payload. It loads the actual prior
+app, creates saved places and an installed software identity, then opens the
+current unpublished preview candidate with the same storage namespaces. Settings
+performs migration, checkpoint creation and local review; saved places/history
+remain unchanged. The prior app tab subsequently writes a route preference with
+its original loaded writer. Reopening the candidate preserves the recovered
+planner and identity and reports the retained older edit.
+
+This complements the earlier storage-primitive isolation test with full app
+startup and identity. Service workers are blocked and the apps use separate
+paths on the same origin. It is not proof of installed-app update/cache replacement.
+The candidate remains DO-NOT-PUBLISH and the published ZIP/site are unchanged.
+Review/application of later older-tab edits remains unfinished.
+
 ## Required before release
 
 1. Qualify the reviewed migration and format-2 bridge against the exact published

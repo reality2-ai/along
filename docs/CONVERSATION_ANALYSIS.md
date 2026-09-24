@@ -1429,3 +1429,21 @@ and confirms that no partial installation survives. It then checks retained loca
 differences and reopening on a genuinely enrolled identity. Checkpoint bytes still
 use a fixture handoff; this evidence must not be reported as network delivery or
 proof that the sender possessed the member's private key on a live connection.
+
+Subsequent implementation work has now crossed that boundary: enrolled devices
+transfer checkpoints over authenticated WebRTC, retain them before confirming
+receipt, and review them through Settings. A two-profile app test continues into
+ongoing saved-place sharing after recovery. These are developments in the
+implementation evidence, not new user interview data. They extend the existing
+themes of user control and honest feedback: “retained for review” is distinct from
+“applied,” and a disconnected sender must not assume either failed or succeeded.
+
+Upgrade testing reinforces the same distinction. An exact, hash-verified published
+3805 app creates the data and identity used by a current candidate's migration
+test. Its older open tab can still save an edit, but the recovered app preserves
+that edit separately and reports it. This checks continuity of the person's work
+across versions. Service workers are deliberately blocked in this test, so it
+does not establish installed-app update behavior. A useful course exercise is to
+ask students which claims each level supports: model merge, durable storage,
+authenticated transport, full interaction, old-version migration and physical
+installation. Passing one level must not silently stand in for the others.
