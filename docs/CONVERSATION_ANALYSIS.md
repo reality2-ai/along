@@ -1569,3 +1569,20 @@ only the approved source subset made a reproducible runtime build possible.
 Version 40 records fresh qualification because its WASM bytes differ. This extends
 *honest verification*: public source, successful compilation, browser behavior and
 physical usability are separate claims. The phone timeout remains unresolved.
+
+
+### A shortcut is not a service preference (25 September 2026)
+
+The user reported that removing a preferred journey did not work, then confirmed
+that the shortcut remained. An automated check had shown the bus/train preference
+was removed and stayed removed offline. That was too narrow to establish that the
+interaction met the user's expectation: the persistent visual entry was the object
+they expected to disappear. This is a negative case for treating technically correct
+storage behavior as successful experience.
+
+Version 41 separates the actions: remove only a service preference, or remove the
+home shortcut with its saved places and local learning history. Management is
+progressively disclosed, with an explicit action, a failed-save state, and focus
+restoration. The user's clarification supports this interpretation; automated tests
+support implementation claims, not a claim that the new interaction has been
+accepted on the phone. Future searches may learn the same pair again, as the UI explains.

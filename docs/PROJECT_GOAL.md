@@ -204,3 +204,14 @@ The user also reports repeated timeouts during the requested preview device
 check. The user clarified that scanning a QR code and choosing Use produced no visible
 progress before timeout. The exact screen, actual installed version and
 browser/network details are not yet known. Physical pairing/sharing acceptance remains unresolved.
+
+
+## Journey timing and relay ownership — 25 September 2026
+
+Add **Arrive by** alongside **Leave at**, with the final walk to the destination
+included in the deadline. Keep offline, multimodal and accessibility-aware routing;
+verify transfers and service-day boundaries. This remains pending after version 41.
+
+Relay/server setup is assigned by the user to the AI managing that server. Along
+will retain optional endpoint controls and verify interoperability when an endpoint
+is supplied, but will not configure server services from this project meanwhile.

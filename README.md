@@ -28,10 +28,10 @@ connectivity will not remove offline planning.
 </p>
 <p align="center">Open in your browser and install on your device. Prepare it online, then plan scheduled journeys offline.</p>
 
-**Device testing:** use the regular **version 40** app above and follow the
+**Device testing:** use the regular **version 41** app above and follow the
 [short S23/desktop guide](docs/DEVICE_CHECK.md). Physical pairing, TalkBack and
-external-relay acceptance remain unverified. [Download version 40 to host yourself](https://github.com/reality2-ai/along/releases/tag/v0.40.0)
-or read the [release evidence](docs/RELEASE_V40.md).
+external-relay acceptance remain unverified. [Download version 41 to host yourself](https://github.com/reality2-ai/along/releases/tag/v0.41.0)
+or read the [release evidence](docs/RELEASE_V41.md).
 
 The separate [Device Preview 3806](https://reality2.ai/along/preview/public/) remains
 available with its [preview guide](docs/PREVIEW_DEVICE_CHECK.md). Its saved places
@@ -219,10 +219,10 @@ also let you run your own copy.
 
 ## Run from source
 
-**For the current version 40 app, follow [Building Along](docs/BUILDING.md).**
+**For the current version 41 app, follow [Building Along](docs/BUILDING.md).**
 It includes the browser device-group runtime, optional direct AT access and
 saved-journey sharing. The commands below run the **legacy planner development
-server**; `npm start` does not reproduce version 40.
+server**; `npm start` does not reproduce version 41.
 They remain useful for isolated routing and interface work.
 
 Requirements: Python 3.10+, a current browser supporting service workers,
@@ -248,8 +248,8 @@ coverage, provenance and reproducibility.
 
 ## Static hosting and downloadable build
 
-The [version 40 release](https://github.com/reality2-ai/along/releases/tag/v0.40.0)
-contains `along-web-v40.zip` and its SHA-256 checksum. To host the current app,
+The [version 41 release](https://github.com/reality2-ai/along/releases/tag/v0.41.0)
+contains `along-web-v41.zip` and its SHA-256 checksum. To host the current app,
 extract the ZIP and serve its **entire contents**, including `experiments/`,
 `data/`, runtime notices and `.nojekyll`, over HTTPS. Opening `index.html` as a
 local file does not install the app. No Along backend is required.
@@ -261,11 +261,11 @@ a Content-Encoding header**; the browser decompresses them itself. Serve `.js`
 and `.mjs` as JavaScript and `.wasm` as `application/wasm`, without an HTML fallback.
 
 See [current source builds and qualification](docs/BUILDING.md),
-[hosting](docs/HOSTING.md), and the [version 40 device check](docs/DEVICE_CHECK.md).
+[hosting](docs/HOSTING.md), and the [version 41 device check](docs/DEVICE_CHECK.md).
 `npm run build` now prepares the current candidate using the pinned runtime.
 `npm run serve:built` serves that candidate locally. The explicit legacy
 `python3 scripts/build_static.py` / `npm run build:legacy` path produces the
-legacy planner in `dist/`; it does not include version 40's connected features.
+legacy planner in `dist/`; it does not include version 41's connected features.
 
 ## Updates
 

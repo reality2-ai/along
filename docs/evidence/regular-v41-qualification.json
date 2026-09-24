@@ -1,0 +1,146 @@
+{
+  "profile": "along-regular-candidate-qualification-v1",
+  "app_version": "41",
+  "source_commit": "a174e060d3ad6e6c3f38f235cdc5138fde57e0a2",
+  "candidate_manifest_sha256": "79efd2cdc22c03ca1a210b18d0d2055d0d0e3f1af2d720e7f121465203b9214e",
+  "checks": {
+    "checkpoint_app": {
+      "status": "passed",
+      "exit_code": 0,
+      "command": "REGULAR_CANDIDATE=1 CHECKPOINT_APP=1 node experiments/journey-sync/app-integration.test.mjs",
+      "log_sha256": "786afc8bebc5e2385c9c360228957c0478b5c4f859a12a3d98dc112a10ce140c"
+    },
+    "journeys": {
+      "status": "passed",
+      "exit_code": 0,
+      "command": "REGULAR_CANDIDATE=1 node experiments/journey-sync/app-integration.test.mjs",
+      "log_sha256": "cc12aa3ddc7f86a1df9cd92a142035efbdb1b7a20504f46c37690f838ec81275"
+    },
+    "capacity_reporting": {
+      "status": "passed",
+      "exit_code": 0,
+      "command": "REGULAR_CANDIDATE=1 CAPACITY=1 node experiments/journey-sync/app-integration.test.mjs",
+      "log_sha256": "6abd9784f30d0564f2397053ad17b17d159e8ac1fb353cfd590d3ee4fc666720"
+    },
+    "shared_key_replacement": {
+      "status": "passed",
+      "exit_code": 0,
+      "command": "REGULAR_CANDIDATE=1 MAIN_APP_SETUP=1 REPLACE_SHARED_KEY=1 node experiments/at-credentials/two-app-integration.test.mjs",
+      "log_sha256": "cd4e7103ca2966293ff77641c58d06c7895a036934c9a9b7b68ea4b523984cff"
+    },
+    "rotated_journeys": {
+      "status": "passed",
+      "exit_code": 0,
+      "command": "REGULAR_CANDIDATE=1 ROTATE_GROUP_KEYS=1 node experiments/journey-sync/app-integration.test.mjs",
+      "log_sha256": "cb582bf06dd51959470d760f568b6a2ca1cdff8e1209235c9597031206092dd0"
+    },
+    "owner_key": {
+      "status": "passed",
+      "exit_code": 0,
+      "command": "REGULAR_CANDIDATE=1 CHECK_BFCACHE=1 GROUP_KEYS=1 node experiments/at-credentials/app-integration.test.mjs",
+      "log_sha256": "4edf1591da60d60a196d73fe47164b1ce507beec53b364de50800fda14cce763"
+    },
+    "group_removal": {
+      "status": "passed",
+      "exit_code": 0,
+      "command": "REGULAR_CANDIDATE=1 MAIN_APP_SETUP=1 REMOVE_GROUP_MEMBER=1 node experiments/at-credentials/two-app-integration.test.mjs",
+      "log_sha256": "4657b1dff8b4c0899edd26cdbfa55946ac191d958f95cf07f2ebe344c69c351d"
+    },
+    "rotated_at_owner": {
+      "status": "passed",
+      "exit_code": 0,
+      "command": "REGULAR_CANDIDATE=1 MAIN_APP_SETUP=1 ROTATE_GROUP_KEYS=1 node experiments/at-credentials/two-app-integration.test.mjs",
+      "log_sha256": "347effc2fae6e6505509f70e533f256aa5bbb13a0aac22efef3d7257d5c3ec10"
+    },
+    "rotated_different_at_owner": {
+      "status": "passed",
+      "exit_code": 0,
+      "command": "REGULAR_CANDIDATE=1 MAIN_APP_SETUP=1 ROTATE_GROUP_KEYS=1 DIFFERENT_AT_OWNER=1 node experiments/at-credentials/two-app-integration.test.mjs",
+      "log_sha256": "3db1c19c35b7f105c8c647054ed9fb6286cac38a91a1bf4eb705338d174799dd"
+    },
+    "lost_confirmation": {
+      "status": "passed",
+      "exit_code": 0,
+      "command": "REGULAR_CANDIDATE=1 MAIN_APP_SETUP=1 LOSE_KEY_CONFIRMATION=1 node experiments/at-credentials/two-app-integration.test.mjs",
+      "log_sha256": "7b8336ad966e675c1f2113c3b26740911e4ef85796c0f5422e0c83f8fe3643f7"
+    },
+    "interrupted_acceptance": {
+      "status": "passed",
+      "exit_code": 0,
+      "command": "REGULAR_CANDIDATE=1 MAIN_APP_SETUP=1 INTERRUPT_ACCEPTANCE=1 node experiments/at-credentials/two-app-integration.test.mjs",
+      "log_sha256": "13d190ad284cc8fec5962a73da6b15172c3978a048a4adb4218dee3ec73f43f5"
+    },
+    "installed_upgrade": {
+      "status": "passed",
+      "exit_code": 0,
+      "command": "REGULAR_CANDIDATE=1 node experiments/journey-sync/regular-upgrade.test.mjs",
+      "log_sha256": "7af6e83151624e9cf5bd6d63252519081773fdc397af2b70387d0976eaaa8f1e"
+    },
+    "installed_connected_upgrade": {
+      "status": "passed",
+      "exit_code": 0,
+      "command": "REGULAR_CANDIDATE=1 ALONG_PRIOR_VERSION=38 node experiments/journey-sync/regular-upgrade.test.mjs",
+      "log_sha256": "603a4e297fbc159430b54f9c970924af6a7f7655515b7673f88fa063ac6780f2"
+    },
+    "installed_previous_release": {
+      "status": "passed",
+      "exit_code": 0,
+      "command": "REGULAR_CANDIDATE=1 ALONG_PRIOR_VERSION=39 node experiments/journey-sync/regular-upgrade.test.mjs",
+      "log_sha256": "8bf5aa0d819c3f9411b455e7281302e3171a51934f178cb727af606b5da099d3"
+    },
+    "installed_v40_upgrade": {
+      "status": "passed",
+      "exit_code": 0,
+      "command": "REGULAR_CANDIDATE=1 ALONG_PRIOR_VERSION=40 node experiments/journey-sync/regular-upgrade.test.mjs",
+      "log_sha256": "3a907e377d10c72c248aaf74dd6f018978b0712c85d562132da5e1894bd3cc26"
+    },
+    "relay_settings": {
+      "status": "passed",
+      "exit_code": 0,
+      "command": "REGULAR_CANDIDATE=1 node experiments/relay/app-settings.test.mjs",
+      "log_sha256": "950cc351be1ea125d61fafc79c59a4b1e0000b798f95a332dcf8af11a1a802e4"
+    },
+    "recovery_settings": {
+      "status": "passed",
+      "exit_code": 0,
+      "command": "REGULAR_CANDIDATE=1 node experiments/journey-sync/startup-settings.test.mjs",
+      "log_sha256": "8ab88e44c2e1ee41a4633ea7dfa7acdfd408bce72145db3a983d3f4fbf40ea2a"
+    },
+    "older_edit_storage": {
+      "status": "passed",
+      "exit_code": 0,
+      "command": "REGULAR_CANDIDATE=1 node experiments/journey-sync/generation-migration.test.mjs",
+      "log_sha256": "9a9bd81a605a94868156c92157d471d1fb898ee079643314e84afb8fd8ed9fdd"
+    },
+    "relay_membership_reconnect": {
+      "status": "passed",
+      "exit_code": 0,
+      "command": "REGULAR_CANDIDATE=1 ENROLLED_RELAY_NETWORK=1 node experiments/at-credentials/peer-delivery.test.mjs",
+      "log_sha256": "b6c39b25f9fe4489152fef5031e65668d90721062f802659b29f20d70576489f"
+    },
+    "published_migration": {
+      "status": "passed",
+      "exit_code": 0,
+      "command": "REGULAR_CANDIDATE=1 node experiments/journey-sync/published-migration.test.mjs",
+      "log_sha256": "52e89dc5e57ed5e4d7e599066ec65303b047a1e19264faa4f285c79b23a10e77"
+    },
+    "rotation_settings": {
+      "status": "passed",
+      "exit_code": 0,
+      "command": "REGULAR_CANDIDATE=1 CHECK_BFCACHE=1 GROUP_KEYS=1 node experiments/at-credentials/app-integration.test.mjs",
+      "log_sha256": "4edf1591da60d60a196d73fe47164b1ce507beec53b364de50800fda14cce763",
+      "note": "Covered by GROUP_KEYS=1 owner-key/BFCache run."
+    },
+    "older_edit_settings": {
+      "status": "passed",
+      "exit_code": 0,
+      "command": "REGULAR_CANDIDATE=1 node experiments/journey-sync/published-migration.test.mjs",
+      "log_sha256": "52e89dc5e57ed5e4d7e599066ec65303b047a1e19264faa4f285c79b23a10e77",
+      "note": "Includes older-copy, stale-choice and interrupted-application Settings review."
+    }
+  },
+  "limits": "Local Chromium candidate qualification, not release packaging. Storage checks use candidate modules behind fixture URLs. Actual relay on loopback. No physical-device or external-endpoint acceptance.",
+  "recorded_at": "2026-09-24T21:03:53.024841+00:00",
+  "unchanged_source_and_candidate": true,
+  "status": "passed"
+}

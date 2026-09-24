@@ -1,6 +1,6 @@
 # Release evidence and remaining gates
 
-Current regular app: **version 40**. Its 19-scenario qualification and static checks pass;
+Current regular app: **version 41**. Its 20-scenario qualification and static checks pass;
 all 286 deployed files match the verified package. Physical acceptance remains open.
 Historical version-37 evidence below describes that earlier release. The separate [device preview 3806](https://reality2.ai/along/preview/public/)
 is published for [S23/desktop checks](PREVIEW_DEVICE_CHECK.md). Both are static
@@ -29,6 +29,13 @@ invalid-greeting refusal. An external selected endpoint remains unverified. Grou
 explicit flows, not unattended synchronization of all trust-group state.
 Regular Along 38 now includes the live/TG controls and preserves separate preview storage. Historical
 entries below retain their original versions and scopes.
+
+## Version 41
+
+The [v41 record](RELEASE_V41.md) covers explicit shortcut removal, preservation of
+other journeys, failed-write behavior and offline reopening. Twenty qualification
+scenarios pass, including installed v40 upgrades. Physical user acceptance remains.
+Arrive-by routing is newly requested and remains to be implemented.
 
 ## Version 40
 
@@ -69,12 +76,12 @@ this audit. Later public-hosting work supplements that brief.
 
 ## Next work against the full goal
 
-A new user report says removing a preferred journey appears not to work. The
-[focused v40 check](evidence/preference-removal-investigation.json) removes a service
-preference through its toggle and retains that removal offline, while keeping the
-saved endpoints. The exact reported control and phone behavior remain unresolved;
-do not record this report as fixed. Relay setup is now assigned by the user to the
-AI managing their server; Along made no server changes.
+The user confirmed that removing a service preference left the shortcut visible.
+Version 41 adds explicit shortcut removal, including that pair's local learning
+history, and clarifies the difference from removing only preferred services.
+[Browser verification](evidence/regular-v41-static.json) covers keyboard removal,
+failed saves, unrelated journeys and offline reopening. Physical acceptance remains.
+Relay setup is assigned to the AI managing the user's server; Along made no server changes.
 
 1. Verify a user-selected external relay endpoint when available. The actual R2
    implementation now passes on loopback behind test TLS; that does not establish

@@ -1,0 +1,32 @@
+{
+  "status": "passed",
+  "recorded_at": "2026-09-24T20:59:51.141393+00:00",
+  "metrics": {
+    "buildProfile": "along-regular-upgrade-candidate-v1",
+    "buildManifestSha256": "79efd2cdc22c03ca1a210b18d0d2055d0d0e3f1af2d720e7f121465203b9214e",
+    "runtime": "v26.4.0",
+    "browser": "151.0.7922.34",
+    "host": "Local static HTTP, repository subpath, Chromium desktop",
+    "physicalPhone": false,
+    "coldReadyMs": 5696,
+    "installability": {
+      "installabilityErrors": []
+    },
+    "mixedModeRouteMs": 3412,
+    "datasetBytes": 41308937,
+    "storage": {
+      "quota": 10809124894,
+      "usage": 71706654,
+      "usageDetails": {
+        "caches": 1959680,
+        "indexedDB": 69737184,
+        "serviceWorkerRegistrations": 9790
+      }
+    },
+    "mainPageResourceTransferBytes": 1156062,
+    "offlineReadyMs": 3980
+  },
+  "log_sha256": "d5ada03d86b186a5fe980f133e0c3484e17d77cf5e149251b7353eb86215a271",
+  "test_source_sha256": "c2cc7a2ccd85bae6cfb5aefaa67d6bc2d86f92a86d26cf6e45d6ab996e8749c8",
+  "scope": "v41 candidate: keyboard, axe, zoom, narrow screen, offline routing/data refresh; service preference removal keeps saved endpoints; shortcut removal deletes repeated-search entry, preserves unrelated journey and persists offline; injected quota failure retains data. No physical device or spoken screen reader."
+}

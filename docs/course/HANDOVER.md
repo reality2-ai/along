@@ -1,4 +1,4 @@
-# Along course handover — version 40
+# Along course handover — version 41
 
 Along is a working, experimental Auckland commuter app and a case study of one
 human–AI collaboration. It is used at your own risk, is not an official AT app,
@@ -21,7 +21,7 @@ the learner's judgment, not how much code the assistant generates.
 
 ## Prepare a teaching copy
 
-Ask the assistant to obtain the [v40 ZIP and checksum](https://github.com/reality2-ai/along/releases/tag/v0.40.0),
+Ask the assistant to obtain the [v41 ZIP and checksum](https://github.com/reality2-ai/along/releases/tag/v0.41.0),
 verify the archive, and serve its entire contents on a separate teaching origin.
 Keep the manifest, qualification record, runtime provenance and source notices.
 Use the supplied example addresses and synthetic credentials. A personal AT key,
@@ -40,7 +40,7 @@ snapshot supports historical test scenarios; do not present those results as
 current travel advice. Students should not replace their everyday installation
 or clear its storage to complete an exercise.
 
-## A current-release exercise: what should happen next?
+## A release-evidence exercise: what should happen next?
 
 Allow 45–60 minutes. Start with the user's report that scanning a QR and choosing
 Use appeared to do nothing, and the recurring instruction to make the likely next
@@ -95,3 +95,10 @@ Read new repository feedback in subsequent rounds. Preserve corrections, includi
 the withdrawn TalkBack-success report. Revisit the thematic interpretation when
 observations contradict it, and distinguish a changed requirement from a failed
 implementation of an existing one.
+
+
+The [v41 release record](../RELEASE_V41.md) adds a further discussion case: removing
+a service preference worked technically, but the user expected the visible shortcut
+to disappear. Ask learners to distinguish the original test claim from that user
+expectation, then evaluate explicit shortcut removal. Arrive-by routing is recorded
+as a new requirement, not a completed capability of this release.

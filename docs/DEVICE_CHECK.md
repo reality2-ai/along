@@ -1,4 +1,4 @@
-# Along 40: short S23 and desktop check
+# Along 41: short S23 and desktop check
 
 Use the regular app at <https://reality2.ai/along/>, not Device Preview.
 No coding is needed. Start with pairing; report that result before attempting
@@ -8,7 +8,7 @@ the remaining checks if anything is confusing.
 
 In the browser used to install Along, open
 [Update Along](https://reality2.ai/along/update.html), follow the update prompts,
-and reopen the installed app. Check **App version 40** in Settings on both devices.
+and reopen the installed app. Check **App version 41** in Settings on both devices.
 Record the browser names. Preserve existing saved places and device setup; do not
 clear site storage or create replacement groups to retry an interrupted connection.
 
@@ -60,3 +60,11 @@ check. Mark checks you cannot perform **not tested**.
 Report: version and browser on each device; whether the return QR appeared;
 whether pairing completed; whether saved places/preferences arrived; offline
 reopening; and accessibility results. A partial result is useful.
+
+
+## Removing shortcuts
+
+On the home screen, open **Manage shortcuts** and use **Remove shortcut** for a
+test journey. Confirm it disappears and stays absent after reopening offline.
+Other saved journeys should remain. Removing only **Preferred services** inside
+a journey keeps the saved places; that is a different action.

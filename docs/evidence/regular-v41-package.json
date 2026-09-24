@@ -1,0 +1,9 @@
+{
+  "archive": "along-web-v41.zip",
+  "sha256": "32cba1e89e2cdba1a17eda405876d2ed03fa5d77fd3f76c0f72645f5c19b877a",
+  "bytes": 41716842,
+  "payload_files": 285,
+  "release_manifest_sha256": "49e0c04f8ad89b3875175c8846d8bd6c5c36e7a2eee32761286dff344c5c7764",
+  "status": "passed",
+  "scope": "Exact archive file set and payload hashes verified against manifest; packager verifies unchanged qualified candidate."
+}
