@@ -40,8 +40,11 @@ key using a single-use nonce and a statement bound to group, identities, epochs
 and connection transcript. Current issuer standing and removals are checked before
 and after verification. The composed browser test covers replay, cancellation,
 expiry and removal during the challenge, with fixture transcript bytes. No keys
-are released by this check; real recovery transport and mutual authentication
-remain unfinished. See [the rotation design](R2_EPOCH_ROTATION.md#recovery-only-possession-check).
+are released by this check. A recovery-only WebRTC session now verifies both
+identities against its real connection transcript; the browser test rejects a
+forged issuer response and verifies removal closes both endpoints. It exposes no
+application-payload or key-delivery method yet. Ordered delivery and receipt
+recovery remain unfinished. See [the rotation design](R2_EPOCH_ROTATION.md#recovery-only-possession-check).
 
 The restored software issuer now produces epoch-zero signed revocation evidence
 using the runtime's actual signing bytes. The browser check applies this evidence

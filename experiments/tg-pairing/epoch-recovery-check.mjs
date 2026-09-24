@@ -45,6 +45,48 @@ export async function checkRecoveryProof(owner, recipient) {
   const expired = await answer(await begin(1000));
   await owner.evaluate(() => { const until = performance.now() + 1001; while (performance.now() < until) {} });
   assert.equal(await verify(expired), false, 'use-time expiry while timers delayed');
+  const ownerId = await owner.evaluate(async () => Array.from((await recoveryStore.read('candidate-persona', 'active')).value.record.subject));
+  for (const tamper of [true, false]) {
+    const offer = await recipient.evaluate(async ({peer, ownerId}) => {
+      const {openEpochRecoverySession} = await import('./epoch-recovery-session.mjs');
+      const options = {wasm: recoveryWasm, store: recoveryStore, expectedGroup: new Uint8Array(peer.group), role: 'recipient', peer: new Uint8Array(ownerId)};
+      if (await openEpochRecoverySession({...options, peer: crypto.getRandomValues(new Uint8Array(32))}).then(s => { s.close(); return true; }, () => false)) throw Error('Wrong saved issuer accepted');
+      const cancelled = new AbortController(); cancelled.abort();
+      if (await openEpochRecoverySession({...options, signal: cancelled.signal}).then(s => { s.close(); return true; }, () => false)) throw Error('Cancelled setup accepted');
+      window.recoverySession = await openEpochRecoverySession(options);
+      return recoverySession.offer();
+    }, {peer, ownerId});
+    const reply = await owner.evaluate(async ({offer, tamper}) => {
+      const {openEpochRecoverySession} = await import('./epoch-recovery-session.mjs');
+      const options = {wasm, store: recoveryStore, expectedGroup: group, role: 'owner', peer: new Uint8Array(recoveryPeer.subject), certificate: new Uint8Array(recoveryPeer.certificate)};
+      const bad = options.certificate.slice(); bad[135] ^= 1;
+      if (await openEpochRecoverySession({...options, certificate: bad}).then(s => { s.close(); return true; }, () => false)) throw Error('Bad member certificate accepted');
+      if (tamper) {
+        const original = RTCDataChannel.prototype.send;
+        RTCDataChannel.prototype.send = function(text) {
+          const frame = JSON.parse(text);
+          if (frame.type === 'owner-proof') {
+            RTCDataChannel.prototype.send = original;
+            frame.proof[0] ^= 1; return original.call(this, JSON.stringify(frame));
+          }
+          return original.call(this, text);
+        };
+      }
+      window.recoverySession = await openEpochRecoverySession(options);
+      return recoverySession.accept(offer);
+    }, {offer, tamper});
+    await recipient.evaluate(reply => recoverySession.accept(reply), reply);
+    if (tamper) {
+      assert.equal(await recipient.evaluate(() => recoverySession.authenticated().then(() => true, () => false)), false, 'forged issuer proof refused on real connection');
+      await owner.evaluate(() => recoverySession.close());
+    } else {
+      const states = await Promise.all([owner, recipient].map(page => page.evaluate(async () => {
+        const context = await recoverySession.authenticated();
+        return {from: String(context.from), to: String(context.to), state: recoverySession.state()};
+      })));
+      assert.deepEqual(states, [{from: '1', to: '2', state: 'authenticated'}, {from: '1', to: '2', state: 'authenticated'}]);
+    }
+  }
   const removed = await answer(await begin());
   await owner.evaluate(async () => {
     await (await import('./member-removal.mjs')).removeSoftwareMember({wasm, store: recoveryStore, expectedGroup: group,
@@ -52,6 +94,10 @@ export async function checkRecoveryProof(owner, recipient) {
   });
   assert.equal(await verify(removed), false, 'removal after challenge refuses');
   await assert.rejects(begin(), 'removed member cannot obtain another recovery challenge');
+  for (const page of [owner, recipient]) {
+    await page.waitForFunction(() => recoverySession.state() === 'closed');
+    assert.equal(await page.evaluate(() => recoverySession.authenticated().then(() => true, () => false)), false);
+  }
   await owner.evaluate(() => recoveryStore.close());
   await recipient.evaluate(() => recoveryStore.close());
 }

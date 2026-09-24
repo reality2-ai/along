@@ -150,8 +150,25 @@ The composed enrollment test advances the issuer to epoch two while the recipien
 remains at epoch one. It verifies possession, rejects statement/transcript changes,
 nonce replay, cancellation and expiry despite delayed timers, and rejects removal
 between challenge issuance and response. This test uses fixture transcript bytes;
-it does not yet establish binding to a real recovery WebRTC connection, mutual
-authentication, encrypted recovery delivery or installation through that flow.
+that proof-only fixture does not establish a real connection or key delivery.
+The separate transport check below covers mutual authentication.
+
+`epoch-recovery-session.mjs` now composes the proof with the actual direct WebRTC
+link. The older device answers a fresh member challenge bound to the link's SDP
+transcript. It issues its own nonce; the issuer answers a separate `ALNGERO1`
+statement using its current group-certified member key. Both identities and epochs
+remain bound to the same transcript. A ready exchange completes mutual checking.
+Malformed/out-of-order frames, identity/epoch changes and held removal evidence
+close the connection. Cancellation and a use-time handshake deadline also apply.
+
+The browser check authenticates epoch-one and epoch-two devices over real WebRTC,
+rejects a forged issuer proof sent on that connection, rejects a different saved
+issuer and bad member certificate, and verifies both ends close after removal.
+The harness still transfers SDP on one host; physical reachability and discovery
+are separate. This session exposes no application-payload or key-delivery method.
+Its authenticated state is recovery context, not permission to use an AT key or
+an assertion that the older member has current application membership. Ordered
+transition/key delivery and installation receipts still need composition.
 
 1. Compose certificate renewal for retained recipients with authenticated delivery.
    Release only the committed successor. Preserve
