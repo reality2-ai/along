@@ -351,3 +351,12 @@ successors can propose a live-only snapshot without changing local data. This
 is not yet a recovery action: durable preparation/installation, journal retention,
 current authorization, peer catch-up and user review remain unfinished. See the
 [protocol and evidence](../../docs/JOURNEY_CAPACITY_RECOVERY.md).
+
+
+`checkpoint-preparation.mjs` now retains one authenticated successor across
+concurrent callers, later local edits and reload without advancing the replica.
+Its browser storage test covers cancellation before/after commit, custody revision
+races, invalid signatures and failed writes. The signer and authority guard are
+synthetic in that test; binding actual issuer custody and durable installation
+remains required. Run `node experiments/journey-sync/checkpoint-preparation.test.mjs`
+with the documented `CHROMIUM_PATH`.

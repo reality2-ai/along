@@ -1,7 +1,9 @@
 # Saved-journey capacity recovery
 
-Status: generation model and signed-checkpoint verifier implemented and tested in
-source. No installation, network adoption or recovery control is enabled. Public
+Status: generation model, signed-checkpoint verifier and guarded durable
+preparation implemented and tested in source. The preparation browser check uses
+a synthetic custody adapter. No installation, network adoption or recovery control
+is enabled. Public
 preview 3805 retains its existing 256-pair replication limit and capacity message.
 
 ## Why deletion alone cannot free space
@@ -61,11 +63,34 @@ installation, global freshness or protection against browser rollback. Authorize
 members can deliberately save a journey again; this protects against stale
 snapshot resurrection, not malicious actions by a permitted member.
 
+## Durable preparation
+
+`checkpoint-preparation.mjs` retains one signed proposal in
+`along-prepared-journey-checkpoint-v1`, keyed by group and successor generation.
+Its caller must supply a custody-scoped signer, a current-authority check and
+nonempty revision guards. It checks the exact current format-2 replica and revision,
+validates its own signature, and uses a transaction guarded by the replica and
+custody revisions. It rereads and authenticates the committed winner before
+returning it. It never returns a provisional checkpoint or advances the replica.
+
+A retry within the same generation returns the retained snapshot, even if later
+local edits changed the replica. Those edits remain in the replica; installation
+must archive and review them rather than treating the retained proposal as a fresh
+copy of current data. Cancellation after commit cannot erase the preparation.
+Corrupt retained evidence refuses instead of being silently overwritten.
+
+`node experiments/journey-sync/checkpoint-preparation.test.mjs`, with
+`CHROMIUM_PATH` set, checks real IndexedDB concurrency, reload, later local edits,
+pre/post-commit cancellation, custody revision races, corrupt stored signatures,
+bad signing output and storage failure. It uses real Ed25519 signatures but a
+synthetic custody record/check, so it does not prove integration with the actual
+software issuer or its membership/permission checks.
+
 ## Required before integration
 
-1. Prepare one retained signed successor under issuer-custody and replica revision
-   guards. Concurrent preparations and retries must reuse it rather than create
-   competing branches. Verify current membership and removal evidence at use time.
+1. Bind the tested preparation adapter to the actual software issuer, current
+   membership and removal evidence. Verify its custody checks and guards through
+   real enrollment, key rotation, cancellation and permission changes.
 2. Review the live places selected for the new generation. Keep the old replica,
    local saved places and unprocessed edits in a durable recovery record. Do not
    silently replace divergent local data or reinterpret old edits as new saves.
