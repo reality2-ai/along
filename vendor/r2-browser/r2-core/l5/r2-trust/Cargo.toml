@@ -1,0 +1,94 @@
+[package]
+name = "r2-trust"
+description = "Reality2 Layer 5: trust group identity, membership, and the delivery gate"
+edition.workspace = true
+# MERGE NOTE (step 2): the root workspace license is "MIT" (the old hive root's);
+# this crate keeps the old CORE root's dual license explicitly, so the move
+# changed no crate's licence.
+license = "MIT OR Apache-2.0"
+version.workspace = true
+
+[package.metadata.reality2]
+identity = "ai.reality2.l5.trust"
+kind = "component"
+
+[features]
+# Additive only: adds std::error::Error impls and host conveniences.
+# Never changes behaviour (r2-hive INTEGRATION.md section 4).
+default = []
+std = ["r2-wire/std", "r2-hal-traits/std"]
+# Additive: supplies concrete FORMATS Clause 3 primitives (Ed25519, SHA-256)
+# so the verification chain terminates in something outside cfg(test).
+# Off by default — a target with hardware acceleration supplies its own.
+# Also supplies the PRODUCE side: HKDF-SHA256 and HMAC-SHA256 frame tags.
+# Includes L5 4.2.4's one-shot X25519 provider; authenticated protocol wiring
+# and its ruled derivation/identifier contracts remain separate obligations.
+# Until these shipped, every Signer/Aead/Hkdf/TagVerifier impl in the
+# workspace lived under cfg(test), so `apply_gate` could not be
+# instantiated outside tests and no code anywhere could make a tag a
+# hive could verify.
+# ed25519-dalek/zeroize is NOT optional here (r2-codex-refute, 2026-08-25):
+# mint() builds a SigningKey copy of the seed, and dalek's Drop erasure is
+# feature-gated — without the feature that copy left use unerased while the
+# crate claimed 5.3.4. The feature is enabled with the suite, and a test
+# asserts needs_drop::<SigningKey>() so the gate cannot silently lapse.
+formats-suite = ["dep:ed25519-dalek", "ed25519-dalek/zeroize", "dep:sha2", "dep:hmac", "dep:x25519-dalek"]
+# The PAYLOAD CIPHER: XChaCha20-Poly1305 (FORMATS 4.1) and the 4.2
+# envelope. SEPARATE FROM formats-suite ON PURPOSE — the trust group is
+# authenticated by the Layer 4 tag whether or not payloads are encrypted,
+# so a target that wants integrity without confidentiality should not pay
+# for a cipher it never calls. Never in `default`, and it changes no
+# behaviour that exists without it: nothing below the feature gate is
+# reachable from an unfeatured build.
+payload-cipher = ["dep:chacha20poly1305", "dep:chacha20"]
+# Bench interoperation under the DEVELOPMENT TRUST GROUP (L5 Clause 9).
+# Conformant: Note 2 to 9.3 says that group exists so bench devices
+# interoperate WITHOUT EACH BENCH MINTING ITS OWN, and 9.1d/9.1g forbid
+# minting one. Never in `default` — the group's secret is a published
+# constant, so 9.2 (a production device is refused, never served) is
+# what makes publication safe, and it is enforced at every entry point.
+development-trust-group = ["formats-suite"]
+
+[dependencies]
+r2-hal-traits = { workspace = true }
+r2-wire = { workspace = true }
+# THE erasure primitive behind `keys::SecretKey` (L5 5.3.4): VOLATILE WRITES —
+# zeroize's exact, stated guarantee (it contains no compiler fence). Linked
+# DIRECTLY here so `SecretKey` erases without depending on the formats-suite
+# feature; no_std. The crate writes no erasure loop of its own.
+zeroize = { workspace = true }
+ed25519-dalek = { version = "2", default-features = false, optional = true }
+sha2 = { version = "0.10", default-features = false, optional = true }
+hmac = { version = "0.12", default-features = false, optional = true }
+# The wrapper consumes the held private key on agreement; no secret bytes or
+# reusable upstream key escape. Explicit zeroizing Drop is required for both
+# the private key and shared-secret temporaries. No OS RNG or allocation needed.
+x25519-dalek = { version = "2", default-features = false, features = ["static_secrets", "zeroize"], optional = true }
+# `default-features = false` drops `alloc` and `getrandom`: the seal and
+# open paths here are in-place over caller buffers, and the nonce is drawn
+# from the platform's entropy through `ConformingEntropy` rather than from
+# the cipher crate's RNG — see `envelope`.
+chacha20poly1305 = { version = "0.10", default-features = false, optional = true }
+# **NOT A NEW CRATE IN ANY IMAGE — it is already linked**, as the transitive
+# dependency `chacha20poly1305` uses for the XChaCha nonce extension. It is
+# named directly only so [`cipher::hchacha20_subkey`] can re-export the
+# derivation a consumer needs for a known-answer test. **The version must
+# stay compatible with the one `chacha20poly1305` resolves**, and a host test
+# asserts behaviourally that they are the same code rather than trusting the
+# lockfile — see `the_re_exported_derivation_is_the_one_the_seal_uses`.
+chacha20 = { version = "0.9", default-features = false, optional = true }
+
+[dev-dependencies]
+# Host-side only: concrete primitives for the FORMATS.md provisional suite.
+# The crate itself takes crypto through traits (see `crypto`), so a target
+# build may substitute hardware acceleration or a ratified replacement.
+#
+# **`chacha20poly1305` USED TO SIT HERE AND WAS REFERENCED FROM NO `.rs`
+# FILE.** Roy asked what encryption the trust group uses; the answer was
+# *authenticated and not confidential*, with the cipher specified at
+# `crypto.rs` and implemented nowhere — and a dev-dependency naming it was
+# the only trace, which reads like an implementation to anyone auditing
+# the manifest. It is now a real optional dependency under
+# `payload-cipher`.
+ed25519-dalek = { version = "2", default-features = false }
+sha2 = { version = "0.10", default-features = false }

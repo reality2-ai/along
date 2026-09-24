@@ -40,13 +40,16 @@ Current upstream downloads will not reproduce historical dataset bytes. Importer
 tests also need their documented database/source inputs; copying browser bundles
 does not recreate those inputs.
 
-**Public-source gap:** the runtime source repository is currently private. The
-[clean-container attempt](evidence/container-rebuild-source-gap.json) installed
-the toolchain successfully but could not fetch that source anonymously. The
-procedure below therefore requires repository access; it is not yet a complete
-public rebuild path. A source bundle restricted to the owner-approved MIT R2
-subset is being prepared. The published app ZIP remains installable and hostable
-without access to the private repository.
+**Public runtime-source work:** the upstream repository is private. The
+[clean-container attempt](evidence/container-rebuild-source-gap.json) exposed that
+gap. The approved [standalone source subset](../vendor/r2-browser/README.md) is now
+included here. Its [two isolated builds](evidence/r2-source-subset-build.json)
+match each other; their WASM differs from v39's, so the complete runtime-bundle
+and browser checks remain pending. This is not yet a replacement for the
+qualified v39 runtime. The published app ZIP remains installable and hostable.
+
+The historical procedure below needs upstream repository access. The public
+subset README provides the new build path and its current verification status.
 
 Build the pinned browser runtime using [the recorded runtime procedure](PAIRING_LICENSE_AUDIT.md#recorded-runtime-rebuild-24-september-2026).
 Its source is [reality2-ai/r2-standard](https://github.com/reality2-ai/r2-standard),

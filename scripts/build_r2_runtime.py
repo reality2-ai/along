@@ -34,7 +34,10 @@ def run(args, **kwargs):
     return subprocess.check_output([str(arg) for arg in args], text=True, **kwargs).strip()
 
 
-def build(repo, revision, toolchain, bindgen, output):
+def build(repo, revision, toolchain, bindgen, output, workspace_path=WORKSPACE):
+    workspace_path = Path(workspace_path)
+    if workspace_path.is_absolute() or '..' in workspace_path.parts or not workspace_path.parts:
+        raise ValueError('Workspace must be a relative source directory')
     repo, bindgen, output = repo.resolve(), bindgen.resolve(), output.resolve()
     if output.exists():
         raise ValueError('Choose a new output directory; existing output is never replaced')
@@ -60,14 +63,14 @@ def build(repo, revision, toolchain, bindgen, output):
         archive = stage / 'source.tar'
         with archive.open('wb') as stream:
             subprocess.run(['git', '-C', str(repo), 'archive', '--format=tar', commit,
-                            str(WORKSPACE)], stdout=stream, check=True)
+                            str(workspace_path)], stdout=stream, check=True)
         first_hashes = None
         for number in (1, 2):
             source = scratch / f'build-{number}'
             source.mkdir()
             with tarfile.open(archive) as tar:
                 tar.extractall(source, filter='data')
-            workspace = source / WORKSPACE
+            workspace = source / workspace_path
             lock = tomllib.loads((workspace / 'Cargo.lock').read_text())
             expected = next(p['version'] for p in lock['package'] if p['name'] == 'wasm-bindgen')
             if bindgen_version != f'wasm-bindgen {expected}':
@@ -96,7 +99,7 @@ def build(repo, revision, toolchain, bindgen, output):
                 raise ValueError('Independent builds produced different runtime files')
         provenance = {
             'profile': 'along-r2-runtime-v1', 'source_commit': commit,
-            'source_paths': [str(WORKSPACE)], 'source_archive_sha256': digest(archive),
+            'source_paths': [str(workspace_path)], 'source_archive_sha256': digest(archive),
             'cargo_lock_sha256': lock_hash, 'target': TARGET, 'tools': tools,
             'build': ['cargo build --locked --offline --release --target wasm32-unknown-unknown -p hive-wasm',
                       'wasm-bindgen target/wasm32-unknown-unknown/release/hive_wasm.wasm --target web --out-dir generated'],
@@ -116,5 +119,6 @@ if __name__ == '__main__':
     parser.add_argument('--toolchain', required=True, help='Installed Rust toolchain with wasm32 and library notices')
     parser.add_argument('--bindgen', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True, help='New directory, preferably under ignored releases/')
+    parser.add_argument('--workspace', type=Path, default=WORKSPACE, help='Committed Cargo workspace path within the source repository')
     args = parser.parse_args()
-    build(args.repo, args.revision, args.toolchain, args.bindgen, args.output)
+    build(args.repo, args.revision, args.toolchain, args.bindgen, args.output, args.workspace)

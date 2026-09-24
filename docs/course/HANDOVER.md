@@ -30,7 +30,8 @@ relay endpoint and public GitHub submission are unnecessary for the core lessons
 The runtime source repository is private: the current runtime build procedure
 requires access. Do not assume a public source link grants that access. The
 [build guide](../BUILDING.md) records the failed anonymous container rehearsal
-and the pending public subset bundle.
+and the new public subset bundle, whose runtime-bundle and browser checks
+remain pending.
 
 For implementation sessions, ask the assistant to prepare the pinned runtime,
 dependencies and data described in the build guide beforehand. Fresh upstream

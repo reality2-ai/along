@@ -1,0 +1,49 @@
+{
+  "status": "built-twice-browser-verification-pending",
+  "recorded_at": "2026-09-24T20:25:14.174585+00:00",
+  "source_commit": "1b9229ad6d8483ba43cb66a53e14d336b0c6e091",
+  "approved_packages": 10,
+  "unchanged_original_files": 134,
+  "outputs": {
+    "hive_wasm.d.ts": {
+      "sha256": "330aa029454170f4dfe86cee4bbdd659f1bbf67ed264219eac5454c8131aa8c5",
+      "bytes": 14973,
+      "second_build_identical": true,
+      "matches_v39_runtime": true
+    },
+    "hive_wasm.js": {
+      "sha256": "e965f6f3edc1ac62a84a5221f7b083e9c416994fc36c7e0bf418395ea488cd33",
+      "bytes": 42922,
+      "second_build_identical": true,
+      "matches_v39_runtime": true
+    },
+    "hive_wasm_bg.wasm": {
+      "sha256": "d4d6dbff8864b67d6368d50f544041563e048994426ba3aa4f481ca951e81c19",
+      "bytes": 205687,
+      "second_build_identical": true,
+      "matches_v39_runtime": false
+    },
+    "hive_wasm_bg.wasm.d.ts": {
+      "sha256": "aa9f29b3908b35e97b1ab32ce6e6f41db576b05bea857dc6bd2552f567430ce8",
+      "bytes": 4899,
+      "second_build_identical": true,
+      "matches_v39_runtime": true
+    }
+  },
+  "container_base": {
+    "image": "docker.io/library/python:3.13-bookworm",
+    "digest": "sha256:61d9f7d6c554f2325f2dd26d627d3efffbd41f56c12ab4deb4ca92f7a157601f",
+    "container": "along-clean-room-v39-stubaved"
+  },
+  "first_attempt": {
+    "status": "failed",
+    "reason": "Target-limited fetch omitted a host dependency needed by the offline build",
+    "log_sha256": "dafaddc20e56361b226642a3956461ef661903c5a32009d2b293707257e31060"
+  },
+  "second_attempt": {
+    "status": "passed",
+    "change": "Fetch all locked subset dependencies before offline builds",
+    "log_sha256": "69fd75309a13b09b0e721c71434415d6eeffffded06e158865bdb9607d4abce0"
+  },
+  "scope": "Two fresh source/target directories in an isolated rootless container with fresh Rust 1.96.1 and wasm-bindgen-cli 0.2.126 built from public downloads. Only approved subset supplied; no private repository access. WASM differs from v39, including embedded path and producer metadata differences. No binary equivalence, browser acceptance or new release claim."
+}

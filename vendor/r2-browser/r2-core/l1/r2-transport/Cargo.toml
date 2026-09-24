@@ -1,0 +1,30 @@
+[package]
+name = "r2-transport"
+description = "Reality2 Layer 1: the bearer contract, profile, registry and bindings (sans-IO)"
+edition.workspace = true
+# Carries code from the old CORE root (via r2-mesh, D-226 increment 2):
+# keeps that root's dual licence so the move changed no crate's licence.
+license = "MIT OR Apache-2.0"
+version.workspace = true
+
+[package.metadata.reality2]
+identity = "ai.reality2.l1.transport"
+kind = "component"
+
+[features]
+# Additive only: adds std::error::Error impls. Never changes behaviour.
+default = []
+std = ["r2-wire/std", "r2-hal-traits/std"]
+
+[dependencies]
+r2-ident = { workspace = true }
+r2-hal-traits = { workspace = true }
+# The one named upward edge (SS380): Tier and the two header-length
+# constants, obliged by the STANDARD (L1 7.1 B3 defined at L4 4.2/4.3;
+# BUDGET_FLOODING L3 5.5.5 <-> L4 4.1.2a). This crate parses no frame.
+r2-wire = { workspace = true }
+
+# No [lints] block, deliberately: this crate carries code moved verbatim from
+# r2-mesh (D-226), which never opted into the workspace lint set. Opting the
+# moved code in would manufacture ~150 warnings against a frozen baseline of
+# zero; tightening is its own change, after the split settles.

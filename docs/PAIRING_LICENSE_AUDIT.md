@@ -19,6 +19,12 @@ a public bundle is limited to the ten packages and browser modules covered by
 [R2-SCOPE.md](licenses/R2-SCOPE.md); it does not authorize publishing the whole
 private repository or standard.
 
+The [standalone approved subset](../vendor/r2-browser/README.md) now contains the
+unchanged source files and a pruned workspace/lockfile. [Two container builds](evidence/r2-source-subset-build.json)
+match each other. The generated WASM differs from the currently released runtime;
+full bundle/browser qualification is pending. The original private repository
+and its standard documents have not been included in this source distribution.
+
 ## Recorded runtime rebuild (24 September 2026)
 
 [`build_r2_runtime.py`](../scripts/build_r2_runtime.py) exports the committed Rust

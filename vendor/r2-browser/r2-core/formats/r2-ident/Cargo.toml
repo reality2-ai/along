@@ -1,0 +1,18 @@
+[package]
+name = "r2-ident"
+version.workspace = true
+edition = "2021"
+
+[package.metadata.reality2]
+identity = "ai.reality2.formats.ident"
+kind = "component"
+
+# FORMATS-band value types: the identifiers every layer keys on, defined by
+# FORMATS.md 3.3 / L4 6.1.3 and owned by no layer — which is why they sit at
+# rank 0, beside r2-cbor, where L1 and L3 can both reach them DOWNWARD.
+# D-226: the first crate of r2-core/, the per-layer restructure.
+
+[dependencies]
+
+[lints]
+workspace = true

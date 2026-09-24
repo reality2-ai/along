@@ -1,0 +1,26 @@
+[package]
+name = "r2-discovery"
+description = "Reality2 Layer 2: capability and discovery — announcement, sightings, fade (sans-IO)"
+edition.workspace = true
+# Carries code from the old CORE root (via r2-mesh, D-226 increment 2):
+# keeps that root's dual licence so the move changed no crate's licence.
+license = "MIT OR Apache-2.0"
+version.workspace = true
+
+[package.metadata.reality2]
+identity = "ai.reality2.l2.discovery"
+kind = "component"
+
+[features]
+default = []
+std = ["r2-transport/std"]
+
+[dependencies]
+r2-ident = { workspace = true }
+r2-hal-traits = { workspace = true }
+r2-transport = { workspace = true }
+
+# No [lints] block, deliberately: this crate carries code moved verbatim from
+# r2-mesh (D-226), which never opted into the workspace lint set. Opting the
+# moved code in would manufacture ~150 warnings against a frozen baseline of
+# zero; tightening is its own change, after the split settles.

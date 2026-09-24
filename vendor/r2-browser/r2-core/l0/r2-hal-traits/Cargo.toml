@@ -1,0 +1,24 @@
+[package]
+name = "r2-hal-traits"
+description = "Reality2 Layer 0 platform facility traits and declaration types (leaf crate)"
+edition.workspace = true
+# MERGE NOTE (step 2): the root workspace license is "MIT" (the old hive root's);
+# this crate keeps the old CORE root's dual license explicitly, so the move
+# changed no crate's licence.
+license = "MIT OR Apache-2.0"
+version.workspace = true
+
+[package.metadata.reality2]
+identity = "ai.reality2.l0.hal-traits"
+kind = "component"
+
+[features]
+# Additive only: adds std::error::Error impls and host conveniences.
+# Never changes behaviour (r2-hive INTEGRATION.md section 4).
+default = []
+std = []
+
+[dependencies]
+
+[lints]
+workspace = true

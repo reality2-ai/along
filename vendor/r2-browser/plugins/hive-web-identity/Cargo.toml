@@ -1,0 +1,17 @@
+[package]
+name = "hive-web-identity"
+description = "Portal request attribution using the shared Reality2 member evidence implementation"
+edition.workspace = true
+license.workspace = true
+version.workspace = true
+
+[package.metadata.reality2]
+identity = "ai.reality2.plugin.web.identity"
+kind = "component"
+
+[dependencies]
+r2-trust = { workspace = true, features = ["formats-suite"] }
+r2-hal-traits.workspace = true
+
+[dev-dependencies]
+r2-trust = { workspace = true, features = ["development-trust-group"] }

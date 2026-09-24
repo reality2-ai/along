@@ -1,0 +1,30 @@
+[package]
+name = "r2-wire"
+description = "Reality2 Layer 4 wire protocol: frame codec, name hashing, authenticated span"
+edition.workspace = true
+# MERGE NOTE (step 2): the root workspace license is "MIT" (the old hive root's);
+# this crate keeps the old CORE root's dual license explicitly, so the move
+# changed no crate's licence.
+license = "MIT OR Apache-2.0"
+version.workspace = true
+
+[package.metadata.reality2]
+identity = "ai.reality2.l4.wire"
+kind = "component"
+
+[features]
+# Additive only: adds std::error::Error impls and host conveniences.
+# Never changes behaviour (r2-hive INTEGRATION.md section 4).
+default = []
+std = []
+
+[dependencies]
+
+[dev-dependencies]
+# Host-side only: HMAC-SHA256 for the L4 conformance vectors (the key and
+# tag computation are Layer 5's at runtime, L4 10.3.1).
+hmac = "0.12"
+sha2 = "0.10"
+
+[lints]
+workspace = true
