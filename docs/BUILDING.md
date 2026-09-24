@@ -40,6 +40,14 @@ Current upstream downloads will not reproduce historical dataset bytes. Importer
 tests also need their documented database/source inputs; copying browser bundles
 does not recreate those inputs.
 
+**Public-source gap:** the runtime source repository is currently private. The
+[clean-container attempt](evidence/container-rebuild-source-gap.json) installed
+the toolchain successfully but could not fetch that source anonymously. The
+procedure below therefore requires repository access; it is not yet a complete
+public rebuild path. A source bundle restricted to the owner-approved MIT R2
+subset is being prepared. The published app ZIP remains installable and hostable
+without access to the private repository.
+
 Build the pinned browser runtime using [the recorded runtime procedure](PAIRING_LICENSE_AUDIT.md#recorded-runtime-rebuild-24-september-2026).
 Its source is [reality2-ai/r2-standard](https://github.com/reality2-ai/r2-standard),
 commit `1b9229ad6d8483ba43cb66a53e14d336b0c6e091` (the `along-browser-tg` work).

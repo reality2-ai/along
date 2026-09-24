@@ -27,6 +27,11 @@ Keep the manifest, qualification record, runtime provenance and source notices.
 Use the supplied example addresses and synthetic credentials. A personal AT key,
 relay endpoint and public GitHub submission are unnecessary for the core lessons.
 
+The runtime source repository is private: the current runtime build procedure
+requires access. Do not assume a public source link grants that access. The
+[build guide](../BUILDING.md) records the failed anonymous container rehearsal
+and the pending public subset bundle.
+
 For implementation sessions, ask the assistant to prepare the pinned runtime,
 dependencies and data described in the build guide beforehand. Fresh upstream
 imports may take considerable time and produce different data. The published

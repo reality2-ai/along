@@ -1,0 +1,22 @@
+{
+  "status": "failed-at-private-source-fetch",
+  "recorded_at": "2026-09-24T20:18:21.521154+00:00",
+  "image": {
+    "image": "docker.io/library/python:3.13-bookworm",
+    "digest": "sha256:61d9f7d6c554f2325f2dd26d627d3efffbd41f56c12ab4deb4ca92f7a157601f",
+    "container": "along-clean-room-v39-stubaved"
+  },
+  "along_source_commit": "4fbb3aa",
+  "runtime_source_commit": "1b9229ad6d8483ba43cb66a53e14d336b0c6e091",
+  "completed": [
+    "Fresh rootless Python container",
+    "Fresh package/compiler installation",
+    "Rust 1.96.1 and wasm32 target installation",
+    "wasm-bindgen-cli 0.2.126 built from downloaded locked dependencies"
+  ],
+  "failure": "Anonymous git fetch of reality2-ai/r2-standard requested credentials; GitHub repository metadata confirms private visibility.",
+  "container_exit_code": 128,
+  "log_sha256": "c46901d1626d99a988a987ca924041c10cc4f1595fd246da6040df04ca692926",
+  "scope": "No host credentials, runtime bundle, Cargo cache or browser profile supplied. Source snapshot and published v39 ZIP supplied read-only. No R2 runtime or app rebuild completed in this container.",
+  "next_step": "Prepare a rebuildable source bundle limited to the owner-approved MIT R2 package scope; preserve original source hashes and verify runtime output before publication."
+}

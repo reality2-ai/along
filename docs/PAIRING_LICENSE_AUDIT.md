@@ -9,6 +9,16 @@ in Along. The scoped distribution grant is now included as
 [MIT text](licenses/R2-MIT.txt) and an [explicit scope](licenses/R2-SCOPE.md).
 It does not relicense dependencies or the wider R2 standard.
 
+## Public source availability (25 September 2026)
+
+The linked R2 repository is private. An anonymous clean-container fetch fails;
+the [recorded attempt](evidence/container-rebuild-source-gap.json) does not complete
+a runtime build. Existing same-host rebuild evidence remains valid in its stated
+scope, but does not establish public access to the necessary source. Preparing
+a public bundle is limited to the ten packages and browser modules covered by
+[R2-SCOPE.md](licenses/R2-SCOPE.md); it does not authorize publishing the whole
+private repository or standard.
+
 ## Recorded runtime rebuild (24 September 2026)
 
 [`build_r2_runtime.py`](../scripts/build_r2_runtime.py) exports the committed Rust
