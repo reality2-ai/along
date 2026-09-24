@@ -333,3 +333,35 @@ by earlier manual connections. Relay discovery must authenticate that certificat
 against the established group and existing permissions before starting a session.
 Do not manufacture certificates, turn a relay roster into membership, or make users
 repeat enrollment merely to select a relay. Settings and discovery remain pending.
+
+### Verified peer discovery messages
+
+`discovery.mjs` adds a fixed 304-byte signed announcement: `ALNRDS01`, the established
+group public key, device public key, its 136-byte group certificate, a fresh random
+32-byte announcement nonce, and a 64-byte device signature. The signature domain is
+`along/relay/discovery/v1` plus NUL. This public metadata is visible to the selected
+relay and must be disclosed by the opt-in UI. No journey, history, location or AT
+key appears in an announcement.
+
+Creating announcements uses the actual installed persona and observed authority
+revision checks. Accepting one requires the exact established group, an existing
+local journey-sharing permission, current certificate/membership evidence and a
+valid device signature. Permission or membership changes during verification
+invalidate the result. An accepted result is only `verified-discovery-hint`: it
+supplies a certificate for the fresh session handshake, does not prove present
+reachability, and never grants permission or installs membership. Replays cannot
+replace the fresh key-confirmation requirement.
+
+`ENROLLED_RELAY_NETWORK=1` now also verifies discovery using the actual enrolled
+identities, including delivery through the loopback WSS relay. Missing consent,
+self announcements, altered magic/group/member/certificate/nonce/signature,
+cancellation and permission removal during signature verification refuse. A
+read-only membership overlay containing a real issuer-signed removal rejects the
+old announcement without altering the fixture's installed membership. Regranting
+permission requires a fresh verification. The existing snapshot/reconnect checks
+still pass in the same run.
+
+This supplies the missing certificate-verification primitive. A bounded discovery
+service still needs to schedule announcements, dispatch only allowed peers through
+a shared relay socket, observe changed configuration and integrate with Settings.
+No relay is automatically enabled and nothing here has been deployed.
