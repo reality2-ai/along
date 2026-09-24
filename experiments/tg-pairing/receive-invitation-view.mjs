@@ -48,7 +48,7 @@ export function showReceiveInvitation(container, {focus = false, onBack = () => 
         status.textContent = 'The invitation’s format is recognised. Its source and expiry have not been verified.';
         next.textContent = 'Use invitation from my other device'; heading.focus();
       } catch {
-        status.textContent = 'This invitation could not be read. Copy a new invitation from your other device and try again.';
+        status.textContent = 'This invitation could not be read. Update Along on both devices, then copy a new invitation and try again.';
         input.setAttribute('aria-invalid', 'true'); input.focus();
       }
     } else {

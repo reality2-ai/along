@@ -15,8 +15,8 @@ from an incoming certificate. Signed revocations remain terminal across epochs.
 Along bootstraps at epoch zero. After explicit installation of a prepared epoch,
 issuer certificate issuance uses that epoch and enrollment material comes from
 its installed traffic keys. Restoring traffic material requires its epoch to match
-both the local persona and membership state. The visible pairing flow still fixes
-epoch zero and needs integration before rotation can be exposed.
+both the local persona and membership state. The next candidate's visible pairing
+flow now binds enrollment to the verified inviter epoch.
 
 Changing only `membership.current` would strand the local persona and stored
 traffic material. Reusing the old traffic keys would also fail to exclude a
@@ -107,6 +107,26 @@ tabs where available, without claiming acknowledgment from them. Suspended tabs
 cannot promise immediate delivery; existing runtime checks still compare epoch
 and membership before protected send/receive operations. Read failures close the
 affected session rather than preserving a cached grant.
+
+## Pairing after local advancement
+
+The next candidate uses `along-browser-invitation-v2` and
+`along-browser-proof-v2`. The public descriptor carries a canonical unsigned epoch.
+The recipient's proof check requires the inviter's group-signed certificate to be
+current at that exact epoch, plus the fresh nonce proof for the reviewed invitation.
+The epoch field alone is not evidence. The provisioner also refuses to answer an
+invitation created before its own advancement. Both sides pass the checked epoch
+to enrollment rather than substituting zero. Prior v1 messages refuse, with an
+instruction to update both devices and create a new invitation.
+
+`ROTATED_ISSUER=1 node experiments/tg-pairing/pairing-flow.test.mjs` advances the
+issuer, refuses its stale invitation and then completes the visible pairing flow
+over actual WebRTC. The acknowledged recipient restores epoch-one keys. The
+ordinary enrollment check still covers epoch zero, and additionally rejects an
+authentic epoch-zero certificate/proof paired with a substituted epoch-one
+descriptor, v1 proof downgrade and malformed epoch values. Invitation review has
+keyboard, narrow-screen and automated accessibility coverage. These checks do not
+establish the recovery transport for already-enrolled devices on older epochs.
 
 1. Compose certificate renewal for retained recipients with authenticated delivery.
    Release only the committed successor. Preserve

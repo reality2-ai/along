@@ -28,7 +28,12 @@ cross-epoch delivery and the user flow remain unfinished; no rotation control is
 enabled. Issuer advancement now uses the same atomic boundary and explicitly
 retained preparation. Browser checks advance through two epochs, restore issuer
 custody, refuse old handles, issue current-key enrollment material and remove an
-older device certificate. The visible pairing flow still needs epoch integration.
+older device certificate. The next candidate’s v2 invitation/proof flow now uses
+the verified inviter epoch. A visible-flow test pairs a new device after issuer
+advancement; epoch substitution, old invitations after advancement and v1 proof
+downgrade refuse. Both devices must update for new invitations. Public preview
+3803 still uses the earlier invitation format; older-device key recovery remains
+unfinished.
 
 The restored software issuer now produces epoch-zero signed revocation evidence
 using the runtime's actual signing bytes. The browser check applies this evidence

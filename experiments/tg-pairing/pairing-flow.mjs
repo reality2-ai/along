@@ -1,4 +1,4 @@
-// Explicit browser-software subset, initial epoch zero. Manual public-message
+// Explicit browser-software subset, verified inviter epoch. Manual public-message
 // transport, actual R2 verification and WebRTC enrollment; no relay service.
 import {showReceiveInvitation} from './receive-invitation-view.mjs';
 import {showDeviceTransfer} from './transfer-view.mjs';
@@ -108,7 +108,7 @@ export function showPairingFlow(container, {wasm, store, role, expectedGroup, fo
           outgoing: invitation.descriptor, incomingLabel: 'Challenge from your other device', action: 'Create device reply', onReceive: async request => {
             const response = await answerInvitationProof(invitation, request); current();
             session = await createEnrollmentSession({wasm, store, invitation: invitation.invitation(), role}); watchSession(); current();
-            payloads = enrollmentPayloads({wasm, invitation: invitation.invitation(), epoch: 0n, role, session});
+            payloads = enrollmentPayloads({wasm, invitation: invitation.invitation(), epoch: invitation.invitation().epoch, role, session});
             transfer({title: 'Send your device reply', explanation: 'Copy this reply to your other device. It will give you connection details to paste here.', outgoing: response,
               incomingLabel: 'Connection details from your other device', action: 'Prepare connection', onReceive: async text => {
                 const answer = await session.accept(JSON.parse(text)); current();
@@ -125,7 +125,7 @@ export function showPairingFlow(container, {wasm, store, role, expectedGroup, fo
             const verified = proof.verify(response);
             session = await createCoreCandidateSession({wasm, store, invitation: verified.invitation, authorized: verified.authorized,
               softwareCustody: true, signal: lifetime.signal,
-              platform: {candidateDevelopment: false, provisionerDevelopment: false, provisionerHoldsCustody: true, epoch: 0n}}); watchSession(); current();
+              platform: {candidateDevelopment: false, provisionerDevelopment: false, provisionerHoldsCustody: true, epoch: verified.invitation.epoch}}); watchSession(); current();
             const offer = await session.offer(); current();
             transfer({title: 'Send connection details', explanation: 'Copy these details to your other device, then paste its connection reply here. Connection details may include network addresses.',
               outgoing: JSON.stringify(offer), incomingLabel: 'Connection reply from your other device', action: 'Compare device codes',

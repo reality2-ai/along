@@ -8,6 +8,7 @@ const {chromium} = await import(process.env.PLAYWRIGHT_MODULE || '@playwright/te
 if (!process.env.R2_BROWSER_DIR) throw new Error('Set R2_BROWSER_DIR to the experimental Reality2 browser module directory');
 if (!process.env.R2_WASM_DIR) throw new Error('Set R2_WASM_DIR');
 const sources = new Map(await Promise.all(['peer-session', 'challenge', 'session-statement', 'membership', 'certificate', 'enrollment-session', 'storage', 'invitation-journal', 'enrollment-link', 'enrollment-exchange', 'enrollment-protection', 'peer-link', 'invitation'].map(async name => ['/' + name + '.mjs', await readFile(join(process.env.R2_BROWSER_DIR, name + '.mjs'))])));
+if (process.env.ROTATED_ISSUER === '1') for (const name of ['epoch-transition.mjs', 'epoch-preparation.mjs', 'epoch-installation.mjs']) sources.set('/' + name, await readFile(new URL(name, import.meta.url)));
 for (const name of ['enrollment-profile.mjs', 'enrollment-payloads.mjs', 'core-candidate-session.mjs', 'software-traffic.mjs', 'initial-persona.mjs', 'software-persona.mjs', 'software-invitation.mjs', 'invitation-proof.mjs', 'transfer-view.mjs', 'pairing-flow.mjs', 'comparison.mjs', 'comparison.css', 'receive-invitation-view.mjs', 'stored-claim.mjs', 'installation-receipt.mjs', 'local-persona.mjs', 'local-persona-session.mjs', 'epoch-watch.mjs', 'receipt-recovery.mjs', 'recovery-flow.mjs']) sources.set('/' + name, await readFile(new URL('./' + name, import.meta.url)));
 if (process.env.RECOVERY_MODULE) sources.set('/receipt-recovery.mjs', await readFile(process.env.RECOVERY_MODULE));
 for (const name of ['hive_wasm.js', 'hive_wasm_bg.wasm']) sources.set('/' + name, await readFile(join(process.env.R2_WASM_DIR, name)));
@@ -24,11 +25,20 @@ try {
   const pages = await Promise.all(contexts.map(c => c.newPage()));
   await Promise.all(pages.map(async (page, index) => {
     await page.goto(`http://127.0.0.1:${server.address().port}`);
-    await page.evaluate(async ({index, loseInstallReply, loseAckReply, recoverConnection}) => {
+    await page.evaluate(async ({index, loseInstallReply, loseAckReply, recoverConnection, rotatedIssuer}) => {
       window.wasm = await import('./hive_wasm.js'); await wasm.default();
       window.store = await (await import('./storage.mjs')).openBrowserStorage('pairing-flow');
       const initial = await (await import('./software-persona.mjs')).initializeSoftwarePersona({wasm, store});
       window.group = Uint8Array.from(initial.group.match(/../g), b => parseInt(b, 16));
+      if (index === 1 && rotatedIssuer) {
+        const staleInvitation = await (await import('./software-invitation.mjs')).createSoftwareInvitation({wasm, store, expectedGroup: group});
+        const issuer = await (await import('./software-persona.mjs')).loadSoftwareIssuer({wasm, store, expectedGroup: group});
+        try { await issuer.prepareRotation(); }
+        finally { issuer.close(); }
+        await (await import('./epoch-installation.mjs')).installPreparedIssuerEpoch({wasm, store, expectedGroup: group, epoch: 1n});
+        if (await staleInvitation.respondChallenge(crypto.getRandomValues(new Uint8Array(16))).then(() => true, () => false)) throw Error('Old-epoch invitation survived advancement');
+        staleInvitation.close();
+      }
       let flowStore = store;
       if (index === 0 && (loseInstallReply || loseAckReply)) {
         flowStore = {...store, compareAndSwapMany: async (...args) => {
@@ -52,7 +62,7 @@ try {
       }
       window.flow = (await import('./pairing-flow.mjs')).showPairingFlow(document.querySelector('#flow'),
         {wasm, store: flowStore, role: index ? 'provisioner' : 'candidate', expectedGroup: group, focus: true});
-    }, {index, loseInstallReply: process.env.LOSE_INSTALL_REPLY === '1', loseAckReply: process.env.LOSE_ACK_REPLY === '1', recoverConnection: process.env.RECOVER_CONNECTION === '1'});
+    }, {index, loseInstallReply: process.env.LOSE_INSTALL_REPLY === '1', loseAckReply: process.env.LOSE_ACK_REPLY === '1', recoverConnection: process.env.RECOVER_CONNECTION === '1', rotatedIssuer: process.env.ROTATED_ISSUER === '1'});
   }));
   const [candidate, owner] = pages;
   await owner.getByRole('heading', {name: 'Invite your other device', exact: true}).waitFor();
@@ -159,11 +169,12 @@ try {
   await candidate.getByRole('heading', {name: 'Device connected', exact: true}).waitFor();
   await owner.getByRole('heading', {name: 'Other device installed', exact: true}).waitFor();
   const target = await owner.evaluate(() => [...group]);
-  assert.equal(await candidate.evaluate(async group => {
+  assert.equal(await candidate.evaluate(async ({group, epoch}) => {
     const restored = await (await import('./local-persona.mjs')).loadLocalPersona({wasm, store, expectedGroup: new Uint8Array(group)});
     const traffic = await (await import('./software-traffic.mjs')).loadSoftwareTraffic({wasm, store, expectedGroup: new Uint8Array(group)});
-    traffic.destroy(); return restored.origin === 'enrolled' && restored.peerAcknowledged;
-  }, target), true);
+    try { return restored.origin === 'enrolled' && restored.peerAcknowledged && restored.epoch === BigInt(epoch) && traffic.epoch === BigInt(epoch); }
+    finally { traffic.destroy(); }
+  }, {group: target, epoch: process.env.ROTATED_ISSUER === '1' ? 1 : 0}), true);
   }
   }
   await Promise.all(pages.map(page => page.evaluate(() => flow.dispose())));

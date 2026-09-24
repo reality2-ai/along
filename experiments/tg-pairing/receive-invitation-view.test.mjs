@@ -29,7 +29,7 @@ try {
   await page.getByRole('button', {name: 'Review invitation', exact: true}).click();
   await page.getByRole('status').filter({hasText: 'could not be read'}).waitFor();
   assert.equal(await page.getByLabel('Invitation text').getAttribute('aria-invalid'), 'true');
-  const descriptor = JSON.stringify({profile: 'along-browser-invitation-v1', group: '11'.repeat(32), issuer: '22'.repeat(32), code: '33'.repeat(16), validity: '8'});
+  const descriptor = JSON.stringify({profile: 'along-browser-invitation-v2', group: '11'.repeat(32), issuer: '22'.repeat(32), code: '33'.repeat(16), validity: '8', epoch: '0'});
   await page.getByLabel('Invitation text').fill(descriptor);
   assert.equal(await page.getByLabel('Invitation text').getAttribute('aria-invalid'), null);
   await page.evaluate(() => document.querySelector('.pairing-primary').click());

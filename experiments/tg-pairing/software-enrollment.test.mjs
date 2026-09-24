@@ -73,6 +73,11 @@ try {
         JSON.stringify({...descriptor, secret: 'unexpected'}),
         JSON.stringify({...descriptor, validity: '18446744073709551616'}),
         JSON.stringify({...descriptor, validity: '08'}),
+        JSON.stringify({...descriptor, epoch: '-1'}),
+        JSON.stringify({...descriptor, epoch: '18446744073709551616'}),
+        JSON.stringify({...descriptor, epoch: '01'}),
+        JSON.stringify({...descriptor, epoch: 0}),
+        JSON.stringify({...descriptor, profile: 'along-browser-invitation-v1'}),
         JSON.stringify({...descriptor, group: 'z'.repeat(64)}),
         JSON.stringify({...descriptor, profile: 'another-profile'})]) {
         if (!await denied(() => decodeSoftwareInvitation(text))) return false;
@@ -106,7 +111,7 @@ try {
   });
   const response = await pages[1].evaluate(async request => (await import('./invitation-proof.mjs')).answerInvitationProof(invite, request), request);
   // Each negative case gets a real freshly signed response for its own nonce.
-  for (const fault of ['nonce', 'certificate', 'signature', 'descriptor', 'cancel', 'oversize']) {
+  for (const fault of ['nonce', 'certificate', 'signature', 'descriptor', 'profile', 'cancel', 'oversize']) {
     const descriptor = await pages[1].evaluate(async () => {
       window.testInvite = await (await import('./software-invitation.mjs')).createSoftwareInvitation({wasm, store, expectedGroup: group});
       return testInvite.descriptor;
@@ -126,6 +131,7 @@ try {
       if (fault === 'nonce') value.nonce = flip(value.nonce);
       if (fault === 'certificate') value.certificate = flip(value.certificate);
       if (fault === 'signature') value.proof = flip(value.proof);
+      if (fault === 'profile') value.profile = 'along-browser-proof-v1';
       if (fault === 'descriptor') {
         const descriptor = JSON.parse(value.descriptor); descriptor.code = flip(descriptor.code); value.descriptor = JSON.stringify(descriptor);
       }
@@ -134,6 +140,29 @@ try {
       return denied(fault === 'oversize' ? 'x'.repeat(2049) : JSON.stringify(value)) && denied(response);
     }, {response: negativeResponse, fault}), true);
   }
+  const epochDescriptor = await pages[1].evaluate(async () => {
+    window.epochInvite = await (await import('./software-invitation.mjs')).createSoftwareInvitation({wasm, store, expectedGroup: group});
+    return epochInvite.descriptor;
+  });
+  const epochRequest = await pages[0].evaluate(descriptor => {
+    const altered = JSON.parse(descriptor); altered.epoch = '1';
+    window.epochProof = proofModule.createInvitationProof({wasm, reviewed: {descriptor: JSON.stringify(altered), signal: new AbortController().signal}});
+    return epochProof.request;
+  }, epochDescriptor);
+  const epochResponse = await pages[1].evaluate(async request => {
+    // Bypass the response envelope's descriptor check in this negative fixture:
+    // even a real signature for the same invitation/nonce must match its epoch.
+    const value = JSON.parse(request);
+    try {
+      const nonce = Uint8Array.from(value.nonce.match(/../g), b => parseInt(b, 16));
+      const response = await epochInvite.respondChallenge(nonce);
+      const hex = bytes => Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+      return JSON.stringify({...value, kind: 'response', certificate: hex(response.certificate), proof: hex(response.proof)});
+    } finally { epochInvite.close(); }
+  }, epochRequest);
+  assert.equal(await pages[0].evaluate(response => {
+    try { epochProof.verify(response).authorized.free(); return false; } catch { return true; }
+  }, epochResponse), true);
   await pages[0].evaluate(async () => {
     window.transfer = (await import('./transfer-view.mjs')).showDeviceTransfer(document.body, {
       title: 'Check your other device', explanation: 'Copy this challenge to your other device, then paste its reply here.',

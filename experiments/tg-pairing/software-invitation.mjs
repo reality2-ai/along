@@ -3,15 +3,15 @@
 import {loadSoftwareIssuer} from './software-persona.mjs';
 import {loadLocalPersona} from './local-persona.mjs';
 import {invitationStatement} from './invitation.mjs';
-const profile = 'along-browser-invitation-v1';
+const profile = 'along-browser-invitation-v2';
 const hex = value => Array.from(value, b => b.toString(16).padStart(2, '0')).join('');
 const fail = () => new Error('Browser invitation unavailable');
-const fields = ['profile', 'group', 'issuer', 'code', 'validity'];
+const fields = ['profile', 'group', 'issuer', 'code', 'validity', 'epoch'];
 export function encodeSoftwareInvitation(value) {
-  if (!value || typeof value.validity !== 'bigint' || value.role !== 'member'
+  if (!value || typeof value.validity !== 'bigint' || typeof value.epoch !== 'bigint' || value.role !== 'member'
       || ![['group', 32], ['issuer', 32], ['code', 16]].every(([name, length]) =>
         value[name] instanceof Uint8Array && value[name].length === length)) throw fail();
-  const object = {profile, group: hex(value.group), issuer: hex(value.issuer), code: hex(value.code), validity: String(value.validity)};
+  const object = {profile, group: hex(value.group), issuer: hex(value.issuer), code: hex(value.code), validity: String(value.validity), epoch: String(value.epoch)};
   const text = JSON.stringify(object); decodeSoftwareInvitation(text); return text;
 }
 export function decodeSoftwareInvitation(text) {
@@ -20,9 +20,9 @@ export function decodeSoftwareInvitation(text) {
     const value = JSON.parse(text);
     if (!value || Array.isArray(value) || Object.keys(value).length !== fields.length
         || !fields.every(field => Object.hasOwn(value, field)) || value.profile !== profile
-        || typeof value.validity !== 'string' || !/^(0|[1-9][0-9]{0,19})$/.test(value.validity)) throw fail();
-    const result = {role: 'member', validity: BigInt(value.validity)};
-    if (result.validity > 0xffffffffffffffffn) throw fail();
+        || !['validity', 'epoch'].every(field => typeof value[field] === 'string' && /^(0|[1-9][0-9]{0,19})$/.test(value[field]))) throw fail();
+    const result = {role: 'member', validity: BigInt(value.validity), epoch: BigInt(value.epoch)};
+    if (result.validity > 0xffffffffffffffffn || result.epoch > 0xffffffffffffffffn) throw fail();
     for (const [field, length] of [['group', 64], ['issuer', 64], ['code', 32]]) {
       if (typeof value[field] !== 'string' || value[field].length !== length || !/^[0-9a-f]+$/.test(value[field])) throw fail();
       result[field] = Uint8Array.from(value[field].match(/../g), b => parseInt(b, 16));
@@ -48,7 +48,7 @@ export async function createSoftwareInvitation({wasm, store, expectedGroup, vali
     custody = await loadSoftwareIssuer({wasm, store, expectedGroup: group, signal: controller.signal}); current();
     const identity = await loadLocalPersona({wasm, store, expectedGroup: group}); current();
     const issuer = Uint8Array.from(identity.member.match(/../g), b => parseInt(b, 16));
-    const invitation = {group, issuer, code: crypto.getRandomValues(new Uint8Array(16)), validity, role: 'member'};
+    const invitation = {group, issuer, code: crypto.getRandomValues(new Uint8Array(16)), validity, role: 'member', epoch: identity.epoch};
     const statement = invitationStatement(wasm, invitation), descriptor = encodeSoftwareInvitation(invitation);
     timer = setTimeout(close, Math.max(1, lifetimeMs - (performance.now() - started)));
     return Object.freeze({descriptor, invitation: () => decodeSoftwareInvitation(descriptor), signal: controller.signal, close,
@@ -58,7 +58,7 @@ export async function createSoftwareInvitation({wasm, store, expectedGroup, vali
           proofIssued = true; const snapshot = nonce.slice();
           const persona = await store.read('candidate-persona', 'active');
           const signer = await loadLocalPersona({wasm, store, expectedGroup: group});
-          if (signer?.member !== hex(issuer)) throw fail();
+          if (signer?.member !== hex(issuer) || signer.epoch !== invitation.epoch) throw fail();
           const proof = await signer.sign(wasm.tg_nonce_signing_bytes(statement, snapshot)); current();
           if ((await store.read('candidate-persona', 'active'))?.revision !== persona?.revision) throw fail();
           current();
