@@ -766,3 +766,22 @@ If newer local data prevents finishing an already-started application, the curre
 screen still retains the records and explains failure; it cannot yet guide that
 conflict through a new review. The complete older-edit release gate remains
 unfinished.
+
+### Comparing newer edits after a partial application
+
+`older-edit-recovery-review.mjs` is the read-only comparison for the remaining
+partial-application conflict. It binds a review digest to the incomplete retained
+application, matching current replica, actor and exact latest planner bytes. Each
+saved-place difference offers the newer local version or earlier committed choice.
+It checks generation and pending-journal consistency before proposing any result.
+Both choices preserve the latest learning setting, history and other planner
+preferences. A queued deletion remains explicit; pending operations are cleared
+only in the proposed output after all differences have choices. No storage or
+network writes happen in this module.
+
+`node --test experiments/journey-sync/older-edit-recovery-review.test.mjs` passes
+route-choice/history preservation, queued deletion, inconsistent pending state,
+input immutability, changed-review binding and completed/mismatched-application
+refusal. This does not authorize or apply recovery: the guarded durable writer and
+Settings integration still need to consume and revalidate the model, retain its
+compared bytes, and handle interruptions without duplicating replica edits.
