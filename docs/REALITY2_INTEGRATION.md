@@ -18,7 +18,12 @@ candidate and a corrected test-fixture retry. The installed 3805 → 3806 upgrad
 preserves preview data and leaves regular Along unchanged. Initial pairing still
 uses transferred messages; external relay interoperability, physical S23 pairing
 and unattended group-update propagation are not established. No relay is selected
-by default. See the [current release gates](RELEASE_CHECKLIST.md).
+by default. [Actual R2 relay compatibility](evidence/actual-r2-relay.json) now passes
+on loopback: enrolled journey exchange/reconnection, generation-two snapshots,
+Settings opt-in/restoration/removal and invalid-signature refusal. A test TLS front
+forwards all protocol messages to the unmodified relay; it does not authenticate
+or route between peers itself. This is not an external-endpoint or phone check.
+See the [current release gates](RELEASE_CHECKLIST.md).
 
 The group-lifecycle implementation is documented in [epoch rotation](R2_EPOCH_ROTATION.md).
 An Along-specific signed successor format now verifies authority, exact next epoch

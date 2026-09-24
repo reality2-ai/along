@@ -1,5 +1,6 @@
 // Local test infrastructure only. Independent greeting verifier and opaque
-// forwarding; not a deployable server or a substitute for real R2 relay checks.
+// forwarding by default. R2_RELAY_BINARY opts into the actual implementation
+// behind a test TLS front. Neither mode is a deployable server.
 import {createServer} from 'node:https';
 import {mkdtemp,readFile,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
@@ -10,6 +11,7 @@ import {createPublicKey,verify} from 'node:crypto';
 const require=createRequire(import.meta.url);
 const {wsServer}=require('../../node_modules/playwright-core/lib/utilsBundle.js');
 export async function createLocalTestRelay(handler){
+  if(process.env.R2_RELAY_BINARY)return (await import('./actual-relay-test-server.mjs')).createActualRelayTestServer(handler,process.env.R2_RELAY_BINARY);
   const directory=await mkdtemp(join(tmpdir(),'along-enrolled-relay-'));let server,sockets;
   try{
     execFileSync('openssl',['req','-x509','-newkey','rsa:2048','-nodes','-keyout',join(directory,'key'),'-out',join(directory,'cert'),'-days','1','-subj','/CN=localhost','-addext','subjectAltName=IP:127.0.0.1'],{stdio:'ignore'});

@@ -21,9 +21,9 @@ saved places, identity, encrypted test keys and regular Along's shell cache.
 
 These are local automated and public-file checks, not physical acceptance.
 Initial pairing still requires transferred messages. The relay is off by default;
-its discovery only connects already permitted devices. Interoperability with the
-actual R2 relay implementation and an external selected endpoint remains to be
-verified. Group-removal/key-update propagation and checkpoint catch-up are still
+its discovery only connects already permitted devices. [Local interoperability with the actual R2 relay](evidence/actual-r2-relay.json)
+now passes enrolled sharing/reconnection, generation-two exchange, Settings and
+invalid-greeting refusal. An external selected endpoint remains unverified. Group-removal/key-update propagation and checkpoint catch-up are still
 explicit flows, not unattended synchronization of all trust-group state.
 Regular Along does not yet include the preview's live/TG controls. Historical
 entries below retain their original versions and scopes.
@@ -51,9 +51,9 @@ this audit. Later public-hosting work supplements that brief.
 
 ## Next work against the full goal
 
-1. Verify Along against the actual R2 relay implementation, then a user-selected
-   endpoint if one is available. The local forwarding fixture proves protected
-   Along exchange, not interoperability with a deployed relay.
+1. Verify a user-selected external relay endpoint when available. The actual R2
+   implementation now passes on loopback behind test TLS; that does not establish
+   public-network reachability or mobile reconnection.
 2. Obtain S23/desktop observations for the deployed preview, especially the failed
    scan → Use transition, installation, touch and spoken screen-reader use. The
    user withdrew an earlier TalkBack-success statement; treat it as untested.

@@ -1,0 +1,66 @@
+{
+  "date": "2026-09-24T06:42:11.830164+00:00",
+  "status": "passed",
+  "scope": "Actual R2 relay implementation on loopback behind test TLS front; one-host Chromium, synthetic data. Not external endpoint or physical device acceptance.",
+  "relay": {
+    "repository": "https://github.com/reality2-ai/r2-relay",
+    "commit": "b4ae9487bb0b721487b4765b210839c1c7055742",
+    "tracked_source_unchanged": true,
+    "build": "cargo build --locked",
+    "cargo_lock_sha256": "cf36a2dda8848667d005fbe619ceb9a8430612d7da7b3a6498a213fd95dadd31",
+    "binary_sha256": "d17cd606f6c88821d902e73e1307104760439f03a6611de91c0fa67f93a82f41",
+    "untracked_nested_checkout_excluded": true
+  },
+  "along_base_commit": "296537b50d355a88945459fb9ac25a55a38f783d",
+  "test_sources": {
+    "experiments/relay/actual-relay-test-server.mjs": "8d00ee441b1528271009ff740c0642347a380879e7c3a3e9c17f93a6132e1ebb",
+    "experiments/relay/actual-relay-auth.test.mjs": "62e01f47587ad86d9ad0eef4ae014f05edeb72df789873aae80986d067f2a335",
+    "experiments/relay/test-server.mjs": "7e76ea0ddc74d6549358ea4e75a066971f01b3664d12737e44cec53338dc26d8",
+    "experiments/at-credentials/peer-delivery.test.mjs": "bc24fcf6b51ef0ada13e67ad3471322063b0839d9e881c98a68141c0e8bdec4f",
+    "experiments/relay/app-settings.test.mjs": "a6ff996b6c80388edc0e07a289b0ec2a44ad1acbe950e827068b1153cc92326e"
+  },
+  "runs": {
+    "enrolled": {
+      "status": "passed",
+      "log_sha256": "06d550f4b63fddf9d293ecaa68524e7d3839e1aebbd980c565402b9016471230",
+      "output": [
+        "Actual R2 relay statistics: {\"connections\":0,\"trust_groups\":0,\"frames_routed\":223,\"connections_total\":8,\"uptime_secs\":31}",
+        "PASS: real enrolled relay handshake and snapshot convergence, offline edit/reconnect, committed receipts, consent removal, regrant invalidation and identity/certificate refusal; real local WSS, verified greetings, no fixture journey labels observed in forwarded bytes.",
+        "PASS: distinct real browser identities mutually authenticate over direct WebRTC, owner grant gates signed delivery, receiver encrypts/consumes request, removed peer is refused. Actual software issuer and acknowledged recipient enrollment; harness trust/comparison/signaling, reviewed-descriptor fixture and synthetic AT keys; checked receiver acceptance; one browser host, not physical-device reachability or public release.",
+        "PASS: independent journey permission and transaction-race guards; visible connection, consent/removal, wrong-device/cancel refusal, authenticated multi-chunk exchange, committed receipts, offline edits/deletion catch-up and live-session removal. Real enrolled identities; harness copies public signaling between component panels on one host, not app Settings or physical-device acceptance."
+      ]
+    },
+    "generation": {
+      "status": "passed",
+      "log_sha256": "b852432bed249784f068e1f5ecbc2b430570a9aebf3ea0c2a61f4414800562e4",
+      "output": [
+        "Actual R2 relay statistics: {\"connections\":0,\"trust_groups\":0,\"frames_routed\":96,\"connections_total\":3,\"uptime_secs\":26}",
+        "PASS: generation-two snapshots over enrolled WSS, explicit planner reconciliation/history preservation, offline reconnect and generation advance refusal.",
+        "PASS: enrolled-device checkpoint consent, permission-removal race, guarded installation/retry and local-difference application; recovered independent save/history reopen in a fresh page. Checkpoint transfer/retry and generation-two snapshot convergence use authenticated WebRTC; unfinished review, consent races and generation changes refuse access. Harness signaling on one host; installation fault checks use direct adapter calls.",
+        "PASS: distinct real browser identities mutually authenticate over direct WebRTC, owner grant gates signed delivery, receiver encrypts/consumes request, removed peer is refused. Actual software issuer and acknowledged recipient enrollment; harness trust/comparison/signaling, reviewed-descriptor fixture and synthetic AT keys; checked receiver acceptance; one browser host, not physical-device reachability or public release.",
+        "PASS: independent journey permission and transaction-race guards; visible connection, consent/removal, wrong-device/cancel refusal, authenticated multi-chunk exchange, committed receipts, offline edits/deletion catch-up and live-session removal. Real enrolled identities; harness copies public signaling between component panels on one host, not app Settings or physical-device acceptance."
+      ]
+    },
+    "settings": {
+      "status": "passed",
+      "log_sha256": "950cc351be1ea125d61fafc79c59a4b1e0000b798f95a332dcf8af11a1a802e4",
+      "output": [
+        "PASS: generated app relay Settings: default off, URL refusal, narrow-screen keyboard enable, real signed local WSS connection, startup restoration, stop persistence, removal, interrupted-recovery pause, Escape/Back and no page errors. No peer enrolled or external relay tested here."
+      ]
+    },
+    "auth": {
+      "status": "passed",
+      "log_sha256": "b0e6d5fbf5fe7bcc66b07d7b7ee8edc9ff008746bb435ea00c5ec170b220025e",
+      "output": [
+        "PASS: actual R2 relay rejects invalid signed greeting with 4401; no welcome or accepted connection."
+      ]
+    }
+  },
+  "limits": [
+    "Initial enrollment uses existing harness/manual signaling, not relay enrollment.",
+    "Along-specific application envelopes, not normative R2-WIRE or Notekeeper app interoperability.",
+    "No public endpoint selected or enabled.",
+    "No claim of background mobile operation or phone-network reachability.",
+    "Absence of fixture labels in frames is a narrow leak check, not a cryptographic proof."
+  ]
+}

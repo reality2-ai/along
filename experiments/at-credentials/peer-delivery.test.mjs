@@ -607,6 +607,7 @@ try {
     } finally { policySync?.close(); clearTimeout(timeout); request?.close(); sending?.close(); receiving?.close(); owner.store.close(); receiver.store.close(); }
   });
   const restoredGroup = await page.evaluate(() => restoreGroup);
+  if(relayServer?.actualStats){const actual=await relayServer.actualStats();assert.ok(actual.connections_total>=3);assert.ok(actual.frames_routed>10);console.log('Actual R2 relay statistics: '+JSON.stringify(actual));}
   if(process.env.ENROLLED_RELAY==='1'||(relayNetwork&&!relayGeneration)){
     assert.equal(await page.evaluate(()=>globalThis.enrolledRelayPassed),true);
     if(relayNetwork){assert.equal(await page.evaluate(()=>relayServicePassed),true);const stats=relayServer.stats();assert.ok(stats.greetings>=3);assert.ok(stats.frames>10);assert.equal(stats.plaintextObserved,false);}

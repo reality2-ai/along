@@ -418,3 +418,34 @@ Back/Escape focus, and interrupted-recovery pause. Existing
 Peer exchange remains covered by the separate enrolled service fixture. Neither
 check proves physical-device pairing, external relay compatibility, or release
 readiness. The public preview is still 3805; this integration is not deployed.
+
+
+## Actual R2 implementation check — 24 September 2026
+
+[Recorded results](../../docs/evidence/actual-r2-relay.json) use `r2-relay`
+commit `b4ae9487bb0b721487b4765b210839c1c7055742`, built with
+`cargo build --locked`. The tracked relay source is unchanged. Set
+`R2_RELAY_BINARY` to that built executable to replace the default forwarding
+fixture with `actual-relay-test-server.mjs`. It starts the relay on loopback and
+provides a temporary TLS front. Greetings, welcome, binary routing and ping/pong
+are processed by the actual relay, not emulated by the front. Processes and
+certificates are removed when the test ends.
+
+With the existing Chromium and pinned R2 runtime environment configured:
+
+```sh
+export R2_RELAY_BINARY=/path/to/r2-relay/target/debug/r2-relay
+ENROLLED_RELAY_NETWORK=1 node experiments/at-credentials/peer-delivery.test.mjs
+RELAY_GENERATION=1 node experiments/at-credentials/peer-delivery.test.mjs
+PREVIEW=1 node experiments/relay/app-settings.test.mjs
+node experiments/relay/actual-relay-auth.test.mjs
+```
+
+All four passed. The actual relay reported 223 routed frames / eight accepted
+connections for enrolled sharing, and 96 / three for generation-two exchange.
+The invalid-signature check returned 4401 with zero accepted connections.
+Settings checks cover default-off, explicit endpoint entry, reconnect on reload,
+stop/remove and recovery pause. Enrollment/signaling still uses the existing
+single-host harness; no external endpoint or physical S23 was tested. Payloads
+remain Along-specific, with no normative R2-WIRE or Notekeeper app compatibility
+claim. No public relay was configured, and released app bytes are unchanged.
