@@ -55,6 +55,11 @@ qualify the integrated v38 build. Its separate qualification suite exercises
 pairing, shared preferences, synthetic AT credentials, recovery and a real relay
 on loopback. Start a short class from the published v38 ZIP; have the assistant
 prepare its pinned runtime and data beforehand for implementation sessions.
+For a reproducibility exercise, ask the assistant to run the
+[committed-source rebuild check](BUILDING.md#what-has-and-has-not-been-reproduced).
+Explain what matching all application bytes proves, and what reusing an existing
+runtime and published dataset leaves untested. Contrast this with running an
+import against a changing upstream URL.
 Use the [regular-app device check](DEVICE_CHECK.md) for observations. Keep results
 from the separate Device Preview clearly labelled; neither browser automation nor
 an earlier version's touch check proves v38 pairing or TalkBack acceptance.

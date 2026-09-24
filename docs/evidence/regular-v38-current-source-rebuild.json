@@ -1,0 +1,10 @@
+{
+  "status": "passed",
+  "source_commit": "3738a5e426e5af4d6ff8504b3c9e0e944e6a4f64",
+  "archive_sha256": "2d203b12ad1f1148e494165686435d66cacf6ec7853f0693b48cd46f15cccb3d",
+  "candidate_manifest_sha256": "06fc8446a8e15e348a287b50519d4881ed8b58cbb4324ee8d45e7c7e85748379",
+  "runtime_provenance_sha256": "acff3bf275bd8b9835f69533f5f4b5a342b00fa372b11fcec5f5cc95477656c2",
+  "application_files_verified": 301,
+  "recorded_at": "2026-09-24T19:43:19.130665+00:00",
+  "scope": "Fresh committed-source export on this host, published data snapshot, supplied verified runtime. Every application file matches the ZIP; release README, qualification and release manifest are packaging metadata. Not a clean-machine toolchain rebuild, fresh upstream import or browser acceptance test."
+}

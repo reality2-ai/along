@@ -99,5 +99,26 @@ The [v38 qualification](evidence/regular-v38-qualification.json),
 candidate to the published payloads. A separate fresh public-site browser check
 covers setup and offline routing. The regular [device check](DEVICE_CHECK.md)
 still needs physical pairing and spoken-screen-reader observations. No external
-relay endpoint has been accepted. These instructions describe the inspected build
-path; a complete clean-machine rehearsal remains outstanding.
+relay endpoint has been accepted. A [fresh export of the release source](evidence/regular-v38-source-rebuild.json)
+and [current source at 3738a5e](evidence/regular-v38-current-source-rebuild.json)
+each rebuilt all **301 application files byte for byte** against the published ZIP.
+Both used the release data and existing verified runtime on the same host.
+A complete clean-machine toolchain/dependency rehearsal remains outstanding.
+
+To repeat that scoped check without changing the working tree or live app:
+
+```sh
+python3 scripts/check_regular_rebuild.py \
+  --archive releases/along-web-v38.zip \
+  --runtime releases/along-r2-runtime-1b9229ad \
+  --output releases/v38-source-rebuild.json
+```
+
+The default revision is the published app source; `--revision HEAD` checks the
+current committed source instead. The check exports committed files into a
+fresh temporary directory, verifies the exact published ZIP, takes its four data
+bundles, runs the real builder and compares complete application file sets and
+bytes. Release README, qualification evidence and the release manifest are
+packaging metadata outside that comparison. The output evidence file must be new.
+A mismatch after an intentional app change is expected: qualify a new release
+instead of changing this check to call different bytes identical.
