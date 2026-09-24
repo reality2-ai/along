@@ -40,12 +40,16 @@ def candidate(runtime):
                 if name == 'public/sw.js':
                     text = text.replace('along-experimental-shell-', 'along-shell-').replace('along-shell-v37', 'along-shell-v38')
                 if name == 'public/index.html':
-                    text = text.replace('App version 37', 'App version 38 · Local upgrade candidate')
+                    text = text.replace('App version 37', 'App version 38')
+                    text = text.replace('<p role="note">Local integration experiment — use dummy AT keys only. Do not publish this build. Device and AT-key setup is in Settings.</p>', '')
                 if name == 'public/update.html':
                     text = text.replace('recovery=37', 'recovery=38').replace('Recovery page 37', 'Recovery page 38')
                 body = text.encode()
             target.write_bytes(body)
         prepare_regular_connected_content(stage)
+        for name in ('LICENSE', 'NOTICE.md'):
+            shutil.copy2(ROOT / name, stage / name)
+        (stage / '.nojekyll').touch()
         (stage / 'build-info.json').write_text(json.dumps({
             'profile': PROFILE, 'appVersion': '38', 'publishable': False,
             'files': {str(p.relative_to(stage)): hashlib.sha256(p.read_bytes()).hexdigest()

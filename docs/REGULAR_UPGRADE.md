@@ -3,7 +3,9 @@
 Regular Along remains version **37** and Device Preview remains **3806**.
 A local version-38 candidate now tests adding the existing TG/live modules at the
 regular app's URL. It is **not published or release-qualified**. The candidate
-retains a `DO-NOT-PUBLISH.txt` marker and an explicit local-experiment notice.
+retains a `DO-NOT-PUBLISH.txt` marker. Its interface now contains the intended
+release wording, so qualification can cover the files intended for publication.
+The public site has not been updated by this preparation.
 
 The [upgrade evidence](evidence/regular-upgrade-candidate.json) verifies the exact
 released v37 ZIP by its published SHA-256, installs it with a service worker under
@@ -110,8 +112,9 @@ files remain ignored under `releases/`.
 
 ## Before promotion
 
-- Remove candidate-only status text only when release qualification and promotion
-  are complete. The connected guide is sourced from `CONNECTED_INSTALL.md`.
+- Package the qualified payloads without altering interface text. The connected
+  guide is sourced from `CONNECTED_INSTALL.md`; its version-38 instructions are
+  prepared in the candidate and do not establish that v38 is deployed.
 - Freeze and qualify the final candidate after the older-copy compatibility fix.
   Reconcile the complete required check list with the exact final manifest; do not
   treat passing runs on previous bytes as final release qualification.

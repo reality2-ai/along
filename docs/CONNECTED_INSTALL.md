@@ -4,10 +4,10 @@
 official Auckland Transport service. Check important journey and accessibility
 information with AT.
 
-This guide accompanies the local version-38 upgrade candidate. That candidate is
-not yet a published release. Regular Along remains version 37; Device Preview is
-separate. Do not clear website data to update: that can erase saved places and
-device keys.
+These instructions describe Along version 38. Check the version in Settings.
+Along Device Preview is a separate installation; its saved places and device
+keys are not imported automatically. Do not clear website data to update: that
+can erase saved places and device keys.
 
 ## Prepare and install
 
