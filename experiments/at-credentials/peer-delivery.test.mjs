@@ -606,9 +606,9 @@ try {
         const {verifyJourneyCheckpoint}=await import('./generation-checkpoint.mjs');
         const verified=await verifyJourneyCheckpoint({bytes:retained.value.checkpoint,
           current:retained.value.previous,snapshot:retained.value.snapshot});
-        if(verified.generation!==1)return false;
+        if(verified.generation!==2)return false;
       } finally { inboxStore.close(); }
-      return local.sync.version.generation===1&&local.sync.pending.length===0
+      return local.sync.version.generation===2&&local.sync.pending.length===0
         &&local.data.journeys.some(j=>j.to.id==='sync-denied'&&j.saved&&j.count===7);
     },restoredGroup),true);
     console.log('PASS: enrolled-device checkpoint consent, permission-removal race, guarded installation/retry and local-difference application; recovered independent save/history reopen in a fresh page. Checkpoint transfer/retry uses authenticated WebRTC with harness signaling on one host; installation fault checks use direct adapter calls.');

@@ -538,14 +538,15 @@ group, containing the signed checkpoint, snapshot and verified local predecessor
 local consent guards as reviewed installation. The inbox write additionally checks
 the replica revision atomically. Readback verifies the saved bundle before a
 retention receipt; retries also verify consent and the predecessor or installed
-successor. A different checkpoint is refused while the slot is occupied.
+successor. An uninstalled pending checkpoint cannot be replaced; advancing the slot
+now requires the installed successor and its verified recovery archive.
 
 The actual enrolled-browser fixture tests denied consent, consent removal during
 commit, storage quota failure, signature damage, cancellation after a committed
 write, retry, unchanged planner/replica and cryptographic verification after opening
 a fresh page. This verifies IndexedDB retention, not checkpoint wire delivery.
-Slot retirement/advancement, session composition and receiver review controls are
-still required. The public build remains unchanged.
+Session composition and successor advancement are described below; receiver review
+controls are still required. The public build remains unchanged.
 
 ## Authenticated checkpoint channel
 
@@ -563,7 +564,25 @@ also revoke consent and install the checkpoint while a channel is open, then
 verify it refuses further transfer. Fresh-page verification of the retained bundle
 and recovered local history still passes. Public signaling is copied by the test
 harness on one host. This is not a device reachability test or recipient UI
-acceptance; ordered catch-up, inbox advancement and app integration remain.
+acceptance; automatic ordered catch-up and app integration remain.
+
+## Successive checkpoint recovery
+
+The inbox now permits a next checkpoint only when its existing signed bundle has
+been installed and retained in the installation recovery archive. It verifies
+both copies and includes the archive revision in the inbox transaction checks.
+The new bundle must be the exact next generation with the current parent. It
+cannot replace a pending predecessor, skip a generation or erase the prior
+recovery record. Local planner data stays unchanged during receipt.
+
+The actual enrolled-browser test now covers two issuer-prepared checkpoints,
+authenticated transfer of each, guarded installation and explicit adapter-driven
+local review twice. It checks missing-archive and skipped-predecessor refusal,
+late replay refusal, preservation of the first archive, and retention of the
+recipient-only save and history through both recoveries and fresh-page reopening.
+This proves successive checkpoint handling with harness signaling, not automatic
+catch-up discovery, receiving UI or physical-device acceptance. Long-term recovery
+archive bounds/pruning remain unresolved.
 
 ## Required before integration
 

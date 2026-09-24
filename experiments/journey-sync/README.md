@@ -517,8 +517,8 @@ also apply to retries. It never writes planner preferences or installs a generat
 The real enrolled-browser fixture now checks permission removal during retention,
 storage failure, damaged signatures, cancellation after commit, retry and fresh-page
 IndexedDB restoration. Bytes still arrive by direct fixture handoff. A different
-checkpoint cannot overwrite the occupied slot; reviewed retirement/advancement,
-authenticated wire composition and receiving UI remain integration work.
+checkpoint cannot replace an uninstalled pending checkpoint. Advancement now
+requires its installed successor and a verified recovery archive, as described below.
 
 `checkpoint-session.mjs` now connects the checkpoint codec and guarded inbox to
 `openLocalPersonaSession`. It authenticates the selected device over direct
@@ -531,5 +531,20 @@ The enrolled-browser fixture now sends a real checkpoint over that channel,
 interrupts the receiver after its IndexedDB commit, reconnects and confirms the
 retained bundle. It also checks permission removal and generation installation
 invalidate an open channel. Signaling remains harness-driven on one host and
-installation review uses adapter calls. Receiving UI, ordered catch-up, inbox
-advancement and physical-device reachability are still unverified or unfinished.
+installation review uses adapter calls. Receiving UI, automatic ordered catch-up and physical-device reachability are
+still unverified or unfinished.
+
+The inbox can now advance to the next signed checkpoint after the previous one
+is installed and its exact signed bundle is preserved in recovery storage. The
+archive revision is checked atomically with the inbox replacement and current
+replica revision. Missing archives, skipped predecessors and late old checkpoint
+replays refuse without replacing pending data. Local-difference review remains
+a separate step; retaining another bundle does not perform it.
+
+The real enrolled-browser fixture prepares two successive checkpoints, sends them
+over authenticated WebRTC in order, installs each through the consent adapter,
+and applies each local review. It verifies the independent local save and history
+after both recoveries and in a fresh page, and verifies the second retained
+checkpoint signature there. This uses harness signaling and adapter-driven review,
+not the receiving app UI or automatic missing-checkpoint discovery. Recovery archive
+pruning and bounded long-term archive growth remain unfinished.

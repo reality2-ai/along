@@ -9,6 +9,7 @@ import {createCheckpointReview} from './checkpoint-review.mjs';
 import {applyCheckpointChoices} from './checkpoint-choice-commit.mjs';
 import {preferenceKey,readEnvelope} from './app-preferences.mjs';
 import {openCheckpointSession} from './checkpoint-session.mjs';
+import {installJourneyCheckpoint} from './checkpoint-installation.mjs';
 export async function checkEnrolledCheckpoint({wasm,owner,receiver,group}) {
   const hex=bytes=>Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('');
   const groupId=hex(group), check=(value,message)=>{if(!value)throw Error(message);};
@@ -81,6 +82,20 @@ export async function checkEnrolledCheckpoint({wasm,owner,receiver,group}) {
   check(readEnvelope(adapters[1]).raw===input.expectedLocalRaw,'retention changed planner');
   const inbox=await receiver.store.read(inboxScope,groupId);
   check(inbox.value.checkpoint.length===184&&inbox.value.previous.generation===0,'retained bundle incomplete');
+  await installJourneyCheckpoint({wasm,store:owner.store,expectedGroup:group,expectedRevision:ownerState.revision,
+    expectedLocalRaw:readEnvelope(adapters[0]).raw,checkpoint:prepared.checkpoint,snapshot:prepared.snapshot,storage:adapters[0]});
+  const ownerInstalled=await owner.store.read('along-saved-journeys-v2',groupId);
+  const ownerRecovery=await owner.store.read('along-journey-checkpoint-recovery-v1',groupId+':1');
+  const ownerReview=await createCheckpointReview({current:ownerInstalled.value,recovery:ownerRecovery.value,
+    localRaw:readEnvelope(adapters[0]).raw,actor:hex(owner.subject)});
+  await applyCheckpointChoices({wasm,store:owner.store,expectedGroup:group,generation:1,reviewId:ownerReview.id,
+    choices:ownerReview.differences.map(d=>({id:d.id,use:'local'})),storage:adapters[0]});
+  const nextIssuer=await loadSoftwareIssuer({wasm,store:owner.store,expectedGroup:group});
+  const successor=await nextIssuer.prepareJourneyCheckpoint({expectedRevision:(await owner.store.read('along-saved-journeys-v2',groupId)).revision});
+  nextIssuer.close();
+  const nextBundle={checkpoint:successor.checkpoint,snapshot:successor.snapshot};
+  await refuses(retainPermittedJourneyCheckpoint({...consent,...nextBundle}));
+  check((await receiver.store.read(inboxScope,groupId)).revision===inbox.revision,'skipped predecessor replaced pending checkpoint');
   await refuses(acceptPermittedJourneyCheckpoint({...input,peer:receiver.subject,certificate:receiver.certificate}));
   const bad=prepared.checkpoint.slice();bad[183]^=1;
   await refuses(acceptPermittedJourneyCheckpoint({...input,checkpoint:bad}));
@@ -109,6 +124,27 @@ export async function checkEnrolledCheckpoint({wasm,owner,receiver,group}) {
   const local=readEnvelope(adapters[1]);
   check(local.sync.version.generation===1&&local.sync.pending.length===0&&local.data.journeys.every(j=>j.count===7),'recipient journal/history lost');
   check(local.data.journeys.some(j=>j.to.id==='sync-denied'&&j.saved),'recipient-only local save lost');
+  await refuses(retainPermittedJourneyCheckpoint({...consent,...nextBundle,store:{...receiver.store,
+    read:(scope,key)=>scope==='along-journey-checkpoint-recovery-v1'?Promise.resolve(null):receiver.store.read(scope,key)}}));
+  check((await receiver.store.read(inboxScope,groupId)).revision===inbox.revision,'missing archive allowed inbox advance');
+  const catchup=await connect();
+  try{check((await catchup[0].sendCheckpoint(nextBundle)).status==='peer-retained-checkpoint','successor retention unconfirmed');}
+  finally{catchup.forEach(s=>s.close());}
+  check((await receiver.store.read(inboxScope,groupId)).value.previous.generation===1,'inbox did not advance in order');
+  check((await receiver.store.read('along-journey-checkpoint-recovery-v1',groupId+':1')).revision===recovery.revision,'advancement altered recovery archive');
+  check(readEnvelope(adapters[1]).raw===local.raw,'retaining successor altered planner');
+  await refuses(retainPermittedJourneyCheckpoint(input));
+  await acceptPermittedJourneyCheckpoint({...consent,...nextBundle,storage:adapters[1],expectedLocalRaw:local.raw,
+    expectedRevision:(await receiver.store.read('along-saved-journeys-v2',groupId)).revision});
+  const secondCurrent=await receiver.store.read('along-saved-journeys-v2',groupId);
+  const secondRecovery=await receiver.store.read('along-journey-checkpoint-recovery-v1',groupId+':2');
+  const secondReview=await createCheckpointReview({current:secondCurrent.value,recovery:secondRecovery.value,
+    localRaw:readEnvelope(adapters[1]).raw,actor:hex(receiver.subject)});
+  await applyCheckpointChoices({wasm,store:receiver.store,expectedGroup:group,generation:2,reviewId:secondReview.id,
+    choices:secondReview.differences.map(d=>({id:d.id,use:'local'})),storage:adapters[1]});
+  const twiceRecovered=readEnvelope(adapters[1]);
+  check(twiceRecovered.sync.version.generation===2&&twiceRecovered.sync.pending.length===0
+    &&twiceRecovered.data.journeys.some(j=>j.to.id==='sync-denied'&&j.saved&&j.count===7),'second recovery lost local save/history');
   // Revoking application consent also denies retry of already installed evidence.
   await grant(false);await refuses(acceptPermittedJourneyCheckpoint(input));
   await refuses(retainPermittedJourneyCheckpoint(input));
