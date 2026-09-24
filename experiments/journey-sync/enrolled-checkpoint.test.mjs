@@ -12,17 +12,22 @@ import {openCheckpointSession} from './checkpoint-session.mjs';
 import {installJourneyCheckpoint} from './checkpoint-installation.mjs';
 import {showCheckpointConnection} from './connection-view.mjs';
 import {selectNextCheckpoint} from './checkpoint-selection.mjs';
+import {openPermittedGenerationJourneys} from './generation-permission.mjs';
+import {changeGenerationJourney} from './generation-state.mjs';
+import {projectJourney,journeyId} from './state.mjs';
+import {openGenerationJourneySession} from './journey-session.mjs';
 export async function checkEnrolledCheckpoint({wasm,owner,receiver,group}) {
   const hex=bytes=>Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('');
   const groupId=hex(group), check=(value,message)=>{if(!value)throw Error(message);};
   const refuses=async promise=>check(await promise.then(()=>false,()=>true),'expected checkpoint refusal');
-  const adapters=[];
+  const adapters=[],roots=[];
   for(const [index,device] of [owner,receiver].entries()) {
     const before=await device.store.read('along-saved-journeys-v1',groupId);
     const journeys=before.value.journeys.filter(j=>j.value).map(j=>({...j.value,saved:true,count:7,hours:Array(24).fill(0),days:Array(7).fill(0),last:0}));
     const raw=JSON.stringify({learning:false,journeys,journeySync:{format:1,group:groupId,pending:[]}});
     const prefix='enrolled-checkpoint-'+index+':';
     const storage={getItem:key=>localStorage.getItem(prefix+key),setItem:(key,value)=>localStorage.setItem(prefix+key,value)};
+    roots.push(storage);
     storage.setItem(preferenceKey,raw);
     await setupJourneyGeneration({wasm,store:device.store,expectedGroup:group,expectedRevision:before.revision,expectedRaw:raw,storage});
     adapters.push(openIsolatedPlannerStorage({group:groupId,storage}));
@@ -148,6 +153,8 @@ export async function checkEnrolledCheckpoint({wasm,owner,receiver,group}) {
   } finally {oldGeneration.forEach(s=>s.close());}
   check(installed.localReviewRequired&&!installed.alreadyInstalled,'recipient installation falsely completed review');
   check((await acceptPermittedJourneyCheckpoint(input)).alreadyInstalled,'recipient retry failed');
+  const ongoingOptions={...consent,storage:roots[1]};
+  await refuses(openPermittedGenerationJourneys(ongoingOptions));
   const current=await receiver.store.read('along-saved-journeys-v2',groupId);
   const recovery=await receiver.store.read('along-journey-checkpoint-recovery-v1',groupId+':1');
   const review=await createCheckpointReview({current:current.value,recovery:recovery.value,localRaw:readEnvelope(adapters[1]).raw,actor:hex(receiver.subject)});
@@ -157,6 +164,8 @@ export async function checkEnrolledCheckpoint({wasm,owner,receiver,group}) {
   const local=readEnvelope(adapters[1]);
   check(local.sync.version.generation===1&&local.sync.pending.length===0&&local.data.journeys.every(j=>j.count===7),'recipient journal/history lost');
   check(local.data.journeys.some(j=>j.to.id==='sync-denied'&&j.saved),'recipient-only local save lost');
+  const firstGenerationAccess=await openPermittedGenerationJourneys(ongoingOptions);
+  check((await firstGenerationAccess.snapshot()).generation===1,'reviewed generation unavailable');
   await refuses(retainPermittedJourneyCheckpoint({...consent,...nextBundle,store:{...receiver.store,
     read:(scope,key)=>scope==='along-journey-checkpoint-recovery-v1'?Promise.resolve(null):receiver.store.read(scope,key)}}));
   check((await receiver.store.read(inboxScope,groupId)).revision===inbox.revision,'missing archive allowed inbox advance');
@@ -173,6 +182,8 @@ export async function checkEnrolledCheckpoint({wasm,owner,receiver,group}) {
   await refuses(retainPermittedJourneyCheckpoint(input));
   await acceptPermittedJourneyCheckpoint({...consent,...nextBundle,storage:adapters[1],expectedLocalRaw:local.raw,
     expectedRevision:(await receiver.store.read('along-saved-journeys-v2',groupId)).revision});
+  await refuses(firstGenerationAccess.snapshot());
+  await refuses(openPermittedGenerationJourneys(ongoingOptions));
   const secondCurrent=await receiver.store.read('along-saved-journeys-v2',groupId);
   const secondRecovery=await receiver.store.read('along-journey-checkpoint-recovery-v1',groupId+':2');
   const secondReview=await createCheckpointReview({current:secondCurrent.value,recovery:secondRecovery.value,
@@ -182,6 +193,42 @@ export async function checkEnrolledCheckpoint({wasm,owner,receiver,group}) {
   const twiceRecovered=readEnvelope(adapters[1]);
   check(twiceRecovered.sync.version.generation===2&&twiceRecovered.sync.pending.length===0
     &&twiceRecovered.data.journeys.some(j=>j.to.id==='sync-denied'&&j.saved&&j.count===7),'second recovery lost local save/history');
+  const readyAccess=await openPermittedGenerationJourneys(ongoingOptions),baseline=await readyAccess.snapshot();
+  const point=id=>({id,name:id,lat:-36,lon:174});
+  const sharedValue=projectJourney({from:point('new-generation-home'),to:point('new-generation-work')});
+  const remoteSnapshot=changeGenerationJourney(baseline,hex(owner.subject),journeyId(sharedValue),sharedValue);
+  let mergeRace=false;
+  const raceAccess=await openPermittedGenerationJourneys({...ongoingOptions,store:{...receiver.store,compareAndSwapMany:async(...args)=>{
+    if(!mergeRace){mergeRace=true;await grant(false);}return receiver.store.compareAndSwapMany(...args);
+  }}});
+  await refuses(raceAccess.merge(remoteSnapshot));
+  check(mergeRace&&JSON.stringify((await receiver.store.read('along-saved-journeys-v2',groupId)).value)===JSON.stringify(baseline),'revoked merge changed replica');
+  await grant(true);await refuses(readyAccess.snapshot());
+  const freshAccess=await openPermittedGenerationJourneys(ongoingOptions);
+  check((await freshAccess.merge(remoteSnapshot)).status==='generation-journeys-saved','permitted generation merge failed');
+  check((await freshAccess.snapshot()).journeys.some(j=>j.value?.to.id==='new-generation-work'),'permitted merge not durable');
+  check(readEnvelope(adapters[1]).raw===twiceRecovered.raw,'replica merge rewrote planner without reconciliation');
+  await installJourneyCheckpoint({wasm,store:owner.store,expectedGroup:group,
+    expectedRevision:(await owner.store.read('along-saved-journeys-v2',groupId)).revision,
+    expectedLocalRaw:readEnvelope(adapters[0]).raw,...nextBundle,storage:adapters[0]});
+  const ownerSecond=await owner.store.read('along-saved-journeys-v2',groupId);
+  const ownerSecondRecovery=await owner.store.read('along-journey-checkpoint-recovery-v1',groupId+':2');
+  const ownerSecondReview=await createCheckpointReview({current:ownerSecond.value,recovery:ownerSecondRecovery.value,
+    localRaw:readEnvelope(adapters[0]).raw,actor:hex(owner.subject)});
+  await applyCheckpointChoices({wasm,store:owner.store,expectedGroup:group,generation:2,reviewId:ownerSecondReview.id,
+    choices:ownerSecondReview.differences.map(d=>({id:d.id,use:'local'})),storage:adapters[0]});
+  const sharing=[];
+  try{
+    sharing.push(await openGenerationJourneySession({...senderContext,storage:roots[0],role:'offer'}));
+    sharing.push(await openGenerationJourneySession({...ongoingOptions,role:'answer'}));
+    const offer=await sharing[0].offer(),answer=await sharing[1].accept(offer);await sharing[0].accept(answer);
+    await Promise.all(sharing.map(s=>s.authenticated()));
+    check((await sharing[1].synchronize()).status==='peer-saved-generation-snapshot','receiver generation snapshot unconfirmed');
+    check((await sharing[0].synchronize()).status==='peer-saved-generation-snapshot','owner generation snapshot unconfirmed');
+    check(JSON.stringify((await owner.store.read('along-saved-journeys-v2',groupId)).value)
+      ===JSON.stringify((await receiver.store.read('along-saved-journeys-v2',groupId)).value),'generation snapshots did not converge');
+    await grant(false);await refuses(sharing[0].synchronize());
+  }finally{sharing.forEach(s=>s.close());}
   // Revoking application consent also denies retry of already installed evidence.
   await grant(false);await refuses(acceptPermittedJourneyCheckpoint(input));
   await refuses(retainPermittedJourneyCheckpoint(input));

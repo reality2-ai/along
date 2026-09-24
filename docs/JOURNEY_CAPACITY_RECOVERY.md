@@ -673,6 +673,25 @@ memory. Permission/identity guards, authenticated session integration, local-rev
 gating and actual browser/app composition remain required before this becomes
 ongoing device sharing.
 
+## Ongoing sharing authorization and authenticated sessions
+
+The generation permission adapter requires verified ready startup, current peer
+membership, explicit journey consent and matching local preference/replica
+versions. It captures the identity, permission and recovery evidence revisions,
+checks them again before and after operations, and adds them to merge transactions.
+The group Web Lock excludes concurrent cooperating recovery/planner writers.
+It does not authenticate peer possession by itself.
+
+`openGenerationJourneySession` supplies that authentication and uses the separate
+generation snapshot codec. The real enrolled-browser fixture checks unfinished
+review refusal, controller invalidation after another checkpoint, consent removal
+during commit, invalidation after revoke/regrant, and a fresh permitted merge.
+After both devices complete their second recovery, authenticated snapshots converge
+over WebRTC; removing consent stops further transfer. Replica receipt does not
+claim local planner reconciliation. The test uses real browser storage and
+identities with harness signaling; the ongoing-sharing Settings flow still needs
+integration and full app verification.
+
 ## Required before release
 
 1. Qualify the reviewed migration and format-2 bridge against the exact published

@@ -622,3 +622,20 @@ suites pass 16 tests. These use memory stores and in-process packet delivery;
 current identity/consent guards, authenticated generation sessions, planner review
 gating and Settings integration still need composition and browser verification.
 Neither new module is a standalone authorization boundary or public feature.
+
+`generation-permission.mjs` now opens ongoing sharing only after verified local
+startup reports a ready generation and the selected peer has current membership
+and explicit journey consent. It binds identity, permission and recovery evidence
+revisions; merges apply those guards atomically. Reads/merges use the same group
+Web Lock as planner recovery and require the local preference version to match.
+Changing consent or installing another checkpoint invalidates that controller.
+
+`openGenerationJourneySession` composes that adapter with real persona
+authentication and the generation snapshot codec. The enrolled-browser fixture
+checks refusal during unfinished review, old-controller invalidation, a consent
+removal during merge, no planner rewrite from a replica merge, and authenticated
+two-way snapshot convergence after both devices complete generation-two recovery.
+Revoking consent refuses further use of the open channel. These are component
+calls with real enrolled identities/IndexedDB/WebRTC and harness signaling;
+ongoing-generation connection controls and planner refresh in Settings remain
+to be integrated and qualified.
