@@ -368,3 +368,13 @@ The actual software issuer now exposes only a scoped
 key rotation, stale/closed/cancelled handles and a permission change during the
 commit. Journey replicas are still fixture-seeded for this check: reviewed
 format-2 migration and checkpoint installation are not integrated into the app.
+
+
+`generation-migration.mjs` now atomically archives the format-1 replica/import
+receipt, creates generation zero and places a format-2 marker in the old replica
+slot. Real browser tests cover concurrency, reload, empty state, stale review,
+permission changes, interrupted storage and an old write already in progress.
+Saved values, tombstones and the local pending journal survive. No startup or UI
+calls this migration; the format-2 planner bridge and reviewed app flow remain
+required before enabling it. See `generation-migration.test.mjs` with the pinned
+runtime environment used by the issuer preparation test.

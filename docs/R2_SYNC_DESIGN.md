@@ -105,7 +105,9 @@ The [generation/checkpoint design](JOURNEY_CAPACITY_RECOVERY.md) now has a teste
 source model that refuses ordinary merges across generations. A signed successor
 binds its predecessor and exact live snapshot; verification does not install it.
 Guarded durable preparation now passes real IndexedDB checks with both a synthetic
-authority adapter and the real software issuer. Format-2 migration, retention of local differences, journal migration,
+authority adapter and the real software issuer. Atomic format-2 migration now
+preserves the legacy replica and blocks old writers in browser tests. App opt-in,
+retention of local differences, journal migration,
 peer recovery and the reviewed app flow remain required before this can reclaim
 capacity in a release.
 

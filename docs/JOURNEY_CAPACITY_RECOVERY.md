@@ -2,7 +2,8 @@
 
 Status: generation model, signed-checkpoint verifier and guarded durable
 preparation implemented and tested in source, including the real software issuer
-adapter. No installation, network adoption or recovery control is enabled. Public
+adapter. Atomic format migration also passes browser tests. No checkpoint
+installation, network adoption or recovery control is enabled. Public
 preview 3805 retains its existing 256-pair replication limit and capacity message.
 
 ## Why deletion alone cannot free space
@@ -102,11 +103,39 @@ old/closed/cancelled issuer handles and a permission creation during the actual
 preparation commit. It verifies that the journey replica does not advance.
 This is not yet a recipient adoption or complete enrollment/recovery-flow test.
 
+## Atomic format migration
+
+`generation-migration.mjs` is an explicit local operation with a reviewed legacy
+replica revision. It verifies local membership and atomically writes three records:
+the format-2 generation-zero replica, an archive of the exact prior replica and
+its import receipt, and a format-2 marker in the legacy replica slot. Migration
+preserves all values, tombstones and logical clocks; it does not reclaim capacity.
+
+The legacy-slot marker matters for an older app: its strict format-1 parser
+refuses the marker. A write already in progress loses its compare-and-swap because
+the legacy revision changed. Keeping the old slot writable alongside a new replica
+would instead allow silent divergence. The source replica remains in the archive;
+localStorage saved places and pending edits are untouched.
+
+Persona, membership, bootstrap/enrollment evidence, application permission and
+import-receipt revisions guard the transaction. An interrupted transaction rolls
+back all three records. Concurrent or reloaded retries confirm an existing
+migration without rewriting it, and cannot reinterpret a different review revision
+as approval. An empty replica can migrate without inventing an import receipt.
+
+`generation-migration.test.mjs` runs these boundaries with real software identity,
+WASM verification and IndexedDB, including an in-flight old writer and permission
+changes. The issuer preparation test now uses this migration for its primary
+fixture before preparing a checkpoint. The migration tests currently initialize
+the group issuer; enrolled-device migration still needs composed verification.
+No installed app invokes migration yet. Enabling it before the format-2 bridge,
+review and network handling are ready would intentionally stop legacy sharing.
+
 ## Required before integration
 
-1. Initialize/migrate the format-2 replica under explicit reviewed opt-in. The
-   issuer test currently seeds this replica through storage; the planner bridge
-   still uses format 1. Never treat an arbitrary peer snapshot as migration authority.
+1. Wire the tested migration to explicit reviewed opt-in together with the
+   format-2 planner bridge, and verify enrolled-device migration. The existing
+   bridge still uses format 1. Never use an arbitrary peer snapshot as authority.
 2. Review the live places selected for the new generation. Keep the old replica,
    local saved places and unprocessed edits in a durable recovery record. Do not
    silently replace divergent local data or reinterpret old edits as new saves.

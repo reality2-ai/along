@@ -7,8 +7,10 @@ const sources = new Map();
 for (const name of ['storage.mjs', 'membership.mjs', 'certificate.mjs']) sources.set('/' + name, await readFile(join(process.env.R2_BROWSER_DIR, name)));
 for (const name of ['software-persona.mjs', 'local-persona.mjs', 'epoch-preparation.mjs', 'epoch-recovery-material.mjs', 'epoch-transition.mjs', 'epoch-installation.mjs', 'epoch-watch.mjs', 'software-traffic.mjs', 'member-removal.mjs']) sources.set('/' + name, await readFile(new URL(name, import.meta.url)));
 for (const name of ['hive_wasm.js', 'hive_wasm_bg.wasm']) sources.set('/' + name, await readFile(join(process.env.R2_WASM_DIR, name)));
-for (const name of ['state.mjs', 'generation-state.mjs', 'generation-checkpoint.mjs', 'checkpoint-preparation.mjs'])
+for (const name of ['state.mjs', 'generation-state.mjs', 'generation-checkpoint.mjs', 'checkpoint-preparation.mjs', 'generation-migration.mjs'])
   sources.set('/journey-sync/' + name, await readFile(new URL('../journey-sync/' + name, import.meta.url)));
+// The journey migration imports the actual persona from its normal relative path.
+for (const name of ['local-persona.mjs', 'membership.mjs', 'certificate.mjs']) sources.set('/tg-pairing/' + name, sources.get('/' + name));
 const server = createServer((req, res) => {
   res.setHeader('Content-Type', req.url.endsWith('.wasm') ? 'application/wasm' : sources.has(req.url) ? 'text/javascript' : 'text/html');
   res.end(sources.get(req.url) || '<!doctype html><title>Epoch preparation test</title>');
@@ -30,10 +32,11 @@ try {
     const issuer = await loadSoftwareIssuer({wasm, store, expectedGroup: group});
     const before = await store.read('candidate-persona', 'active');
     const {emptyState, changeJourney} = await import('./journey-sync/state.mjs');
-    const {initialGeneration} = await import('./journey-sync/generation-state.mjs');
-    const journeyState = initialGeneration(changeJourney(emptyState(setup.group), setup.member,
-      JSON.stringify(['stop', 'from', 'stop', 'gone']), null));
-    await store.compareAndSwap('along-saved-journeys-v2', setup.group, 0, journeyState);
+    const journeyState = changeJourney(emptyState(setup.group), setup.member,
+      JSON.stringify(['stop', 'from', 'stop', 'gone']), null);
+    await store.compareAndSwap('along-saved-journeys-v1', setup.group, 0, journeyState);
+    const {migrateJourneyGeneration} = await import('./journey-sync/generation-migration.mjs');
+    await migrateJourneyGeneration({wasm, store, expectedGroup: group, expectedRevision: 1});
     const checkpoints = await Promise.all([issuer.prepareJourneyCheckpoint({expectedRevision: 1}), issuer.prepareJourneyCheckpoint({expectedRevision: 1})]);
     if (JSON.stringify(checkpoints[0]) !== JSON.stringify(checkpoints[1])) throw Error('checkpoint preparation forked');
     if ((await store.read('along-prepared-journey-checkpoint-v1', setup.group + ':1')).revision !== 1) throw Error('checkpoint rewritten');
