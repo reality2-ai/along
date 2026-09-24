@@ -222,7 +222,7 @@ recovery, unchanged installation revisions and zero key-delivery frames.
 
 This confirms the final installed epoch. Reconnecting after partial catch-up starts
 from the recipient's saved epoch; it does not reconstruct missing intermediate
-receipts. The reviewed recovery UI remains unfinished. A receipt is a signed peer claim,
+receipts. The recipient review is implemented below; its signaling flow and app integration remain unfinished. A receipt is a signed peer claim,
 not independent attestation of a hostile device's storage.
 
 1. Compose certificate renewal for retained recipients with authenticated delivery.
@@ -271,7 +271,7 @@ fresh-document reopening, stale approval, pre- and post-commit cancellation,
 obsolete asynchronous views, unreadable custody, 320px layout at 200% text size,
 and axe checks. Physical screen-reader testing is still separate.
 
-This screen is not yet wired into app Settings. The recipient's reviewed recovery
+This screen is not yet wired into app Settings. The recipient review's signaling
 connection and the complete app permission flow must be composed before enabling it and qualifying a public preview. A signed
 receipt must be verified before a device is labelled as having confirmed an update;
 a saved membership certificate alone is insufficient.
@@ -300,3 +300,31 @@ field in storage, changes a receipt during its read, and verifies removal replac
 the confirmation label. Reader checks also cover cancellation and prohibit writes.
 Public preview 3803 is unchanged; this source UI awaits qualification with the
 remaining recovery controls.
+
+
+## Recipient recovery review
+
+`epoch-recovery-view.mjs` reviews an already connected, mutually authenticated
+recovery session. It shows the local and offered key versions and requires a
+trusted action before accepting recovery. For equal versions it instead offers
+to check the saved keys and send confirmation; that path does not replace keys.
+The session's recipient-only `installation()` result resolves when the final
+local installation has been verified. It does not assert that the owner received
+or saved its acknowledgment. Closing before that result rejects the pending
+operation; closing after a saved result does not undo the installation.
+
+The success screen explicitly asks the user to check the other device's
+confirmation. Back/Escape closes the session, preserves stored keys and prevents
+late completions from changing an abandoned screen. A failed installation offers
+reconnection with the saved data rather than resetting identity or credentials.
+
+The actual two-profile WebRTC browser test now drives this screen with keyboard
+acceptance, refuses synthetic clicks, cancels via Back before acceptance, checks
+an interrupted transaction's failure screen, and distinguishes recipient success
+from the owner's lost acknowledgment. After both documents reload, equal-version
+confirmation is approved through the same review. Narrow 320px layout at 200%
+text size and axe checks pass. Physical TalkBack is not established by these tests.
+
+Signaling is still supplied by the test harness. The public-facing message/QR
+exchange and Settings composition remain pending; this standalone review is not
+an enabled public recovery flow and does not change preview 3803.

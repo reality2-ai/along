@@ -1,6 +1,22 @@
 // Node-side browser harness. Transcript bytes are a fixture, not a live link.
 import assert from 'node:assert/strict';
+import AxeBuilder from '@axe-core/playwright';
 export async function checkRecoveryProof(owner, recipient) {
+  const review = async () => {
+    await recipient.setViewportSize({width: 320, height: 720});
+    await recipient.evaluate(async () => {
+      document.documentElement.lang = 'en';
+      if (!document.querySelector('link[rel=stylesheet]')) {
+        const style = document.createElement('link'); style.rel = 'stylesheet'; style.href = './comparison.css'; document.head.append(style);
+      }
+      const main = document.createElement('main'), heading = document.createElement('h1'), panel = document.createElement('div');
+      heading.textContent = 'Your devices'; main.append(heading, panel); document.body.replaceChildren(main);
+      window.reviewBacks = 0;
+      window.recoveryView = (await import('./epoch-recovery-view.mjs')).showEpochRecoveryReview(panel, {
+        session: recoverySession, focus: true, onBack: () => { reviewBacks++; }});
+      await recoveryView.ready;
+    });
+  };
   const peer = await recipient.evaluate(async () => {
     window.recoveryWasm = await import('./hive_wasm.js'); await recoveryWasm.default();
     window.recoveryStore = await (await import('./storage.mjs')).openBrowserStorage('software-enrollment');
@@ -48,7 +64,7 @@ export async function checkRecoveryProof(owner, recipient) {
   await owner.evaluate(() => { const until = performance.now() + 1001; while (performance.now() < until) {} });
   assert.equal(await verify(expired), false, 'use-time expiry while timers delayed');
   const ownerId = await owner.evaluate(async () => Array.from((await recoveryStore.read('candidate-persona', 'active')).value.record.subject));
-  for (const scenario of ['proof', 'install', 'valid']) {
+  for (const scenario of ['proof', 'cancel', 'install', 'valid']) {
     const tamper = scenario === 'proof';
     const offer = await recipient.evaluate(async ({peer, ownerId}) => {
       const {openEpochRecoverySession} = await import('./epoch-recovery-session.mjs');
@@ -100,6 +116,18 @@ export async function checkRecoveryProof(owner, recipient) {
             && material.payloadKey.every((b, i) => b === traffic.payloadKey[i]) && material.integrityKey.every((b, i) => b === traffic.integrityKey[i]);
         } finally { material.destroy(); traffic.destroy(); }
       }), true);
+      await review();
+      await recipient.getByRole('heading', {name: 'Receive your group key update?', exact: true}).waitFor();
+      await recipient.evaluate(() => document.querySelector('.pairing-primary').click());
+      assert.equal(await owner.evaluate(() => recoverySession.canRecover()), false, 'synthetic click cannot accept recipient review');
+      if (scenario === 'cancel') {
+        await recipient.getByRole('button', {name: 'Back', exact: true}).click();
+        assert.equal(await recipient.evaluate(() => reviewBacks), 1);
+        await owner.waitForFunction(() => recoverySession.state() === 'closed');
+        assert.equal(await recipient.evaluate(async () => (await recoveryStore.read('candidate-persona', 'active')).value.epoch === 1n), true, 'Back before acceptance keeps existing keys');
+        assert.equal(await owner.evaluate(() => recoverySession.recover().then(() => true, () => false)), false);
+        continue;
+      }
       if (scenario === 'install') {
         await recipient.evaluate(async () => {
           const original = IDBObjectStore.prototype.put;
@@ -110,17 +138,23 @@ export async function checkRecoveryProof(owner, recipient) {
             }
             return result;
           };
-          await recoverySession.acceptRecovery();
         });
+        await recipient.getByRole('button', {name: 'Receive group key update', exact: true}).click();
         await owner.waitForFunction(() => recoverySession.canRecover());
         assert.equal(await owner.evaluate(() => recoverySession.recover().then(() => true, () => false)), false, 'failed install cannot confirm');
         assert.equal(await recipient.evaluate(async () => (await recoveryStore.read('candidate-persona', 'active')).value.epoch === 1n), true, 'failed delivery leaves predecessor intact');
+        await recipient.getByRole('heading', {name: 'Key update is not confirmed', exact: true}).waitFor();
+        await recipient.keyboard.press('Escape'); assert.equal(await recipient.evaluate(() => reviewBacks), 1);
         await Promise.all([owner, recipient].map(page => page.evaluate(() => recoverySession.close())));
       }
     }
   }
   assert.equal(await owner.evaluate(() => recoverySession.recover().then(() => true, () => false)), false, 'recipient review required');
-  await recipient.evaluate(() => recoverySession.acceptRecovery());
+  await recipient.evaluate(() => document.documentElement.style.fontSize = '200%');
+  assert.equal(await recipient.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+  assert.deepEqual((await new AxeBuilder({page: recipient}).analyze()).violations.map(v => v.id), []);
+  await recipient.evaluate(() => document.documentElement.style.fontSize = '');
+  await recipient.keyboard.press('Tab'); await recipient.keyboard.press('Enter');
   await owner.waitForFunction(() => recoverySession.canRecover());
   await recipient.evaluate(() => {
     const original = RTCDataChannel.prototype.send;
@@ -137,6 +171,9 @@ export async function checkRecoveryProof(owner, recipient) {
     if (await recoverySession.recover().then(() => true, () => false)) throw Error('Concurrent recovery accepted');
     return operation.then(() => true, () => false);
   }), false, 'lost acknowledgment cannot confirm delivery');
+  await recipient.getByRole('heading', {name: 'Group keys saved on this device', exact: true}).waitFor();
+  assert.equal(await recipient.evaluate(async () => (await recoveryView.completed).epoch === 3n), true);
+  assert.equal(await recipient.evaluate(() => document.activeElement.textContent), 'Back');
   assert.equal(await owner.evaluate(async () => {
     const bytes = new Uint8Array(64); bytes.set(group); bytes.set(recoveryPeer.subject, 32);
     const key = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)), b => b.toString(16).padStart(2, '0')).join('');
@@ -203,12 +240,16 @@ export async function checkRecoveryProof(owner, recipient) {
   }, peer.group);
   const revisions = await installationRevisions();
   await reconnect();
+  await review();
+  await recipient.getByRole('heading', {name: 'Confirm your saved group keys?', exact: true}).waitFor();
+  assert.equal(await owner.evaluate(() => recoverySession.installation().then(() => true, () => false)), false, 'owner cannot claim local recipient installation');
   assert.equal(await owner.evaluate(() => recoverySession.recover().then(() => true, () => false)), false, 'receipt recovery also requires acceptance');
-  await recipient.evaluate(() => recoverySession.acceptRecovery());
+  await recipient.getByRole('button', {name: 'Check saved keys and send confirmation', exact: true}).click();
   await owner.waitForFunction(() => recoverySession.canRecover());
   for (let retry = 0; retry < 2; retry++) assert.deepEqual(await owner.evaluate(async () => {
     const result = await recoverySession.recover(); return {status: result.status, epoch: String(result.epoch)};
   }), {status: 'peer-installation-confirmed', epoch: '3'});
+  await recipient.getByRole('heading', {name: 'Group keys saved on this device', exact: true}).waitFor();
   assert.deepEqual(await installationRevisions(), revisions, 'receipt recovery does not rewrite installation');
   assert.equal(await owner.evaluate(() => sentRecoveryKeys), 0, 'receipt recovery sends no epoch keys');
   assert.equal(await recipient.evaluate(async () => {

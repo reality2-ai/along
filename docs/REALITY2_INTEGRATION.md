@@ -55,8 +55,10 @@ fresh authenticated, recipient-approved receipt exchange at the same epoch. No
 keys are redelivered or installation records rewritten; a corrupted saved
 installation refuses confirmation. A standalone owner key-update review now
 passes real-browser keyboard, cancellation, stale-approval and accessibility checks.
-It confirms local installation only and is not yet wired into Settings; recipient
-connection controls remain unfinished. The source device list now verifies saved
+It confirms local installation only and is not yet wired into Settings. The
+recipient review now runs over real authenticated sessions, including keyboard
+acceptance, cancellation, failed installation and equal-version confirmation.
+Device-message signaling and full Settings composition remain unfinished. The source device list now verifies saved
 per-device receipts and distinguishes missing, unreadable and removed-device
 status without claiming online presence. Composed browser checks use real
 WebRTC receipts and corrupt/race their stored evidence. See

@@ -33,7 +33,9 @@ export async function openEpochRecoverySession({wasm, store, expectedGroup, role
     if (closed || signal?.aborted || ((phase !== 'authenticated' || busy)
         && (performance.now() < started || performance.now() >= deadline))) throw Error('Recovery ended');
   };
-  let resolve, reject;
+  let resolve, reject, installedResolve, installedReject;
+  const installation = new Promise((yes, no) => { installedResolve = yes; installedReject = no; });
+  void installation.catch(() => {});
   const result = new Promise((yes, no) => { resolve = yes; reject = no; });
   void result.catch(() => {});
   const close = () => {
@@ -41,6 +43,7 @@ export async function openEpochRecoverySession({wasm, store, expectedGroup, role
     closed = true; phase = 'closed'; clearTimeout(timer); challenge?.close(); watcher?.close(); unsubscribe?.();
     signal?.removeEventListener('abort', close); link?.close(); membership?.close(); lifetime.abort();
     reject(Error('Recovery connection ended'));
+    installedReject(Error('Local installation was not confirmed by this connection'));
     pending?.reject(Error('Recovery interrupted; installation may already be saved'));
   };
   const current = async () => {
@@ -119,6 +122,7 @@ export async function openEpochRecoverySession({wasm, store, expectedGroup, role
           if (identity?.epoch !== epoch || identity.member !== memberId || identity.origin !== 'enrolled') throw Error('Installed recovery identity differs');
           watcher = watchLocalEpoch({store, group, subject: unhex(identity.member), epoch, onChange: close});
           await watcher.check(); await current();
+          if (epoch === to) installedResolve(Object.freeze({status: 'installed-local', epoch}));
           const receipt = await recoveryReceiptStatement({group, subject: unhex(identity.member), epoch, transition, certificate});
           const proof = await identity.sign(wasm.tg_nonce_signing_bytes(receipt, nonce)); await current();
           phase = 'authenticated'; clearTimeout(timer); send({type: 'installed', epoch: String(epoch), proof: Array.from(proof)});
@@ -139,6 +143,7 @@ export async function openEpochRecoverySession({wasm, store, expectedGroup, role
           if (!installed.alreadyInstalled || installed.epoch !== epoch) throw Error('Saved installation differs');
         } finally { material.destroy(); }
         await current();
+        installedResolve(Object.freeze({status: 'installed-local', epoch}));
         const receipt = await recoveryReceiptStatement({group, subject: unhex(identity.member), epoch, transition, certificate});
         const proof = await identity.sign(wasm.tg_nonce_signing_bytes(receipt, nonce)); await current();
         phase = 'authenticated'; clearTimeout(timer); send({type: 'installed', epoch: String(epoch), proof: Array.from(proof)});
@@ -168,6 +173,10 @@ export async function openEpochRecoverySession({wasm, store, expectedGroup, role
     void ready.catch(close);
     const controller = Object.freeze({offer: link.offer, accept: link.accept, close, signal: lifetime.signal,
       state: () => phase,
+      installation: async () => {
+        if (role !== 'recipient') throw Error('Local recipient installation unavailable');
+        return installation;
+      },
       canRecover: () => role === 'owner' && phase === 'authenticated' && recipientAccepted && !busy,
       acceptRecovery: async () => {
         if (role !== 'recipient' || phase !== 'authenticated') throw Error('Recovery review unavailable');

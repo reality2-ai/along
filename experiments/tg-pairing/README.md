@@ -942,3 +942,14 @@ The status describes saved evidence, not online presence, and is associated with
 the device button for screen readers. `EPOCH_INSTALL=1` in the software-enrollment
 browser test covers these labels with real network-produced receipts, corrupted
 fields, concurrent replacement and removal. This is not yet a new public release.
+
+
+`epoch-recovery-view.mjs` adds the recipient's review after mutual authentication.
+It requires an explicit trusted action, distinguishes newer-key delivery from
+confirmation of existing keys, and reports local installation without claiming
+the owner's receipt arrived. Back/Escape closes the session while preserving any
+committed installation. The `EPOCH_INSTALL=1` browser test drives both review paths
+over real WebRTC and checks keyboard operation, cancellation, failure messages,
+lost acknowledgment, narrow/200% layout and axe. Signaling remains harness-driven;
+message/QR exchange and app Settings integration still need completion before a
+new public preview is qualified.
