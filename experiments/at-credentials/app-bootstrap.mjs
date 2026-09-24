@@ -44,8 +44,8 @@ async function start() {
       // First use without a saved identity does not need to compile WASM.
       const wasm = await import('../tg-pairing/hive_wasm.js'); current();
       await wasm.default(); current();
-      const {loadATBinding} = await import('./local-owner.mjs'); current();
-      const binding = await loadATBinding({wasm, store, expectedGroup: group, signal: lifetime.signal}); current();
+      const {loadATConnectionBinding} = await import('./local-owner.mjs'); current();
+      const binding = await loadATConnectionBinding({wasm, store, expectedGroup: group, signal: lifetime.signal}); current();
       const {loadLocalPersona} = await import('../tg-pairing/local-persona.mjs'); current();
       const identity = await loadLocalPersona({wasm, store, expectedGroup: group}); current();
       if (!identity) { store.close(); return; }

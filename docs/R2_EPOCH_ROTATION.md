@@ -387,7 +387,7 @@ connection obtains a fresh certificate from its incoming descriptor. Shared AT
 restoration additionally checks the pinned owner's saved certificate for current
 epoch membership. The renewal operation below replaces that certificate without
 changing the pinned owner, credential identity, consent or policy. Shared-device AT and journey exchanges after rotation now pass the two-profile
-checks below; different AT-owner renewal and release qualification remain pending.
+checks below. Different-owner renewal is also verified below; full release qualification remains pending.
 Only `along-experimental-app` was rebuilt; the qualified preview 3803 artifacts and
 public deployments are unchanged.
 
@@ -409,7 +409,7 @@ that certificate into renewal and restores the binding. An error preserves the
 saved AT state and does not turn successful group installation into a claim of
 successful AT access. If the AT owner is a different group member from the group
 issuer, this certificate does not match: it is refused rather than changing the
-chosen AT owner. Renewal from that other member remains to be composed.
+chosen AT owner. Renewal from that other member now uses its reconnect certificate, as described below.
 
 The real two-profile enrollment/recovery test establishes an explicit AT-owner
 binding and signed permission before rotation. After the visible update to epoch
@@ -447,5 +447,39 @@ reachability.
 
 [Evidence and exact manifest/test hashes](evidence/group-rotation-app-checks.json)
 identify the local build used. These checks do not qualify or deploy a new public
-preview. Renewal where the AT owner differs from the group issuer, remaining
-capacity/recovery cases, physical acceptance and full release qualification remain.
+preview. Different-owner renewal is covered below. Remaining capacity/recovery cases,
+physical acceptance and full release qualification remain.
+
+
+## Reconnecting when the AT owner is a different device
+
+The local AT reconnect profile is now `along-at-reconnect-v3`. Its starting owner
+message includes the owner's current group certificate. Both devices need this
+profile; the published preview 3803 uses v2 and is not changed by this work.
+
+`loadATConnectionBinding` allows an authentic stale owner certificate solely to
+recover the already pinned connection identity. Its result explicitly says owner
+renewal is needed. It still verifies the saved policy, local identity, held
+removals and unchanged storage evidence; revoked or invalid evidence refuses.
+Provider clients, vault access and authenticated policy sessions continue to use
+strict `loadATBinding`, which refuses stale owner evidence.
+
+During reconnect, the recipient checks the exact saved group/owner/credential,
+merges signed removals, and renews the certificate against its current group
+membership before opening the strict AT session. A signature for another member,
+a damaged certificate, a future/stale epoch or a removed owner cannot replace the
+pin. Startup and device Settings expose the reconnect option for a verified stale
+binding without enabling live reads or treating it as new AT setup.
+
+`MAIN_APP_SETUP=1 ROTATE_GROUP_KEYS=1 DIFFERENT_AT_OWNER=1 node experiments/at-credentials/two-app-integration.test.mjs`
+now passes with the enrolled device owning/sharing the AT key and the group creator
+receiving it. After rotation, strict restoration refuses the old certificate while
+connection review remains available. The visible reconnect refuses v2 downgrade
+and a damaged certificate, accepts the current certificate, and completes shared
+mocked AT reads, permission removal and offline routing. Identities, AT-key
+ciphertext, signed policy and credential pin survive rotation/reload unchanged.
+The standalone `peer-delivery.test.mjs` regression also passes.
+
+[Exact local-build evidence](evidence/group-rotation-different-owner-checks.json)
+records both checks. This remains one-host browser evidence, not physical-device
+acceptance, real AT-provider verification or a new public preview release.

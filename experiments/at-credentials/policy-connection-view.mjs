@@ -1,10 +1,11 @@
 // Reconnect previously configured devices. This does not enroll or grant access.
 import {showDeviceTransfer} from '../tg-pairing/transfer-view.mjs';
 import {loadLocalPersona} from '../tg-pairing/local-persona.mjs';
-import {loadATBinding} from './local-owner.mjs';
+import {renewATOwnerCertificate} from './owner-certificate.mjs';
+import {loadATConnectionBinding} from './local-owner.mjs';
 import {openATPolicySession} from './policy-session.mjs';
 import {exportRemovalSet, receiveRemovalSet} from '../tg-pairing/removal-set.mjs';
-const profile = 'along-at-reconnect-v2';
+const profile = 'along-at-reconnect-v3';
 const mounted = new WeakMap();
 const unhex = value => Uint8Array.from(value.match(/../g), byte => parseInt(byte, 16));
 
@@ -74,7 +75,7 @@ export function showPolicyConnection(container, {wasm, store, expectedGroup, rol
     try {
       if (signal?.aborted) { leave(); return; }
       message('Checking saved devices', 'This reconnects devices already set up to share an AT key.');
-      const saved = await loadATBinding({wasm, store, expectedGroup: group, signal: lifetime.signal}); current();
+      const saved = await loadATConnectionBinding({wasm, store, expectedGroup: group, signal: lifetime.signal}); current();
       if (!saved || saved.role !== role) throw new Error('Saved role unavailable');
       const identity = await loadLocalPersona({wasm, store, expectedGroup: group}); current();
       if (!identity) throw new Error('Identity unavailable');
@@ -90,9 +91,12 @@ export function showPolicyConnection(container, {wasm, store, expectedGroup, rol
           explanation: 'On the device that shared its AT key, open the existing-device connection screen. Paste its device message here. Signed group removals are verified and saved before reconnecting; no AT key is included.',
           incomingLabel: 'AT-key device message', action: 'Review AT-key device', onReceive: async text => {
             const descriptor = JSON.parse(text);
-            if (!descriptor || Object.keys(descriptor).sort().join(',') !== 'credential,group,owner,profile,removals'
+            if (!descriptor || Object.keys(descriptor).sort().join(',') !== 'certificate,credential,group,owner,profile,removals'
                 || descriptor.profile !== profile || ['group', 'owner', 'credential'].some(key => descriptor[key] !== saved.binding[key])) throw Error('Different AT-key device');
             await receiveRemovalSet({wasm, store, expectedGroup: group, text: descriptor.removals, signal: lifetime.signal}); current();
+            if (!Array.isArray(descriptor.certificate) || descriptor.certificate.length !== 136
+                || descriptor.certificate.some(b => !Number.isInteger(b) || b < 0 || b > 255)) throw Error('Invalid owner certificate');
+            await renewATOwnerCertificate({wasm, store, expectedGroup: group, certificate: new Uint8Array(descriptor.certificate), signal: lifetime.signal}); current();
             await open();
             const offer = await session.offer(); current();
             const removals = await exportRemovalSet({wasm, store, expectedGroup: group}); current();
@@ -103,7 +107,8 @@ export function showPolicyConnection(container, {wasm, store, expectedGroup, rol
           }});
       } else {
         const removals = await exportRemovalSet({wasm, store, expectedGroup: group}); current();
-        transfer({title: 'Connect a device using your AT key', outgoing: JSON.stringify({profile, ...saved.binding, removals}),
+        const own = await store.read('candidate-persona', 'active'); current();
+        transfer({title: 'Connect a device using your AT key', outgoing: JSON.stringify({profile, ...saved.binding, removals, certificate: Array.from(own.value.record.certificate)}),
           explanation: 'Transfer this device message to a device already set up to use your AT key, then paste its request here. Messages include signed group removals but no AT key. Its saved identity and permissions will still be checked.',
           incomingLabel: 'Connection request', action: 'Prepare connection reply',
           onReceive: async text => {

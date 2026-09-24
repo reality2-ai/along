@@ -1,0 +1,26 @@
+{
+  "profile": "along-different-at-owner-checks-v1",
+  "checkedAt": "2026-09-24T01:33:58.185699+00:00",
+  "artifact": "local along-experimental-app; not a public preview release",
+  "manifestSHA256": "7df23599dbefbf72db2485f9b47ad9f1e2769d8989fe5569b8ab4dc695febe9e",
+  "testSHA256": {
+    "experiments/at-credentials/two-app-integration.test.mjs": "d42afcd0e795be225a2fde3b706b3d8fc3e73d19c96a51522e6cfeb895e09f2a",
+    "experiments/at-credentials/rotation-app-check.mjs": "53c3a294e4ba638dee455acd2a09ab4dee058cb615ea100d80644c6b4820a75c",
+    "experiments/at-credentials/peer-delivery.test.mjs": "01eea765a6108d1711cfc66f7ad9c5e6575327d407a910de547f2d454eb3a6b3"
+  },
+  "checks": [
+    {
+      "command": "MAIN_APP_SETUP=1 ROTATE_GROUP_KEYS=1 DIFFERENT_AT_OWNER=1 node experiments/at-credentials/two-app-integration.test.mjs",
+      "exitCode": 0
+    },
+    {
+      "command": "node experiments/at-credentials/peer-delivery.test.mjs",
+      "exitCode": 0
+    }
+  ],
+  "limits": [
+    "Two browser profiles on one host; synthetic AT key and mocked provider.",
+    "Physical acceptance and complete release qualification remain pending.",
+    "Public preview 3803 unchanged; source reconnect v3 requires both devices updated."
+  ]
+}

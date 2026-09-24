@@ -69,8 +69,11 @@ using the authenticated recovery certificate. Real-browser checks cover invalid
 evidence, concurrent changes, retry and fresh restoration. Post-rotation
 shared-AT and journey exchanges now pass in two generated-app browser profiles,
 including the real Settings renewal callback, unchanged permissions/key ciphertext,
-reload, reconnection and offline edits. Renewal from a different AT-owner member
-and full release qualification remain unfinished; public preview 3803 is unchanged. The source device list now verifies saved
+reload, reconnection and offline edits. The source AT reconnect v3 also renews a
+different AT-owner member: a stale pin permits connection review only, and a
+current owner certificate is checked before any AT session or live access. The
+reversed-owner two-app check and credential-sharing regression pass, including
+v2 downgrade and damaged-certificate refusal. Full release qualification remains unfinished; public preview 3803 is unchanged. The source device list now verifies saved
 per-device receipts and distinguishes missing, unreadable and removed-device
 status without claiming online presence. Composed browser checks use real
 WebRTC receipts and corrupt/race their stored evidence. See

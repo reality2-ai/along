@@ -8,7 +8,8 @@ const hex = value => Array.from(value, b => b.toString(16).padStart(2, '0')).joi
 const fail = () => new Error('Local AT owner unavailable');
 // Restore an already accepted local/remote binding without adopting an owner
 // from an incoming message or automatically initializing absent state.
-export async function loadATBinding({wasm, store, expectedGroup, signal}) {
+async function loadBinding({wasm, store, expectedGroup, signal}, allowStaleOwner) {
+  let renewalNeeded = false;
   try {
     if (!(expectedGroup instanceof Uint8Array) || expectedGroup.length !== 32) throw fail();
     const groupBytes = expectedGroup.slice(), group = hex(groupBytes);
@@ -35,7 +36,9 @@ export async function loadATBinding({wasm, store, expectedGroup, signal}) {
       const membership = openMembership(store, wasm, groupBytes, persona.value.record.subject);
       try {
         const owner = Uint8Array.from(binding.owner.match(/../g), v => parseInt(v, 16));
-        if (await membership.peerStatus(anchor.value.ownerCertificate, owner) !== 'current') throw fail();
+        const standing = await membership.peerStatus(anchor.value.ownerCertificate, owner);
+        if (standing !== 'current' && !(allowStaleOwner && standing === 'stale')) throw fail();
+        renewalNeeded = standing === 'stale';
       } finally { membership.close(); }
     }
     for (const [scope, key, revision] of [
@@ -48,9 +51,12 @@ export async function loadATBinding({wasm, store, expectedGroup, signal}) {
       current(); const saved = await store.read(scope, key); current();
       if (saved?.revision !== revision) throw fail();
     }
-    return Object.freeze({status: 'at-binding-loaded', binding, role});
+    return Object.freeze({status: renewalNeeded ? 'at-owner-renewal-needed' : 'at-binding-loaded', binding, role});
   } catch { throw fail(); }
 }
+// Connection review only: a stale certificate never authorizes a provider read.
+export const loadATConnectionBinding = options => loadBinding(options, true);
+export const loadATBinding = options => loadBinding(options, false);
 export async function loadLocalATOwner(options) {
   const saved = await loadATBinding(options);
   if (!saved) return null;

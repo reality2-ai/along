@@ -2,7 +2,7 @@ import {showLocalSetup} from '../tg-pairing/setup-view.mjs';
 import {showPairingFlow} from '../tg-pairing/pairing-flow.mjs';
 import {showRecoveryFlow} from '../tg-pairing/recovery-flow.mjs';
 import {loadLocalPersona} from '../tg-pairing/local-persona.mjs';
-import {loadATBinding} from './local-owner.mjs';
+import {loadATBinding, loadATConnectionBinding} from './local-owner.mjs';
 import {showATSettings} from './settings-view.mjs';
 import {showKeySharingFlow} from './key-sharing-flow.mjs';
 import {showOwnerDevices} from './owner-devices-view.mjs';
@@ -82,9 +82,12 @@ export function mountAppDeviceSettings({onChanged}) {
         if (!identity) throw Error('Saved identity unavailable');
         let binding, bindingAvailable = true;
         try { binding = await loadATBinding({wasm, store, expectedGroup: group}); }
-        catch { bindingAvailable = false; }
+        catch {
+          bindingAvailable = false;
+          try { binding = await loadATConnectionBinding({wasm, store, expectedGroup: group}); } catch { /* Keep unreadable state. */ }
+        }
         if (!active(selected)) return;
-        if (bindingAvailable) onChanged({wasm, store, group, binding, member: identity.member});
+        if (bindingAvailable || binding) onChanged({wasm, store, group, binding, member: identity.member});
         status.textContent = !bindingAvailable
           ? 'Your saved AT setup could not be verified. It has been kept. Group connection and recovery options remain available below.'
           : binding?.role === 'recipient'

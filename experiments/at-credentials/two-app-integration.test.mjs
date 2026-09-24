@@ -12,7 +12,9 @@ const variants = ['INTERRUPT_GRANT', 'INTERRUPT_ACCEPTANCE', 'LOSE_KEY_CONFIRMAT
 assert.ok(variants.length <= 1, 'Select one interruption scenario per run');
 let pendingLostDelivery;
 const mainSetup = process.env.MAIN_APP_SETUP === '1';
+const differentATOwner = process.env.DIFFERENT_AT_OWNER === '1';
 const rotateGroupKeys = process.env.ROTATE_GROUP_KEYS === '1';
+assert.ok(!differentATOwner || (rotateGroupKeys && mainSetup), 'Different owner scenario requires app rotation');
 assert.ok(!rotateGroupKeys || mainSetup, 'Group rotation uses actual app Settings');
 const removeGroupMember = process.env.REMOVE_GROUP_MEMBER === '1';
 assert.ok(!removeGroupMember || mainSetup, 'Group removal uses actual app Settings');
@@ -74,7 +76,8 @@ try {
     if (mainSetup) await page.getByText('Connect or recover another device', {exact: true}).click();
     await page.getByRole('button', {name: index ? 'Invite my other device' : 'Join my other device', exact: true}).click();
   }));
-  const [candidate, owner] = pages;
+  let [candidate, owner] = pages;
+  const groupIssuer = owner;
   await owner.getByRole('heading', {name: 'Invite your other device', exact: true}).waitFor();
   const move = async (from, to, label, action) => {
     const text = await from.getByLabel('Device message to copy').inputValue();
@@ -100,6 +103,7 @@ try {
   }));
   await candidate.getByRole('heading', {name: 'Device connected', exact: true}).waitFor();
   await owner.getByRole('heading', {name: 'Other device installed', exact: true}).waitFor();
+  if (differentATOwner) [candidate, owner] = [owner, candidate];
 
   await Promise.all(pages.map(page => page.reload()));
   await Promise.all(pages.map(restoreSetup));
@@ -390,8 +394,8 @@ try {
     }
   } else await Promise.all(pages.map(page => page.goto(origin + 'public/')));
   await Promise.all(pages.map(page => expect(page.locator('#data-status')).toContainText('offline ready', {timeout: 90000})));
-  if (rotateGroupKeys) await checkAppRotation({owner, recipient: candidate, move});
-  const updates = await owner.evaluate(async () => {
+  if (rotateGroupKeys) await checkAppRotation({owner: groupIssuer, recipient: differentATOwner ? owner : candidate, move, expectRenewal: !differentATOwner});
+  const updates = await groupIssuer.evaluate(async () => {
     const wasm = await import('../experiments/tg-pairing/hive_wasm.js'); await wasm.default();
     const store = await (await import('../experiments/tg-pairing/storage.mjs')).openBrowserStorage(window.testDeviceDatabase);
     let issuer;
@@ -404,7 +408,7 @@ try {
       await receiveRemoval({wasm, store, expectedGroup: group, text: updates[0]}); return updates;
     } finally { issuer?.close(); store.close(); }
   });
-  await candidate.evaluate(async text => {
+  await (differentATOwner ? owner : candidate).evaluate(async text => {
     const wasm = await import('../experiments/tg-pairing/hive_wasm.js'); await wasm.default();
     const store = await (await import('../experiments/tg-pairing/storage.mjs')).openBrowserStorage(window.testDeviceDatabase);
     try {
@@ -418,6 +422,19 @@ try {
     await page.getByRole('button', {name: 'Connect devices', exact: true}).click();
   }
   await candidate.getByRole('heading', {name: 'Connect to your AT-key device', exact: true}).waitFor();
+  if (differentATOwner) {
+    const descriptor = JSON.parse(await owner.getByLabel('Device message to copy').inputValue());
+    for (const kind of ['old-profile', 'bad-certificate']) {
+      const changed = structuredClone(descriptor);
+      if (kind === 'old-profile') changed.profile = 'along-at-reconnect-v2'; else changed.certificate[135] ^= 1;
+      await candidate.getByLabel('AT-key device message', {exact: true}).fill(JSON.stringify(changed));
+      await candidate.getByRole('button', {name: 'Review AT-key device', exact: true}).click();
+      await candidate.getByRole('heading', {name: 'Connection unavailable', exact: true}).waitFor();
+      assert.equal(providerRequests.length, 0);
+      await candidate.getByRole('button', {name: 'Back', exact: true}).click();
+      await candidate.getByRole('button', {name: 'Connect devices', exact: true}).click();
+    }
+  }
   await move(owner, candidate, 'AT-key device message', 'Review AT-key device');
   await candidate.getByRole('heading', {name: 'Send your AT connection request', exact: true}).waitFor();
   await move(candidate, owner, 'Connection request', 'Prepare connection reply');
@@ -534,7 +551,7 @@ try {
   assert.equal(providerRequests.length, 2);
   await candidate.evaluate(async () => { await navigator.serviceWorker.ready; });
   await candidate.waitForFunction(() => navigator.serviceWorker.controller !== null);
-  await contexts[0].setOffline(true);
+  await candidate.context().setOffline(true);
   await candidate.reload();
   await expect(candidate.locator('#data-status')).toContainText('offline ready', {timeout: 90000});
   await choose('destination', '1 Queen Street Auckland Central'); await candidate.locator('#destination-next').click();

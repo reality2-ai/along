@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
-export async function checkAppRotation({owner, recipient, move, atBinding = true, databaseName}) {
+export async function checkAppRotation({owner, recipient, move, atBinding = true, expectRenewal = true, databaseName}) {
   if (databaseName) for (const page of [owner, recipient]) {
     await page.addInitScript(name => { window.testDeviceDatabase = name; }, databaseName);
     await page.evaluate(name => { window.testDeviceDatabase = name; }, databaseName);
   }
-  const state = page => page.evaluate(async atBinding => {
+  const state = page => page.evaluate(async ({atBinding, expectRenewal}) => {
     const wasm = await import('../experiments/tg-pairing/hive_wasm.js'); await wasm.default();
     const store = await (await import('../experiments/tg-pairing/storage.mjs')).openBrowserStorage(window.testDeviceDatabase);
     try {
@@ -13,7 +13,8 @@ export async function checkAppRotation({owner, recipient, move, atBinding = true
       const common = {member: Array.from(persona.record.subject, b => b.toString(16).padStart(2, '0')).join(''), epoch: String(persona.epoch),
         journeyPermission: await store.read('along-journey-sharing-v1', group)};
       if (!atBinding) return common;
-      const {binding} = await (await import('../experiments/at-credentials/local-owner.mjs')).loadATBinding({wasm, store, expectedGroup: persona.record.group});
+      const readers = await import('../experiments/at-credentials/local-owner.mjs');
+      const {binding} = await (expectRenewal ? readers.loadATBinding : readers.loadATConnectionBinding)({wasm, store, expectedGroup: persona.record.group});
       const key = binding.group + ':' + binding.credential;
       const policy = await store.read('along-at-policy:' + binding.owner, key);
       const secret = await store.read('along-at-secret:' + binding.owner, key);
@@ -22,7 +23,7 @@ export async function checkAppRotation({owner, recipient, move, atBinding = true
         policyRevision: policy.revision, policy: await fingerprint(policy.value.bytes), signature: await fingerprint(policy.value.signature),
         secretRevision: secret.revision, ciphertext: await fingerprint(secret.value.ciphertext)};
     } finally { store.close(); }
-  }, atBinding);
+  }, {atBinding, expectRenewal});
   const before = await Promise.all([owner, recipient].map(state));
   for (const page of [owner, recipient]) {
     await page.locator('#settings-open').click();
@@ -49,7 +50,7 @@ export async function checkAppRotation({owner, recipient, move, atBinding = true
   await owner.getByRole('heading', {name: 'Other device confirmed its keys', exact: true}).waitFor();
   await recipient.getByRole('heading', {name: 'Group keys saved on this device', exact: true}).waitFor();
   // Wait for the actual Settings renewal callback, without invoking it in the test.
-  if (atBinding) await recipient.waitForFunction(async () => {
+  if (atBinding && expectRenewal) await recipient.waitForFunction(async () => {
     const store = await (await import('../experiments/tg-pairing/storage.mjs')).openBrowserStorage(window.testDeviceDatabase);
     try {
       const persona = (await store.read('candidate-persona', 'active')).value;
@@ -58,6 +59,17 @@ export async function checkAppRotation({owner, recipient, move, atBinding = true
       return new DataView(anchor.ownerCertificate.buffer, anchor.ownerCertificate.byteOffset).getBigUint64(64) === persona.epoch;
     } finally { store.close(); }
   });
+  if (atBinding && !expectRenewal) assert.equal(await owner.evaluate(async () => {
+    const wasm = await import('../experiments/tg-pairing/hive_wasm.js'); await wasm.default();
+    const store = await (await import('../experiments/tg-pairing/storage.mjs')).openBrowserStorage(window.testDeviceDatabase);
+    try {
+      const group = (await store.read('candidate-persona', 'active')).value.record.group;
+      const readers = await import('../experiments/at-credentials/local-owner.mjs');
+      const options = {wasm, store, expectedGroup: group};
+      return (await readers.loadATConnectionBinding(options)).status === 'at-owner-renewal-needed'
+        && !await readers.loadATBinding(options).then(() => true, () => false);
+    } finally { store.close(); }
+  }), true, 'stale owner evidence permits reconnect review but not AT access');
   const after = await Promise.all([owner, recipient].map(state));
   for (let i = 0; i < 2; i++) {
     assert.equal(BigInt(after[i].epoch), BigInt(before[i].epoch) + 1n);
@@ -73,5 +85,5 @@ export async function checkAppRotation({owner, recipient, move, atBinding = true
     await page.reload();
   }
   assert.deepEqual(await Promise.all([owner, recipient].map(state)), after, 'both app instances restore renewed authority without rewriting AT data');
-  console.log(atBinding ? 'PASS: both app Settings rotate and deliver group keys; actual renewal callback preserves AT binding, policy and encrypted credentials across reload.' : 'PASS: both app Settings rotate and deliver group keys while preserving saved journey permissions across reload.');
+  console.log(atBinding && expectRenewal ? 'PASS: both app Settings rotate and deliver group keys; actual renewal callback preserves AT binding, policy and encrypted credentials across reload.' : atBinding ? 'PASS: different AT owner retains its binding and encrypted keys through rotation; stale owner evidence is usable only for reconnect review.' : 'PASS: both app Settings rotate and deliver group keys while preserving saved journey permissions across reload.');
 }

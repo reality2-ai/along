@@ -1186,3 +1186,20 @@ removal, retained journey state and offline reopening. The component fixture als
 checks wrong-owner and v1 downgrade refusal before a valid reconnect, with keyboard,
 narrow/zoom and automated accessibility checks. No provider requests occur during
 connection setup. Group-key rotation remains unfinished.
+
+
+### Reconnect after group key rotation
+
+The source reconnect profile is `along-at-reconnect-v3`; both devices must update.
+Its owner message contains a current public certificate for the already selected
+AT owner. A separately named connection-context reader can restore a verified stale
+pin for review, while vault/provider/session access continues to require current
+membership through the strict reader. Renewal changes only that owner's evidence,
+not its credential identity, signed policy or consent.
+
+The generated-app variant
+`MAIN_APP_SETUP=1 ROTATE_GROUP_KEYS=1 DIFFERENT_AT_OWNER=1 node experiments/at-credentials/two-app-integration.test.mjs`
+passes with an enrolled AT owner sharing to the group creator, including stale-pin
+refusal for access, visible renewal, downgrade/bad-certificate refusal, mocked AT
+reads, removal and offline routing. The ordinary credential-delivery browser
+regression also passes. Public preview 3803 still uses reconnect v2.
