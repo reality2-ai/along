@@ -1,0 +1,151 @@
+{
+  "profile": "along-preview-qualification-v1",
+  "app_version": "3806",
+  "source_commit": "daad9c8f8f73d74f64540cf4428ffd16639e242a",
+  "candidate_manifest_sha256": "63a681efdd67fa9dfa496d7149744451dc50d9683fdddd3537fb05dfcf3f652b",
+  "checks": {
+    "journeys": {
+      "status": "passed",
+      "exit_code": 0,
+      "command": "PREVIEW=1 node experiments/journey-sync/app-integration.test.mjs",
+      "log_sha256": "cc12aa3ddc7f86a1df9cd92a142035efbdb1b7a20504f46c37690f838ec81275"
+    },
+    "capacity_reporting": {
+      "status": "passed",
+      "exit_code": 0,
+      "command": "PREVIEW=1 CAPACITY=1 node experiments/journey-sync/app-integration.test.mjs",
+      "log_sha256": "6abd9784f30d0564f2397053ad17b17d159e8ac1fb353cfd590d3ee4fc666720"
+    },
+    "legacy_enrollment": {
+      "status": "passed",
+      "exit_code": 0,
+      "command": "PREVIEW=1 LEGACY_ENROLLMENT=1 node experiments/journey-sync/app-integration.test.mjs",
+      "log_sha256": "cc12aa3ddc7f86a1df9cd92a142035efbdb1b7a20504f46c37690f838ec81275"
+    },
+    "checkpoint_app": {
+      "status": "passed",
+      "exit_code": 0,
+      "command": "PREVIEW=1 CHECKPOINT_APP=1 node experiments/journey-sync/app-integration.test.mjs",
+      "log_sha256": "786afc8bebc5e2385c9c360228957c0478b5c4f859a12a3d98dc112a10ce140c"
+    },
+    "rotated_journeys": {
+      "status": "passed",
+      "exit_code": 0,
+      "command": "PREVIEW=1 ROTATE_GROUP_KEYS=1 node experiments/journey-sync/app-integration.test.mjs",
+      "log_sha256": "cb582bf06dd51959470d760f568b6a2ca1cdff8e1209235c9597031206092dd0"
+    },
+    "owner_key": {
+      "status": "passed",
+      "exit_code": 0,
+      "command": "PREVIEW=1 CHECK_BFCACHE=1 GROUP_KEYS=1 node experiments/at-credentials/app-integration.test.mjs",
+      "log_sha256": "4edf1591da60d60a196d73fe47164b1ce507beec53b364de50800fda14cce763"
+    },
+    "shared_key_replacement": {
+      "status": "passed",
+      "exit_code": 0,
+      "command": "PREVIEW=1 MAIN_APP_SETUP=1 REPLACE_SHARED_KEY=1 node experiments/at-credentials/two-app-integration.test.mjs",
+      "log_sha256": "cd4e7103ca2966293ff77641c58d06c7895a036934c9a9b7b68ea4b523984cff"
+    },
+    "group_removal": {
+      "status": "passed",
+      "exit_code": 0,
+      "command": "PREVIEW=1 MAIN_APP_SETUP=1 REMOVE_GROUP_MEMBER=1 node experiments/at-credentials/two-app-integration.test.mjs",
+      "log_sha256": "4657b1dff8b4c0899edd26cdbfa55946ac191d958f95cf07f2ebe344c69c351d"
+    },
+    "journal_compaction": {
+      "status": "passed",
+      "exit_code": 0,
+      "command": "PREVIEW=1 node experiments/journey-sync/app-store-browser.test.mjs",
+      "log_sha256": "bc256a05359deefad22b3b453d7e9d3c395356f6d1975adb17e8fd0069dfc58a",
+      "test_source_commit": "2e44466d70da2fc6aaf3f6759fb7320a65f4b98e",
+      "previous_attempts": [
+        {
+          "status": "failed",
+          "exit_code": 1,
+          "command": "PREVIEW=1 node experiments/journey-sync/app-store-browser.test.mjs",
+          "log_sha256": "3eca512e0146008dbaa0f2744b95c0d2f818d46f81a1947ef0d59fac5d6b0278"
+        }
+      ],
+      "note": "Only the test server fixture changed to serve existing candidate preference dependencies. Candidate bytes unchanged; all other checks retain their original results."
+    },
+    "rotated_at_owner": {
+      "status": "passed",
+      "exit_code": 0,
+      "command": "PREVIEW=1 MAIN_APP_SETUP=1 ROTATE_GROUP_KEYS=1 node experiments/at-credentials/two-app-integration.test.mjs",
+      "log_sha256": "347effc2fae6e6505509f70e533f256aa5bbb13a0aac22efef3d7257d5c3ec10"
+    },
+    "relay_settings": {
+      "status": "passed",
+      "exit_code": 0,
+      "command": "PREVIEW=1 node experiments/relay/app-settings.test.mjs",
+      "log_sha256": "950cc351be1ea125d61fafc79c59a4b1e0000b798f95a332dcf8af11a1a802e4"
+    },
+    "recovery_settings": {
+      "status": "passed",
+      "exit_code": 0,
+      "command": "PREVIEW=1 node experiments/journey-sync/startup-settings.test.mjs",
+      "log_sha256": "8ab88e44c2e1ee41a4633ea7dfa7acdfd408bce72145db3a983d3f4fbf40ea2a"
+    },
+    "rotated_different_at_owner": {
+      "status": "passed",
+      "exit_code": 0,
+      "command": "PREVIEW=1 MAIN_APP_SETUP=1 ROTATE_GROUP_KEYS=1 DIFFERENT_AT_OWNER=1 node experiments/at-credentials/two-app-integration.test.mjs",
+      "log_sha256": "3db1c19c35b7f105c8c647054ed9fb6286cac38a91a1bf4eb705338d174799dd"
+    },
+    "upgrade_coexistence": {
+      "status": "passed",
+      "exit_code": 0,
+      "command": "PREVIEW=1 node experiments/journey-sync/preview-coexistence.test.mjs",
+      "log_sha256": "2afa2d0eb3221f7c6979677fe1343086874f6ab65fd974a8fa002d423c49b21f"
+    },
+    "pairing_qr_expiry": {
+      "status": "passed",
+      "exit_code": 0,
+      "command": "PREVIEW=1 QR_FLOW=1 CANDIDATE_TIMEOUT=1 node experiments/tg-pairing/pairing-flow.test.mjs",
+      "log_sha256": "87c697f83e51c53decebfc3069cdc010a96ef43dcaf95e99951f31ccad9ceae9"
+    },
+    "published_migration": {
+      "status": "passed",
+      "exit_code": 0,
+      "command": "PREVIEW=1 node experiments/journey-sync/published-migration.test.mjs",
+      "log_sha256": "42eaefea2766cc8cd27a4c3a5fa4b3756b148d45e22b2acb9f3d9c90e178e610"
+    },
+    "enrolled_relay": {
+      "status": "passed",
+      "exit_code": 0,
+      "command": "PREVIEW=1 ENROLLED_RELAY_NETWORK=1 node experiments/at-credentials/peer-delivery.test.mjs",
+      "log_sha256": "46230d6bd3e8f37e1b4421f0f8ba568dffcd73d2706da245d878f3c09b039fef"
+    },
+    "generation_relay": {
+      "status": "passed",
+      "exit_code": 0,
+      "command": "PREVIEW=1 RELAY_GENERATION=1 node experiments/at-credentials/peer-delivery.test.mjs",
+      "log_sha256": "47efa11da5650527160dae649896216487facef4f451212f60ca359fb43abd53"
+    },
+    "older_edit_storage": {
+      "status": "passed",
+      "exit_code": 0,
+      "command": "PREVIEW=1 node experiments/journey-sync/generation-migration.test.mjs",
+      "log_sha256": "9a9bd81a605a94868156c92157d471d1fb898ee079643314e84afb8fd8ed9fdd"
+    },
+    "rotation_settings": {
+      "status": "passed",
+      "exit_code": 0,
+      "command": "PREVIEW=1 CHECK_BFCACHE=1 GROUP_KEYS=1 node experiments/at-credentials/app-integration.test.mjs",
+      "log_sha256": "4edf1591da60d60a196d73fe47164b1ce507beec53b364de50800fda14cce763",
+      "note": "Covered by GROUP_KEYS=1 owner-key/BFCache run."
+    },
+    "older_edit_settings": {
+      "status": "passed",
+      "exit_code": 0,
+      "command": "PREVIEW=1 node experiments/journey-sync/published-migration.test.mjs",
+      "log_sha256": "42eaefea2766cc8cd27a4c3a5fa4b3756b148d45e22b2acb9f3d9c90e178e610",
+      "note": "Includes older-copy, stale-choice and interrupted-application Settings review."
+    }
+  },
+  "limits": "Local Chromium; some checks use source/runtime fixtures. No physical-device or external-relay acceptance.",
+  "recorded_at": "2026-09-24T06:24:32.305325+00:00",
+  "unchanged_source_and_candidate": true,
+  "status": "passed",
+  "retry_candidate_unchanged": true
+}

@@ -70,7 +70,7 @@ def prepare(qualification):
             'Saved places and device setup use separate browser storage from regular Along; '
             'same-origin scripts are not isolated. See PREVIEW_INSTALL.md and DEVICE_CHECK.md.\n\n'
             f'Application source: https://github.com/reality2-ai/along/tree/{evidence["source_commit"]}\n\n'
-            'This release does not establish full R2 conformance, automatic device discovery, '
+            'This release does not establish full R2 conformance, external relay compatibility, '
             'physical installation/TalkBack acceptance or completion of the wider project goal. '
             'Runtime provenance, scoped MIT grants and third-party notices are included.\n')
         released = {p.relative_to(stage).as_posix(): digest(p) for p in sorted(stage.rglob('*')) if p.is_file()}
