@@ -143,3 +143,34 @@ Along does not request catchup or infer delivery/durability from forwarding.
 Still required: actual two-browser encrypted WSS flow, real enrolled-peer
 membership/consent integration, bounded dispatch and reconnect orchestration,
 selected-relay settings and public release qualification.
+
+### Enrolled permission adapter and two-browser network checks
+
+`local-handshake.mjs` loads the actual local persona, verifies the selected peer's
+certificate/current membership and requires explicit saved journey-sharing consent.
+It freezes every observed authority record revision, so removal/regrant, identity
+replacement or membership changes invalidate the held handshake and subsequent
+protected operations. It neither grants permission nor reads/merges journey state;
+replica commits still require their existing guarded merge adapter.
+
+With the pinned runtime/browser environment, run
+`ENROLLED_RELAY=1 node experiments/at-credentials/peer-delivery.test.mjs`.
+This passed using the fixture's actual acknowledged enrollment: absent permission
+refuses, consenting peers exchange protected bytes, remove/regrant invalidates the
+old channel, identity revision changes refuse, and a corrupted peer certificate
+refuses. The existing credential and journey tests in that fixture also pass.
+Message carriage in this enrolled check is still harness-controlled on one host.
+
+`PEER_HANDSHAKE=1 node experiments/relay/browser-transport.test.mjs` adds two
+isolated Chromium contexts to the local TLS fixture. They exchange signed fresh
+contributions, encrypted key confirmations and application bytes in both directions
+over actual WSS forwarding. The harness supplies synthetic selected identities and
+an always-allow check: this network test is distinct from the enrolled consent
+check above. Combining both with the real app and actual relay remains required.
+
+The first two-context run timed out waiting for handshake completion. After adding
+nonsecret stage diagnostics (`statuses`, message kind numbers and failure text),
+seven consecutive reruns passed, including a five-run batch. The initial stall's
+cause is **not resolved**; retain it as a reliability investigation item. Do not
+interpret reruns as proving physical-device reliability or fixing the user's QR
+timeout. No relay feature or changed preview has been deployed.
