@@ -1,11 +1,12 @@
 # Optional relay transport — development only
 
 The user approved an optional user-selected R2 relay on 24 September 2026.
-Relay controls are mounted only in the local experimental build, not deployed.
+Relay controls are included in Device Preview 3806; regular Along remains separate.
 No endpoint is selected by default. A saved explicit opt-in restores connection
 while Along is open. Planning and direct AT access remain independent.
-The sections below record implementation stages; see the final Settings section
-for current integration and test scope.
+The sections below record historical implementation stages. Current qualification
+and public verification are recorded in `docs/evidence/device-preview-3806-*.json`.
+External relay compatibility and physical-device pairing remain unverified.
 
 `transport.mjs` implements a bounded WebSocket connection lifecycle shaped around
 Notekeeper's observed client at revision

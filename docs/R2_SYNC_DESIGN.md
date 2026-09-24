@@ -1,7 +1,7 @@
 # Proposal: private cross-device synchronisation through Reality2
 
 Status: experimental device preview, 24 September 2026. Saved-journey sharing is
-enabled in [Device Preview 3805](https://reality2.ai/along/preview/public/), separately
+enabled in [Device Preview 3806](https://reality2.ai/along/preview/public/), separately
 from the regular version-37 app. Reviewed group removal and group-key rotation are available. Automatic
 discovery/reconnection, capacity recovery and physical acceptance remain unfinished. See the [device checks](PREVIEW_DEVICE_CHECK.md).
 
@@ -58,8 +58,10 @@ The [WebRTC specification](https://www.w3.org/TR/webrtc/) requires an out-of-ban
 exchange of connection information; a saved group identity does not supply that
 transport. The user has approved an optional, user-selected R2 relay as a scoped
 exception to the server constraint. No relay endpoint is selected yet and
-interoperability remains to be verified. This capability is not deployed. Improving transient connection recovery alone would not complete
-automatic reconnection after reopening.
+interoperability remains to be verified. Device Preview 3806 now restores explicit
+relay opt-in, verifies discovery for already permitted peers, and reconnects saved
+journey sharing while both apps are open. Initial pairing still uses transferred
+messages. Planning and direct AT access do not depend on the relay.
 
 ## Evidence inspected (historical)
 

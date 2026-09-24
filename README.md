@@ -25,7 +25,7 @@ connection is not yet deployed. Losing connectivity will not remove offline plan
 </p>
 <p align="center">Open in your browser and install on your device. Prepare it online, then plan scheduled journeys offline.</p>
 
-**Device testing:** [Open Along Device Preview 3805](https://reality2.ai/along/preview/public/)
+**Device testing:** [Open Along Device Preview 3806](https://reality2.ai/along/preview/public/)
 and follow the [S23/desktop guide](docs/PREVIEW_DEVICE_CHECK.md). It has separate
 saved places and device setup, with optional sharing between devices you approve.
 Use dummy AT keys for these tests. The regular installation above remains version 37.
@@ -298,9 +298,10 @@ information or journey synchronization in the installed app.
 The [full device preview](https://reality2.ai/along/preview/public/) includes
 [saved-journey sharing through Settings](experiments/journey-sync/README.md#actual-app-saved-places-local-experimental-build)
 and optional AT-key setup/sharing. Two-browser tests cover saved places, service
-preferences, offline changes and permission removal. Connecting still requires
-transferring messages; automatic reconnection and full release qualification remain
-unfinished. [Download the static preview and checksum](https://github.com/reality2-ai/along/releases/tag/device-preview-3805)
+preferences, offline changes and permission removal. Initial pairing still requires transferring messages. Version 3806 adds optional
+reconnection through a user-selected relay for already paired, permitted devices.
+The relay is off by default; external compatibility and physical-device acceptance
+remain unverified. [Download the static preview and checksum](https://github.com/reality2-ai/along/releases/tag/device-preview-3806)
 to inspect or host it yourself. Runtime provenance and licence notices are included.
 
 The preview also provides a device-certificate list and reviewed, signed group
@@ -312,7 +313,8 @@ Removal cannot erase previously shared copies or replace an AT key at its provid
 Version 3804 adds reviewed group-key updates, delivery to existing devices and
 verified installation confirmations. Sharing is tested after rotation even when
 the AT-key owner is a different member. Version 3805 compacts repeated queued edits and explains the distinct-place
-sharing limit. The tested 3804 → 3805 update preserves
+sharing limit. Version 3806 adds reviewed recovery checkpoints and older-copy edit
+recovery, plus clearer QR pairing feedback. The tested 3805 → 3806 update preserves
 preview saved places, identity and encrypted keys. Update both devices before
 pairing or reconnecting; the invitation and AT reconnect formats have changed.
 
