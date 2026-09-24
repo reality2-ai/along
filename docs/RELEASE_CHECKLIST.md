@@ -57,9 +57,11 @@ this audit. Later public-hosting work supplements that brief.
 2. Obtain S23/desktop observations for the deployed preview, especially the failed
    scan → Use transition, installation, touch and spoken screen-reader use. The
    user withdrew an earlier TalkBack-success statement; treat it as untested.
-3. Validate the regular-app upgrade path before promoting preview TG/live features.
-   Its separate storage is intentional; installing the preview is not evidence
-   that regular-app credentials or preferences have migrated.
+3. Complete regular-app promotion checks. The [local upgrade candidate](REGULAR_UPGRADE.md)
+   passes exact published-v37 update, saved-data retention, optional identity setup
+   and offline reopening on the same `/along/` scope. Candidate wording, complete
+   live/TG regression and physical acceptance remain. Preview storage stays separate;
+   this does not migrate preview credentials into regular Along.
 4. Complete the signed-in GitHub composer/submission check for contextual feedback.
    Actual CLI submission and anonymous browser receipt are already evidenced in
    [FEEDBACK.md](FEEDBACK.md); those do not test the interactive final submission.
