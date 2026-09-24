@@ -11,6 +11,12 @@ storage names and explicit software-security limits. See the
 
 ## Current status
 
+The next group-lifecycle work is documented in [epoch rotation](R2_EPOCH_ROTATION.md).
+An Along-specific signed successor format now verifies authority, exact next epoch
+and both traffic-key digests. Unit tests cover tampering and bounds. This does not
+advance storage or enable rotation; durable preparation, authenticated cross-epoch
+delivery, atomic installation and the user flow remain unfinished.
+
 The restored software issuer now produces epoch-zero signed revocation evidence
 using the runtime's actual signing bytes. The browser check applies this evidence
 through the membership verifier, rejects tampering, deduplicates replay and checks
