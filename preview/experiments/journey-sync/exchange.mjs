@@ -13,8 +13,20 @@ function frame(type, id, number, bytes = new Uint8Array()) {
 
 // Run only over an authenticated application session. Each direction has one
 // bounded transfer; acknowledgments pace chunks, while a receipt follows commit.
-export function createJourneyExchange({group, send, commit, signal, timeoutMs = 15000, onClose = () => {}}) {
-  if (!/^[0-9a-f]{64}$/.test(group) || typeof send !== 'function' || typeof commit !== 'function'
+export function createJourneyExchange({group, ...options}) {
+  if (!/^[0-9a-f]{64}$/.test(group)) throw failure();
+  const exchange = createBoundedExchange({...options,
+    encode: state => encoder.encode(JSON.stringify(validateState(state, group))),
+    decode: bytes => validateState(JSON.parse(decoder.decode(bytes)), group),
+    commitStatus: 'journeys-saved', resultStatus: 'peer-saved-snapshot', frameBase: 0});
+  return Object.freeze({sendSnapshot: exchange.sendPayload, receive: exchange.receive, close: exchange.close, signal: exchange.signal});
+}
+
+// Internal bounded transport, shared by distinct application frame domains.
+export function createBoundedExchange({send, commit, encode, decode, commitStatus, resultStatus, frameBase, signal, timeoutMs = 15000, onClose = () => {}}) {
+  if (typeof send !== 'function' || typeof commit !== 'function' || typeof encode !== 'function' || typeof decode !== 'function'
+      || !Number.isSafeInteger(frameBase) || frameBase < 0 || frameBase > 251
+      || typeof commitStatus !== 'string' || typeof resultStatus !== 'string'
       || !Number.isSafeInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 120000) throw failure();
   const lifetime = new AbortController();
   let closed = false, sending = false, incoming, pending, timer, incomingTimer, queue = Promise.resolve();
@@ -41,7 +53,7 @@ export function createJourneyExchange({group, send, commit, signal, timeoutMs = 
   const receive = async packet => {
     current();
     if (!(packet instanceof Uint8Array) || packet.length < 21 || packet.length > 2048) throw failure();
-    const type = packet[0], id = packet.slice(1, 17);
+    const type = packet[0] - frameBase, id = packet.slice(1, 17);
     const number = new DataView(packet.buffer, packet.byteOffset, packet.byteLength).getUint32(17);
     const bytes = packet.slice(21);
     if (type === 3 || type === 4) {
@@ -53,37 +65,39 @@ export function createJourneyExchange({group, send, commit, signal, timeoutMs = 
       if (incoming || bytes.length !== 32 || number < 1 || number > MAX_BYTES) throw failure();
       incoming = {id, hash: bytes, bytes: new Uint8Array(number), offset: 0};
       incomingTimer = setTimeout(close, timeoutMs);
-      await transmit(frame(3, id, 0)); return;
+      await transmit(frame(3 + frameBase, id, 0)); return;
     }
     if (type !== 2 || !incoming || !equal(id, incoming.id) || number !== incoming.offset
         || !bytes.length || bytes.length > CHUNK || number + bytes.length > incoming.bytes.length) throw failure();
     clearTimeout(incomingTimer); incomingTimer = setTimeout(close, timeoutMs);
     incoming.bytes.set(bytes, number); incoming.offset += bytes.length;
-    if (incoming.offset < incoming.bytes.length) { await transmit(frame(3, id, incoming.offset)); return; }
+    if (incoming.offset < incoming.bytes.length) { await transmit(frame(3 + frameBase, id, incoming.offset)); return; }
     const snapshot = incoming;
     if (!equal(await digest(snapshot.bytes), snapshot.hash)) throw failure();
     current();
-    const state = validateState(JSON.parse(decoder.decode(snapshot.bytes)), group);
+    const state = await decode(snapshot.bytes);
+    current();
     const receipt = await commit(state, {signal: lifetime.signal});
-    if (receipt?.status !== 'journeys-saved') throw failure();
+    if (receipt?.status !== commitStatus) throw failure();
     current();
     clearTimeout(incomingTimer); incoming = undefined;
-    await transmit(frame(4, id, snapshot.bytes.length, snapshot.hash));
+    await transmit(frame(4 + frameBase, id, snapshot.bytes.length, snapshot.hash));
   };
   return Object.freeze({
-    async sendSnapshot(state) {
+    async sendPayload(state) {
       current(); if (sending) throw failure();
-      const bytes = encoder.encode(JSON.stringify(validateState(state, group)));
+      const bytes = encode(state);
+      if (!(bytes instanceof Uint8Array) || bytes.length < 1) throw failure();
       if (bytes.length > MAX_BYTES) throw failure();
       sending = true;
       try {
         const id = crypto.getRandomValues(new Uint8Array(16)), hash = await digest(bytes); current();
-        await request(frame(1, id, bytes.length, hash), 3, 0);
+        await request(frame(1 + frameBase, id, bytes.length, hash), 3, 0);
         for (let offset = 0; offset < bytes.length; offset += CHUNK) {
           const end = Math.min(offset + CHUNK, bytes.length);
-          await request(frame(2, id, offset, bytes.slice(offset, end)), end === bytes.length ? 4 : 3, end, hash);
+          await request(frame(2 + frameBase, id, offset, bytes.slice(offset, end)), end === bytes.length ? 4 : 3, end, hash);
         }
-        return {status: 'peer-saved-snapshot', digest: hex(hash)};
+        return {status: resultStatus, digest: hex(hash)};
       } catch { close(); throw failure(); }
       finally { sending = false; }
     },

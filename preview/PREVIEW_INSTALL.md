@@ -7,7 +7,7 @@ information with AT. The preview is not the regular Along release.
 ## Keep the preview separate
 
 The installed name is **Along Device Preview** (some launchers shorten it to
-**Along Preview**). Check for **App version 3805 · Device preview** in Settings.
+**Along Preview**). These instructions describe **App version 3806 · Device preview**. Check the version in Settings before following the new recovery or relay steps.
 The preview starts with its own saved places, offline download and device setup.
 It does not import the regular app's AT key or saved journeys. Keep your regular
 Along installation while testing.
@@ -28,6 +28,29 @@ These separate storage names prevent accidental mixing; they are not a security 
 page from other scripts on the same website. Clearing this website's browser data
 may remove both apps, including saved device keys. Browser software storage is not
 hardware-backed custody or protection from a compromised browser or same-origin script.
+
+## Version 3806: optional automatic reconnection
+
+After pairing devices and allowing saved-journey sharing, open **Settings → Share
+saved journeys with my devices → Automatic connection with a relay**. Enter the
+same secure `wss://` R2 relay address on both devices and choose **Use this relay**.
+No address is supplied or enabled by default. External relay compatibility still
+needs verification; a matching protocol is required, not just any WebSocket server.
+
+Keep Along open on both devices. A relay connection alone does not mean the other
+device is connected or that a journey has been received. The sharing screen reports
+when a permitted device confirms saving the journeys. If offline, changes stay
+locally and reconnection retries. Mobile browsers may suspend a background app.
+Recovery differences must be reviewed before automatic sharing resumes; devices at
+different checkpoints still need a reviewed checkpoint transfer.
+
+**Stop automatic relay sharing** keeps the address for later. **Remove relay
+address** clears that saved choice. Neither action removes your saved journeys.
+Planning and direct AT access work without a relay. The relay sees network and
+device/group identifiers, certificates and traffic timing/sizes. Journey payloads
+are encrypted between permitted devices; this connection does not send your AT
+key, learning history or current location. Pairing and sharing permission remain
+separate deliberate steps.
 
 ## Prepare and install
 
@@ -222,3 +245,17 @@ connection formats changed. Device setup includes reviewed group-key updates,
 per-device confirmations and recovery of a lost acknowledgment. These updates
 preserve existing sharing choices; replacing an AT subscription key is a separate
 provider action. Downloaded planning remains available if devices cannot connect.
+
+## Review edits from an older open app
+
+After saved-journey recovery, an older app tab may still write to its retained
+copy. Settings offers **Review older-copy edits** so you can choose what to keep,
+one journey at a time. Nothing is applied until you confirm. Back or Leave review
+keeps your existing data.
+
+If application is interrupted, use **Finish older-copy review**. If an unapplied
+choice became stale, **Start a fresh review** compares the latest edits. If changes
+were partly applied and you have since edited this device, **Review newer edits**
+compares those changes with the earlier committed choices. Your latest history
+and preferences are kept. Sharing pauses while recovery is unfinished. Keep device
+data rather than clearing it to resolve an interruption.

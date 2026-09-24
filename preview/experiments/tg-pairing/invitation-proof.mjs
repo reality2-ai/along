@@ -31,7 +31,7 @@ export async function answerInvitationProof(invitation, request) {
     return JSON.stringify({...value, kind: 'response', certificate: hex(result.certificate), proof: hex(result.proof)});
   } catch { throw fail(); }
 }
-export function createInvitationProof({wasm, reviewed, lifetimeMs = 60000}) {
+export function createInvitationProof({wasm, reviewed, lifetimeMs = 60000, onExpired = () => {}}) {
   if (!reviewed?.signal || reviewed.signal.aborted || !Number.isFinite(lifetimeMs) || lifetimeMs < 1 || lifetimeMs > 60000) throw fail();
   const selected = descriptor(reviewed.descriptor), invitation = decodeSoftwareInvitation(selected);
   const nonce = crypto.getRandomValues(new Uint8Array(16)), started = performance.now();
@@ -40,7 +40,7 @@ export function createInvitationProof({wasm, reviewed, lifetimeMs = 60000}) {
   const current = () => {
     if (closed || consumed || reviewed.signal.aborted || performance.now() < started || performance.now() - started >= lifetimeMs) { close(); throw fail(); }
   };
-  reviewed.signal.addEventListener('abort', close, {once: true}); timer = setTimeout(close, lifetimeMs);
+  reviewed.signal.addEventListener('abort', close, {once: true}); timer = setTimeout(() => { close(); try { onExpired(); } catch {} }, lifetimeMs);
   const request = JSON.stringify({profile, kind: 'challenge', descriptor: selected, nonce: hex(nonce)});
   return Object.freeze({request, close,
     verify: response => {

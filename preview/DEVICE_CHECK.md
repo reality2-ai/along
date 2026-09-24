@@ -1,7 +1,7 @@
 # Along Device Preview: S23 and desktop check
 
 Open [Along Device Preview](https://reality2.ai/along/preview/public/) and check
-version **3805**. These instructions are for that preview, not regular version 37 or
+version **3806**. These instructions are for that preview, not regular version 37 or
 the standalone pairing lab. No coding or terminal commands are required.
 
 Use your Samsung S23 and desktop. Record the browser name/version on each device.
@@ -9,15 +9,34 @@ Use dummy addresses from the examples and dummy key text only. Keep the regular
 Along installation. Do not clear the whole website's storage to restart a test;
 that can remove data from both apps. Mark anything you cannot check as **not tested**.
 
-If preview 3801, 3802, 3803 or 3804 is already installed, open
+If preview 3801, 3802, 3803, 3804 or 3805 is already installed, open
 [preview update recovery](https://reality2.ai/along/preview/public/update.html)
 and choose **Update and reopen**. Check that saved places and setup remain and
-Settings shows 3805. Do not recreate an existing group to test an update.
+Settings shows 3806. Do not recreate an existing group to test an update.
+
+## Reported timeout — investigation pending
+
+The user reports repeated timeouts when attempting the earlier preview check.
+The user clarified that scanning the QR code and choosing the action to use it
+produced no visible progress, eventually timing out. The exact screen, installed
+version, browsers and network are not yet confirmed; this is not a passing
+pairing or sharing check. Preserve device data. If a timeout
+occurs, record the screen title and error wording, whether both devices were on
+the same Wi-Fi, and browser/version on each. Do not publish connection messages
+or keys. Version 3806 offers an optional user-selected relay for already paired devices.
+It does not replace the initial pairing exchange. No relay is enabled by default.
+
+Development checks found a separate candidate-side expiry gap: its proof timed out
+internally while the screen continued waiting. The source now reports the unfinished
+step and shows the return QR immediately after Use. A narrow-screen Chromium test
+covers simulated scan → review → Use, visible return QR, expiry without identity
+changes, and a successful retry through actual enrollment. Camera input is mocked;
+this does not establish the cause of the S23 report. Version 3806 includes these fixes; the physical S23 report still needs verification.
 
 ## Install and plan offline
 
 1. Open the supplied preview URL in the browser used for installation. In Settings,
-   check **App version 3805 · Device preview** and wait for timetable and addresses
+   check **App version 3806 · Device preview** and wait for timetable and addresses
    to be ready offline.
 2. Follow the preview's **Install on your device** guide. The installed name is
    **Along Device Preview** or **Along Preview**. Check that the icon opens its own
@@ -176,3 +195,37 @@ message formats changed. Keep the same saved group and AT sharing choices.
 Report confusing wording, missing controls, update/reconnect failures and TalkBack
 announcements. These are manual device checks; browser automation does not prove
 physical installation, QR camera use or network reachability.
+
+## Candidate 3806 qualification progress (not deployed)
+
+The builder now assigns 3806 consistently to the candidate, shell cache and
+recovery page. Preview-specific privacy wording describes the optional relay.
+New release gates require pairing QR/expiry, relay Settings, enrolled and
+generation relay tests, recovery Settings, published migration, checkpoint app
+flow and older-edit Settings evidence in addition to the existing checks.
+
+Development runs passed the actual generated preview's relay Settings and
+recovery Settings tests. The coexistence test now verifies the exact published
+3805 ZIP and its manifest/payload hashes before testing the 3806 installed update:
+saved places, verified identity and exact encrypted key remain intact, as do the
+regular app's preferences, feedback, pairing record and byte-identical shell cache.
+The separate published-migration test also passes; it deliberately blocks service
+workers and is not installed-update evidence. These runs are development evidence,
+not a completed release qualification record. Older-copy review, fresh review of unapplied stale choices, and recovery of newer
+local edits after partial application now have source and generated-app coverage.
+Run the full qualification against the final candidate before packaging it.
+
+## Version 3806 recovery and optional relay checks
+
+Check the [preview installation guide](PREVIEW_INSTALL.md) for recovery and
+relay controls. Keep existing device data when updating. If an older open app
+creates edits, try reviewing them in Settings, leaving the review, then returning
+to confirm a choice. If a retained review is unfinished, report its screen title;
+do not clear storage.
+
+Only test relay reconnection if you have selected a compatible secure relay. Use
+the same address on already paired devices with journey-sharing permission. Check
+that an offline save arrives after both are online and open, then stop relay
+sharing and confirm planning still works. No real AT key is needed. External-relay
+compatibility and actual phone behavior remain unverified; mark unavailable tests
+as not tested.

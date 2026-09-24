@@ -169,6 +169,29 @@ export async function loadSoftwareIssuer({wasm, store, expectedGroup, signal}) {
             await check(); return signature;
           }});
       },
+      prepareJourneyCheckpoint: async ({expectedRevision}) => {
+        await check();
+        const replica = await store.read('along-saved-journeys-v2', groupId);
+        const identity = await store.read('candidate-persona', 'active');
+        const standing = await store.read('membership', groupId);
+        const permission = await store.read('along-journey-sharing-v1', groupId);
+        if (!replica || replica.revision !== expectedRevision || replica.value.group !== groupId
+            || !identity || !standing) throw fail();
+        const {prepareJourneyCheckpoint} = await import('../journey-sync/checkpoint-preparation.mjs');
+        return prepareJourneyCheckpoint({store, current: replica.value, expectedRevision, signal, check,
+          guards: [
+            {scope, key: groupId, expectedRevision: saved.revision},
+            {scope: 'persona-bootstrap', key: 'initial', expectedRevision: bootstrap.revision},
+            {scope: 'candidate-persona', key: 'active', expectedRevision: identity.revision},
+            {scope: 'membership', key: groupId, expectedRevision: standing.revision},
+            {scope: 'along-journey-sharing-v1', key: groupId, expectedRevision: permission?.revision ?? 0},
+          ],
+          sign: async statement => {
+            await check();
+            const signature = new Uint8Array(await crypto.subtle.sign('Ed25519', key, statement));
+            await check(); return signature;
+          }});
+      },
       // Produces public signed evidence only. The caller must durably apply it
       // and deliver it to remaining members before claiming group-wide removal.
       issueRevocation: async ({subject, sequence, reason}) => {

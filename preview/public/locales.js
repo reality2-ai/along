@@ -684,7 +684,7 @@ Object.assign(messages, {
     "mi": "I hangaia a Along hei mahi mō tētahi akoranga waehere e tautokona ana e te atamai horihori. He whakamātautau tēnei, ehara i te ratonga mana a Auckland Transport. He kōrero hē, tawhito, kāore rānei i oti mō ngā ara, ngā wā, ngā tohutohu hīkoi me te āhei ki te uru. Tirohia tō haerenga me ō hiahia urunga ki a AT i mua i te haere."
   },
   "settings.privacy": {
-    "en": "Search history and current location stay on this device. If you allow journey sharing, saved places and service preferences can be exchanged with your connected devices. No Along server stores your journeys.",
+    "en": "Search history and current location stay on this device. If you allow journey sharing, saved places and service preferences can be exchanged with your connected devices. An optional relay helps permitted devices reconnect while Along is open. It sees connection metadata; shared journeys are encrypted. No Along server stores your journeys.",
     "mi": "Ka ako a Along i ngā rapunga haerenga kua angitu, kāore mā te aroturuki papamuri. Ka noho ō rapunga, ō ara kua tiakina me ō manakohanga ki tēnei pūrere. Kāore he pūkete, kāore hoki e tukuna ake tō hītori haerenga."
   },
   "settings.suggest": {
