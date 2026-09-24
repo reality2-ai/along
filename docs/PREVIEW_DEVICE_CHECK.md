@@ -1,7 +1,8 @@
 # Along Device Preview: S23 and desktop check
 
 Open [Along Device Preview](https://reality2.ai/along/preview/public/) and check
-version **3806**. These instructions are for that preview, not regular version 37 or
+version **3806**. For the current regular app, use the [version 38 check](DEVICE_CHECK.md).
+These instructions are for that preview, not regular version 38 or
 the standalone pairing lab. No coding or terminal commands are required.
 
 Use your Samsung S23 and desktop. Record the browser name/version on each device.

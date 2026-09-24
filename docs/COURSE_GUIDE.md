@@ -49,6 +49,16 @@ the evidence you checked, the actual result, and the remaining uncertainty. Do n
 record API keys, student home addresses or private conversation history. Use the
 public example addresses already in the tests.
 
+For the current connected app, use [Building Along](BUILDING.md). The ordinary
+`npm test` and `npm run test:browser` commands cover the base planner; they do not
+qualify the integrated v38 build. Its separate qualification suite exercises
+pairing, shared preferences, synthetic AT credentials, recovery and a real relay
+on loopback. Start a short class from the published v38 ZIP; have the assistant
+prepare its pinned runtime and data beforehand for implementation sessions.
+Use the [regular-app device check](DEVICE_CHECK.md) for observations. Keep results
+from the separate Device Preview clearly labelled; neither browser automation nor
+an earlier version's touch check proves v38 pairing or TalkBack acceptance.
+
 ## Division of work
 
 In every exercise below, instructions to implement, change a fixture, add a test,

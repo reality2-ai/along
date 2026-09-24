@@ -217,6 +217,12 @@ also let you run your own copy.
 
 ## Run from source
 
+**For the current version 38 app, follow [Building Along](docs/BUILDING.md).**
+It includes the browser device-group runtime, optional direct AT access and
+saved-journey sharing. The commands below run the **legacy planner development
+server**; `npm start` and `npm run build` alone do not reproduce version 38.
+They remain useful for isolated routing and interface work.
+
 Requirements: Python 3.10+, a current browser supporting service workers,
 IndexedDB, module workers and `DecompressionStream`. Node 22+ is used for tests;
 only the street-data import needs an extra Python dependency.
@@ -240,29 +246,22 @@ coverage, provenance and reproducibility.
 
 ## Static hosting and downloadable build
 
-The [version 37 preview release](https://github.com/reality2-ai/along/releases/tag/v0.37.0)
-contains the ready-to-host ZIP and SHA-256 checksum. It is an experimental course
-app. The ZIP must be served
-over HTTPS; opening it as a local file does not install the app.
+The [version 38 release](https://github.com/reality2-ai/along/releases/tag/v0.38.0)
+contains `along-web-v38.zip` and its SHA-256 checksum. To host the current app,
+extract the ZIP and serve its **entire contents**, including `experiments/`,
+`data/`, runtime notices and `.nojekyll`, over HTTPS. Opening `index.html` as a
+local file does not install the app. No Along backend is required.
 
-```sh
-python3 scripts/build_static.py
-```
+For a local check, run `python3 -m http.server 3082 --directory /path/to/extracted-build`.
+Localhost is a development secure context; a phone needs HTTPS. Both `/` and a
+repository subpath are supported. Serve `.gz` files as raw gzip bytes **without
+a Content-Encoding header**; the browser decompresses them itself. Serve `.js`
+and `.mjs` as JavaScript and `.wasm` as `application/wasm`, without an HTML fallback.
 
-This produces `dist/`, a ZIP in `releases/`, and a SHA-256 checksum. Upload the
-**contents of dist** to an HTTPS static host, including the four `data/*.json.gz`
-files and `.nojekyll` on GitHub Pages. Both `/` and a repository subpath are
-supported. Serve `.gz` files as raw gzip bytes **without a Content-Encoding header**;
-the browser worker decompresses them itself. Serve JavaScript as JavaScript, not HTML.
-
-For a local preview: `python3 -m http.server 3082 --directory dist`. Localhost is
-a development secure context; a phone needs HTTPS. A ZIP cannot be installed by
-opening `index.html` as a `file://` URL. Host it first. Static hosting supplies
-scheduled journeys; optional live API endpoints are absent by design.
-
-The builder packages only public assets, public datasets and licence notices.
-It does not package `.env`, agent conversations or private deployment settings.
-See [hosting and restart setup](docs/HOSTING.md).
+See [current source builds and qualification](docs/BUILDING.md),
+[hosting](docs/HOSTING.md), and the [version 38 device check](docs/DEVICE_CHECK.md).
+The older `python3 scripts/build_static.py` / `npm run build` path produces the
+legacy planner in `dist/`; it does not include version 38's connected features.
 
 ## Updates
 

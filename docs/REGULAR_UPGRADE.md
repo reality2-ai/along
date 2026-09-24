@@ -1,11 +1,15 @@
-# Regular Along upgrade candidate
+# Regular Along version 38 release record
 
 Regular Along **38** is now deployed; Device Preview remains **3806**.
 The [public-file check](evidence/regular-v38-public-files.json) matches all 304 files
 to the release package. The [live browser check](evidence/regular-v38-public-browser.json)
 passes setup and offline new-address routing. Physical acceptance remains open.
 
-The following sections retain the candidate-development history.
+Current setup instructions are in [Building Along](BUILDING.md); physical checks
+are in [Device check](DEVICE_CHECK.md).
+
+The following sections retain the candidate-development history. Statements about
+not being published describe those earlier stages, not the current release.
 A local version-38 candidate now tests adding the existing TG/live modules at the
 regular app's URL. It is **not published or release-qualified**. The candidate
 retains a `DO-NOT-PUBLISH.txt` marker. Its interface now contains the intended
@@ -132,7 +136,7 @@ relative module links and shell-cache entries to preserve that layout. It uses
 regular persistence names; preview identities and keys are not imported. Generated
 files remain ignored under `releases/`.
 
-## Before promotion
+## Historical pre-promotion checklist
 
 - Package the qualified payloads without altering interface text. The connected
   guide is sourced from `CONNECTED_INSTALL.md`; its version-38 instructions are

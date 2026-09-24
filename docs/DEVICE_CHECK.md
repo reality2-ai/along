@@ -1,0 +1,62 @@
+# Along 38: short S23 and desktop check
+
+Use the regular app at <https://reality2.ai/along/>, not Device Preview.
+No coding is needed. Start with pairing; report that result before attempting
+the remaining checks if anything is confusing.
+
+## Update both devices
+
+In the browser used to install Along, open
+[Update Along](https://reality2.ai/along/update.html), follow the update prompts,
+and reopen the installed app. Check **App version 38** in Settings on both devices.
+Record the browser names. Preserve existing saved places and device setup; do not
+clear site storage or create replacement groups to retry an interrupted connection.
+
+## Retry the step that timed out
+
+Keep both devices online, preferably on the same Wi-Fi, with both screens open.
+Open Settings → **Device and AT-key setup**. For a device without setup, choose
+**Set up my device** → **Create my device group** and read the storage limits.
+For an existing setup, continue with it.
+
+On desktop choose **Connect or recover another device** → **Invite my other device**;
+on the S23 choose **Join my other device**. Follow the QR/message prompts.
+After the phone scans and you choose **Use**, a **return QR** should appear for
+the desktop to read. Scanning the first QR is not the completed connection.
+Continue through the prompts, compare every character of the displayed codes,
+and confirm only if they match on your own devices. Completion should say
+**Device connected** on the phone and **Other device installed** on desktop.
+
+If it stalls, report the screen title, last button pressed, visible message,
+browser names and whether both devices were on the same Wi-Fi. Do not include
+QR codes, connection messages or keys in public feedback. The return-QR fix has
+browser-test coverage; the original S23 timeout is not yet confirmed resolved.
+
+## Then check sharing and offline use
+
+Save a different example journey on each device. In Settings choose
+**Share saved journeys with my devices**, then **Start journey connection** on
+desktop and **Join journey connection** on the phone. Transfer and review the
+messages as prompted and choose **Use journey connection** on both.
+Check that both saved places and chosen service preferences arrive. Reload and
+check that setup remains. History should stay local.
+
+After the timetable and addresses are ready offline, enable flight mode and
+reopen Along. Try a new search, such as 277 Broadway Newmarket → 1 Queen Street
+Auckland Central, and pull down to refresh. Scheduled planning should still work
+without an update error. Reconnect before expecting changes from the other device.
+
+An optional relay can reconnect already permitted devices while the app is open.
+It needs an explicitly chosen endpoint; none is configured by default. It does
+not replace the initial pairing exchange above. No real AT key is needed here.
+
+## Accessibility and report
+
+On desktop try keyboard-only use and 200% zoom. On Android, if you can test
+TalkBack, check address suggestions, journey steps, opening a stop and Back.
+Record actual spoken or navigation problems; ordinary touch use is a separate
+check. Mark checks you cannot perform **not tested**.
+
+Report: version and browser on each device; whether the return QR appeared;
+whether pairing completed; whether saved places/preferences arrived; offline
+reopening; and accessibility results. A partial result is useful.
