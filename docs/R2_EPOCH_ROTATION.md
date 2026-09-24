@@ -170,6 +170,21 @@ Its authenticated state is recovery context, not permission to use an AT key or
 an assertion that the older member has current application membership. Ordered
 transition/key delivery and installation receipts still need composition.
 
+The owner session now exposes a local `recoveryMaterial(epoch)` operation only
+after mutual authentication and only for its bound peer and epoch range. It loads
+the retained encrypted preparation, verifies its transition, issuer certificate
+and key digest, and produces a renewed recipient certificate. Current issuer
+custody, member removal status and preparation/membership revisions are checked
+again before returning temporary key arrays. The caller must destroy those arrays
+after use; there is still no network key-delivery method in this session.
+
+Browser tests retrieve distinct retained epochs, check current stored keys against
+material returned by the real authenticated session, refuse requests before
+authentication and from the recipient role, and refuse removed/out-of-range peers.
+A removal inserted during actual AES-GCM decryption prevents return and the test
+checks that the decrypted buffer was zeroed. This does not erase other previously
+copied material or qualify browser memory as hardware-protected custody.
+
 1. Compose certificate renewal for retained recipients with authenticated delivery.
    Release only the committed successor. Preserve
    prior removals and recheck recipient standing at delivery, rather than treating

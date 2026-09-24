@@ -5,7 +5,7 @@ import {join} from 'node:path';
 const {chromium} = await import('@playwright/test');
 const sources = new Map();
 for (const name of ['storage.mjs', 'membership.mjs', 'certificate.mjs']) sources.set('/' + name, await readFile(join(process.env.R2_BROWSER_DIR, name)));
-for (const name of ['software-persona.mjs', 'local-persona.mjs', 'epoch-preparation.mjs', 'epoch-transition.mjs', 'epoch-installation.mjs', 'epoch-watch.mjs', 'software-traffic.mjs', 'member-removal.mjs']) sources.set('/' + name, await readFile(new URL(name, import.meta.url)));
+for (const name of ['software-persona.mjs', 'local-persona.mjs', 'epoch-preparation.mjs', 'epoch-recovery-material.mjs', 'epoch-transition.mjs', 'epoch-installation.mjs', 'epoch-watch.mjs', 'software-traffic.mjs', 'member-removal.mjs']) sources.set('/' + name, await readFile(new URL(name, import.meta.url)));
 for (const name of ['hive_wasm.js', 'hive_wasm_bg.wasm']) sources.set('/' + name, await readFile(join(process.env.R2_WASM_DIR, name)));
 const server = createServer((req, res) => {
   res.setHeader('Content-Type', req.url.endsWith('.wasm') ? 'application/wasm' : sources.has(req.url) ? 'text/javascript' : 'text/html');
@@ -107,7 +107,28 @@ try {
     check(second.from === 1n && second.to === 2n, 'second successor supported');
     await install(2n); renewed.close();
     renewed = await loadSoftwareIssuer({wasm, store, expectedGroup: group});
-    const removal = await (await import('./member-removal.mjs')).removeSoftwareMember({wasm, store, expectedGroup: group, subject, certificate: oldCertificate});
+    const recovered = [];
+    for (const epoch of [1n, 2n]) {
+      const material = await renewed.recoveryMaterial({subject, certificate: oldCertificate, epoch});
+      try {
+        check(material.epoch === epoch && new DataView(material.certificate.buffer).getBigUint64(64) === epoch, 'ordered historical material available');
+        recovered.push(Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', material.payloadKey))));
+      } finally { material.destroy(); check(material.payloadKey.every(b => b === 0) && material.integrityKey.every(b => b === 0), 'volatile recovery keys cleared'); }
+    }
+    check(JSON.stringify(recovered[0]) !== JSON.stringify(recovered[1]), 'historical epochs retain distinct keys');
+    const decrypt = crypto.subtle.decrypt.bind(crypto.subtle);
+    let removal, exposedBuffer;
+    crypto.subtle.decrypt = async (...args) => {
+      const result = await decrypt(...args);
+      if (!exposedBuffer && new TextDecoder().decode(args[0].additionalData).includes('along/prepared-epoch/v1')) {
+        exposedBuffer = result;
+        removal = await (await import('./member-removal.mjs')).removeSoftwareMember({wasm, store, expectedGroup: group, subject, certificate: oldCertificate});
+      }
+      return result;
+    };
+    try { check(await denied(() => renewed.recoveryMaterial({subject, certificate: oldCertificate, epoch: 2n})), 'removal during decryption blocks recovery'); }
+    finally { crypto.subtle.decrypt = decrypt; }
+    check(exposedBuffer && new Uint8Array(exposedBuffer).every(b => b === 0), 'failed recovery clears actual decrypted buffer');
     check(removal.evidence.epoch === 2n, 'stale authentic device can be removed at current epoch');
     check(await denied(() => renewed.enrollmentMaterial(subject)), 'removed member cannot get new epoch keys');
     renewed.close(); store.close();

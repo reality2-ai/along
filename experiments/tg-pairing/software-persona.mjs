@@ -143,6 +143,19 @@ export async function loadSoftwareIssuer({wasm, store, expectedGroup, signal}) {
       };
     return Object.freeze({group: groupId, member: persona.member, custody: 'encrypted-browser-software', close,
       issueCertificate,
+      recoveryMaterial: async ({subject, certificate, epoch}) => {
+        if (!bytes(subject, 32) || !bytes(certificate, 136)) throw fail();
+        const member = subject.slice(), proof = certificate.slice();
+        await check();
+        const {loadEpochRecoveryMaterial} = await import('./epoch-recovery-material.mjs');
+        return loadEpochRecoveryMaterial({wasm, store, group, owner: Uint8Array.from(persona.member.match(/../g), b => parseInt(b, 16)),
+          currentEpoch: persona.epoch, subject: member, certificate: proof, epoch, check, signal,
+          sign: async statement => {
+            await check();
+            const signature = new Uint8Array(await crypto.subtle.sign('Ed25519', key, statement));
+            await check(); return signature;
+          }});
+      },
       prepareRotation: async () => {
         await check();
         const {prepareEpoch} = await import('./epoch-preparation.mjs');

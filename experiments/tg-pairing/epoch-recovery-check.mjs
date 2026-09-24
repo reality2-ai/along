@@ -73,6 +73,7 @@ export async function checkRecoveryProof(owner, recipient) {
         };
       }
       window.recoverySession = await openEpochRecoverySession(options);
+      if (await recoverySession.recoveryMaterial(2n).then(m => { m.destroy(); return true; }, () => false)) throw Error('Keys released before mutual authentication');
       return recoverySession.accept(offer);
     }, {offer, tamper});
     await recipient.evaluate(reply => recoverySession.accept(reply), reply);
@@ -85,6 +86,17 @@ export async function checkRecoveryProof(owner, recipient) {
         return {from: String(context.from), to: String(context.to), state: recoverySession.state()};
       })));
       assert.deepEqual(states, [{from: '1', to: '2', state: 'authenticated'}, {from: '1', to: '2', state: 'authenticated'}]);
+      assert.equal(await recipient.evaluate(() => recoverySession.recoveryMaterial(2n).then(m => { m.destroy(); return true; }, () => false)), false);
+      assert.equal(await owner.evaluate(async () => {
+        for (const epoch of [0n, 1n, 3n]) if (await recoverySession.recoveryMaterial(epoch).then(m => { m.destroy(); return true; }, () => false)) throw Error('Epoch outside authenticated range');
+        const material = await recoverySession.recoveryMaterial(2n);
+        const traffic = await (await import('./software-traffic.mjs')).loadSoftwareTraffic({wasm, store: recoveryStore, expectedGroup: group});
+        try {
+          const codec = (await import('./certificate.mjs')).certificateCodec(wasm);
+          return material.epoch === 2n && codec.authentic(material.certificate, new Uint8Array(recoveryPeer.subject), group)
+            && material.payloadKey.every((b, i) => b === traffic.payloadKey[i]) && material.integrityKey.every((b, i) => b === traffic.integrityKey[i]);
+        } finally { material.destroy(); traffic.destroy(); }
+      }), true);
     }
   }
   const removed = await answer(await begin());
@@ -98,6 +110,7 @@ export async function checkRecoveryProof(owner, recipient) {
     await page.waitForFunction(() => recoverySession.state() === 'closed');
     assert.equal(await page.evaluate(() => recoverySession.authenticated().then(() => true, () => false)), false);
   }
+  assert.equal(await owner.evaluate(() => recoverySession.recoveryMaterial(2n).then(m => { m.destroy(); return true; }, () => false)), false);
   await owner.evaluate(() => recoveryStore.close());
   await recipient.evaluate(() => recoveryStore.close());
 }

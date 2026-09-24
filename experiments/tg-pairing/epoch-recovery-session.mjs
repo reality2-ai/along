@@ -1,5 +1,5 @@
 // Recovery-only mutual identity over the real direct WebRTC transcript.
-// No application payload or key delivery API is exposed by this stage.
+// No application payload or network key delivery API is exposed by this stage.
 import {createPeerLink} from './peer-link.mjs';
 import {loadLocalPersona} from './local-persona.mjs';
 import {openMembership} from './membership.mjs';
@@ -113,6 +113,18 @@ export async function openEpochRecoverySession({wasm, store, expectedGroup, role
     void ready.catch(close);
     return Object.freeze({offer: link.offer, accept: link.accept, close, signal: lifetime.signal,
       state: () => phase,
+      recoveryMaterial: async epoch => {
+        let issuer, material;
+        try {
+          if (role !== 'owner' || phase !== 'authenticated' || typeof epoch !== 'bigint' || epoch <= from || epoch > to) throw Error('Recovery material not authorized');
+          await current();
+          const {loadSoftwareIssuer} = await import('./software-persona.mjs');
+          issuer = await loadSoftwareIssuer({wasm, store, expectedGroup: group, signal: lifetime.signal});
+          material = await issuer.recoveryMaterial({subject: remote, certificate: peerCertificate, epoch});
+          await current(); return material;
+        } catch (error) { material?.destroy(); throw error; }
+        finally { issuer?.close(); }
+      },
       authenticated: async () => {
         try { await result; await current(); return Object.freeze({from, to}); }
         catch (error) { close(); throw error; }
