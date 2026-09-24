@@ -4,8 +4,10 @@ Status: transition framing, signature verification, encrypted durable preparatio
 and atomic issuer/recipient installation implemented and tested, including two
 successive issuer advances. Owner review, device selection and recovery are connected in the local
 experimental app Settings. Pinned AT-owner certificate renewal is implemented;
-two-profile post-rotation shared AT and journey exchanges now pass. None
-of this rotation UI is enabled in public preview 3803.
+two-profile post-rotation shared AT and journey exchanges now pass. These flows
+are published in Device Preview 3804 after exact-candidate qualification.
+See [release evidence](RELEASE_CHECKLIST.md). Physical acceptance, automatic
+reconnection and capacity recovery remain pending.
 This is an Along application profile using the R2 group authority; it is not a
 claim of a normative R2 rotation wire format or full R2 conformance.
 
@@ -17,7 +19,7 @@ from an incoming certificate. Signed revocations remain terminal across epochs.
 Along bootstraps at epoch zero. After explicit installation of a prepared epoch,
 issuer certificate issuance uses that epoch and enrollment material comes from
 its installed traffic keys. Restoring traffic material requires its epoch to match
-both the local persona and membership state. The next candidate's visible pairing
+both the local persona and membership state. Preview 3804's visible pairing
 flow now binds enrollment to the verified inviter epoch.
 
 Changing only `membership.current` would strand the local persona and stored
@@ -112,7 +114,7 @@ affected session rather than preserving a cached grant.
 
 ## Pairing after local advancement
 
-The next candidate uses `along-browser-invitation-v2` and
+Preview 3804 uses `along-browser-invitation-v2` and
 `along-browser-proof-v2`. The public descriptor carries a canonical unsigned epoch.
 The recipient's proof check requires the inviter's group-signed certificate to be
 current at that exact epoch, plus the fresh nonce proof for the reviewed invitation.
@@ -223,7 +225,7 @@ recovery, unchanged installation revisions and zero key-delivery frames.
 
 This confirms the final installed epoch. Reconnecting after partial catch-up starts
 from the recipient's saved epoch; it does not reconstruct missing intermediate
-receipts. The recipient review is implemented below; its visible signaling flow is described below, while app integration remains unfinished. A receipt is a signed peer claim,
+receipts. The recipient review is implemented below; its visible signaling flow is described below, with app integration qualified below. A receipt is a signed peer claim,
 not independent attestation of a hostile device's storage.
 
 1. Compose certificate renewal for retained recipients with authenticated delivery.
@@ -299,8 +301,7 @@ The composed browser test uses the receipts from its actual WebRTC exchange,
 checks the visible confirmed and certificate-only states, damages each signed
 field in storage, changes a receipt during its read, and verifies removal replaces
 the confirmation label. Reader checks also cover cancellation and prohibit writes.
-Public preview 3803 is unchanged; this source UI awaits qualification with the
-remaining recovery controls.
+This UI and the recovery controls are qualified in preview 3804.
 
 
 ## Recipient recovery review
@@ -328,7 +329,7 @@ text size and axe checks pass. Physical TalkBack is not established by these tes
 
 The earlier review checks supply signaling from the test harness. The visible
 message exchange is now composed below and linked from local experimental Settings;
-this does not enable a public recovery flow or change preview 3803.
+the public recovery flow is included in preview 3804.
 
 
 ## Device-message recovery flow
@@ -356,8 +357,8 @@ recipient acceptance without premature key delivery, signed-removal catch-up and
 fresh-document restoration. It no longer injects SDP directly for these cases.
 The earlier low-level failure tests still supply signaling directly.
 
-Settings entry points are implemented locally. Renewed journey/AT permission
-integration remains unfinished. This source flow is not yet deployed in public preview 3803.
+Settings entry points and post-rotation journey/AT sharing are now qualified
+and deployed in preview 3804.
 
 
 ## Local Settings integration and remaining permission work
@@ -417,9 +418,8 @@ four, the old certificate fails restoration. The certificate from the actual
 completed recovery renews it, preserving the binding and signed policy bytes.
 Wrong-subject, damaged, stale and cancelled renewal refuse, as do membership,
 policy and enrollment evidence changed during the transaction. Exact retry does
-not rewrite, and the restored binding loads in a fresh document. This does not yet
-prove AT-key delivery/provider reads or journey exchange after rotation in the
-complete app; those tests and release qualification remain required.
+not rewrite, and the restored binding loads in a fresh document. This component check alone does not prove app-level delivery or sharing;
+the composed tests below and 3804 qualification cover those paths with mocked AT.
 
 
 ## Composed app evidence after rotation

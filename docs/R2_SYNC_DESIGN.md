@@ -1,9 +1,9 @@
 # Proposal: private cross-device synchronisation through Reality2
 
 Status: experimental device preview, 24 September 2026. Saved-journey sharing is
-enabled in [Device Preview 3803](https://reality2.ai/along/preview/public/), separately
-from the regular version-37 app. Automatic discovery/reconnection, full TG removal
-and epoch rotation remain unfinished. See the [device checks](PREVIEW_DEVICE_CHECK.md).
+enabled in [Device Preview 3804](https://reality2.ai/along/preview/public/), separately
+from the regular version-37 app. Reviewed group removal and group-key rotation are available. Automatic
+discovery/reconnection, capacity recovery and physical acceptance remain unfinished. See the [device checks](PREVIEW_DEVICE_CHECK.md).
 
 A [saved-journey data layer](../experiments/journey-sync/README.md) now implements
 strict endpoint/route projection, deterministic logical ordering, retained deletion

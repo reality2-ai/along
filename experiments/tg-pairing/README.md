@@ -1,5 +1,12 @@
 # Pairing comparison component (not released)
 
+Current distribution: [Device Preview 3804](https://reality2.ai/along/preview/public/)
+includes the tested Settings integration, group-key update/recovery and
+post-rotation sharing. Regular Along remains version 37. The implementation
+sections below record development stages; use the
+[current release evidence](../../docs/RELEASE_CHECKLIST.md) for qualification and
+remaining limits. Both devices must update before pairing or reconnecting.
+
 This isolated component prepares the person-confirmation step for ordinary-member
 browser enrollment. It is not imported by Along or copied into its static build.
 It does not authenticate an invitation, compare another device's code, install

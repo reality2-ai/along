@@ -3,18 +3,17 @@
 Along should contact AT directly and keep each person's AT key within their own
 trust group, without requiring an Along-operated central server. Offline planning
 must continue without a key, a peer connection or a portal. The implementation described here is experimental and is not yet enabled in
-the regular version-37 app. A separate [device preview, version 3803](https://reality2.ai/along/preview/public/),
+the regular version-37 app. A separate [device preview, version 3804](https://reality2.ai/along/preview/public/),
 is now published for S23/desktop testing with dummy AT keys. It includes the
 experimental Settings flows and saved-journey sharing, with separate ordinary
 storage names and explicit software-security limits. See the
-[device-check guide](PREVIEW_DEVICE_CHECK.md) and [HTTPS evidence](evidence/device-preview-3803-public.json).
+[device-check guide](PREVIEW_DEVICE_CHECK.md) and [HTTPS evidence](evidence/device-preview-3804-public.json).
 
 ## Current status
 
-The next group-lifecycle work is documented in [epoch rotation](R2_EPOCH_ROTATION.md).
+The group-lifecycle implementation is documented in [epoch rotation](R2_EPOCH_ROTATION.md).
 An Along-specific signed successor format now verifies authority, exact next epoch
-and both traffic-key digests. Unit tests cover tampering and bounds. This does not
-advance membership or enable rotation. Encrypted durable preparation now reuses
+and both traffic-key digests. Unit tests cover tampering and bounds. The format verifier alone does not advance membership. Encrypted durable preparation now reuses
 one committed successor per epoch across retries and concurrent calls, verified
 in real browser storage including cancellation and custody-change boundaries.
 Recipient installation now atomically advances the certificate, membership and
@@ -23,17 +22,15 @@ enrollment, uses harness-supplied successor material, and covers removal races,
 rollback and a fresh-document restore. A shared session watcher now closes old-epoch
 connections after checking committed local state; the test verifies authenticated
 connections in both the installing and a sibling tab, and unchanged-state hint
-refusal. Packet-level runtime epoch checks remain mandatory. Authenticated
-cross-epoch delivery and the user flow remain unfinished; no rotation control is
-enabled. Issuer advancement now uses the same atomic boundary and explicitly
+refusal. Packet-level runtime epoch checks remain mandatory. Authenticated cross-epoch delivery and the reviewed user flow are now
+included in preview 3804, as described below. Issuer advancement now uses the same atomic boundary and explicitly
 retained preparation. Browser checks advance through two epochs, restore issuer
 custody, refuse old handles, issue current-key enrollment material and remove an
-older device certificate. The next candidate’s v2 invitation/proof flow now uses
+older device certificate. Preview 3804’s v2 invitation/proof flow now uses
 the verified inviter epoch. A visible-flow test pairs a new device after issuer
 advancement; epoch substitution, old invitations after advancement and v1 proof
-downgrade refuse. Both devices must update for new invitations. Public preview
-3803 still uses the earlier invitation format; older-device key recovery remains
-unfinished.
+downgrade refuse. Both devices must update for new invitations. Preview 3803 uses the earlier invitation format and must be updated
+before pairing with 3804.
 
 The next recovery building block verifies possession of an older enrolled member
 key using a single-use nonce and a statement bound to group, identities, epochs
@@ -73,7 +70,10 @@ reload, reconnection and offline edits. The source AT reconnect v3 also renews a
 different AT-owner member: a stale pin permits connection review only, and a
 current owner certificate is checked before any AT session or live access. The
 reversed-owner two-app check and credential-sharing regression pass, including
-v2 downgrade and damaged-certificate refusal. Full release qualification remains unfinished; public preview 3803 is unchanged. The source device list now verifies saved
+v2 downgrade and damaged-certificate refusal. The exact 3804 candidate passed nine browser runs, including post-rotation
+sharing with both AT-owner arrangements and the published 3803 upgrade. See
+[qualification evidence](evidence/device-preview-3804-qualification.json). Wider
+release acceptance remains unfinished. The device list verifies saved
 per-device receipts and distinguishes missing, unreadable and removed-device
 status without claiming online presence. Composed browser checks use real
 WebRTC receipts and corrupt/race their stored evidence. See

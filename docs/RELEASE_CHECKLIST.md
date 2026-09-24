@@ -1,28 +1,29 @@
 # Release evidence and remaining gates
 
-Current regular app: **version 37**. The separate [device preview 3803](https://reality2.ai/along/preview/public/)
+Current regular app: **version 37**. The separate [device preview 3804](https://reality2.ai/along/preview/public/)
 is published for [physical checks](PREVIEW_DEVICE_CHECK.md); see its release record below.
 The version-37 static ZIP
 is prepared and the private server is retired. GitHub Pages is published at `reality2.ai/along/`; no AWS deployment has been made.
 This register separates automated evidence, user observations and remaining checks.
 
-Preview 3803 includes the issued-device list, reviewed group removal, signed
-removal transfer and recipient rechecks during enrollment-key derivation.
-[Qualification](evidence/device-preview-3803-qualification.json) records six
-passing checks against the exact candidate manifest, including an upgrade from
-the byte-verified published 3802 bundle and separate recovery of completed 3801
-enrollments. Reconnection catches up signed removal sets before shared access. The upgrade preserves saved places,
-identity and encrypted test-key bytes, and leaves regular Along's shell cache
-unchanged. Group removal closes a tested active shared-key connection without
-further mocked AT requests; signed removal receipt and offline reopening pass.
-See the [HTTPS check](evidence/device-preview-3803-public.json) and
-[release record](evidence/device-preview-3803-release.json).
+Preview 3804 includes reviewed group-key updates, selected-device delivery and
+verified installation confirmations, alongside removal and older-enrollment recovery.
+[Qualification](evidence/device-preview-3804-qualification.json) records nine
+passing browser runs (ten requirement entries, with Settings rotation covered in
+the owner-key run) against the exact candidate. They include the byte-verified
+published 3803 upgrade, completed 3801 enrollment recovery, removal, key replacement
+and sharing after rotation with either group member owning the AT key.
+The upgrade preserves saved places, identity and encrypted test-key bytes, and
+leaves regular Along's shell cache unchanged. AT responses are mocked.
+See the [HTTPS check](evidence/device-preview-3804-public.json) and
+[release record](evidence/device-preview-3804-release.json).
 
-Older interrupted enrollments without installation receipts can remain absent
-from the issued-device index. Automatic propagation,
-receipt tracking for removal messages, epoch/key rotation, physical-device and
-TalkBack acceptance remain unfinished. Historical evidence below retains its
-original version and scope.
+Update both devices before pairing or reconnecting; invitation and AT reconnect
+formats changed. Older interrupted enrollments without installation receipts can
+remain absent from the device index. Automatic propagation/reconnection, capacity
+recovery, receipt tracking for removal messages, physical-device and TalkBack
+acceptance remain unfinished. Historical evidence below retains its original
+version and scope.
 
 ## Goal audit
 

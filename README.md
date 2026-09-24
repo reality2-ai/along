@@ -25,7 +25,7 @@ connection is not yet deployed. Losing connectivity will not remove offline plan
 </p>
 <p align="center">Open in your browser and install on your device. Prepare it online, then plan scheduled journeys offline.</p>
 
-**Device testing:** [Open Along Device Preview 3803](https://reality2.ai/along/preview/public/)
+**Device testing:** [Open Along Device Preview 3804](https://reality2.ai/along/preview/public/)
 and follow the [S23/desktop guide](docs/PREVIEW_DEVICE_CHECK.md). It has separate
 saved places and device setup, with optional sharing between devices you approve.
 Use dummy AT keys for these tests. The regular installation above remains version 37.
@@ -300,16 +300,20 @@ The [full device preview](https://reality2.ai/along/preview/public/) includes
 and optional AT-key setup/sharing. Two-browser tests cover saved places, service
 preferences, offline changes and permission removal. Connecting still requires
 transferring messages; automatic reconnection and full release qualification remain
-unfinished. [Download the static preview and checksum](https://github.com/reality2-ai/along/releases/tag/device-preview-3803)
+unfinished. [Download the static preview and checksum](https://github.com/reality2-ai/along/releases/tag/device-preview-3804)
 to inspect or host it yourself. Runtime provenance and licence notices are included.
 
-Preview 3803 also provides a device-certificate list and reviewed, signed group
+The preview also provides a device-certificate list and reviewed, signed group
 removal messages. Each receiving device verifies and saves the removal; copying
 alone is not delivery. Completed older enrollments are recovered from verified installation receipts;
 interrupted enrollments without receipts can still be absent. Reconnection exchanges
 signed removals before shared access; both devices must update.
 Removal cannot erase previously shared copies or replace an AT key at its provider.
-The tested 3802 → 3803 update preserves preview saved places and device setup.
+Version 3804 adds reviewed group-key updates, delivery to existing devices and
+verified installation confirmations. Sharing is tested after rotation even when
+the AT-key owner is a different member. The tested 3803 → 3804 update preserves
+preview saved places, identity and encrypted keys. Update both devices before
+pairing or reconnecting; the invitation and AT reconnect formats have changed.
 
 The repository also contains tested experimental live matching and proxy code; that proxy is not the
 planned public architecture. See [hosting and live-data status](docs/HOSTING.md).

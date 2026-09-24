@@ -1218,3 +1218,25 @@ sharing. The fix preserves the failed AT record and restores independent journey
 controls. This sharpens the offline-first theme: graceful failure requires testing
 which unrelated tasks remain usable, not merely catching an exception. The
 regression checks both an already-open app and a reopened document.
+
+
+### Preview 3804: qualify the installed experience, not just its components
+
+The recurring requirements—local ownership, no central Along server, no human
+coding and honest contextual controls—also apply to group-key recovery. A valid
+cryptographic component does not establish that the installed planner preserves
+saved places, permissions and AT access after both devices reload.
+
+Nine browser runs now qualify the frozen 3804 candidate, including an update from
+the exact published 3803 archive. Rotation is exercised through visible Settings
+controls, with separate checks when the group issuer and AT-key owner differ.
+The latter case required renewing an existing owner certificate without silently
+selecting a new owner or granting new permission. An unreadable AT binding must
+also leave independent journey sharing and group recovery reachable.
+
+The release evidence distinguishes local installation from confirmation received
+by the other device. It preserves uncertainty about physical QR transfer,
+TalkBack and automatic reconnection. This is a useful course exercise in tracing
+an architectural requirement through implementation, composed tests, published
+bytes and clearly stated limits; passing component tests is only one step.
+See [qualification evidence](evidence/device-preview-3804-qualification.json).

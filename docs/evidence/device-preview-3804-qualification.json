@@ -1,0 +1,78 @@
+{
+  "profile": "along-preview-qualification-v1",
+  "app_version": "3804",
+  "source_commit": "335e76c71cec2b20725cc70f1b8da79e385ed2ae",
+  "recorded_at": "2026-09-24T01:43:20.223079+00:00",
+  "candidate_manifest_sha256": "83389f56e8009c528f7233f69cb2bf6cbd81710dd20298cc2cb201454c242510",
+  "checks": {
+    "upgrade_coexistence": {
+      "status": "passed",
+      "command": "node experiments/journey-sync/preview-coexistence.test.mjs",
+      "exit_code": 0,
+      "log_sha256": "80efbe3c1a24c59a8fd508619ea01022fdbaf090d0583ab18d6df9e6d20567bc",
+      "previous_release_manifest_sha256": "730e2046ee35cd40867e3f4bca8c5e74a36f78fd57bc7f50e48826474f96921c"
+    },
+    "owner_key": {
+      "status": "passed",
+      "command": "PREVIEW=1 CHECK_BFCACHE=1 GROUP_KEYS=1 node experiments/at-credentials/app-integration.test.mjs",
+      "exit_code": 0,
+      "log_sha256": "4edf1591da60d60a196d73fe47164b1ce507beec53b364de50800fda14cce763"
+    },
+    "journeys": {
+      "status": "passed",
+      "command": "PREVIEW=1 node experiments/journey-sync/app-integration.test.mjs",
+      "exit_code": 0,
+      "log_sha256": "cc12aa3ddc7f86a1df9cd92a142035efbdb1b7a20504f46c37690f838ec81275"
+    },
+    "legacy_enrollment": {
+      "status": "passed",
+      "command": "PREVIEW=1 LEGACY_ENROLLMENT=1 node experiments/journey-sync/app-integration.test.mjs",
+      "exit_code": 0,
+      "log_sha256": "cc12aa3ddc7f86a1df9cd92a142035efbdb1b7a20504f46c37690f838ec81275"
+    },
+    "shared_key_replacement": {
+      "status": "passed",
+      "command": "PREVIEW=1 MAIN_APP_SETUP=1 REPLACE_SHARED_KEY=1 node experiments/at-credentials/two-app-integration.test.mjs",
+      "exit_code": 0,
+      "log_sha256": "cd4e7103ca2966293ff77641c58d06c7895a036934c9a9b7b68ea4b523984cff"
+    },
+    "group_removal": {
+      "status": "passed",
+      "command": "PREVIEW=1 MAIN_APP_SETUP=1 REMOVE_GROUP_MEMBER=1 node experiments/at-credentials/two-app-integration.test.mjs",
+      "exit_code": 0,
+      "log_sha256": "4657b1dff8b4c0899edd26cdbfa55946ac191d958f95cf07f2ebe344c69c351d"
+    },
+    "rotated_journeys": {
+      "status": "passed",
+      "command": "PREVIEW=1 ROTATE_GROUP_KEYS=1 node experiments/journey-sync/app-integration.test.mjs",
+      "exit_code": 0,
+      "log_sha256": "cb582bf06dd51959470d760f568b6a2ca1cdff8e1209235c9597031206092dd0"
+    },
+    "rotated_at_owner": {
+      "status": "passed",
+      "command": "PREVIEW=1 MAIN_APP_SETUP=1 ROTATE_GROUP_KEYS=1 node experiments/at-credentials/two-app-integration.test.mjs",
+      "exit_code": 0,
+      "log_sha256": "347effc2fae6e6505509f70e533f256aa5bbb13a0aac22efef3d7257d5c3ec10"
+    },
+    "rotated_different_at_owner": {
+      "status": "passed",
+      "command": "PREVIEW=1 MAIN_APP_SETUP=1 ROTATE_GROUP_KEYS=1 DIFFERENT_AT_OWNER=1 node experiments/at-credentials/two-app-integration.test.mjs",
+      "exit_code": 0,
+      "log_sha256": "3db1c19c35b7f105c8c647054ed9fb6286cac38a91a1bf4eb705338d174799dd"
+    },
+    "rotation_settings": {
+      "status": "passed",
+      "command": "PREVIEW=1 CHECK_BFCACHE=1 GROUP_KEYS=1 node experiments/at-credentials/app-integration.test.mjs",
+      "exit_code": 0,
+      "log_sha256": "4edf1591da60d60a196d73fe47164b1ce507beec53b364de50800fda14cce763",
+      "note": "Covered by GROUP_KEYS=1 in the owner-key/BFCache run."
+    }
+  },
+  "limits": [
+    "Synthetic AT keys and mocked provider responses",
+    "Two browser profiles on one host; explicit device-message transfer",
+    "Physical installation, QR reachability and TalkBack acceptance pending",
+    "No full R2 hardware-backed conformance or same-origin script isolation",
+    "Wider goal, capacity recovery and automatic reconnection remain unfinished"
+  ]
+}

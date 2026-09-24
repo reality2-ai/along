@@ -1,5 +1,12 @@
 # Along credential experiments
 
+Current distribution: [Device Preview 3804](https://reality2.ai/along/preview/public/)
+includes the tested Settings integration, group-key update/recovery and
+post-rotation sharing. Regular Along remains version 37. The implementation
+sections below record development stages; use the
+[current release evidence](../../docs/RELEASE_CHECKLIST.md) for qualification and
+remaining limits. Both devices must update before pairing or reconnecting.
+
 Not imported by the regular version-37 app. The separate
 [device preview 3801](https://reality2.ai/along/preview/public/) includes these
 experimental flows for [physical testing](../../docs/PREVIEW_DEVICE_CHECK.md).

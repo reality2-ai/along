@@ -1,5 +1,12 @@
 # Saved-journey synchronization data layer
 
+Current distribution: [Device Preview 3804](https://reality2.ai/along/preview/public/)
+includes the tested Settings integration, group-key update/recovery and
+post-rotation sharing. Regular Along remains version 37. The implementation
+sections below record development stages; use the
+[current release evidence](../../docs/RELEASE_CHECKLIST.md) for qualification and
+remaining limits. Both devices must update before pairing or reconnecting.
+
 Experimental storage, authenticated peer controller and local app integration.
 The regular version-37 app and standalone pairing lab do not import these modules;
 the separately published device preview does. The model
