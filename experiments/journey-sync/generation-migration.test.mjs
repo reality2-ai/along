@@ -4,7 +4,7 @@ import {readFile} from 'node:fs/promises';
 import {join} from 'node:path';
 const {chromium} = await import('@playwright/test');
 const sources = new Map();
-for (const name of ['state.mjs', 'store.mjs', 'generation-state.mjs', 'generation-migration.mjs', 'generation-app-store.mjs', 'app-preferences.mjs', 'preference-envelope.mjs', 'isolated-preferences.mjs', 'startup-state.mjs', 'migration-setup.mjs', 'generation-checkpoint.mjs', 'checkpoint-preparation.mjs', 'checkpoint-installation.mjs', 'checkpoint-review.mjs', 'checkpoint-choice-commit.mjs','older-edit-review.mjs','older-edit-decision.mjs','older-edit-decision-check.test.mjs'])
+for (const name of ['state.mjs', 'store.mjs', 'generation-state.mjs', 'generation-migration.mjs', 'generation-app-store.mjs', 'app-preferences.mjs', 'preference-envelope.mjs', 'isolated-preferences.mjs', 'startup-state.mjs', 'migration-setup.mjs', 'generation-checkpoint.mjs', 'checkpoint-preparation.mjs', 'checkpoint-installation.mjs', 'checkpoint-review.mjs', 'checkpoint-choice-commit.mjs','older-edit-review.mjs','older-edit-decision.mjs','older-edit-application.mjs','older-edit-decision-check.test.mjs'])
   sources.set('/journey-sync/' + name, await readFile(new URL(name, import.meta.url)));
 sources.set('/public/preferences.js', await readFile(new URL('../../public/preferences.js', import.meta.url)));
 for (const name of ['software-persona.mjs', 'local-persona.mjs'])
@@ -463,9 +463,12 @@ try {
     try{
       const saved=await store.read('along-older-edit-decisions-v1',expected.reviewId);
       const pending=await store.read('along-older-edit-pending-v1',expected.group);
-      return saved.value.input.olderRaw===expected.olderRaw&&pending.value.reviewId===expected.reviewId;
+      const application=await store.read('along-older-edit-applications-v1',expected.reviewId);
+      return saved.value.input.olderRaw===expected.olderRaw&&pending.value.reviewId===expected.reviewId
+        &&pending.value.format===2&&application.value.complete;
     }finally{store.close();}
   },olderDecision),true);
+  console.log('PASS: older-tab application preserves history, survives planner/final-acknowledgment failure and retries without duplicate replica edits; newer local data refuses and later older edits remain pending.');
   console.log('PASS: older-tab choices and compared copies survive atomic staging, cancellation/retry and reload; quota, changed membership and replacing an unfinished decision refuse. Staging changes neither replica nor planner; later older-tab edits survive.');
   console.log('PASS: default planner startup and generation bridge use the isolated profile; journal import, later planner saves and reload preserve recovered generation/history while legacy writes stay separate. This suite checks storage primitives; recovery UI and peer delivery are checked separately.');
   console.log('PASS: actual software identity and IndexedDB migration preserve replica/tombstones/import receipt/local pending edits; concurrent/reloaded retries do not rewrite; stale review, permission race, cancellation and interrupted transaction preserve old state; old in-flight format-1 writer cannot overwrite migration. This suite invokes migration storage APIs directly.');

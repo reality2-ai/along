@@ -5,6 +5,7 @@ import {openIsolatedPlannerStorage} from './isolated-preferences.mjs';
 import {preferenceKey,readEnvelope,writePreferences} from './app-preferences.mjs';
 import {createOlderEditReview} from './older-edit-review.mjs';
 import {retainOlderEditDecision} from './older-edit-decision.mjs';
+import {applyOlderEditDecision} from './older-edit-application.mjs';
 export async function checkOlderEditDecision({wasm,store}){
   const check=(value,message)=>{if(!value)throw Error(message);};
   const refuses=async promise=>check(await promise.then(()=>false,()=>true),'expected older-decision refusal');
@@ -52,5 +53,38 @@ export async function checkOlderEditDecision({wasm,store}){
   const next=await createOlderEditReview({...input,olderRaw:storage.getItem(preferenceKey)});
   await refuses(retainOlderEditDecision({...options,reviewId:next.id,choices:next.differences.map(d=>({id:d.id,use:'older'}))}));
   check(JSON.parse(storage.getItem(preferenceKey)).journeys[0].savedRoutes[0].route==='80','later edit overwritten');
+  await refuses(applyOlderEditDecision(options));
+  check((await store.read('along-saved-journeys-v2',setup.group)).revision===before.revision,'stale application changed replica');
+  // Restore this fixture's exact reviewed older bytes to exercise interrupted
+  // application independently from the stale-review refusal above.
+  storage.setItem(preferenceKey,input.olderRaw);
+  await refuses(applyOlderEditDecision({...options,storage:{...storage,setItem:(key,value)=>{
+    if(key.endsWith(':generation-profile-v1'))throw Error('planner quota');storage.setItem(key,value);
+  }}}));
+  const committed=await store.read('along-saved-journeys-v2',setup.group);
+  check(committed.value.journeys[0].value.savedRoutes[0].route==='75','replica application was not retained');
+  check(readEnvelope(isolated).raw===currentRaw,'failed planner write changed local data');
+  check(!(await store.read('along-older-edit-applications-v1',review.id)).value.complete,'failed planner write marked complete');
+  const newerLocal=JSON.parse(currentRaw);newerLocal.learning=true;
+  isolated.setItem(preferenceKey,JSON.stringify(newerLocal));
+  await refuses(applyOlderEditDecision(options));
+  check(readEnvelope(isolated).data.learning===true,'retry overwrote newer planner data');
+  isolated.setItem(preferenceKey,currentRaw);
+  edit('80');
+  let finalAttempt=false;
+  await refuses(applyOlderEditDecision({...options,store:{...store,compareAndSwapMany:async(changes,settings)=>{
+    if(changes.some(change=>change.scope===pending)){finalAttempt=true;throw Error('acknowledgment storage failure');}
+    return store.compareAndSwapMany(changes,settings);
+  }}}));
+  check(finalAttempt&&readEnvelope(isolated).data.journeys[0].savedRoutes[0].route==='75','interrupted acknowledgment lost planner cutover');
+  check(!(await store.read('along-older-edit-applications-v1',review.id)).value.complete,'interrupted acknowledgment completed');
+  const applied=await applyOlderEditDecision(options);
+  check(applied.status==='older-edits-applied-locally'&&applied.olderChangesPending,'application lost a later older edit');
+  check((await store.read('along-saved-journeys-v2',setup.group)).revision===committed.revision,'application retry duplicated replica changes');
+  const localAfter=readEnvelope(isolated);
+  check(localAfter.data.journeys[0].savedRoutes[0].route==='75'&&localAfter.data.journeys[0].count===7,'planner cutover lost choice/history');
+  check((await store.read(pending,setup.group)).value.olderRaw===input.olderRaw,'acknowledgment consumed newer older bytes');
+  check((await applyOlderEditDecision(options)).alreadyApplied,'completed application retry failed');
+  check(JSON.parse(storage.getItem(preferenceKey)).journeys[0].savedRoutes[0].route==='80','application rewrote old tab');
   return {group:setup.group,reviewId:review.id,olderRaw:input.olderRaw};
 }

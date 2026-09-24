@@ -695,3 +695,17 @@ membership evidence, cancellation after commit, retry and fresh-page restoration
 The planner and replica remain byte-for-byte unchanged during staging. Applying a
 retained decision, handling stale decisions, acknowledging the reviewed baseline
 and mounting the screen are still required.
+
+`applyOlderEditDecision` now verifies the retained review and commits its proposed
+replica changes alongside an application record. It then replaces only the exact
+reviewed planner copy (or verifies an already-written output), preserves learning
+history, and completes the acknowledgment for the exact older bytes reviewed.
+Later older-tab edits stay untouched and are reported as pending. A failed planner
+write or final acknowledgment can retry without repeating the replica change;
+newer planner data is refused rather than overwritten.
+
+The real browser storage suite checks these interruptions, stale first application,
+newer local data, preservation of a later older edit and completed-record reload.
+This writer is not mounted yet. Startup handling of unfinished applications,
+review/refresh of stale decisions, using completed acknowledgments as the next
+baseline and the Settings interaction remain integration requirements.

@@ -755,6 +755,22 @@ fresh-page restoration, and preservation of a later older-tab edit. A different
 decision cannot replace an unfinished one. Application/acknowledgment, stale-review
 resolution and the Settings screen remain unfinished.
 
+## Applying a retained older-tab decision
+
+The application writer now rebuilds the saved review and simulates its changes
+again before committing the replica and an application record atomically. Planner
+replacement is a second step under the same group lock. Only the exact reviewed
+raw planner data, or its exact already-applied output, can pass that step. A final
+transaction marks completion and acknowledges the reviewed older bytes. It never
+writes the older app's storage or acknowledges a newer edit made there.
+
+The real browser suite checks stale first application, a planner quota failure
+after replica commit, refusal to overwrite newer local data, failed acknowledgment
+after planner replacement, retry without repeated replica edits, preserved learning
+history, later older edits and completed-record restoration. The code is not
+mounted in the app. Startup/peer handling of unfinished applications, stale-decision
+refresh, subsequent baseline selection and Settings controls remain unfinished.
+
 ## Required before release
 
 1. Qualify the reviewed migration and format-2 bridge against the exact published
