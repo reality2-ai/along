@@ -68,3 +68,22 @@ promote that commentary into a current-standard restriction: published L1 8.2.4
 permits bindings to share an ordinal subject to the specified profile conditions.
 A browser binding needs to satisfy that contract; it is not inherently excluded.
 No source from the private monorepo was copied or published in this review.
+
+
+## Server update — UDP relay confirmed in the deployment record
+
+The server owner's monorepo record `f586f4621a4d170a17da5e2159f17bff6bdd175d`
+now records deployment of receiver implementation
+`21c643b1286a0cdf90a50996a76b6f76c364fbe9`. It identifies the service as a shared
+**compact UDP** relay, explicitly not a WebSocket service. Along's independent
+read-only HTTPS check on 25 September still receives HTTP 404 at `/r2`. These are
+distinct observations: the owner record attests the deployment; the HTTP check
+only establishes that this path did not provide the expected upgrade service.
+No sensor records, credentials or private source have been copied into this repo.
+
+This resolves the earlier ambiguous report that “the relay works”: the current
+UDP relay and a browser-accessible transport are different capabilities. Ordinary
+browser Along cannot open a raw UDP socket to that receiver. A new server browser
+binding is required; asking again for the old `/r2` address will not solve it.
+See the [server/client handover](R2_BROWSER_TRANSPORT_HANDOVER.md). The server AI
+continues to own server implementation/configuration; Along owns its client.

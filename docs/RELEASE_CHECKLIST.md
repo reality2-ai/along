@@ -90,7 +90,8 @@ qualification. Publication does not establish full goal completion.
 1. Obtain the current server implementation's browser endpoint and transport
    contract, then adapt and verify Along against it. The server AI owns server
    configuration. Do not deploy the old relay to fit Along or treat an old
-   signed greeting as the current standard. The endpoint question is pending.
+   signed greeting as the current standard. The server record now confirms compact UDP only; the missing browser binding
+   is described in the [server/client handover](R2_BROWSER_TRANSPORT_HANDOVER.md).
 2. Resolve the original S23 scan → Use failure using the [v43 device guide](DEVICE_CHECK.md).
    Verify pairing, saved places/preferences, offline reopening, arrival timing,
    shortcut removal, touch and spoken-screen-reader behaviour. A partial report

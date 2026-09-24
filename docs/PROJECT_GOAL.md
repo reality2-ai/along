@@ -221,3 +221,10 @@ Current R2 integration must be rechecked against the published 0.9.0 standard;
 the older standalone relay is not the target contract. See the
 [current transport review](R2_CURRENT_STANDARD_REVIEW.md). Server setup remains
 with the server AI; browser binding compatibility and migration remain Along work.
+
+
+The 25 September server record resolves the relay report as compact UDP, with no
+public WebSocket binding. The next external dependency is implementation of a
+current browser transport by the server owner, not merely learning a URL.
+[Client/server work and verification](R2_BROWSER_TRANSPORT_HANDOVER.md) preserve
+the approved optional-relay architecture and full synchronization requirement.
