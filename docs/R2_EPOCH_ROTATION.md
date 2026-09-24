@@ -1,6 +1,7 @@
 # Browser-subset group epoch rotation
 
-Status: transition framing and signature verification implemented and unit tested.
+Status: transition framing, signature verification and encrypted durable preparation
+implemented and tested. Preparation is currently limited to epoch zero → one.
 No rotation control or installation path is enabled, including in preview 3803.
 This is an Along application profile using the R2 group authority; it is not a
 claim of a normative R2 rotation wire format or full R2 conformance.
@@ -45,10 +46,26 @@ format/cryptographic tests, not browser custody, transport or rotation evidence.
 
 ## Remaining implementation and acceptance boundaries
 
-1. The issuer must prepare exactly one durable successor with fresh traffic keys,
-   a signed transition and renewed certificates for retained members. Concurrent
-   requests must reuse the same prepared successor, never sign conflicting keys
-   for the same epoch. Keep prior removals. Guard issuer and membership revisions.
+`loadSoftwareIssuer().prepareRotation()` now prepares fresh traffic keys, a signed
+transition and the issuer's renewed member certificate. It stores the candidate
+under `along-prepared-epoch-v1` with an AES-GCM non-extractable wrapping key. The
+transaction guards issuer custody, bootstrap, persona and membership revisions.
+Concurrent callers may construct temporary candidates, but only the committed
+winner is returned; retries authenticate and reuse its encrypted material. No
+key bytes are returned and membership remains at its old epoch. Corrupted retained
+state is refused, never silently replaced.
+
+The real Chromium/IndexedDB test verifies concurrent preparation, a fresh-document
+restore, corrupted certificate/transition/ciphertext refusal, failed writes,
+concurrent custody change, early cancellation and cancellation after commit.
+A late cancellation reports uncertainty while leaving the committed preparation
+available to a later retry. Existing issuer/enrollment/removal tests also run.
+This is software custody evidence, not completed rotation or key delivery.
+
+1. Extend the retained preparation to renew certificates for retained recipients
+   and support subsequent epochs. Release only the committed successor. Preserve
+   prior removals and recheck recipient standing at delivery, rather than treating
+   presence in a prepared list as an enduring permission.
 2. A reviewed, authenticated recovery exchange must deliver material only to
    retained members, including those still on an older epoch. The current peer
    handshake requires equal current epochs, so it cannot simply be reused after

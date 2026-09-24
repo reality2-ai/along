@@ -140,6 +140,19 @@ export async function loadSoftwareIssuer({wasm, store, expectedGroup, signal}) {
       };
     return Object.freeze({group: groupId, member: persona.member, custody: 'encrypted-browser-software', close,
       issueCertificate,
+      prepareRotation: async () => {
+        await check();
+        const {prepareEpoch} = await import('./epoch-preparation.mjs');
+        return prepareEpoch({wasm, store, group, subject: Uint8Array.from(persona.member.match(/../g), b => parseInt(b, 16)),
+          from: persona.epoch, signal, check, guards: [
+            {scope, key: groupId, expectedRevision: saved.revision},
+            {scope: 'persona-bootstrap', key: 'initial', expectedRevision: bootstrap.revision}],
+          sign: async statement => {
+            await check();
+            const signature = new Uint8Array(await crypto.subtle.sign('Ed25519', key, statement));
+            await check(); return signature;
+          }});
+      },
       // Produces public signed evidence only. The caller must durably apply it
       // and deliver it to remaining members before claiming group-wide removal.
       // This profile currently enrols at epoch zero; rotation remains unfinished.
