@@ -1,7 +1,7 @@
 # Regular Along version 38 release record
 
-Regular Along **39** is now deployed; Device Preview remains **3806**.
-See the [v39 release record](RELEASE_V39.md). The v38 record below is historical.
+Regular Along **40** is now deployed; Device Preview remains **3806**.
+See the [v40 release record](RELEASE_V40.md). The v38 record below is historical.
 The [public-file check](evidence/regular-v38-public-files.json) matches all 304 files
 to the release package. The [live browser check](evidence/regular-v38-public-browser.json)
 passes setup and offline new-address routing. Physical acceptance remains open.

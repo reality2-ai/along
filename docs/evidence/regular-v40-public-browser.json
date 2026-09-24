@@ -1,0 +1,15 @@
+{
+  "status": "passed",
+  "version": 40,
+  "browser": "151.0.7922.34",
+  "checks": [
+    "HTTPS shell/service-worker version",
+    "actual device setup",
+    "offline reload",
+    "new-address offline mixed-mode route",
+    "offline installation guide"
+  ],
+  "errors": [],
+  "externalRequests": [],
+  "limits": "Fresh Chromium profile, synthetic journey only. No phone or real AT credential; installed v37/v38/v39-to40 updates separately tested locally."
+}

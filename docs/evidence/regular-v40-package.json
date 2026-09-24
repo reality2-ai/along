@@ -1,0 +1,9 @@
+{
+  "status": "passed",
+  "version": 40,
+  "source_commit": "1c4ac0fefb32e373b22dcb80f709ee22972ba7c0",
+  "archive_sha256": "cae169ada5b168908127e9e089ebae8f7072a5c694ddbb12e041c958c304095f",
+  "bytes": 41716306,
+  "payload_files": 285,
+  "scope": "Exact archive file set and hashes verified against release manifest. Packager verified unchanged qualified candidate payloads; packaging adds README and qualification record and removes DO-NOT-PUBLISH.txt."
+}

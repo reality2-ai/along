@@ -1,8 +1,8 @@
 # Hosting, phone access and restart setup
 
-> **Current release: Along 39.** Optional direct personal-key AT access and device
+> **Current release: Along 40.** Optional direct personal-key AT access and device
 > sharing are now included in the regular app. [Installation guide](https://reality2.ai/along/install.html) ·
-> [Download and hosting package](https://github.com/reality2-ai/along/releases/tag/v0.39.0).
+> [Download and hosting package](https://github.com/reality2-ai/along/releases/tag/v0.40.0).
 > Serve the whole extracted package, including `experiments/`. Earlier version-specific
 > sections below are historical; physical pairing/TalkBack and external-relay acceptance remain open.
 

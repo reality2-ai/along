@@ -1,7 +1,7 @@
 # Release evidence and remaining gates
 
-Current regular app: **version 39**. Its 18-scenario qualification and static checks pass;
-all 304 deployed files match the verified package. Physical acceptance remains open.
+Current regular app: **version 40**. Its 19-scenario qualification and static checks pass;
+all 286 deployed files match the verified package. Physical acceptance remains open.
 Historical version-37 evidence below describes that earlier release. The separate [device preview 3806](https://reality2.ai/along/preview/public/)
 is published for [S23/desktop checks](PREVIEW_DEVICE_CHECK.md). Both are static
 GitHub Pages deployments; the retired private server is not required.
@@ -30,6 +30,14 @@ explicit flows, not unattended synchronization of all trust-group state.
 Regular Along 38 now includes the live/TG controls and preserves separate preview storage. Historical
 entries below retain their original versions and scopes.
 
+## Version 40
+
+The [v40 release record](RELEASE_V40.md) adds the approved public-source runtime,
+a successful anonymous container runtime rebuild, 19 qualification scenarios and
+upgrades from v37, v38 and v39. Public checks passed after deployment. The original
+cache-name assertion failure and its stronger worker/payload verification are
+retained in the evidence. No physical pairing or external relay result is inferred.
+
 ## Version 39
 
 The [v39 release record](RELEASE_V39.md) covers automatic session renewal after
@@ -49,11 +57,11 @@ this audit. Later public-hosting work supplements that brief.
 | 2. Real journeys | Address-based train/ferry, bus and walking examples; independent raw GTFS validation; nearby and transfer fixtures; route 70/Symonds browser check | Snapshot correctness does not establish on-street conditions |
 | 3. Inclusion | Keyboard, axe, contrast, zoom, narrow screens, touch emulation, reduced motion and forced colours; text alternatives to maps | Spoken TalkBack/desktop-reader check; no disabled-commuter participant study |
 | 4. Installation and updates | Icons/manifest/installability; offline reopening; old-tab migration; quiet offline pull; failed/successful dataset refresh with saved journeys retained; Android update repair accepted after v23 | Exact Android installation browser not recorded; latest contextual interface needs physical checks |
-| 5. Browser independence | Static `/along/` host with no Python API; offline new address routes; stored route geometry; measured download/storage/time | Low-memory phone performance not characterised; routing stays JavaScript; regular v39 and preview both use the scoped R2 WASM runtime for device security |
-| 6. Distribution | v39 ZIP: 41,762,484 bytes, checksum, four data bundles, import scripts, runtime/data/library notices, AWS/Pages hosting instructions | Regular v39 is deployed with direct personal-key/TG controls; provider-access evidence and synthetic contextual tests have separate scopes. Physical acceptance remains incomplete |
+| 5. Browser independence | Static `/along/` host with no Python API; offline new address routes; stored route geometry; measured download/storage/time | Low-memory phone performance not characterised; routing stays JavaScript; regular v40 and preview both use the scoped R2 WASM runtime for device security |
+| 6. Distribution | v40 ZIP: 41,716,306 bytes, checksum, four data bundles, import scripts, runtime/data/library notices, AWS/Pages hosting instructions | Regular v40 is deployed with direct personal-key/TG controls; provider-access evidence and synthetic contextual tests have separate scopes. Physical acceptance remains incomplete |
 | 7. GitHub documentation | README, architecture, data, hosting, privacy, limits and contribution guidance; v21 course notice and current design-driver/goal summaries | Public source repository: [reality2-ai/along](https://github.com/reality2-ai/along); app hosted at [reality2.ai/along](https://reality2.ai/along/) |
 | 8. Course material | Thematic analysis, six lessons, exercises, assessment rubric and negative-case/contextual-map refinements | Course effectiveness has not been studied |
-| 9. Release checks and handover | v39: 18 integration scenarios, static/offline checks, installed v37 upgrade, complete public-file comparison and fresh public-site setup/offline routing; 301 application files reproduced from committed source | Current S23 pairing, installation and TalkBack acceptance remain; browser tests do not establish physical usability |
+| 9. Release checks and handover | v40: 19 integration scenarios, static/offline checks, installed v37/v38/v39 upgrades, complete public-file comparison and fresh public-site setup/offline routing; historical v38 source reproduction and isolated public-source runtime rebuild | Current S23 pairing, installation and TalkBack acceptance remain; browser tests do not establish physical usability |
 
 | 10. English / Te reo Māori | Deferred by user instruction; version 31 removes the selector and ignores earlier saved Māori choices | Re-enable only with renewed direction; draft review remains incomplete |
 
@@ -64,7 +72,7 @@ this audit. Later public-hosting work supplements that brief.
 1. Verify a user-selected external relay endpoint when available. The actual R2
    implementation now passes on loopback behind test TLS; that does not establish
    public-network reachability or mobile reconnection.
-2. Obtain S23/desktop observations using the [regular v38 guide](DEVICE_CHECK.md), especially the failed
+2. Obtain S23/desktop observations using the [regular v40 guide](DEVICE_CHECK.md), especially the failed
    scan → Use transition, installation, touch and spoken screen-reader use. The
    user withdrew an earlier TalkBack-success statement; treat it as untested.
 3. Regular-app promotion is complete. The [release record](REGULAR_UPGRADE.md)

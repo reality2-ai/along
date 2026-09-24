@@ -1,4 +1,4 @@
-# Along 39: short S23 and desktop check
+# Along 40: short S23 and desktop check
 
 Use the regular app at <https://reality2.ai/along/>, not Device Preview.
 No coding is needed. Start with pairing; report that result before attempting
@@ -8,7 +8,7 @@ the remaining checks if anything is confusing.
 
 In the browser used to install Along, open
 [Update Along](https://reality2.ai/along/update.html), follow the update prompts,
-and reopen the installed app. Check **App version 39** in Settings on both devices.
+and reopen the installed app. Check **App version 40** in Settings on both devices.
 Record the browser names. Preserve existing saved places and device setup; do not
 clear site storage or create replacement groups to retry an interrupted connection.
 

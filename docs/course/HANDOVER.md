@@ -1,4 +1,4 @@
-# Along course handover — version 39
+# Along course handover — version 40
 
 Along is a working, experimental Auckland commuter app and a case study of one
 human–AI collaboration. It is used at your own risk, is not an official AT app,
@@ -15,23 +15,23 @@ the learner's judgment, not how much code the assistant generates.
 | --- | --- |
 | Try the experience | Open [Along](https://reality2.ai/along/), prepare it online, then use its installation guide. No AT key or device group is needed for scheduled planning. |
 | Teach the full course | Use the six sessions and rubric in the [course guide](../COURSE_GUIDE.md). Have the AI prepare a separate teaching copy before class. |
-| Run one discussion session | Use the 45–60 minute [release-evidence lab](RELEASE_EVIDENCE_LAB.md), retaining its historical preview version, or the v39 exercise below. |
+| Run one discussion session | Use the 45–60 minute [release-evidence lab](RELEASE_EVIDENCE_LAB.md), retaining its historical preview version, or the v40 exercise below. |
 | Inspect the requirements | Read the [design drivers](../../README.md#what-drives-the-design), [goal](../PROJECT_GOAL.md) and [thematic analysis](../CONVERSATION_ANALYSIS.md). |
 | Rebuild or host it | Give the AI [Building Along](../BUILDING.md). `npm run build` prepares the connected candidate once its runtime and data are ready; the legacy planner has an explicit `build:legacy` command. |
 
 ## Prepare a teaching copy
 
-Ask the assistant to obtain the [v39 ZIP and checksum](https://github.com/reality2-ai/along/releases/tag/v0.39.0),
+Ask the assistant to obtain the [v40 ZIP and checksum](https://github.com/reality2-ai/along/releases/tag/v0.40.0),
 verify the archive, and serve its entire contents on a separate teaching origin.
 Keep the manifest, qualification record, runtime provenance and source notices.
 Use the supplied example addresses and synthetic credentials. A personal AT key,
 relay endpoint and public GitHub submission are unnecessary for the core lessons.
 
-The runtime source repository is private: the current runtime build procedure
-requires access. Do not assume a public source link grants that access. The
-[build guide](../BUILDING.md) records the failed anonymous container rehearsal
-and the new public subset bundle, whose runtime-bundle and browser checks
-remain pending.
+The approved runtime source is now public in this repository. The
+[build guide](../BUILDING.md) records the original anonymous-fetch failure,
+its correction through a licensed source subset, and successful isolated runtime
+builds followed by browser qualification. The release includes a verified developer
+runtime bundle so a teaching copy does not need a Rust build first.
 
 For implementation sessions, ask the assistant to prepare the pinned runtime,
 dependencies and data described in the build guide beforehand. Fresh upstream
@@ -47,7 +47,7 @@ Use appeared to do nothing, and the recurring instruction to make the likely nex
 action clear. Ask learners to propose two explanations and the evidence needed
 to distinguish them before showing the implementation response.
 
-Give the AI the [v39 release record](../RELEASE_V39.md) and
+Give the AI the [v40 release record](../RELEASE_V40.md) and
 [relay regression](../evidence/relay-membership-reconnect.json). Ask it to explain
 why a locally received membership change invalidated an existing relay session,
 and how the regression distinguishes renewal from automatic update delivery.
@@ -67,9 +67,9 @@ longer status report do not earn credit without better evidence for the claim.
 
 ## Evidence students may use
 
-The v39 record links 18 passing qualification scenarios, static offline and
+The v40 record links 19 passing qualification scenarios, static offline and
 automated accessibility checks, exact deployed-file verification, and a fresh
-public-browser check. The v37/v38 upgrade checks cover the specified saved-data
+public-browser check. The v37/v38/v39 upgrade checks cover the specified saved-data
 and identity cases. Earlier v38 source exports reproduced 301 application files
 using an existing verified runtime and the published dataset on the same host.
 That is narrower than reconstructing every dependency on another machine.

@@ -1,0 +1,32 @@
+{
+  "status": "passed",
+  "recorded_at": "2026-09-24T20:31:16.467878+00:00",
+  "metrics": {
+    "buildProfile": "along-regular-upgrade-candidate-v1",
+    "buildManifestSha256": "3319aba8fe88274fac9db0acc86a57c73f056d0752f27cb3ec19d065ae378140",
+    "runtime": "v26.4.0",
+    "browser": "151.0.7922.34",
+    "host": "Local static HTTP, repository subpath, Chromium desktop",
+    "physicalPhone": false,
+    "coldReadyMs": 13325,
+    "installability": {
+      "installabilityErrors": []
+    },
+    "mixedModeRouteMs": 5539,
+    "datasetBytes": 41308937,
+    "storage": {
+      "quota": 10809123164,
+      "usage": 71704924,
+      "usageDetails": {
+        "caches": 1957888,
+        "indexedDB": 69737246,
+        "serviceWorkerRegistrations": 9790
+      }
+    },
+    "mainPageResourceTransferBytes": 1154468,
+    "offlineReadyMs": 6161
+  },
+  "log_sha256": "ca7d3e1f97bb5e8e444846d245b0f2b49389611cbbd10af2e1e0a3edc8e451ce",
+  "test_source_sha256": "81a1b3228fcbae1638503c2a152799c85e9d1781f306652a924a4e3ea28d93cd",
+  "scope": "Current v40 candidate with public-source runtime; local Chromium static subpath, offline routing, data refresh and automated accessibility. Concurrent integration qualification; not a phone benchmark or spoken-screen-reader check."
+}

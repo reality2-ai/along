@@ -22,8 +22,9 @@ sealing or protection from malicious same-origin scripts.
 Two builds in fresh directories inside a rootless Linux container produce
 identical WASM and JavaScript outputs. The JavaScript interface matches the v39
 runtime. The WASM differs, including embedded build paths and tool metadata;
-browser verification of the rebuilt runtime remains pending. Do not replace a
-qualified release's runtime and keep claiming its original test result.
+the rebuilt runtime subsequently passed all 19 v40 qualification scenarios.
+See the [v40 release evidence](../../docs/RELEASE_V40.md). Changed runtime bytes
+require fresh qualification, rather than inheriting an earlier release result.
 
 ## Rebuild from committed Along source
 
@@ -44,7 +45,7 @@ python3 scripts/build_r2_runtime.py \
 The builder reads committed files, creates two fresh builds, and retains matching
 outputs, source, licence notices and provenance. The output directory must be new.
 The [complete runtime-bundle rehearsal](../../docs/evidence/public-runtime-bundle.json)
-also passes from an anonymous public checkout in a rootless container. Browser
-qualification of this new runtime remains pending.
+also passes from an anonymous public checkout in a rootless container. The
+qualified v40 release uses this public-source runtime.
 Use [Along's build guide](../../docs/BUILDING.md) for app qualification and release
 instructions. Course learners ask the AI to perform these technical steps.

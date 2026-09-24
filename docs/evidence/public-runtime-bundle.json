@@ -1,5 +1,5 @@
 {
-  "status": "bundle-built-browser-qualification-pending",
+  "status": "passed",
   "recorded_at": "2026-09-24T20:29:20.016273+00:00",
   "source_repository": "https://github.com/reality2-ai/along",
   "source_commit": "82377f117f99d84b000319ac04917a2420db0e84",
@@ -11,5 +11,6 @@
   "runtime_provenance_sha256": "ccd360e2ee525ccd79e329bdf05a4d6fb60c7c891a888a309e59927086973069",
   "wasm_sha256": "d4d6dbff8864b67d6368d50f544041563e048994426ba3aa4f481ca951e81c19",
   "log_sha256": "244ce2c0ca85cb44ecfae8efcccd76cc45c27349b3bcf0f8800e36c59bbc5c2d",
-  "scope": "Complete build_r2_runtime.py path from anonymous public Git checkout, isolated rootless container with publicly downloaded toolchain/dependencies. New verified bundle; browser acceptance and release qualification pending."
+  "scope": "Complete runtime builder from anonymous public Git checkout in isolated rootless Linux container with publicly downloaded tools/dependencies; two matching builds. The resulting runtime passed 19 v40 qualification scenarios on the development host. No physical device or cross-platform reproducibility claim.",
+  "browser_qualification": "regular-v40-qualification.json"
 }

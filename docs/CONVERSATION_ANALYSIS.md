@@ -1552,3 +1552,20 @@ not new participant accounts or proof of course effectiveness. The unresolved
 physical check is retained as contrary evidence to any broad claim of seamless
 cross-device use. A further observation may require revising the interpretation,
 not simply adding another passing test to the record.
+
+
+### Clarification and infrastructure discovery (25 September 2026)
+
+The user's “what is the question” prompted a shorter, direct request for a relay
+address. They then stated that no relay had been chosen and suggested an existing
+R2 hive as a candidate. This supports the existing theme of shared vocabulary:
+“hive” and “relay” must be explained through the capability needed for the task,
+without assuming the participant should know the infrastructure distinction.
+It does not authorize making a server the default for every commuter.
+
+The subsequent public-source runtime rebuild is implementation evidence, not a
+participant finding. An anonymous fetch exposed a private dependency; publishing
+only the approved source subset made a reproducible runtime build possible.
+Version 40 records fresh qualification because its WASM bytes differ. This extends
+*honest verification*: public source, successful compilation, browser behavior and
+physical usability are separate claims. The phone timeout remains unresolved.
