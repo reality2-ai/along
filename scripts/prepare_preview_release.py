@@ -26,6 +26,8 @@ def prepare(qualification):
         required.add('group_removal')
     if int(manifest.get('appVersion', '0')) >= 3803:
         required.add('legacy_enrollment')
+    if int(manifest.get('appVersion', '0')) >= 3804:
+        required.update({'rotated_journeys', 'rotated_at_owner', 'rotated_different_at_owner', 'rotation_settings'})
     if (evidence.get('profile') != 'along-preview-qualification-v1'
             or evidence.get('candidate_manifest_sha256') != digest(manifest_path)
             or any(evidence.get('checks', {}).get(name, {}).get('status') != 'passed' for name in required)

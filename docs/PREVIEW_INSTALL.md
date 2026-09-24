@@ -7,7 +7,7 @@ information with AT. The preview is not the regular Along release.
 ## Keep the preview separate
 
 The installed name is **Along Device Preview** (some launchers shorten it to
-**Along Preview**). Check for **App version 3802 · Device preview** in Settings.
+**Along Preview**). Check for **App version 3804 · Device preview** in Settings.
 The preview starts with its own saved places, offline download and device setup.
 It does not import the regular app's AT key or saved journeys. Keep your regular
 Along installation while testing.
@@ -19,7 +19,7 @@ the preview's saved places, identity and stored key. Do not clear site data.
 Version 3802 adds a device list and signed group-removal messages. Devices issued
 membership before 3802 may be absent from the list. Removal is enforced by each
 device only after it learns the signed update; it does not erase copied data,
-replace an AT key at its provider or rotate group keys. Automatic delivery remains
+replace an AT key at its provider. Version 3804 adds reviewed group-key updates and saved installation confirmations. Automatic delivery remains
 unfinished.
 
 These separate storage names prevent accidental mixing; they are not a security boundary. They do not protect one
@@ -90,3 +90,10 @@ submit it through GitHub. Opening the issue composer is not confirmed delivery.
 Never include API keys, private connection messages or personal addresses unless
 you deliberately want to publish them. Feedback drafts are kept separately for
 the preview.
+
+
+For version 3804, update both devices before pairing or reconnecting: the public
+connection formats changed. Device setup includes reviewed group-key updates,
+per-device confirmations and recovery of a lost acknowledgment. These updates
+preserve existing sharing choices; replacing an AT subscription key is a separate
+provider action. Downloaded planning remains available if devices cannot connect.

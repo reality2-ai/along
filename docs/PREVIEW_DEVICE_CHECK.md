@@ -1,7 +1,7 @@
 # Along Device Preview: S23 and desktop check
 
 Open [Along Device Preview](https://reality2.ai/along/preview/public/) and check
-version **3803**. These instructions are for that preview, not public version 37 or
+version **3804**. This is the next-candidate guide; use it only once that version is available. These instructions are for that preview, not public version 37 or
 the standalone pairing lab. No coding or terminal commands are required.
 
 Use your Samsung S23 and desktop. Record the browser name/version on each device.
@@ -9,15 +9,15 @@ Use dummy addresses from the examples and dummy key text only. Keep the regular
 Along installation. Do not clear the whole website's storage to restart a test;
 that can remove data from both apps. Mark anything you cannot check as **not tested**.
 
-If preview 3801 or 3802 is already installed, open
+If preview 3801, 3802 or 3803 is already installed, open
 [preview update recovery](https://reality2.ai/along/preview/public/update.html)
 and choose **Update and reopen**. Check that saved places and setup remain and
-Settings shows 3803. Do not recreate an existing group to test an update.
+Settings shows 3804. Do not recreate an existing group to test an update.
 
 ## Install and plan offline
 
 1. Open the supplied preview URL in the browser used for installation. In Settings,
-   check **App version 3803 · Device preview** and wait for timetable and addresses
+   check **App version 3804 · Device preview** and wait for timetable and addresses
    to be ready offline.
 2. Follow the preview's **Install on your device** guide. The installed name is
    **Along Device Preview** or **Along Preview**. Check that the icon opens its own
@@ -128,7 +128,7 @@ check **not tested** if you do not use GitHub or do not want to post publicly.
 
 ## Group removal — do this last
 
-Only test this with a disposable test pairing created in 3803. Removal stops that
+Only test this with a disposable test pairing created in 3804. Removal stops that
 device's group access; it does not remove its local journeys. Skip it for an older
 enrollment missing from the list or a group you want to keep using.
 
@@ -145,4 +145,34 @@ enrollment missing from the list or a group you want to keep using.
    Reopening the issuer's review should show the saved removal.
 
 Copying alone is not delivery. Copies of journeys or keys already shared remain
-on the other device; group-key rotation is unfinished. Dummy keys only.
+on the other device; group-key updates do not erase those copies or replace an AT subscription key. Dummy keys only.
+
+
+## Update group keys on your test devices
+
+Update both devices to 3804 before connecting: the invitation and AT-reconnect
+message formats changed. Keep the same saved group and AT sharing choices.
+
+1. On the device that created the group, open **Device and AT-key setup → Connect
+   or recover another device → Update group keys on this device**. Review the
+   explanation, then confirm the local update. It should not claim the other
+   device has received it yet.
+2. Go Back and choose **Send a group key update**, then your other device. On that
+   device choose **Receive a group key update** under its device setup controls.
+3. Follow the starting message, update request and reply steps. On the receiving
+   device review and accept the update. On the owner choose **Send update or check
+   confirmation**. Check for local keys saved on the recipient and a signed
+   installation confirmation on the owner.
+4. Reopen both apps. Check saved places and service preferences, reconnect journey
+   sharing and make a harmless saved-place edit. It should arrive on the other
+   device without asking you to replace its identity or reset its permissions.
+5. If you configured dummy AT-key sharing, reconnect the existing AT devices.
+   A dummy key cannot produce real live data; do not report that as a failure of
+   group recovery. Existing owner and permission choices should remain.
+6. If the connection drops after keys are saved, start another key-update exchange.
+   It should offer to confirm existing keys when both versions already match.
+   Keep saved data; do not create a new group to recover a missing confirmation.
+
+Report confusing wording, missing controls, update/reconnect failures and TalkBack
+announcements. These are manual device checks; browser automation does not prove
+physical installation, QR camera use or network reachability.
