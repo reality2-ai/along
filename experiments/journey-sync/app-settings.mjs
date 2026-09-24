@@ -33,7 +33,7 @@ export function mountAppJourneySettings({wasm, store, expectedGroup, member}) {
     checking: 'Checking this device’s saved journeys…',
     'isolation-required': 'Saved-journey migration needs to finish on this device. Your existing copies are kept; sharing is paused.',
     'local-review-required': 'Review the retained saved-place differences before sharing again. Your existing copies are kept.',
-    'generation-ready': (startup.generation === 0 ? 'Saved-journey storage is prepared on this device. ' : 'This device has recovered saved journeys. ') + 'You can transfer a sharing checkpoint for review. Ongoing sharing for this storage version is not enabled yet. You can still plan and save here.',
+    'generation-ready': (startup.generation === 0 ? 'Saved-journey storage is prepared on this device. ' : 'This device has recovered saved journeys. ') + 'Connect to share saved-place changes with a device at the same checkpoint. If it needs to catch up, transfer a checkpoint for review first.',
     unavailable: 'Saved-journey recovery could not be checked. Your stored copies have not been cleared. Sharing is paused.',
   })[startup.status];
   const checkStartup = async () => {
@@ -43,7 +43,11 @@ export function mountAppJourneySettings({wasm, store, expectedGroup, member}) {
       try{receivedCheckpoint=await readReceivedCheckpoint({store,expectedGroup});}
       catch{receivedError=true;}
     }
-    if (startup.status !== 'legacy') { disconnect(); report(startupMessage()); }
+    if(startup.status==='generation-ready'){
+      if(session&&(!session.generationVersion||session.generationVersion.generation!==startup.generation))disconnect();
+      if(!session)report(startupMessage());
+    }else if(startup.status!=='legacy'){disconnect();report(startupMessage());}
+    else if(session?.generationVersion)disconnect();
     return startup.status;
   };
   let view, session, disposed = false, status, queue = Promise.resolve(), message = '', generation = 0, starting = false, screen = 'home';
@@ -63,11 +67,11 @@ export function mountAppJourneySettings({wasm, store, expectedGroup, member}) {
       if (disposed) return;
       if (state === 'generation-ready') {
         await openGenerationAppJourneyStore({store, group, actor: member}).reconcile({signal: lifetime.signal});
-        return;
+      }else{
+        if (state !== 'legacy') return;
+        if (readEnvelope().sync?.group !== group) return;
+        await replica.reconcile({signal: lifetime.signal});
       }
-      if (state !== 'legacy') return;
-      if (readEnvelope().sync?.group !== group) return;
-      await replica.reconcile({signal: lifetime.signal});
       if (disposed) return;
       if (send && session) {
         await session.synchronize();
@@ -94,12 +98,14 @@ export function mountAppJourneySettings({wasm, store, expectedGroup, member}) {
     if (starting) return; starting = true;
     const selected = generation;
     try {
-      if (await checkStartup() !== 'legacy') { if (!disposed && dialog.open && generation === selected) home(); return; }
-      enableJourneyTracking(group); await replica.reconcile({signal: lifetime.signal});
+      const state=await checkStartup();
+      if (!['legacy','generation-ready'].includes(state)) { if (!disposed && dialog.open && generation === selected) home(); return; }
+      if(state==='legacy'){enableJourneyTracking(group);await replica.reconcile({signal:lifetime.signal});}
+      else await openGenerationAppJourneyStore({store,group,actor:member}).reconcile({signal:lifetime.signal});
       if (disposed || !dialog.open || generation !== selected) return;
       clear();
       screen = 'connection';
-      view = showJourneyConnection(content, {wasm, store, expectedGroup, role, focus: true, signal: lifetime.signal, onBack: home,
+      view = showJourneyConnection(content, {wasm, store, expectedGroup, role,purpose:state==='legacy'?'journeys':'generation', focus: true, signal: lifetime.signal, onBack: home,
         onSaved: () => { void reconcile(); },
         onConnected: connected => {
           if (disposed) { connected.close(); return; }
@@ -158,7 +164,7 @@ export function mountAppJourneySettings({wasm, store, expectedGroup, member}) {
       clear(); screen = 'migration-setup';
       const heading = node('h2', 'Prepare saved-journey recovery?'); heading.tabIndex = -1;
       content.append(heading,node('p','Keep your current saved places and queued edits in separate storage so older app copies cannot overwrite recovered data. The original copy is retained.'),
-        node('p','This prepares this device only. It does not free sharing space yet. Checkpoint transfers become available; ongoing sharing for the new storage version is not enabled. You can still plan and save offline.'));
+        node('p','This prepares this device only. It does not free sharing space yet. Devices need matching checkpoints for ongoing sharing; checkpoint transfers let them catch up after review. You can still plan and save offline.'));
       const note = node('p',''); note.setAttribute('role','status'); content.append(note);
       const controller = new AbortController(); view = {dispose:()=>controller.abort()};
       const confirm = action('Prepare recovery on this device',async()=>{
@@ -301,7 +307,7 @@ export function mountAppJourneySettings({wasm, store, expectedGroup, member}) {
     content.append(heading, node('p', 'Share saved starting places, destinations and service preferences with an enrolled device. Learning history, current location and the journey on screen stay here. This does not require an AT key.'));
     status = node('p', message || 'Both devices must be online and open. Connection currently uses messages you transfer between them.'); status.setAttribute('role', 'status'); content.append(status);
     if (startup.status !== 'legacy') {
-      status.textContent = startupMessage();
+      status.textContent = session?message:startupMessage();
       if (startup.legacyChangesPending) content.append(node('p', 'An older app copy has additional edits. They remain separate and still need review.'));
       if (startup.status === 'isolation-required' && startup.generation === 0) action('Finish saved-journey setup',reviewMigrationSetup).className='pairing-primary';
       if (startup.status === 'local-review-required') action('Review saved-place differences', reviewLocalDifferences).className = 'pairing-primary';
@@ -310,6 +316,13 @@ export function mountAppJourneySettings({wasm, store, expectedGroup, member}) {
       const canCheckpoint=!receivedCheckpoint&&!receivedError&&startup.status==='generation-ready'&&startup.canPrepareCheckpoint&&(startup.generation===0||capacityReached);
       if(canCheckpoint)action('Review recovery checkpoint',reviewCheckpoint).className='pairing-primary';
       if(startup.status==='generation-ready'){
+        if(session){
+          action('Check for saved journey changes',()=>reconcile(true)).className='pairing-primary';
+          action('Disconnect journey sharing',()=>{disconnect();message='Disconnected. Saved changes stay here until you reconnect.';home();});
+        }else{
+          action('Start journey connection',()=>connect('start')).className=receivedCheckpoint||canCheckpoint?'':'pairing-primary';
+          action('Join journey connection',()=>connect('join'));
+        }
         action('Start checkpoint connection',()=>connectCheckpoint('start'));
         action('Join checkpoint connection',()=>connectCheckpoint('join'));
       }

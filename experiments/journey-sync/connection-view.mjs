@@ -3,7 +3,7 @@ import {openMembership} from '../tg-pairing/membership.mjs';
 import {showDeviceTransfer} from '../tg-pairing/transfer-view.mjs';
 import {readJourneyPermission} from './permission.mjs';
 import {showJourneyPermission} from './permission-view.mjs';
-import {openJourneySession} from './journey-session.mjs';
+import {openJourneySession,openGenerationJourneySession} from './journey-session.mjs';
 import {openCheckpointSession} from './checkpoint-session.mjs';
 import {certificateCodec} from '../tg-pairing/certificate.mjs';
 import {exportRemovalSet, receiveRemovalSet} from '../tg-pairing/removal-set.mjs';
@@ -17,10 +17,10 @@ const fields = (value, names) => value && Object.keys(value).sort().join(',') ==
 export function showJourneyConnection(container, {wasm, store, expectedGroup, role, focus = false,
   signal, onBack = () => {}, onConnected, onSaved, purpose = 'journeys'}) {
   if (!['start', 'join'].includes(role) || typeof onConnected !== 'function'
-      || !['journeys','checkpoint'].includes(purpose)
+      || !['journeys','checkpoint','generation'].includes(purpose)
       || !(expectedGroup instanceof Uint8Array) || expectedGroup.length !== 32) throw Error('Journey connection unavailable');
   const checkpoint=purpose==='checkpoint';
-  const profile=checkpoint?'along-checkpoint-connect-v1':'along-journey-connect-v2';
+  const profile=checkpoint?'along-checkpoint-connect-v1':purpose==='generation'?'along-generation-connect-v1':'along-journey-connect-v2';
   mounted.get(container)?.();
   const group = expectedGroup.slice(), document = container.ownerDocument, lifetime = new AbortController();
   let disposed = false, failed = false, handedOff = false, child, session, local, own, peerCertificate;
@@ -82,7 +82,7 @@ export function showJourneyConnection(container, {wasm, store, expectedGroup, ro
     current(); peerCertificate=certificate.slice();return peer;
   };
   const open = async (peer, sessionRole) => {
-    session = await (checkpoint?openCheckpointSession:openJourneySession)({wasm, store, expectedGroup: group, peer,
+    session = await (checkpoint?openCheckpointSession:purpose==='generation'?openGenerationJourneySession:openJourneySession)({wasm, store, expectedGroup: group, peer,
       certificate:peerCertificate,role: sessionRole, signal: lifetime.signal, onSaved,onRetained:onSaved});
     if (disposed || failed) { session.close(); current(); }
     session.signal.addEventListener('abort', fail, {once: true});

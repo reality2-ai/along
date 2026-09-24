@@ -264,7 +264,7 @@ try {
   assert.equal((await saved(candidate)).find(j => j.to.id === preferred.to.id).count, 0, 'owner learning history stays local');
   assert.equal(await owner.locator('#current-step').textContent(), originalStep, 'receipt preserves current journey');
   if(process.env.CHECKPOINT_APP==='1'){
-    await checkCheckpointApp({pages,owner,candidate,share,move});
+    await checkCheckpointApp({pages,owner,candidate,share,closeSharing,reviewPlaces,move});
   }else{
   // Remote changes should refresh the saved-service control without rebuilding
   // the route being followed or removing its focused action.
@@ -446,7 +446,7 @@ try {
         finally {store.close();}
       },namespaces);
       assert.deepEqual(setup,{source:queued,current:queued,old:2,generation:0});
-      await expect(owner.getByRole('button',{name:'Start journey connection',exact:true})).toHaveCount(0);
+      await expect(owner.getByRole('button',{name:'Start journey connection',exact:true})).toBeVisible();
       console.log('PASS: actual capacity-limit Settings action reviews/cancels then migrates and isolates all 257 local saves/queued bytes without claiming capacity recovery or enabling incompatible peer connections.');
     }
     await closeSharing(owner);

@@ -41,6 +41,7 @@ async function openSession({wasm, store, expectedGroup, peer, certificate, stora
       }});
     return Object.freeze({
       peer: hex(selectedPeer),
+      generationVersion: generationAware ? Object.freeze({...journeys.version}) : null,
       offer: () => { current(); return session.offer(); },
       accept: description => { current(); return session.accept(description); },
       authenticated: async () => { current(); await session.authenticated(); current(); await journeys.check(); },

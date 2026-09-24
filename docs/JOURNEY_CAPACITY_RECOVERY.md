@@ -692,6 +692,21 @@ claim local planner reconciliation. The test uses real browser storage and
 identities with harness signaling; the ongoing-sharing Settings flow still needs
 integration and full app verification.
 
+## Ongoing sharing in experimental Settings
+
+Ready generations now use a separate connection profile and authenticated
+generation session. Settings reconciles local edits before sending and applies
+received replica changes through the generation planner bridge. Its startup check
+keeps compatible sessions open and stops legacy sessions after migration or
+sharing during incomplete recovery. Explicit disconnection remains available.
+
+The two-profile generated-app test now completes checkpoint recovery, reconnects
+through the ongoing-sharing controls, then deletes and re-saves a place. The other
+planner updates while its current followed journey remains unchanged. Closing and
+reopening Settings preserves the connection; explicit disconnection ends it. This
+is browser evidence on one host with harness signaling, not physical-device or
+automatic discovery/reconnect acceptance.
+
 ## Required before release
 
 1. Qualify the reviewed migration and format-2 bridge against the exact published
@@ -703,9 +718,10 @@ integration and full app verification.
 3. Verify multi-checkpoint catch-up through the full app UI, including interrupted
    review, permission changes and session invalidation. Two successive checkpoints
    pass at the enrolled component level; the full Settings flow checks one.
-4. Implement generation-aware ordinary snapshot sessions and ordered catch-up.
-   An old peer's ordinary snapshot must never establish or replace a generation.
-   Newly enrolled devices need checkpoint acquisition as well as membership.
+4. Qualify the integrated generation-aware snapshot sessions and ordered catch-up
+   across the public upgrade path. An old peer's ordinary snapshot must never
+   establish or replace a generation. Newly enrolled devices need checkpoint
+   acquisition as well as membership.
 5. Add review of later edits retained from older app tabs. The current received
    checkpoint/local-difference flow preserves its copies; older-tab reconciliation
    remains separate. Missing checkpoints or a lost issuer must explain recovery

@@ -639,3 +639,17 @@ Revoking consent refuses further use of the open channel. These are component
 calls with real enrolled identities/IndexedDB/WebRTC and harness signaling;
 ongoing-generation connection controls and planner refresh in Settings remain
 to be integrated and qualified.
+
+Experimental Settings now reconnects ready generations using
+`along-generation-connect-v1`. It selects the matching generation session and
+reconciles received snapshots into the isolated planner storage. Local saves and
+deletions are sent while that session remains open. Incomplete recovery still
+blocks connection, and legacy connections keep their separate profile.
+
+The `CHECKPOINT_APP=1` generated-app test now continues beyond checkpoint review:
+both devices reconnect through Settings, a saved place is deleted and re-saved,
+and the other planner updates without replacing the journey being followed.
+The test also confirms the ongoing connection survives closing/reopening Settings
+and can be explicitly disconnected. This remains a two-profile, one-host test
+with copied public signaling. Physical-device acceptance, automatic discovery,
+multi-checkpoint app catch-up and exact release qualification remain outstanding.
