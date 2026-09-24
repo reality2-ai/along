@@ -519,3 +519,17 @@ storage failure, damaged signatures, cancellation after commit, retry and fresh-
 IndexedDB restoration. Bytes still arrive by direct fixture handoff. A different
 checkpoint cannot overwrite the occupied slot; reviewed retirement/advancement,
 authenticated wire composition and receiving UI remain integration work.
+
+`checkpoint-session.mjs` now connects the checkpoint codec and guarded inbox to
+`openLocalPersonaSession`. It authenticates the selected device over direct
+WebRTC, checks sharing permission for traffic in both directions, and binds the
+channel to the opening consent revision and local generation/checkpoint. A changed
+permission or generation refuses further transfer; the caller must reconnect.
+The sender sees `peer-retained-checkpoint` only after verified inbox readback.
+
+The enrolled-browser fixture now sends a real checkpoint over that channel,
+interrupts the receiver after its IndexedDB commit, reconnects and confirms the
+retained bundle. It also checks permission removal and generation installation
+invalidate an open channel. Signaling remains harness-driven on one host and
+installation review uses adapter calls. Receiving UI, ordered catch-up, inbox
+advancement and physical-device reachability are still unverified or unfinished.

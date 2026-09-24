@@ -547,6 +547,24 @@ a fresh page. This verifies IndexedDB retention, not checkpoint wire delivery.
 Slot retirement/advancement, session composition and receiver review controls are
 still required. The public build remains unchanged.
 
+## Authenticated checkpoint channel
+
+`checkpoint-session.mjs` composes the codec and consent-guarded inbox with the
+installed-persona WebRTC session. Both traffic directions check application
+permission; membership and possession are checked by the underlying authenticated
+session. The channel retains its opening permission revision and local
+generation/checkpoint, refusing use after either changes. A retained checkpoint
+does not itself advance that generation or overwrite planner preferences.
+
+The real enrollment fixture now transfers the signed multi-chunk checkpoint over
+WebRTC. A forced disconnect after the receiving IndexedDB commit leaves the sender
+unconfirmed; a fresh authenticated connection confirms the retained copy. Tests
+also revoke consent and install the checkpoint while a channel is open, then
+verify it refuses further transfer. Fresh-page verification of the retained bundle
+and recovered local history still passes. Public signaling is copied by the test
+harness on one host. This is not a device reachability test or recipient UI
+acceptance; ordered catch-up, inbox advancement and app integration remain.
+
 ## Required before integration
 
 1. Wire the tested migration and format-2 bridge to explicit reviewed opt-in,

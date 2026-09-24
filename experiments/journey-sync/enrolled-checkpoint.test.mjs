@@ -1,5 +1,5 @@
-// Called by the actual enrollment fixture. Signed checkpoint bytes are handed
-// directly to this adapter; this is not evidence of checkpoint wire delivery.
+// Actual enrollment fixture: direct adapter fault checks plus authenticated
+// checkpoint WebRTC transfer. Signaling is copied by the harness on one host.
 import {setupJourneyGeneration} from './migration-setup.mjs';
 import {openIsolatedPlannerStorage} from './isolated-preferences.mjs';
 import {loadSoftwareIssuer} from '../tg-pairing/software-persona.mjs';
@@ -8,6 +8,7 @@ import {acceptPermittedJourneyCheckpoint,retainPermittedJourneyCheckpoint} from 
 import {createCheckpointReview} from './checkpoint-review.mjs';
 import {applyCheckpointChoices} from './checkpoint-choice-commit.mjs';
 import {preferenceKey,readEnvelope} from './app-preferences.mjs';
+import {openCheckpointSession} from './checkpoint-session.mjs';
 export async function checkEnrolledCheckpoint({wasm,owner,receiver,group}) {
   const hex=bytes=>Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('');
   const groupId=hex(group), check=(value,message)=>{if(!value)throw Error(message);};
@@ -31,7 +32,19 @@ export async function checkEnrolledCheckpoint({wasm,owner,receiver,group}) {
   const grant=async allow=>setJourneyPermission({...consent,allow,expectedRevision:(await readJourneyPermission(consent)).revision});
   const input={...consent,expectedRevision:before.revision,expectedLocalRaw:readEnvelope(adapters[1]).raw,
     checkpoint:prepared.checkpoint,snapshot:prepared.snapshot,storage:adapters[1]};
+  const senderContext={wasm,store:owner.store,expectedGroup:group,peer:receiver.subject,certificate:receiver.certificate};
+  await setJourneyPermission({...senderContext,allow:true,expectedRevision:(await readJourneyPermission(senderContext)).revision});
+  const connect=async(receiverOptions={})=>{
+    const sessions=[];
+    try {
+      sessions.push(await openCheckpointSession({...senderContext,role:'offer',timeoutMs:2000}));
+      sessions.push(await openCheckpointSession({...consent,role:'answer',timeoutMs:2000,...receiverOptions}));
+      const offer=await sessions[0].offer(),answer=await sessions[1].accept(offer);await sessions[0].accept(answer);
+      await Promise.all(sessions.map(s=>s.authenticated()));return sessions;
+    }catch(error){sessions.forEach(s=>s.close());throw error;}
+  };
   await grant(false);await refuses(acceptPermittedJourneyCheckpoint(input));
+  await refuses(openCheckpointSession({...consent,role:'answer'}));
   await refuses(retainPermittedJourneyCheckpoint(input));await grant(true);
   const inboxScope='along-journey-checkpoint-inbox-v1';
   let retentionRace=false;
@@ -47,10 +60,20 @@ export async function checkEnrolledCheckpoint({wasm,owner,receiver,group}) {
   const damaged=prepared.checkpoint.slice();damaged[183]^=1;
   await refuses(retainPermittedJourneyCheckpoint({...input,checkpoint:damaged}));
   const cancelled=new AbortController();
-  await refuses(retainPermittedJourneyCheckpoint({...input,signal:cancelled.signal,
+  const interrupted=await connect({signal:cancelled.signal,
     store:{...receiver.store,compareAndSwapMany:async(...args)=>{
       const result=await receiver.store.compareAndSwapMany(...args);cancelled.abort();return result;
-    }}}));
+    }}});
+  try{await refuses(interrupted[0].sendCheckpoint({checkpoint:prepared.checkpoint,snapshot:prepared.snapshot}));}
+  finally{interrupted.forEach(s=>s.close());}
+  const delivered=await connect();
+  try {
+    check((await delivered[0].sendCheckpoint({checkpoint:prepared.checkpoint,snapshot:prepared.snapshot})).status==='peer-retained-checkpoint',
+      'authenticated retry did not confirm durable retention');
+    await grant(false);
+    await refuses(delivered[0].sendCheckpoint({checkpoint:prepared.checkpoint,snapshot:prepared.snapshot}));
+  } finally {delivered.forEach(s=>s.close());}
+  await grant(true);
   const retained=await retainPermittedJourneyCheckpoint(input);
   check(retained.status==='checkpoint-retained-for-review'&&retained.alreadyRetained,'retention after cancelled confirmation failed');
   check((await retainPermittedJourneyCheckpoint(input)).alreadyRetained,'retention retry failed');
@@ -69,7 +92,12 @@ export async function checkEnrolledCheckpoint({wasm,owner,receiver,group}) {
   check((await receiver.store.read('along-saved-journeys-v2',groupId)).revision===before.revision,'denied checkpoint changed replica');
   check(await receiver.store.read('along-journey-checkpoint-recovery-v1',groupId+':1')===null,'denied checkpoint left partial recovery');
   await grant(true);
-  const installed=await acceptPermittedJourneyCheckpoint(input);
+  const oldGeneration=await connect();
+  let installed;
+  try {
+    installed=await acceptPermittedJourneyCheckpoint(input);
+    await refuses(oldGeneration[0].sendCheckpoint({checkpoint:prepared.checkpoint,snapshot:prepared.snapshot}));
+  } finally {oldGeneration.forEach(s=>s.close());}
   check(installed.localReviewRequired&&!installed.alreadyInstalled,'recipient installation falsely completed review');
   check((await acceptPermittedJourneyCheckpoint(input)).alreadyInstalled,'recipient retry failed');
   const current=await receiver.store.read('along-saved-journeys-v2',groupId);
@@ -84,5 +112,5 @@ export async function checkEnrolledCheckpoint({wasm,owner,receiver,group}) {
   // Revoking application consent also denies retry of already installed evidence.
   await grant(false);await refuses(acceptPermittedJourneyCheckpoint(input));
   await refuses(retainPermittedJourneyCheckpoint(input));
-  console.log('PASS: actual enrolled device migrates/isolate storage, accepts an explicitly permitted signed checkpoint, retries and reviews retained differences while preserving its independent save/history; absent permission, wrong peer, bad signature and permission removal during commit leave no partial installation. Checkpoint bytes are a direct fixture handoff, not wire transport.');
+  console.log('PASS: enrolled checkpoint transfer uses authenticated WebRTC, retains before receipt, survives lost confirmation and reconnects; direct adapter faults/installation review preserve independent saves. Signaling is harness-driven on one browser host.');
 }
