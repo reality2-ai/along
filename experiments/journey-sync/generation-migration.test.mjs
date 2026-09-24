@@ -20,7 +20,8 @@ await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
 let browser;
 try {
   browser = await chromium.launch({headless: true, executablePath: process.env.CHROMIUM_PATH});
-  const page = await browser.newPage(); await page.goto(`http://127.0.0.1:${server.address().port}/`);
+  const context = await browser.newContext();
+  const page = await context.newPage(); await page.goto(`http://127.0.0.1:${server.address().port}/`);
   const result = await page.evaluate(async () => {
     const wasm = await import('./hive_wasm.js'); await wasm.default();
     const {openBrowserStorage} = await import('./tg-pairing/storage.mjs');
@@ -168,7 +169,7 @@ try {
       f.store.close();
     }
     const {createCheckpointReview} = await import('./journey-sync/checkpoint-review.mjs');
-    const {commitCheckpointChoices, choiceScope} = await import('./journey-sync/checkpoint-choice-commit.mjs');
+    const {commitCheckpointChoices, applyCheckpointChoices, choiceScope} = await import('./journey-sync/checkpoint-choice-commit.mjs');
     let choiceRetry;
     for (const mode of ['valid', 'stale', 'permission-race', 'interrupted', 'late-cancel', 'local-edit']) {
       const f = await fixture('checkpoint-choice-' + mode);
@@ -222,6 +223,25 @@ try {
         if (mode === 'valid') choiceRetry = {group: f.setup.group, reviewId: review.id, choices: input.choices};
       } else assert(after.revision === replica.revision && retained === null, 'partial decision');
       assert(localStorage.getItem(localKey) === expectedRaw, 'decision replaced local edits');
+      if (['valid', 'late-cancel', 'local-edit'].includes(mode)) {
+        const retry = {...input, store: f.store, signal: undefined};
+        await refuses(applyCheckpointChoices(retry)); // write denied, or newer local data
+        assert(localStorage.getItem(localKey) === expectedRaw, 'failed cutover changed local data');
+        const writable = {getItem: () => localStorage.getItem(localKey), setItem: (_, value) => localStorage.setItem(localKey, value)};
+        if (mode === 'local-edit') await refuses(applyCheckpointChoices({...retry, storage: writable}));
+        else {
+          const applied = await applyCheckpointChoices({...retry, storage: writable});
+          const local = JSON.parse(localStorage.getItem(localKey));
+          assert(applied.status === 'journey-recovery-applied-locally' && !applied.localReviewRequired, 'cutover not confirmed');
+          assert(local.learning === false && local.journeys[0].count === 7 && local.journeys[0].savedRoutes[0].route === '75', 'local history/preference lost');
+          assert(local.journeySync.version.generation === 1 && local.journeySync.pending.length === 0, 'journal not cut over');
+          assert((await applyCheckpointChoices({...retry, storage: writable})).status === applied.status, 'cutover retry failed');
+          assert((await f.store.read(newScope, f.setup.group)).revision === after.revision, 'cutover duplicated shared write');
+          const {writePreferencesLocked} = await import('./journey-sync/app-preferences.mjs');
+          assert(!await writePreferencesLocked(JSON.parse(raw), {expectedRaw: raw, storage: writable}), 'stale writer overwrote recovery');
+          assert(localStorage.getItem(localKey) === JSON.stringify(local), 'stale writer changed local data');
+        }
+      }
       f.store.close();
     }
     return {group: first.setup.group, member: first.setup.member, pending, installationGroup, choiceRetry};
@@ -262,7 +282,24 @@ try {
       return result.alreadyCommitted && result.localReviewRequired;
     } finally { store.close(); }
   }, result.choiceRetry), true);
-  console.log('PASS: actual recovery choices commit once and survive reload; stale review, changed choices, permission race and interrupted transaction refuse; late cancellation and concurrent local edits retain original decision evidence without replacing planner storage. Final local cutover is not implemented.');
+  console.log('PASS: actual recovery choices commit once and survive reload; stale review, changed choices, permission race and interrupted transaction refuse; final cutover retains history, handles local write failure, refuses newer local data and retries without duplicate replica edits. App integration remains pending.');
+  const peerTab = await page.context().newPage();
+  await peerTab.goto(`http://127.0.0.1:${server.address().port}/`);
+  const rawForTabs = await page.evaluate(() => localStorage.getItem('choice-valid'));
+  const tabWrites = await Promise.all([page, peerTab].map((tab, i) => tab.evaluate(async ({raw, route}) => {
+    const {writePreferencesLocked} = await import('./journey-sync/app-preferences.mjs');
+    const data = JSON.parse(raw); data.journeys[0].savedRoutes = [{mode: 'bus', route}];
+    return writePreferencesLocked(data, {expectedRaw: raw, storage: {
+      getItem: () => localStorage.getItem('choice-valid'), setItem: (_, value) => localStorage.setItem('choice-valid', value),
+    }});
+  }, {raw: rawForTabs, route: String(80 + i)})));
+  assert.equal(tabWrites.filter(Boolean).length, 1);
+  const tabResult = await page.evaluate(() => JSON.parse(localStorage.getItem('choice-valid')));
+  assert.equal(tabResult.journeySync.pending.length, 1);
+  assert.equal(tabResult.journeySync.pending[0].version.generation, 1);
+  assert.equal(tabResult.journeys[0].count, 7);
+  await peerTab.close();
+  console.log('PASS: two real tabs using the locked writer cannot overwrite each other from the same stale input; exactly one new-generation operation remains and history is preserved. Legacy synchronous callers are not covered by this guarantee.');
   const bridgeResult = await page.evaluate(async ({group, member}) => {
     const {openGenerationAppJourneyStore} = await import('./journey-sync/generation-app-store.mjs');
     const {readEnvelope, readPreferences, writePreferences} = await import('./journey-sync/app-preferences.mjs');

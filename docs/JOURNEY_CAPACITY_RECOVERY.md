@@ -159,7 +159,7 @@ The future checkpoint installer must use the same Web Lock, archive the current
 local journal/differences, and install a matching new-generation import receipt.
 It must not merely replace the replica and leave an old receipt or relabel an
 old queue. The installer below now handles the durable cutover while preserving localStorage;
-the local-difference review remains unimplemented. The
+the local-difference review and planner cutover are described below. The
 format-2 bridge is not mounted by the app and its use is not public qualification.
 
 ## Atomic checkpoint installation
@@ -224,7 +224,7 @@ service preferences, local-only saves, retained deletions, explicit shared choic
 unknown peer additions, malformed choices, corrupted evidence, wrong generations,
 inconsistent pending data, changing review input and full-replica refusal. These
 are model checks; the durable decision stage below now applies the chosen
-differences to the shared replica, while planner cutover remains unimplemented.
+differences to the shared replica, with the separate planner cutover described below.
 
 ## Local-difference review screen
 
@@ -268,9 +268,32 @@ The real runtime/IndexedDB migration suite now also checks concurrent and reload
 decision retries, changed choices, stale local review, permission changes,
 transaction abortion, late cancellation and a local edit during commit. The
 initial run exposed the key-length constraint; the corrected suite passes.
-Final planner cutover still needs a guarded, recoverable protocol, including
-cross-tab local writes. No installed-app flow invokes this operation, and no
-archive pruning policy is implied by retaining another recovery record.
+The separate planner cutover below now implements the local replacement protocol.
+No installed-app flow invokes these operations, and no archive pruning policy is
+implied by retaining another recovery record.
+
+## Planner cutover and cooperating writers
+
+`applyCheckpointChoices` uses the same verified decision path and per-group Web
+Lock, then replaces planner preferences only if their exact bytes still match
+the reviewed copy (or the already-applied result). It preserves learning settings,
+history and counters, projects the selected saved places/services, empties the
+old pending journal and tags the new generation. It checks the written result
+before returning `journey-recovery-applied-locally`. A failed local write leaves
+the retained IndexedDB decision available for retry. A newer local edit is refused
+rather than overwritten; recovery must build a fresh comparison for it.
+
+The new `writePreferencesLocked` path requires the caller's original raw envelope,
+uses that same lock and refuses stale input. Two real browser tabs with identical
+starting data produce one accepted write and one refusal, retaining one correctly
+tagged operation. The migration suite also checks failed local writes, cutover
+retries, preserved history and refusal of newer local data.
+
+This is a cooperating-writer protocol, not an atomic localStorage compare-and-swap.
+Existing synchronous planner callers and older app tabs do not participate yet.
+Migrating those callers, handling stale in-memory preferences and excluding older
+writers are required before mounting recovery. App UI, enrolled-device coverage,
+peer/session integration and release qualification remain separate gates.
 
 ## Required before integration
 

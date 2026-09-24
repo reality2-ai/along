@@ -1350,3 +1350,10 @@ before commit from uncertainty after commit, preserving concurrent planner edits
 The real runtime also rejected an overlong storage key that a simplified model
 would have accepted. This demonstrates why composed runtime tests add evidence
 beyond isolated logic tests, without establishing complete user-flow acceptance.
+
+Planner cutover adds a second lesson about concurrency: checking localStorage and
+writing it synchronously does not make the pair atomic across browser tabs. The
+new path uses a shared Web Lock and rejects an edit based on stale input. Its
+two-tab test establishes that behavior for cooperating writers. Older synchronous
+callers must still be migrated before release, so the source implementation does
+not yet justify claiming that the installed app has completed recovery support.

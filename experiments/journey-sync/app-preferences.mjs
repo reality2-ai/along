@@ -65,6 +65,19 @@ export function writePreferences(data, storage = globalThis.localStorage) {
     globalThis.dispatchEvent?.(new Event(changedEvent)); return true;
   } catch { return false; }
 }
+// Explicit async path for generation recovery. Callers must retain the raw
+// envelope associated with their edit; a stale tab must reload rather than
+// write its entire older preferences object over recovered data.
+// Existing synchronous app callers are not yet migrated to this contract.
+export async function writePreferencesLocked(data, {expectedRaw, storage = globalThis.localStorage,
+  locks = navigator.locks, signal} = {}) {
+  const copy = structuredClone(data), before = readEnvelope(storage);
+  if (before.raw !== expectedRaw || !before.sync || !locks?.request) return false;
+  return locks.request('along-journey-import:' + before.sync.group, {signal}, () => {
+    if (signal?.aborted || storage.getItem(preferenceKey) !== expectedRaw) return false;
+    return writePreferences(copy, storage);
+  });
+}
 // Explicit opt-in starts local tracking. No identity, consent or delivery claim.
 export function enableJourneyTracking(group, storage = globalThis.localStorage) {
   if (!hex.test(group)) throw Error('Journey group unavailable');

@@ -1,9 +1,10 @@
-// First durable half of recovery. Does not replace planner localStorage or claim
-// completed recovery. The retained decision supports a later guarded cutover.
+// Durable decision and optional guarded planner cutover. Neither entry point is
+// mounted in the app until all writers participate in the same lock protocol.
 import {loadLocalPersona} from '../tg-pairing/local-persona.mjs';
 import {createCheckpointReview} from './checkpoint-review.mjs';
 import {validateGenerationState, changeGenerationJourney} from './generation-state.mjs';
-import {readEnvelope} from './app-preferences.mjs';
+import {readEnvelope, preferenceKey, appliedEvent} from './app-preferences.mjs';
+import {journeyId, projectJourney} from './state.mjs';
 const replicaScope = 'along-saved-journeys-v2', receiptScope = 'along-journey-import-v2';
 const recoveryScope = 'along-journey-checkpoint-recovery-v1';
 export const choiceScope = 'along-journey-recovery-choices-v1';
@@ -12,6 +13,15 @@ const equal = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 const fail = () => new Error('Journey recovery choices unavailable; a retained decision may already exist');
 export async function commitCheckpointChoices({wasm, store, expectedGroup, generation, reviewId, choices,
   storage = globalThis.localStorage, locks = navigator.locks, signal}) {
+  return recover({wasm, store, expectedGroup, generation, reviewId, choices, storage, locks, signal}, false);
+}
+// Requires all planner writers to participate in the same Web Lock. This is not
+// mounted in the app until those call sites and older-tab handling are migrated.
+export async function applyCheckpointChoices({wasm, store, expectedGroup, generation, reviewId, choices,
+  storage = globalThis.localStorage, locks = navigator.locks, signal}) {
+  return recover({wasm, store, expectedGroup, generation, reviewId, choices, storage, locks, signal}, true);
+}
+async function recover({wasm, store, expectedGroup, generation, reviewId, choices, storage, locks, signal}, applyLocal) {
   if (!(expectedGroup instanceof Uint8Array) || expectedGroup.length !== 32
       || !Number.isSafeInteger(generation) || generation < 1 || generation >= Number.MAX_SAFE_INTEGER
       || !/^[0-9a-f]{64}$/.test(reviewId) || !Array.isArray(choices)
@@ -61,6 +71,27 @@ export async function commitCheckpointChoices({wasm, store, expectedGroup, gener
     const decision = review.resolve(selected);
     let after = before;
     for (const change of decision.changes) after = changeGenerationJourney(after, identity.member, change.id, change.value);
+    const finish = () => {
+      active();
+      const local = readEnvelope({getItem: () => localRaw});
+      const saved = new Map(decision.saved.map(value => [journeyId(value), value]));
+      const journeys = local.data.journeys.map(journey => {
+        const id = journeyId(projectJourney(journey)), value = saved.get(id); saved.delete(id);
+        return value ? {...journey, ...value, saved: true} : {...journey, saved: false, savedRoutes: null};
+      });
+      for (const value of saved.values()) journeys.push({...value, saved: true, count: 0,
+        hours: Array(24).fill(0), days: Array(7).fill(0), last: 0});
+      const output = JSON.stringify({...local.data, journeys, journeySync: {...local.sync, pending: [],
+        version: {generation: after.generation, checkpoint: after.checkpoint}, recoveryReview: reviewId}});
+      const raw = storage.getItem(preferenceKey);
+      // No asynchronous boundary between this comparison and replacement. Other
+      // participating tabs are excluded by the per-group lock held above.
+      if (raw !== localRaw && raw !== output) throw fail();
+      if (raw !== output) storage.setItem(preferenceKey, output);
+      if (storage.getItem(preferenceKey) !== output) throw fail();
+      globalThis.dispatchEvent?.(new Event(appliedEvent));
+      return {status: 'journey-recovery-applied-locally', reviewId, localReviewRequired: false};
+    };
     guards.push({scope: recoveryScope, key: recoveryKey, expectedRevision: recovery.revision});
     await current();
     if (retained) {
@@ -69,6 +100,7 @@ export async function commitCheckpointChoices({wasm, store, expectedGroup, gener
         [receiptScope, groupId, receipt.revision], [choiceScope, decisionKey, retained.revision]])
         if ((await store.read(scope, key))?.revision !== revision) throw fail();
       active();
+      if (applyLocal) return finish();
       return {status: 'journey-recovery-choices-committed', reviewId, alreadyCommitted: true, localReviewRequired: true};
     }
     if (readEnvelope(storage).raw !== localRaw) throw fail();
@@ -80,6 +112,13 @@ export async function commitCheckpointChoices({wasm, store, expectedGroup, gener
     ], {signal, checks: guards});
     if (!result.applied) throw fail();
     await current();
+    if (applyLocal) {
+      // A writer outside this lock may have advanced the replica during commit.
+      const held = await store.read(replicaScope, groupId), imported = await store.read(receiptScope, groupId);
+      if (!held || !equal(held.value, after) || !imported || !equal(imported.value, receipt.value)) throw fail();
+      await current();
+      return finish();
+    }
     return {status: 'journey-recovery-choices-committed', reviewId, alreadyCommitted: false, localReviewRequired: true};
   });
 }

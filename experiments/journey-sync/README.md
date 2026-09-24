@@ -417,5 +417,12 @@ identity and retained checkpoint evidence, atomically commits replica changes
 with a retained decision, and recognizes retries without repeating edits. The
 real-runtime `generation-migration.test.mjs` covers this stage and its storage,
 permission, cancellation and local-edit races. It deliberately leaves planner
-localStorage unchanged and reports that local review is still required. The final
-planner cutover and composed review-screen flow remain unfinished.
+localStorage unchanged and reports that local review is still required. The
+composed review-screen flow remains unfinished.
+
+`applyCheckpointChoices` now performs the separate planner cutover, requiring the
+exact reviewed local data and preserving history. `writePreferencesLocked` gives
+cooperating tabs a stale-input check under the same lock. Real-browser tests cover
+local write failure/retry, newer-data refusal and competing tab writes. Existing
+synchronous planner callers and older-tab handling must be migrated before this
+protocol can be enabled in the app; it is not a guarantee for uncoordinated writers.
