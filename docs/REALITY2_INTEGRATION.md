@@ -1,5 +1,11 @@
 # Reality2 browser integration: status and evidence
 
+> **Current release: Along 38.** Optional direct personal-key AT access and device
+> sharing are now included in the regular app. [Installation guide](https://reality2.ai/along/install.html) ·
+> [Download and hosting package](https://github.com/reality2-ai/along/releases/tag/v0.38.0).
+> Serve the whole extracted package, including `experiments/`. Earlier version-specific
+> sections below are historical; physical pairing/TalkBack and external-relay acceptance remain open.
+
 Along should contact AT directly and keep each person's AT key within their own
 trust group, without requiring an Along-operated central server. Offline planning
 must continue without a key, a peer connection or a portal. The implementation described here is experimental and is not yet enabled in

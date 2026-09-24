@@ -10,15 +10,18 @@ An independent, installable webapp for finding a useful next ride and planning
 street-address-to-street-address journeys across walking, buses, trains and ferries.
 After the first download, address search and scheduled routing run in your browser,
 including offline. **Once prepared, Along does not need the web portal to operate.**
-**Your searches, saved journeys and preferences stay on your device.** No account
+**Your searches and learning history stay on your device.** Saved places and
+service preferences can be shared with devices you explicitly permit. No account
 or uploaded journey history is needed.
 
 Along uses Auckland Transport's public data and its own bounded routing engine.
 It is **not an official AT app** and does not reproduce AT Mobile's journey planner.
 **Offline planning is the foundation; live information is an optional addition.**
 When connected, current AT predictions and alerts can help refine the scheduled
-picture. The regular app currently uses the downloaded timetable; its optional live
-connection is not yet deployed. Losing connectivity will not remove offline planning.
+picture. Version **38** includes optional direct AT access using your own API key,
+plus device pairing and saved-journey sharing. A user-selected relay can reconnect
+permitted devices while Along is open; none is enabled by default. Losing
+connectivity will not remove offline planning.
 
 <p align="center">
   <a href="https://reality2.ai/along/"><img src="docs/images/open-webapp.svg" width="304" height="56" alt="Open and install Along webapp"></a>
@@ -28,7 +31,9 @@ connection is not yet deployed. Losing connectivity will not remove offline plan
 **Device testing:** [Open Along Device Preview 3806](https://reality2.ai/along/preview/public/)
 and follow the [S23/desktop guide](docs/PREVIEW_DEVICE_CHECK.md). It has separate
 saved places and device setup, with optional sharing between devices you approve.
-Use dummy AT keys for these tests. The regular installation above remains version 37.
+Use dummy AT keys for preview tests. The regular installation above is now **version 38**.
+Preview data remains separate. Physical S23 pairing/TalkBack and external-relay
+acceptance remain unverified. [Download version 38 to host yourself](https://github.com/reality2-ai/along/releases/tag/v0.38.0).
 
 The interface is English-only. The unreviewed Māori translation and language
 selector have been withdrawn for now; official place names retain their spelling
@@ -69,8 +74,8 @@ that every need has already been met.
   Check for updates on refresh; when offline, fail quietly. The portal distributes
   the app, but is not required for downloaded routing to work.
 - **Keep personal data under the person's control.** Searches, saved journeys and
-  preferences stay on the device. Trusted-device synchronisation is a proposed
-  extension, not a current feature; it must preserve local offline operation.
+  preferences stay on the device unless shared with explicitly permitted devices.
+  Optional device sharing preserves local offline operation.
 - **Require no coding by the human.** The human supplies intentions, constraints,
   feedback and real-device observations. The AI writes and changes the code, runs
   technical checks and resolves implementation problems. The course follows this
@@ -147,7 +152,7 @@ while keeping alternatives accessible**. See [interaction principles](docs/INTER
 
 ## Install and try
 
-Follow the [browser-by-browser installation and offline guide](docs/INSTALL.md)
+Follow the [browser-by-browser installation and offline guide](https://reality2.ai/along/install.html)
 for Chrome, Edge, Brave and Safari, covering Android,
 iPhone/iPad, Windows, macOS, Linux and Chromebook. Install the icon, reopen it
 online to finish preparation, then test it without a connection.

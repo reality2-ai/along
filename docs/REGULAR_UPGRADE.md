@@ -1,6 +1,11 @@
 # Regular Along upgrade candidate
 
-Regular Along remains version **37** and Device Preview remains **3806**.
+Regular Along **38** is now deployed; Device Preview remains **3806**.
+The [public-file check](evidence/regular-v38-public-files.json) matches all 304 files
+to the release package. The [live browser check](evidence/regular-v38-public-browser.json)
+passes setup and offline new-address routing. Physical acceptance remains open.
+
+The following sections retain the candidate-development history.
 A local version-38 candidate now tests adding the existing TG/live modules at the
 regular app's URL. It is **not published or release-qualified**. The candidate
 retains a `DO-NOT-PUBLISH.txt` marker. Its interface now contains the intended
@@ -95,7 +100,7 @@ flow also passes. The fix changes candidate bytes, so the initial failed result
 is retained and does not count as final qualification. Core tests separately
 passed 68 JavaScript and 18 Python cases.
 
-## Qualified package — not yet deployed
+## Qualified package and deployment
 
 The [second qualification](evidence/regular-v38-qualification.json) passes all
 16 distinct scenarios (18 requirement entries), with unchanged source and

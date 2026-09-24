@@ -1,6 +1,8 @@
 # Release evidence and remaining gates
 
-Current regular app: **version 37**. The separate [device preview 3806](https://reality2.ai/along/preview/public/)
+Current regular app: **version 38**. Its 16-scenario qualification and static checks pass;
+all 304 deployed files match the verified package. Physical acceptance remains open.
+Historical version-37 evidence below describes that earlier release. The separate [device preview 3806](https://reality2.ai/along/preview/public/)
 is published for [S23/desktop checks](PREVIEW_DEVICE_CHECK.md). Both are static
 GitHub Pages deployments; the retired private server is not required.
 
@@ -25,7 +27,7 @@ its discovery only connects already permitted devices. [Local interoperability w
 now passes enrolled sharing/reconnection, generation-two exchange, Settings and
 invalid-greeting refusal. An external selected endpoint remains unverified. Group-removal/key-update propagation and checkpoint catch-up are still
 explicit flows, not unattended synchronization of all trust-group state.
-Regular Along does not yet include the preview's live/TG controls. Historical
+Regular Along 38 now includes the live/TG controls and preserves separate preview storage. Historical
 entries below retain their original versions and scopes.
 
 ## Goal audit
@@ -69,7 +71,9 @@ this audit. Later public-hosting work supplements that brief.
    found and fixed missing-metadata compatibility; UI and quota/race checks pass.
    [Final candidate qualification](evidence/regular-v38-qualification.json) and
    [static checks](evidence/regular-v38-static.json) now pass; the verified v38
-   archive is prepared. Deployment/public-byte checks and physical acceptance remain. Preview storage stays separate;
+   archive is deployed: [public files](evidence/regular-v38-public-files.json) and
+   [live browser checks](evidence/regular-v38-public-browser.json) pass. Physical
+   acceptance remains. Preview storage stays separate;
    this does not migrate preview credentials into regular Along.
 4. Complete the signed-in GitHub composer/submission check for contextual feedback.
    Actual CLI submission and anonymous browser receipt are already evidenced in

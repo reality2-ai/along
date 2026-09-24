@@ -4,8 +4,13 @@
   "bytes": 41762118,
   "payload_files": 303,
   "release_manifest_sha256": "d12c61a39d4770ce0c153792cecd6ba6e1302e17fc93a2191e07733fa6de598d",
-  "status": "packaged-not-deployed",
+  "status": "deployed",
   "source_commit": "643c6eebe4a748afca5ed6dc00d8b756dbbe8386",
   "candidate_payloads_unchanged": true,
-  "archive_contents_verified": true
+  "archive_contents_verified": true,
+  "release": "https://github.com/reality2-ai/along/releases/tag/v0.38.0",
+  "pages_commit": "55d02cebbfd9e82c44a3c2699baac45395aab4cb",
+  "deployment_run": 36048838782,
+  "deployment_conclusion": "success",
+  "github_asset_digest_verified": true
 }
