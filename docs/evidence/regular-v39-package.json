@@ -1,0 +1,16 @@
+{
+  "archive": "along-web-v39.zip",
+  "sha256": "9c4dee55974beecc58bef97310e5c9ee7dd3cd343d0820a973a54a7371363e18",
+  "bytes": 41762484,
+  "payload_files": 303,
+  "release_manifest_sha256": "f759accf24d1819614899e9b8eb94df03eea3d151c61747c03139c3dbd58eb37",
+  "status": "deployed",
+  "source_commit": "a7079d3e6c91f4412639b2eff23d5a342672dfbb",
+  "candidate_payloads_unchanged": true,
+  "archive_contents_verified": true,
+  "release": "https://github.com/reality2-ai/along/releases/tag/v0.39.0",
+  "pages_commit": "299de85384bdaf71393e7964650032f6aff4b79d",
+  "deployment_run": 36052023499,
+  "deployment_conclusion": "success",
+  "github_asset_digest_verified": true
+}

@@ -1,6 +1,10 @@
 # Performance evidence
 
-## Current regular version 38
+Version 39 retains the v38 datasets. Its [static check](evidence/regular-v39-static.json)
+records measurements with concurrent qualification jobs; these are not a controlled
+comparison or phone benchmark. The earlier results below retain their versions.
+
+## Version 38
 
 The [repeatable v38 static check](evidence/regular-v38-static-harness.json) on
 25 September 2026 observed 7.59 seconds to offline-ready, 3.92 seconds for the

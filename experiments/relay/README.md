@@ -451,7 +451,7 @@ remain Along-specific, with no normative R2-WIRE or Notekeeper app compatibility
 claim. No public relay was configured, and released app bytes are unchanged.
 
 
-## Membership-change reconnection (source, not yet deployed)
+## Membership-change reconnection (version 39)
 
 The service now observes the local membership storage revision as well as the
 journey-sharing permission revision. A change discards queued frames and held

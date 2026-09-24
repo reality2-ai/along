@@ -18,7 +18,7 @@ Along uses Auckland Transport's public data and its own bounded routing engine.
 It is **not an official AT app** and does not reproduce AT Mobile's journey planner.
 **Offline planning is the foundation; live information is an optional addition.**
 When connected, current AT predictions and alerts can help refine the scheduled
-picture. Version **38** includes optional direct AT access using your own API key,
+picture. Version **39** includes optional direct AT access using your own API key,
 plus device pairing and saved-journey sharing. A user-selected relay can reconnect
 permitted devices while Along is open; none is enabled by default. Losing
 connectivity will not remove offline planning.
@@ -28,12 +28,14 @@ connectivity will not remove offline planning.
 </p>
 <p align="center">Open in your browser and install on your device. Prepare it online, then plan scheduled journeys offline.</p>
 
-**Device testing:** [Open Along Device Preview 3806](https://reality2.ai/along/preview/public/)
-and follow the [S23/desktop guide](docs/PREVIEW_DEVICE_CHECK.md). It has separate
-saved places and device setup, with optional sharing between devices you approve.
-Use dummy AT keys for preview tests. The regular installation above is now **version 38**.
-Preview data remains separate. Physical S23 pairing/TalkBack and external-relay
-acceptance remain unverified. [Download version 38 to host yourself](https://github.com/reality2-ai/along/releases/tag/v0.38.0).
+**Device testing:** use the regular **version 39** app above and follow the
+[short S23/desktop guide](docs/DEVICE_CHECK.md). Physical pairing, TalkBack and
+external-relay acceptance remain unverified. [Download version 39 to host yourself](https://github.com/reality2-ai/along/releases/tag/v0.39.0)
+or read the [release evidence](docs/RELEASE_V39.md).
+
+The separate [Device Preview 3806](https://reality2.ai/along/preview/public/) remains
+available with its [preview guide](docs/PREVIEW_DEVICE_CHECK.md). Its saved places
+and device setup remain separate; use dummy AT keys for preview tests.
 
 The interface is English-only. The unreviewed Māori translation and language
 selector have been withdrawn for now; official place names retain their spelling
@@ -217,10 +219,10 @@ also let you run your own copy.
 
 ## Run from source
 
-**For the current version 38 app, follow [Building Along](docs/BUILDING.md).**
+**For the current version 39 app, follow [Building Along](docs/BUILDING.md).**
 It includes the browser device-group runtime, optional direct AT access and
 saved-journey sharing. The commands below run the **legacy planner development
-server**; `npm start` and `npm run build` alone do not reproduce version 38.
+server**; `npm start` and `npm run build` alone do not reproduce version 39.
 They remain useful for isolated routing and interface work.
 
 Requirements: Python 3.10+, a current browser supporting service workers,
@@ -246,8 +248,8 @@ coverage, provenance and reproducibility.
 
 ## Static hosting and downloadable build
 
-The [version 38 release](https://github.com/reality2-ai/along/releases/tag/v0.38.0)
-contains `along-web-v38.zip` and its SHA-256 checksum. To host the current app,
+The [version 39 release](https://github.com/reality2-ai/along/releases/tag/v0.39.0)
+contains `along-web-v39.zip` and its SHA-256 checksum. To host the current app,
 extract the ZIP and serve its **entire contents**, including `experiments/`,
 `data/`, runtime notices and `.nojekyll`, over HTTPS. Opening `index.html` as a
 local file does not install the app. No Along backend is required.
@@ -259,9 +261,9 @@ a Content-Encoding header**; the browser decompresses them itself. Serve `.js`
 and `.mjs` as JavaScript and `.wasm` as `application/wasm`, without an HTML fallback.
 
 See [current source builds and qualification](docs/BUILDING.md),
-[hosting](docs/HOSTING.md), and the [version 38 device check](docs/DEVICE_CHECK.md).
+[hosting](docs/HOSTING.md), and the [version 39 device check](docs/DEVICE_CHECK.md).
 The older `python3 scripts/build_static.py` / `npm run build` path produces the
-legacy planner in `dist/`; it does not include version 38's connected features.
+legacy planner in `dist/`; it does not include version 39's connected features.
 
 ## Updates
 

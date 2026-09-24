@@ -1,0 +1,33 @@
+{
+  "status": "passed",
+  "recorded_at": "2026-09-24T19:55:40.174465+00:00",
+  "command": "REGULAR_CANDIDATE=1 CHROMIUM_PATH=/path/to/chromium npm run test:static",
+  "test_source_sha256": "53344314dfe370cbca37f94063f967e9ce2da8895684281b9b09e6d3113a2361",
+  "log_sha256": "859204c24d924e9a6cad7bb9918b99c63e57da8648981f4d4f5a8671d8649bd1",
+  "metrics": {
+    "buildProfile": "along-regular-upgrade-candidate-v1",
+    "buildManifestSha256": "4df5c141e82f7e1464845e6166d6970b12bb463695feb06517a50b00feceaf71",
+    "runtime": "v26.4.0",
+    "browser": "151.0.7922.34",
+    "host": "Local static HTTP, repository subpath, Chromium desktop",
+    "physicalPhone": false,
+    "coldReadyMs": 16996,
+    "installability": {
+      "installabilityErrors": []
+    },
+    "mixedModeRouteMs": 6632,
+    "datasetBytes": 41308937,
+    "storage": {
+      "quota": 10809123420,
+      "usage": 71705180,
+      "usageDetails": {
+        "caches": 1958144,
+        "indexedDB": 69737246,
+        "serviceWorkerRegistrations": 9790
+      }
+    },
+    "mainPageResourceTransferBytes": 1154468,
+    "offlineReadyMs": 7955
+  },
+  "scope": "Frozen v39 candidate, Chromium static subpath, offline routing and installation help, data refresh, keyboard and automated accessibility. Concurrent qualification jobs; not a controlled speed comparison, physical phone test or spoken screen-reader check."
+}
