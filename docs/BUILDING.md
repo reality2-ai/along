@@ -1,7 +1,7 @@
 # Building the current Along app
 
-Regular Along is version **42**. Device Preview **3806** is a separate installation.
-For use or hosting, take the [v42 release ZIP and checksum](https://github.com/reality2-ai/along/releases/tag/v0.42.0).
+Regular Along is version **43**. Device Preview **3806** is a separate installation.
+For use or hosting, take the [v43 release ZIP and checksum](https://github.com/reality2-ai/along/releases/tag/v0.43.0).
 Serve the whole extracted package over HTTPS, including `experiments/` and `data/`.
 The package needs no Along server. See [installation](INSTALL.md) and
 [hosting](HOSTING.md). Course learners ask their AI assistant to perform all
@@ -17,8 +17,8 @@ the integrated app with prepared inputs. The default runtime path now selects th
 | --- | --- |
 | `npm start` / `python3 server.py` | Base planner development server |
 | `npm run build:legacy` / `scripts/build_static.py` | Legacy static planner in `dist/`, without integrated device sharing |
-| `npm run build` / `scripts/build_upgrade_candidate.py --runtime …` | Current regular v42 candidate, including device groups, sharing and direct AT access |
-| Published `along-web-v42.zip` | Qualified, immutable v42 distribution |
+| `npm run build` / `scripts/build_upgrade_candidate.py --runtime …` | Current regular v43 candidate, including device groups, sharing and direct AT access |
+| Published `along-web-v43.zip` | Qualified, immutable v43 distribution |
 
 The integrated build currently combines `public/` with reachable modules under
 `experiments/`; those modules are part of the release despite the directory name.
@@ -34,7 +34,7 @@ documentation. Preserve the chosen source revision with each new build.
 
 The builder requires `data/network.json.gz`, `streets.json.gz`, `addresses.json.gz`
 and `routes.json.gz`. For the same release snapshot, copy those four files from
-the verified v42 ZIP into `data/`. For a refreshed snapshot, follow the
+the verified v43 ZIP into `data/`. For a refreshed snapshot, follow the
 [README import commands](../README.md#run-from-source) and [data guide](DATA.md).
 Current upstream downloads will not reproduce historical dataset bytes. Importer
 tests also need their documented database/source inputs; copying browser bundles
@@ -66,7 +66,7 @@ The default build uses `releases/along-r2-runtime-public-82377f1`. To use a veri
 runtime at another path, invoke
 `python3 scripts/build_upgrade_candidate.py --runtime /path/to/runtime` directly.
 
-Open `http://localhost:3082` and check version 42. Localhost permits service
+Open `http://localhost:3082` and check version 43. Localhost permits service
 workers; phones need an HTTPS host. Keep this development origin separate from
 your regular installed app. Generated outputs stay in ignored `releases/`.
 The candidate retains `DO-NOT-PUBLISH.txt`: building is not qualification.
@@ -106,8 +106,8 @@ an existing run directory. Do not reuse old qualification evidence for changed f
 
 `scripts/prepare_regular_release.py /path/to/qualification.json` packages a passed,
 matching candidate. It refuses existing versioned release outputs. These scripts
-currently target version 42; a new app release needs a deliberate version change
-and fresh qualification, rather than overwriting the published v42 archive.
+currently target version 43; a new app release needs a deliberate version change
+and fresh qualification, rather than overwriting the published v43 archive.
 Run the committed static browser check against the same candidate:
 
 ```sh
@@ -125,7 +125,7 @@ Deployed-file verification and physical acceptance are additional checks in the
 
 ## What has and has not been reproduced
 
-The [v42 release record](RELEASE_V42.md) binds the current candidate, qualification,
+The [v43 release record](RELEASE_V43.md) binds the current candidate, qualification,
 package and public checks. The following v38 source-rebuild evidence is historical;
 its pinned check intentionally compares with v38, so running it with current
 `--revision HEAD` now reports the intentional v40 differences.
@@ -142,8 +142,8 @@ and [source at 3738a5e](evidence/regular-v38-current-source-rebuild.json)
 each rebuilt all **301 application files byte for byte** against the published ZIP.
 Both used the release data and existing verified runtime on the same host.
 The public runtime has since been rebuilt in an isolated container with publicly
-downloaded tools and dependencies. A separate [isolated app rebuild](evidence/regular-v42-public-source-rebuild.json)
-now reproduces all 283 v42 application files from anonymous public source and
+downloaded tools and dependencies. A separate [isolated app rebuild](evidence/regular-v43-public-source-rebuild.json)
+now reproduces all 283 v43 application files from anonymous public source and
 verified release downloads. It uses the published runtime bundle; runtime source
 compilation is evidenced separately.
 
@@ -166,20 +166,20 @@ A mismatch after an intentional app change is expected: qualify a new release
 instead of changing this check to call different bytes identical.
 
 
-## Repeat the isolated public v42 app build
+## Repeat the isolated public v43 app build
 
 This release check uses no local app source, data, browser profile or
-credentials. It fetches the pinned public v42 commit, v42 data and public v40 runtime assets, verifies archive
+credentials. It fetches the pinned public v43 commit, v43 data and public v40 runtime assets, verifies archive
 hashes, runs the integrated builder and compares every application file with the
 release. Packaging README, qualification and build manifests are outside the
 application comparison. It does not refresh AT data or run physical-device checks.
 Ask the AI to run this with Podman and a new output directory:
 
 ```sh
-mkdir releases/public-v42-rebuild-check
+mkdir releases/public-v43-rebuild-check
 podman run --rm --memory 2g --cpus 2 \
   -v "$PWD/scripts/check_public_release_build.py:/input/check.py:ro" \
-  -v "$PWD/releases/public-v42-rebuild-check:/output:rw" \
+  -v "$PWD/releases/public-v43-rebuild-check:/output:rw" \
   docker.io/library/python:3.13-bookworm python3 /input/check.py
 ```
 

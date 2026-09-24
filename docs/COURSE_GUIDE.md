@@ -5,7 +5,7 @@ provided for use at the user’s own risk; it is not an official AT service or a
 claim of production readiness. The verification work is part of the lesson.
 
 For a short entry point tied to the current release, use the
-[version 42 course handover](course/HANDOVER.md). Historical labs retain their
+[version 43 course handover](course/HANDOVER.md). Historical labs retain their
 original versions and evidence.
 
 ## Aim and audience
@@ -55,10 +55,10 @@ public example addresses already in the tests.
 
 For the current connected app, use [Building Along](BUILDING.md). The ordinary
 `npm test` and `npm run test:browser` commands cover the base planner; they do not
-qualify the integrated v42 build. Its separate qualification suite exercises
+qualify the integrated v43 build. Its separate qualification suite exercises
 pairing, shared preferences, synthetic AT credentials, recovery and the older relay protocol
 on loopback. That protocol is not evidence of current-hive compatibility; see the
-[current-standard review](R2_CURRENT_STANDARD_REVIEW.md). Start a short class from the published v42 ZIP; have the assistant
+[current-standard review](R2_CURRENT_STANDARD_REVIEW.md). Start a short class from the published v43 ZIP; have the assistant
 prepare its pinned runtime and data beforehand for implementation sessions.
 For a reproducibility exercise, ask the assistant to run the
 [committed-source rebuild check](BUILDING.md#what-has-and-has-not-been-reproduced).
@@ -67,7 +67,7 @@ runtime and published dataset leaves untested. Contrast this with running an
 import against a changing upstream URL.
 Use the [regular-app device check](DEVICE_CHECK.md) for observations. Keep results
 from the separate Device Preview clearly labelled; neither browser automation nor
-an earlier version's touch check proves v42 pairing or TalkBack acceptance.
+an earlier version's touch check proves v43 pairing or TalkBack acceptance.
 
 ## Division of work
 

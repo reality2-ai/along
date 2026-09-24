@@ -1614,3 +1614,12 @@ This adds a provenance lesson: a successful test against a real implementation
 proves compatibility with that revision, not with the current standard. The
 [current-standard review](R2_CURRENT_STANDARD_REVIEW.md) separates published
 requirements, historical code and the still-unverified server binding.
+
+
+Version 43 contributes a measurement lesson to the performance theme. A large
+process-memory observation prompted a constrained diagnostic. Avoiding unused
+walking-path records reduced temporary allocation while retained heap remained
+about the same; full example itineraries stayed byte-equivalent as JSON values.
+The [evidence](evidence/routing-path-allocations.json) supports that bounded claim,
+not a phone speed promise or a diagnosis of a memory leak. The human supplied the
+accessibility and offline goals; the AI conducted the investigation and changes.

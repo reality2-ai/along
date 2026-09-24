@@ -1,6 +1,6 @@
 # Contextual feedback to the Along repository
 
-Goal 11 is in progress. Version 42 includes the contextual feedback dialog first
+Goal 11 is in progress. Version 43 includes the contextual feedback dialog first
 released in version 31. Device preview 3801 uses the same interface with separate
 draft storage and a newly recorded live-repository check below.
 `public/feedback.js` implements local draft storage, reviewable issue bodies,

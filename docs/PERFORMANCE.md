@@ -130,7 +130,7 @@ responsiveness: report the device/browser, journey, approximate waiting time and
 any reload or lost state.
 
 
-## Version 43 candidate: avoid unused walking paths
+## Version 43: avoid unused walking paths
 
 [Allocation evidence](evidence/routing-path-allocations.json) compares five
 sequential searches under a 384 MiB Node heap limit. This is a desktop diagnostic,
@@ -146,4 +146,4 @@ network's size. Three complete arrival itineraries, including directions and
 geometry, match v42 exactly, and three transit legs pass the original-GTFS check.
 The 80 unit tests include distance-only equivalence across direction, pace and
 barrier profiles. These observations do not promise the same speedup on phones.
-This candidate has not yet completed release qualification or public deployment.
+See the [v43 release evidence](RELEASE_V43.md) for qualification and deployment.

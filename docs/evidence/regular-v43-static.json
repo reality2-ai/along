@@ -1,0 +1,30 @@
+{
+  "status": "passed",
+  "metrics": {
+    "buildProfile": "along-regular-upgrade-candidate-v1",
+    "buildManifestSha256": "45fb53581f34eb8720eb12a120ff731f6decfc19cee38b766f5e86971eeeccc8",
+    "runtime": "v26.4.0",
+    "browser": "151.0.7922.34",
+    "host": "Local static HTTP, repository subpath, Chromium desktop",
+    "physicalPhone": false,
+    "coldReadyMs": 6252,
+    "installability": {
+      "installabilityErrors": []
+    },
+    "mixedModeRouteMs": 3417,
+    "datasetBytes": 41308937,
+    "storage": {
+      "quota": 10809134878,
+      "usage": 71716638,
+      "usageDetails": {
+        "caches": 1969664,
+        "indexedDB": 69737184,
+        "serviceWorkerRegistrations": 9790
+      }
+    },
+    "mainPageResourceTransferBytes": 1172167,
+    "offlineReadyMs": 2643
+  },
+  "log_sha256": "8d8dea2783b4e58778866dbf92e110e3d384308a8e15422554f2f6f79eec8ecf",
+  "scope": "Integrated v43 static/offline, update, keyboard, axe and layout checks. Timings collected alongside another routing diagnostic; not a performance comparison."
+}
