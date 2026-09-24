@@ -26,14 +26,14 @@ export async function removeSoftwareMember({wasm, store, expectedGroup, subject,
       membership = openMembership(store, wasm, group, member);
       const saved = await store.read('membership', groupId);
       const standing = await membership.peerStatus(cert, peer);
-      if (!['current', 'revoked'].includes(standing) || await membership.status() !== 'current') throw refuse();
+      if (!['current', 'stale', 'revoked'].includes(standing) || await membership.status() !== 'current') throw refuse();
       if ((await store.read('membership', groupId))?.revision !== saved?.revision) continue;
       const previous = saved.value.revocations.find(value => hex(value.subject) === peerId);
       if (previous) {
         if (signal?.aborted) throw refuse();
         return {status: 'removed-locally', evidence: structuredClone(previous), delivered: false};
       }
-      if (standing !== 'current' || saved.value.current !== 0n || saved.value.revocations.length >= 256) throw refuse();
+      if (!['current', 'stale'].includes(standing) || saved.value.revocations.length >= 256) throw refuse();
       const sequence = saved.value.revocations.reduce((max, value) => value.sequence > max ? value.sequence : max, 0n) + 1n;
       const evidence = await issuer.issueRevocation({subject: peer, sequence, reason});
       const value = structuredClone(saved.value); value.revocations.push(evidence);

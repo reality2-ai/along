@@ -36,7 +36,7 @@ export async function loadSoftwareTraffic({wasm, store, expectedGroup, signal}) 
     const membership = await store.read('membership', groupId);
     const persona = await loadLocalPersona({wasm, store, expectedGroup: group});
     const saved = await store.read(scope, groupId), value = saved?.value;
-    if (!persona || persona.origin !== 'enrolled' || value?.format !== 1 || value.profile !== 'along-browser-software-v1'
+    if (!persona || !['enrolled', 'initial'].includes(persona.origin) || value?.format !== 1 || value.profile !== 'along-browser-software-v1'
         || value.member !== persona.member || !validEpoch(value.epoch) || value.epoch !== membership?.value?.current
         || value.epoch !== persona.epoch || !bytes(value.iv, 12) || !bytes(value.ciphertext, 80)
         || !(value.wrappingKey instanceof CryptoKey) || value.wrappingKey.type !== 'secret' || value.wrappingKey.extractable

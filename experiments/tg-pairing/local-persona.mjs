@@ -14,7 +14,7 @@ export async function loadLocalPersona({wasm, store, expectedGroup}) {
   if (!saved || saved.value === null) return null;
   const value = saved.value, record = value.record;
   const initial = value.origin === 'initial';
-  if (value.format !== 1 || (initial ? value.claim !== 'open' || value.epoch !== 0n : value.claim !== 'owner') || record?.format !== 1
+  if (value.format !== 1 || (initial ? value.claim !== 'open' : value.claim !== 'owner') || record?.format !== 1
       || (value.peerAcknowledged !== undefined && typeof value.peerAcknowledged !== 'boolean')
       || record.custody !== 'browser-nonextractable-unqualified'
       || !bytes(record.group, 32) || !equal(record.group, group)

@@ -94,7 +94,7 @@ export async function loadSoftwareIssuer({wasm, store, expectedGroup, signal}) {
       if ((await store.read(scope, groupId))?.revision !== saved.revision
           || (await store.read('persona-bootstrap', 'initial'))?.revision !== bootstrap.revision) throw fail();
       const identity = await loadLocalPersona({wasm, store, expectedGroup: group});
-      if (identity?.member !== persona.member || identity.origin !== 'initial') throw fail();
+      if (identity?.member !== persona.member || identity.origin !== 'initial' || identity.epoch !== persona.epoch) throw fail();
       current(signal); if (closed) throw fail();
     };
     await check();
@@ -105,8 +105,8 @@ export async function loadSoftwareIssuer({wasm, store, expectedGroup, signal}) {
           if (!bytes(subject, 32)) throw fail();
           const member = subject.slice(), codec = certificateCodec(wasm);
           await check();
-          const signature = new Uint8Array(await crypto.subtle.sign('Ed25519', key, codec.signingBytes(member, group, 0n)));
-          const certificate = codec.encode(member, group, 0n, signature);
+          const signature = new Uint8Array(await crypto.subtle.sign('Ed25519', key, codec.signingBytes(member, group, persona.epoch)));
+          const certificate = codec.encode(member, group, persona.epoch, signature);
           // Retain the public target before releasing its certificate/material.
           // An interrupted enrollment can therefore still be reviewed/removed.
           for (let attempt = 0; attempt < 8; attempt++) {
@@ -119,13 +119,16 @@ export async function loadSoftwareIssuer({wasm, store, expectedGroup, signal}) {
             const held = await store.read(directoryScope, groupId);
             const members = directory(held?.value, wasm, group);
             const existing = members.find(entry => hex(entry.subject) === hex(member));
-            if (existing) {
+            if (existing && hex(existing.certificate) === hex(certificate)) {
               await check();
               if ((await store.read('membership', groupId))?.revision !== standing?.revision) continue;
               return certificate;
             }
-            if (members.length >= 256) throw fail();
-            members.push({subject: member, certificate});
+            if (existing) existing.certificate = certificate;
+            else {
+              if (members.length >= 256) throw fail();
+              members.push({subject: member, certificate});
+            }
             const result = await store.compareAndSwapMany([{scope: directoryScope, key: groupId,
               expectedRevision: held?.revision ?? 0, value: {format: 1, members}}], {signal, checks: [
               {scope, key: groupId, expectedRevision: saved.revision},
@@ -155,12 +158,11 @@ export async function loadSoftwareIssuer({wasm, store, expectedGroup, signal}) {
       },
       // Produces public signed evidence only. The caller must durably apply it
       // and deliver it to remaining members before claiming group-wide removal.
-      // This profile currently enrols at epoch zero; rotation remains unfinished.
       issueRevocation: async ({subject, sequence, reason}) => {
         try {
           if (!bytes(subject, 32) || typeof sequence !== 'bigint' || sequence < 1n
               || sequence > 0xffffffffffffffffn || !Number.isInteger(reason) || reason < 0 || reason > 3) throw fail();
-          const member = subject.slice(), epoch = 0n;
+          const member = subject.slice(), epoch = persona.epoch;
           await check();
           const statement = wasm.tg_revocation_signing_bytes(member, epoch, sequence, reason);
           const signature = new Uint8Array(await crypto.subtle.sign('Ed25519', key, statement));
@@ -182,9 +184,18 @@ export async function loadSoftwareIssuer({wasm, store, expectedGroup, signal}) {
           };
           const derive = async purpose => new Uint8Array(await crypto.subtle.deriveBits({name: 'HKDF', hash: 'SHA-256',
             salt: group, info: new TextEncoder().encode(purpose)}, derivationKey, 256));
-          await checkRecipient(); payloadKey = await derive('r2/v0/group/payload');
-          await checkRecipient(); integrityKey = await derive('r2/v0/group/integrity'); await checkRecipient();
-          return Object.freeze({certificate, epoch: 0n, payloadKey, integrityKey,
+          await checkRecipient();
+          if (persona.epoch === 0n) {
+            payloadKey = await derive('r2/v0/group/payload');
+            await checkRecipient(); integrityKey = await derive('r2/v0/group/integrity');
+          } else {
+            const {loadSoftwareTraffic} = await import('./software-traffic.mjs');
+            const held = await loadSoftwareTraffic({wasm, store, expectedGroup: group, signal});
+            try { payloadKey = held.payloadKey.slice(); integrityKey = held.integrityKey.slice(); }
+            finally { held.destroy(); }
+          }
+          await checkRecipient();
+          return Object.freeze({certificate, epoch: persona.epoch, payloadKey, integrityKey,
             destroy: () => { payloadKey.fill(0); integrityKey.fill(0); }});
         } catch { payloadKey?.fill(0); integrityKey?.fill(0); throw fail(); }
       },

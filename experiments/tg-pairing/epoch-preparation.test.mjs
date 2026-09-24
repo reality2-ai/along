@@ -5,7 +5,7 @@ import {join} from 'node:path';
 const {chromium} = await import('@playwright/test');
 const sources = new Map();
 for (const name of ['storage.mjs', 'membership.mjs', 'certificate.mjs']) sources.set('/' + name, await readFile(join(process.env.R2_BROWSER_DIR, name)));
-for (const name of ['software-persona.mjs', 'local-persona.mjs', 'epoch-preparation.mjs', 'epoch-transition.mjs']) sources.set('/' + name, await readFile(new URL(name, import.meta.url)));
+for (const name of ['software-persona.mjs', 'local-persona.mjs', 'epoch-preparation.mjs', 'epoch-transition.mjs', 'epoch-installation.mjs', 'epoch-watch.mjs', 'software-traffic.mjs', 'member-removal.mjs']) sources.set('/' + name, await readFile(new URL(name, import.meta.url)));
 for (const name of ['hive_wasm.js', 'hive_wasm_bg.wasm']) sources.set('/' + name, await readFile(join(process.env.R2_WASM_DIR, name)));
 const server = createServer((req, res) => {
   res.setHeader('Content-Type', req.url.endsWith('.wasm') ? 'application/wasm' : sources.has(req.url) ? 'text/javascript' : 'text/html');
@@ -66,7 +66,51 @@ try {
       check((await store.read(scope, key)).revision === corrupt.revision, 'corruption not silently replaced');
       await store.compareAndSwap(scope, key, corrupt.revision, original.value);
     }
-    issuer.close(); store.close();
+    const subject = crypto.getRandomValues(new Uint8Array(32));
+    const oldMaterial = await issuer.enrollmentMaterial(subject);
+    const oldCertificate = oldMaterial.certificate.slice();
+    const oldDigest = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', oldMaterial.payloadKey)));
+    oldMaterial.destroy();
+    const {installPreparedIssuerEpoch} = await import('./epoch-installation.mjs');
+    const install = epoch => installPreparedIssuerEpoch({wasm, store, expectedGroup: group, epoch});
+    const rejected = {...store, compareAndSwapMany: async () => { throw Error('write failed'); }};
+    check(await denied(() => installPreparedIssuerEpoch({wasm, store: rejected, expectedGroup: group, epoch: 1n})), 'failed owner install');
+    check((await store.read('candidate-persona', 'active')).value.epoch === 0n, 'failed owner install preserves epoch');
+    const put = IDBObjectStore.prototype.put;
+    let interruptedInstall = false;
+    IDBObjectStore.prototype.put = function(...args) {
+      const result = put.apply(this, args);
+      if (args[1]?.[0] === 'along-browser-traffic') { interruptedInstall = true; this.transaction.abort(); }
+      return result;
+    };
+    try { check(await denied(() => install(1n)), 'interrupted owner install refuses'); }
+    finally { IDBObjectStore.prototype.put = put; }
+    check(interruptedInstall && (await store.read('candidate-persona', 'active')).value.epoch === 0n
+      && (await store.read('membership', first.group)).value.current === 0n
+      && await store.read('along-browser-traffic', first.group) === null
+      && await store.read('along-installed-epoch-v1', first.group + ':1') === null, 'all owner writes roll back');
+    check((await install(1n)).epoch === 1n, 'issuer advances');
+    check((await install(1n)).alreadyInstalled, 'explicit target retry does not advance twice');
+    check(await denied(() => issuer.issueCertificate(subject)), 'old issuer handle refuses');
+    issuer.close();
+    let renewed = await loadSoftwareIssuer({wasm, store, expectedGroup: group});
+    const next = await renewed.enrollmentMaterial(subject);
+    try {
+      check(next.epoch === 1n && new DataView(next.certificate.buffer).getBigUint64(64) === 1n, 'renewed enrollment epoch');
+      const digest = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', next.payloadKey)));
+      check(JSON.stringify(digest) !== JSON.stringify(oldDigest), 'old traffic key not reused');
+      const currentTraffic = await (await import('./software-traffic.mjs')).loadSoftwareTraffic({wasm, store, expectedGroup: group});
+      try { check(next.payloadKey.every((b, i) => b === currentTraffic.payloadKey[i]), 'enrollment uses installed traffic keys'); }
+      finally { currentTraffic.destroy(); }
+    } finally { next.destroy(); }
+    const second = await renewed.prepareRotation();
+    check(second.from === 1n && second.to === 2n, 'second successor supported');
+    await install(2n); renewed.close();
+    renewed = await loadSoftwareIssuer({wasm, store, expectedGroup: group});
+    const removal = await (await import('./member-removal.mjs')).removeSoftwareMember({wasm, store, expectedGroup: group, subject, certificate: oldCertificate});
+    check(removal.evidence.epoch === 2n, 'stale authentic device can be removed at current epoch');
+    check(await denied(() => renewed.enrollmentMaterial(subject)), 'removed member cannot get new epoch keys');
+    renewed.close(); store.close();
     // A failed commit must neither advance membership nor leave half a record.
     const other = await openBrowserStorage('epoch-preparation-failure');
     const created = await initializeSoftwarePersona({wasm, store: other});
@@ -108,5 +152,18 @@ try {
     check((await other.read(scope, created.group + ':1')).revision === 1, 'late commit retry does not replace keys');
     resumed.close(); other.close(); return true;
   }, first), true);
-  console.log('PASS: real software issuer prepares one encrypted epoch successor under concurrent calls, restores it in a fresh document, and refuses corrupted state, failed writes, changed custody and early cancellation; late cancellation preserves the committed preparation for retry. Membership remains at epoch zero; no delivery or rotation installation is claimed.');
+  await restored.close();
+  const advanced = await context.newPage(); await advanced.goto(url);
+  assert.equal(await advanced.evaluate(async groupHex => {
+    const wasm = await import('./hive_wasm.js'); await wasm.default();
+    const store = await (await import('./storage.mjs')).openBrowserStorage('epoch-preparation');
+    const group = Uint8Array.from(groupHex.match(/../g), b => parseInt(b, 16));
+    let issuer, material;
+    try {
+      issuer = await (await import('./software-persona.mjs')).loadSoftwareIssuer({wasm, store, expectedGroup: group});
+      material = await issuer.enrollmentMaterial(crypto.getRandomValues(new Uint8Array(32)));
+      return material.epoch === 2n && (await store.read('membership', groupHex)).value.revocations.length === 1;
+    } finally { material?.destroy(); issuer?.close(); store.close(); }
+  }, first.group), true);
+  console.log('PASS: concurrent encrypted preparation, corruption/refusal and cancellation boundaries; issuer atomic advancement through epochs one and two, explicit-target retry, fresh-document restoration, current-key enrollment material and removal of an older certificate. Old issuer handles and removed recipients refuse. Production cross-epoch delivery and UI remain separate.');
 } finally { await browser?.close(); await new Promise(resolve => server.close(resolve)); }

@@ -11,7 +11,7 @@ const aad = (group, member, epoch) => new TextEncoder().encode(JSON.stringify(['
 // Called with a custody-scoped signer and its revision guards, never a UI signer.
 // Only the committed public transition is returned, never provisional key bytes.
 export async function prepareEpoch({wasm, store, group, subject, from, sign, check, guards, signal}) {
-  if (!bytes(group, 32) || !bytes(subject, 32) || from !== 0n
+  if (!bytes(group, 32) || !bytes(subject, 32) || typeof from !== 'bigint' || from < 0n || from >= 0xffffffffffffffffn
       || store.capabilities?.transactionChecks !== true) throw fail();
   group = group.slice(); subject = subject.slice();
   const groupId = hex(group), member = hex(subject), to = from + 1n;

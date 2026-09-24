@@ -15,7 +15,7 @@ The next group-lifecycle work is documented in [epoch rotation](R2_EPOCH_ROTATIO
 An Along-specific signed successor format now verifies authority, exact next epoch
 and both traffic-key digests. Unit tests cover tampering and bounds. This does not
 advance membership or enable rotation. Encrypted durable preparation now reuses
-one committed epoch-zero successor across retries and concurrent calls, verified
+one committed successor per epoch across retries and concurrent calls, verified
 in real browser storage including cancellation and custody-change boundaries.
 Recipient installation now atomically advances the certificate, membership and
 encrypted keys with a durable receipt. Its browser test starts from actual
@@ -24,8 +24,11 @@ rollback and a fresh-document restore. A shared session watcher now closes old-e
 connections after checking committed local state; the test verifies authenticated
 connections in both the installing and a sibling tab, and unchanged-state hint
 refusal. Packet-level runtime epoch checks remain mandatory. Authenticated
-cross-epoch delivery, issuer advancement, subsequent epochs and the user flow remain
-unfinished; no rotation control is enabled.
+cross-epoch delivery and the user flow remain unfinished; no rotation control is
+enabled. Issuer advancement now uses the same atomic boundary and explicitly
+retained preparation. Browser checks advance through two epochs, restore issuer
+custody, refuse old handles, issue current-key enrollment material and remove an
+older device certificate. The visible pairing flow still needs epoch integration.
 
 The restored software issuer now produces epoch-zero signed revocation evidence
 using the runtime's actual signing bytes. The browser check applies this evidence

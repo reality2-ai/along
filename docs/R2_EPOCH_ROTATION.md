@@ -1,8 +1,8 @@
 # Browser-subset group epoch rotation
 
 Status: transition framing, signature verification, encrypted durable preparation
-and recipient atomic installation implemented and tested. Preparation is currently
-limited to epoch zero → one. No composed rotation flow is enabled, including in
+and atomic issuer/recipient installation implemented and tested, including two
+successive issuer advances. No composed rotation flow is enabled, including in
 preview 3803.
 This is an Along application profile using the R2 group authority; it is not a
 claim of a normative R2 rotation wire format or full R2 conformance.
@@ -12,9 +12,11 @@ claim of a normative R2 rotation wire format or full R2 conformance.
 The pinned browser membership verifier accepts an explicitly established epoch
 and validates certificates against it. It does not authorize an epoch advance
 from an incoming certificate. Signed revocations remain terminal across epochs.
-Along's initial software persona, issuer certificate issuance and enrollment
-material currently use epoch zero. Restoring traffic material requires its epoch
-to match both the local persona and membership state.
+Along bootstraps at epoch zero. After explicit installation of a prepared epoch,
+issuer certificate issuance uses that epoch and enrollment material comes from
+its installed traffic keys. Restoring traffic material requires its epoch to match
+both the local persona and membership state. The visible pairing flow still fixes
+epoch zero and needs integration before rotation can be exposed.
 
 Changing only `membership.current` would strand the local persona and stored
 traffic material. Reusing the old traffic keys would also fail to exclude a
@@ -63,6 +65,16 @@ A late cancellation reports uncertainty while leaving the committed preparation
 available to a later retry. Existing issuer/enrollment/removal tests also run.
 This is software custody evidence, not completed rotation or key delivery.
 
+`installPreparedIssuerEpoch()` requires an explicit target and a retained encrypted
+preparation. It verifies issuer custody and uses the same atomic installation
+boundary, guarding the preparation and issuer records as well as bootstrap state.
+The browser test advances through epochs one and two, restores in a fresh document,
+checks failed/interrupted writes and explicit-target retry, and verifies that an
+old issuer handle refuses further operations. Current enrollment material uses
+the newly installed keys and refreshes the issued-device certificate. Removal
+accepts authentic older certificates and signs at the current epoch; previously
+removed recipients remain excluded. This is local advancement, not peer delivery.
+
 `installRecipientEpoch()` now checks the established group, signed transition,
 renewed certificate for this recipient and the digest of both supplied traffic
 keys. It retains signed removals, then atomically updates the persona certificate,
@@ -96,8 +108,8 @@ cannot promise immediate delivery; existing runtime checks still compare epoch
 and membership before protected send/receive operations. Read failures close the
 affected session rather than preserving a cached grant.
 
-1. Extend the retained preparation to renew certificates for retained recipients
-   and support subsequent epochs. Release only the committed successor. Preserve
+1. Compose certificate renewal for retained recipients with authenticated delivery.
+   Release only the committed successor. Preserve
    prior removals and recheck recipient standing at delivery, rather than treating
    presence in a prepared list as an enduring permission.
 2. A reviewed, authenticated recovery exchange must deliver material only to
@@ -106,8 +118,7 @@ affected session rather than preserving a cached grant.
    the issuer advances. A signed newer certificate alone is insufficient proof
    that the recipient controls its member key. Bind a fresh challenge, recipient,
    transition and encrypted delivery; recheck removal before releasing keys.
-3. Compose the tested one-step recipient installation with ordered offline catch-up
-   and give the initial issuer equivalent atomic advancement. Do not reset identity,
+3. Compose the tested local installation with ordered offline catch-up. Do not reset identity,
    journey preferences or AT application permissions to work around a mismatch.
 4. Compose the tested session invalidation with issuer advancement and interrupted
    delivery recovery. Distinguish local advancement from every retained device
