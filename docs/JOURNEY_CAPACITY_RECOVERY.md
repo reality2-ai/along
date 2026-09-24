@@ -324,6 +324,36 @@ These changes do not exclude an already-open older build from writing the same
 localStorage key. That upgrade boundary remains a release gate, alongside mounting
 the recovery flow and qualifying a new preview. Public preview 3805 is unchanged.
 
+## Isolating older planner writers
+
+`isolated-preferences.mjs` now supplies an explicit storage primitive for that
+boundary. A single localStorage write installs a new profile containing the exact
+reviewed predecessor and the active planner data. An adapter exposes only the
+active data to the existing planner API. It retains the predecessor on subsequent
+writes and never falls back to the old key if the isolated copy is missing or
+corrupt. Repeating the same isolation request preserves the current active data.
+
+Older builds still write their original key. Those writes cannot accidentally
+replace the isolated copy, and `inspectLegacy` reports divergence with both the
+captured predecessor and current legacy bytes for a future explicit review. An
+old write arriving during installation is also reported. No old key is deleted,
+and neither old edits nor learning history are silently merged into the new copy.
+This is upgrade isolation, not protection against hostile same-origin scripts,
+browser rollback, storage eviction or a user clearing site data.
+
+`isolated-preferences.test.mjs` verifies the released 3805 ZIP digest, manifest
+digest and individual preference-module bytes before loading that actual old
+writer in a second browser tab. The test verifies independent old/new service
+preferences, predecessor retention, reload, concurrent/repeated installation,
+quota failure, stale review, cancellation before/after installation, corruption
+without fallback and an old edit during the write. It reads release bytes from
+the archived ZIP, not the mutable local candidate directory.
+
+The caller must still authenticate membership and complete reviewed generation
+migration before requesting isolation. App startup, every bridge/recovery caller,
+storage-event handling and review of later legacy edits must be connected to this
+adapter before enabling recovery. The new primitive is not mounted in the app.
+
 ## Required before integration
 
 1. Wire the tested migration and format-2 bridge to explicit reviewed opt-in,

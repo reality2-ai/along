@@ -434,3 +434,13 @@ invalidating the snapshot; changed planner data or generation requires a reload.
 The main planner awaits saves before success announcements and displays failure
 on the current screen. The real two-profile app integration passes; recovery itself
 is still unmounted pending older-writer isolation and the other recovery gates.
+
+`isolated-preferences.mjs` provides the storage part of older-writer isolation:
+one new profile retains the exact reviewed source and active planner data, while
+older builds continue writing the retained legacy key. Run
+`isolated-preferences.test.mjs` with `CHROMIUM_PATH`; it uses byte-verified modules
+from the published 3805 ZIP in a real second tab, and checks reload, interruption,
+concurrent setup and divergence. Opening corrupted/missing isolated storage never
+falls back to the legacy key. This primitive does not authorize migration or mount
+itself; startup/bridge/recovery integration and review of later old-tab edits
+remain required before enabling it.

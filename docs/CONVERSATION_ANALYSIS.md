@@ -1367,3 +1367,12 @@ announcing success and displays a failure near the current task. A two-device te
 caught the overly strict first implementation; a separate expectation was updated
 to wait for the visible async completion instead of reading storage immediately
 after a click. Older builds remain a distinct compatibility boundary to resolve.
+
+The older-tab experiment makes that boundary testable using actual released code.
+The test verifies the published archive and module hashes, then keeps its writer
+open beside a newer isolated storage adapter. New data and the exact predecessor
+share one atomic storage value; later old-tab edits stay in their original key
+and are reported for review. The lesson is that a new locking convention cannot
+retroactively constrain an already-running older program. Storage separation can
+preserve both copies, but a usable reconciliation flow and startup integration
+are still needed before that primitive becomes a finished feature.
