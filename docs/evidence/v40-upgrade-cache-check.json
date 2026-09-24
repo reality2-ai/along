@@ -1,0 +1,13 @@
+{
+  "status": "focused-check-passed",
+  "candidate_unchanged": true,
+  "failure": "Immediate assertion required the prior shell cache name to be absent.",
+  "observed_retry": {
+    "controlling_worker": "40",
+    "retired_cache_present": true,
+    "retired_cached_payloads": 0
+  },
+  "correction": "Wait for the controlling worker GET_VERSION response; require current cache and zero retired payloads. A retiring worker can recreate an empty cache name through its in-flight caches.open.",
+  "log_sha256": "f9a7ea917bbeaaad06727d8bf66b6d7d0b4f209c5477c99695c7bcc5c9181a93",
+  "scope": "Exact released v38 to candidate40, installed service workers, failed-update retry, saved-data/identity retention and offline reopening. Test assertion corrected; no app payload change. Full rerun follows."
+}

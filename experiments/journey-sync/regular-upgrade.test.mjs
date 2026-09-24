@@ -103,7 +103,23 @@ try{
   assert.deepEqual(await persistence(),before,'upgrade preserves raw saved preferences and local choices');
   await page.evaluate(async()=>{await(await import('./experiments/at-credentials/app-bootstrap.mjs')).restoration;});
   assert.equal(await page.evaluate(async()=>(await import('./experiments/at-credentials/app-live-bridge.mjs')).createLiveClient().configured),false);
-  const cachesAfter=await page.evaluate(()=>caches.keys());assert.ok(cachesAfter.includes('along-shell-v'+targetVersion));assert.ok(!cachesAfter.includes('along-shell-v'+priorVersion));
+  // Verify the controlling worker, not only the HTML loaded from the network.
+  await expect.poll(()=>page.evaluate(()=>new Promise(resolve=>{
+    const controller=navigator.serviceWorker.controller;if(!controller){resolve(null);return;}
+    const channel=new MessageChannel(),timer=setTimeout(()=>{channel.port1.close();resolve(null);},1000);
+    channel.port1.onmessage=event=>{clearTimeout(timer);channel.port1.close();resolve(event.data?.version);};
+    controller.postMessage({type:'GET_VERSION'},[channel.port2]);
+  })),{timeout:10000}).toBe(targetVersion);
+  const cachesAfter=await page.evaluate(async prior=>{
+    const names=await caches.keys();
+    // A retiring old worker's in-flight caches.open can recreate an empty cache
+    // after activation removed its payloads. Empty names cannot serve old HTML.
+    const old='along-shell-v'+prior;
+    return {names,oldEntries:names.includes(old)?(await(await caches.open(old)).keys()).map(r=>r.url):[]};
+  },priorVersion);
+  assert.ok(cachesAfter.names.includes('along-shell-v'+targetVersion));
+  assert.deepEqual(cachesAfter.oldEntries,[],'retired shell retains no cached payloads');
+  console.log('Upgrade controller/cache check: '+JSON.stringify({version:targetVersion,retiredCachePresent:cachesAfter.names.includes('along-shell-v'+priorVersion),retiredEntries:cachesAfter.oldEntries.length}));
   if(priorVersion==='37')await setupDevice();
   else assert.deepEqual(await identity(),priorIdentity,'existing connected-app identity survives upgrade');
   assert.deepEqual(await persistence(),before,'optional device setup preserves previous journeys');
