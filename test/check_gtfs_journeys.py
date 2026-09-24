@@ -4,9 +4,16 @@ import io
 import json
 from pathlib import Path
 import zipfile
+import sys
 
 root = Path(__file__).resolve().parents[1]
-report = json.loads((root / 'test-results/real-journeys.json').read_text())
+report_path = 'test-results/real-journeys-arrive.json' if '--arrive-by' in sys.argv else 'test-results/real-journeys.json'
+report = json.loads((root / report_path).read_text())
+if report.get('timeMode') == 'arrive':
+    for case in report['cases']:
+        assert case['journey']['arrival'] <= 9 * 3600
+        assert case['journey']['legs'][-1]['to']['id'] == case['to']['id']
+        assert all(a['arrival'] <= b['departure'] for a, b in zip(case['journey']['legs'], case['journey']['legs'][1:]))
 legs = [leg for case in report['cases'] for leg in case['journey']['legs'] if leg['mode'] != 'walk']
 trip_ids = {leg['trip'] for leg in legs}
 

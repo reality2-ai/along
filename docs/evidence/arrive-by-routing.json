@@ -1,0 +1,1281 @@
+{
+  "status": "passed",
+  "recorded_at": "2026-09-24T21:20:37.960899+00:00",
+  "unit_tests": 79,
+  "arrival_cases": 11,
+  "unit_log_sha256": "1a671c061e186beb6074453614992750e6741edbc2d81ea0e7263af768ba5786",
+  "arrival_test_source_sha256": "04453f960ceb66d5ace6b757c5b3b7a1ea349f8b1644d6e66741993d3120749a",
+  "snapshot": {
+    "timeMode": "arrive",
+    "date": "2026-09-23",
+    "runtime": "v26.4.0",
+    "loadMs": 4226,
+    "cases": [
+      {
+        "name": "train and ferry",
+        "from": {
+          "id": "linz:1141195",
+          "name": "277 Broadway, Newmarket, Auckland",
+          "lat": -36.870897,
+          "lon": 174.776999,
+          "street": "Broadway",
+          "placeType": "address",
+          "code": ""
+        },
+        "to": {
+          "id": "linz:1156654",
+          "name": "10 Victoria Road, Devonport, Auckland",
+          "lat": -36.83045,
+          "lon": 174.798021,
+          "street": "Victoria Road",
+          "placeType": "address",
+          "code": ""
+        },
+        "modes": [
+          "bus",
+          "train",
+          "ferry"
+        ],
+        "elapsedMs": 5786,
+        "journey": {
+          "departure": 29374,
+          "arrival": 32327,
+          "duration": 2953,
+          "wait": 0,
+          "transfers": 1,
+          "walking": 1127,
+          "legs": [
+            {
+              "mode": "walk",
+              "from": {
+                "id": "linz:1141195",
+                "name": "277 Broadway, Newmarket, Auckland",
+                "lat": -36.870897,
+                "lon": 174.776999,
+                "street": "Broadway",
+                "placeType": "address",
+                "code": ""
+              },
+              "to": {
+                "id": "9100-2034265b",
+                "code": "9100",
+                "name": "Newmarket Train Station 1",
+                "lat": -36.86972,
+                "lon": 174.77883,
+                "parent": "115-96c3c7be",
+                "kind": 0,
+                "wheelchair": 0
+              },
+              "departure": 29374,
+              "arrival": 29640,
+              "access": true,
+              "directions": {
+                "seconds": 266,
+                "metres": 306,
+                "steps": [
+                  {
+                    "name": "Access to the walking network",
+                    "metres": 52,
+                    "estimated": true
+                  },
+                  {
+                    "name": "Broadway",
+                    "metres": 1
+                  },
+                  {
+                    "name": "Footpath",
+                    "metres": 230
+                  },
+                  {
+                    "name": "Steps",
+                    "metres": 3
+                  },
+                  {
+                    "name": "Footpath",
+                    "metres": 20
+                  }
+                ],
+                "geometry": [
+                  [
+                    -36.870897,
+                    174.776999
+                  ],
+                  [
+                    -36.870459,
+                    174.777207
+                  ],
+                  [
+                    -36.870449,
+                    174.77721
+                  ],
+                  [
+                    -36.870438,
+                    174.777239
+                  ],
+                  [
+                    -36.869974,
+                    174.777397
+                  ],
+                  [
+                    -36.869985,
+                    174.777446
+                  ],
+                  [
+                    -36.869999,
+                    174.777517
+                  ],
+                  [
+                    -36.870013,
+                    174.77759
+                  ],
+                  [
+                    -36.870027,
+                    174.777632
+                  ],
+                  [
+                    -36.869996,
+                    174.777653
+                  ],
+                  [
+                    -36.869926,
+                    174.777679
+                  ],
+                  [
+                    -36.869844,
+                    174.777706
+                  ],
+                  [
+                    -36.869826,
+                    174.777712
+                  ],
+                  [
+                    -36.870154,
+                    174.778078
+                  ],
+                  [
+                    -36.870172,
+                    174.778099
+                  ],
+                  [
+                    -36.870162,
+                    174.778112
+                  ],
+                  [
+                    -36.870066,
+                    174.778239
+                  ],
+                  [
+                    -36.870011,
+                    174.778314
+                  ],
+                  [
+                    -36.869996,
+                    174.778318
+                  ],
+                  [
+                    -36.869854,
+                    174.778363
+                  ],
+                  [
+                    -36.869846,
+                    174.778365
+                  ],
+                  [
+                    -36.869735,
+                    174.778391
+                  ],
+                  [
+                    -36.869771,
+                    174.778602
+                  ],
+                  [
+                    -36.869776,
+                    174.778632
+                  ],
+                  [
+                    -36.869758,
+                    174.778664
+                  ],
+                  [
+                    -36.86973,
+                    174.778711
+                  ],
+                  [
+                    -36.869734,
+                    174.778745
+                  ],
+                  [
+                    -36.869741,
+                    174.778792
+                  ],
+                  [
+                    -36.869748,
+                    174.778839
+                  ],
+                  [
+                    -36.86972,
+                    174.77883
+                  ]
+                ]
+              }
+            },
+            {
+              "mode": "train",
+              "route": "S-C",
+              "routeId": "S-C-201",
+              "routeType": 2,
+              "agencyId": "AM",
+              "directionId": 0,
+              "serviceDate": "20260923",
+              "serviceOffset": 0,
+              "headsign": "Pukekohe 4 Clockwise To Waitemata 1 Via NKT1, PPK 3",
+              "trip": "257-870017-25860-2-A028C031261-ae36d5b1",
+              "origin": 6842,
+              "destination": 6834,
+              "departure": 29700,
+              "arrival": 30420,
+              "stops": 4,
+              "stopSequence": 17,
+              "from": {
+                "id": "9100-2034265b",
+                "code": "9100",
+                "name": "Newmarket Train Station 1",
+                "lat": -36.86972,
+                "lon": 174.77883,
+                "parent": "115-96c3c7be",
+                "kind": 0,
+                "wheelchair": 0
+              },
+              "to": {
+                "id": "9001-c9315521",
+                "code": "9001",
+                "name": "Waitemata Train Station 1",
+                "lat": -36.84431,
+                "lon": 174.76869,
+                "parent": "133-08da14b5",
+                "kind": 0,
+                "wheelchair": 0
+              },
+              "startTime": "07:11:00",
+              "stopVisits": 1,
+              "calls": [
+                {
+                  "stopId": "9100-2034265b",
+                  "arrival": 29700,
+                  "departure": 29700
+                },
+                {
+                  "stopId": "9301-113744ac",
+                  "arrival": 29880,
+                  "departure": 29880
+                },
+                {
+                  "stopId": "9295-a6a0f711",
+                  "arrival": 30120,
+                  "departure": 30120
+                },
+                {
+                  "stopId": "9297-5284e223",
+                  "arrival": 30300,
+                  "departure": 30300
+                },
+                {
+                  "stopId": "9001-c9315521",
+                  "arrival": 30420,
+                  "departure": 30420
+                }
+              ]
+            },
+            {
+              "mode": "walk",
+              "origin": 6834,
+              "destination": 6963,
+              "departure": 30420,
+              "arrival": 30874,
+              "from": {
+                "id": "9001-c9315521",
+                "code": "9001",
+                "name": "Waitemata Train Station 1",
+                "lat": -36.84431,
+                "lon": 174.76869,
+                "parent": "133-08da14b5",
+                "kind": 0,
+                "wheelchair": 0
+              },
+              "to": {
+                "id": "9704-5aba6459",
+                "code": "9704",
+                "name": "Downtown Ferry Terminal Pier 4",
+                "lat": -36.8415,
+                "lon": 174.76731,
+                "parent": "96001-8c54fcdf",
+                "kind": 0,
+                "wheelchair": 0
+              },
+              "directions": {
+                "seconds": 454,
+                "metres": 540,
+                "steps": [
+                  {
+                    "name": "Access to the walking network",
+                    "metres": 18,
+                    "estimated": true
+                  },
+                  {
+                    "name": "Te Ara Tahuhu Walkway",
+                    "metres": 37
+                  },
+                  {
+                    "name": "Footpath",
+                    "metres": 479
+                  },
+                  {
+                    "name": "Access to your destination",
+                    "metres": 6,
+                    "estimated": true
+                  }
+                ],
+                "geometry": [
+                  [
+                    -36.84431,
+                    174.76869
+                  ],
+                  [
+                    -36.844468,
+                    174.768723
+                  ],
+                  [
+                    -36.844374,
+                    174.768372
+                  ],
+                  [
+                    -36.844341,
+                    174.768347
+                  ],
+                  [
+                    -36.844302,
+                    174.768398
+                  ],
+                  [
+                    -36.844113,
+                    174.768485
+                  ],
+                  [
+                    -36.844107,
+                    174.768488
+                  ],
+                  [
+                    -36.844086,
+                    174.768522
+                  ],
+                  [
+                    -36.844076,
+                    174.768539
+                  ],
+                  [
+                    -36.844053,
+                    174.768549
+                  ],
+                  [
+                    -36.843806,
+                    174.768655
+                  ],
+                  [
+                    -36.843795,
+                    174.768612
+                  ],
+                  [
+                    -36.843773,
+                    174.768524
+                  ],
+                  [
+                    -36.843745,
+                    174.768425
+                  ],
+                  [
+                    -36.843641,
+                    174.768475
+                  ],
+                  [
+                    -36.843581,
+                    174.768503
+                  ],
+                  [
+                    -36.843564,
+                    174.768511
+                  ],
+                  [
+                    -36.84353,
+                    174.768527
+                  ],
+                  [
+                    -36.843302,
+                    174.767656
+                  ],
+                  [
+                    -36.843278,
+                    174.767567
+                  ],
+                  [
+                    -36.843259,
+                    174.767443
+                  ],
+                  [
+                    -36.843217,
+                    174.767281
+                  ],
+                  [
+                    -36.843,
+                    174.767373
+                  ],
+                  [
+                    -36.842976,
+                    174.767383
+                  ],
+                  [
+                    -36.842552,
+                    174.767559
+                  ],
+                  [
+                    -36.842496,
+                    174.767558
+                  ],
+                  [
+                    -36.84206,
+                    174.767554
+                  ],
+                  [
+                    -36.841902,
+                    174.767484
+                  ],
+                  [
+                    -36.841892,
+                    174.767443
+                  ],
+                  [
+                    -36.841862,
+                    174.767421
+                  ],
+                  [
+                    -36.841822,
+                    174.76739
+                  ],
+                  [
+                    -36.84178,
+                    174.767407
+                  ],
+                  [
+                    -36.841497,
+                    174.767512
+                  ],
+                  [
+                    -36.841449,
+                    174.767527
+                  ],
+                  [
+                    -36.841438,
+                    174.76752
+                  ],
+                  [
+                    -36.841368,
+                    174.76747
+                  ],
+                  [
+                    -36.841518,
+                    174.76741
+                  ],
+                  [
+                    -36.841452,
+                    174.767285
+                  ],
+                  [
+                    -36.8415,
+                    174.76731
+                  ]
+                ]
+              }
+            },
+            {
+              "mode": "ferry",
+              "route": "DEV",
+              "routeId": "DEV-209",
+              "routeType": 4,
+              "agencyId": "FGL",
+              "directionId": 1,
+              "serviceDate": "20260923",
+              "serviceOffset": 0,
+              "headsign": "Downtown Pier 4 To Devonport",
+              "trip": "512-92014-31200-2-9aa6fb48",
+              "origin": 6963,
+              "destination": 6950,
+              "departure": 31200,
+              "arrival": 31920,
+              "stops": 1,
+              "stopSequence": 1,
+              "from": {
+                "id": "9704-5aba6459",
+                "code": "9704",
+                "name": "Downtown Ferry Terminal Pier 4",
+                "lat": -36.8415,
+                "lon": 174.76731,
+                "parent": "96001-8c54fcdf",
+                "kind": 0,
+                "wheelchair": 0
+              },
+              "to": {
+                "id": "9670-6a81c363",
+                "code": "9670",
+                "name": "Devonport Ferry Terminal",
+                "lat": -36.83317,
+                "lon": 174.7954,
+                "parent": "96701-99c1a11d",
+                "kind": 0,
+                "wheelchair": 0
+              },
+              "startTime": "08:40:00",
+              "stopVisits": 1,
+              "calls": [
+                {
+                  "stopId": "9704-5aba6459",
+                  "arrival": 31200,
+                  "departure": 31200
+                },
+                {
+                  "stopId": "9670-6a81c363",
+                  "arrival": 31920,
+                  "departure": 31920
+                }
+              ]
+            },
+            {
+              "mode": "walk",
+              "from": {
+                "id": "9670-6a81c363",
+                "code": "9670",
+                "name": "Devonport Ferry Terminal",
+                "lat": -36.83317,
+                "lon": 174.7954,
+                "parent": "96701-99c1a11d",
+                "kind": 0,
+                "wheelchair": 0
+              },
+              "to": {
+                "id": "linz:1156654",
+                "name": "10 Victoria Road, Devonport, Auckland",
+                "lat": -36.83045,
+                "lon": 174.798021,
+                "street": "Victoria Road",
+                "placeType": "address",
+                "code": ""
+              },
+              "departure": 31920,
+              "arrival": 32327,
+              "egress": true,
+              "directions": {
+                "seconds": 407,
+                "metres": 479,
+                "steps": [
+                  {
+                    "name": "Access to the walking network",
+                    "metres": 10,
+                    "estimated": true
+                  },
+                  {
+                    "name": "Devonport Wharf",
+                    "metres": 22
+                  },
+                  {
+                    "name": "Footpath",
+                    "metres": 435
+                  },
+                  {
+                    "name": "Access to your destination",
+                    "metres": 12,
+                    "estimated": true
+                  }
+                ],
+                "geometry": [
+                  [
+                    -36.83317,
+                    174.7954
+                  ],
+                  [
+                    -36.833244,
+                    174.795333
+                  ],
+                  [
+                    -36.833272,
+                    174.795334
+                  ],
+                  [
+                    -36.833268,
+                    174.795502
+                  ],
+                  [
+                    -36.833267,
+                    174.795511
+                  ],
+                  [
+                    -36.833261,
+                    174.795535
+                  ],
+                  [
+                    -36.83326,
+                    174.795546
+                  ],
+                  [
+                    -36.83324,
+                    174.796041
+                  ],
+                  [
+                    -36.833152,
+                    174.796095
+                  ],
+                  [
+                    -36.83309,
+                    174.796134
+                  ],
+                  [
+                    -36.83293,
+                    174.796128
+                  ],
+                  [
+                    -36.832918,
+                    174.796148
+                  ],
+                  [
+                    -36.8329,
+                    174.796176
+                  ],
+                  [
+                    -36.832851,
+                    174.796258
+                  ],
+                  [
+                    -36.832483,
+                    174.796467
+                  ],
+                  [
+                    -36.832456,
+                    174.79648
+                  ],
+                  [
+                    -36.832424,
+                    174.796496
+                  ],
+                  [
+                    -36.832403,
+                    174.796508
+                  ],
+                  [
+                    -36.832379,
+                    174.796523
+                  ],
+                  [
+                    -36.832321,
+                    174.796558
+                  ],
+                  [
+                    -36.832271,
+                    174.796588
+                  ],
+                  [
+                    -36.832253,
+                    174.796599
+                  ],
+                  [
+                    -36.832237,
+                    174.796608
+                  ],
+                  [
+                    -36.832159,
+                    174.796651
+                  ],
+                  [
+                    -36.832127,
+                    174.796669
+                  ],
+                  [
+                    -36.832094,
+                    174.796688
+                  ],
+                  [
+                    -36.832023,
+                    174.796698
+                  ],
+                  [
+                    -36.832012,
+                    174.796732
+                  ],
+                  [
+                    -36.831983,
+                    174.796775
+                  ],
+                  [
+                    -36.831948,
+                    174.796801
+                  ],
+                  [
+                    -36.831561,
+                    174.797008
+                  ],
+                  [
+                    -36.831246,
+                    174.79719
+                  ],
+                  [
+                    -36.831048,
+                    174.797303
+                  ],
+                  [
+                    -36.830798,
+                    174.797448
+                  ],
+                  [
+                    -36.830775,
+                    174.797436
+                  ],
+                  [
+                    -36.830768,
+                    174.797418
+                  ],
+                  [
+                    -36.830707,
+                    174.797455
+                  ],
+                  [
+                    -36.830672,
+                    174.797475
+                  ],
+                  [
+                    -36.830644,
+                    174.797491
+                  ],
+                  [
+                    -36.830649,
+                    174.797505
+                  ],
+                  [
+                    -36.830643,
+                    174.797551
+                  ],
+                  [
+                    -36.830388,
+                    174.79769
+                  ],
+                  [
+                    -36.830334,
+                    174.79772
+                  ],
+                  [
+                    -36.830324,
+                    174.797721
+                  ],
+                  [
+                    -36.830338,
+                    174.797831
+                  ],
+                  [
+                    -36.830353,
+                    174.797948
+                  ],
+                  [
+                    -36.830368,
+                    174.79794
+                  ],
+                  [
+                    -36.83045,
+                    174.798021
+                  ]
+                ]
+              }
+            }
+          ],
+          "timeMode": "arrive",
+          "deadline": 32400
+        }
+      },
+      {
+        "name": "city bus",
+        "from": {
+          "id": "linz:1131936",
+          "name": "1 Queen Street, Auckland Central, Auckland",
+          "lat": -36.843387,
+          "lon": 174.766421,
+          "street": "Queen Street",
+          "placeType": "address",
+          "code": ""
+        },
+        "to": {
+          "id": "linz:1076695",
+          "name": "805 Great North Road, Western Springs, Auckland",
+          "lat": -36.867935,
+          "lon": 174.727212,
+          "street": "Great North Road",
+          "placeType": "address",
+          "code": ""
+        },
+        "modes": [
+          "bus"
+        ],
+        "elapsedMs": 667,
+        "journey": {
+          "departure": 30647,
+          "arrival": 31978,
+          "duration": 1331,
+          "wait": 0,
+          "transfers": 0,
+          "walking": 431,
+          "legs": [
+            {
+              "mode": "walk",
+              "from": {
+                "id": "linz:1131936",
+                "name": "1 Queen Street, Auckland Central, Auckland",
+                "lat": -36.843387,
+                "lon": 174.766421,
+                "street": "Queen Street",
+                "placeType": "address",
+                "code": ""
+              },
+              "to": {
+                "id": "1005-c105552e",
+                "code": "1005",
+                "name": "Stop D Lower Albert",
+                "lat": -36.84353,
+                "lon": 174.76571,
+                "parent": "31986-b1e95b83",
+                "kind": 0,
+                "wheelchair": 0
+              },
+              "departure": 30647,
+              "arrival": 30840,
+              "access": true,
+              "directions": {
+                "seconds": 193,
+                "metres": 233,
+                "steps": [
+                  {
+                    "name": "Access to the walking network",
+                    "metres": 69,
+                    "estimated": true
+                  },
+                  {
+                    "name": "Queen Street",
+                    "metres": 33
+                  },
+                  {
+                    "name": "Wheriko Lane",
+                    "metres": 115
+                  },
+                  {
+                    "name": "Footpath",
+                    "metres": 4
+                  },
+                  {
+                    "name": "Access to your destination",
+                    "metres": 12,
+                    "estimated": true
+                  }
+                ],
+                "geometry": [
+                  [
+                    -36.843387,
+                    174.766421
+                  ],
+                  [
+                    -36.84368,
+                    174.767108
+                  ],
+                  [
+                    -36.843703,
+                    174.767094
+                  ],
+                  [
+                    -36.843866,
+                    174.76702
+                  ],
+                  [
+                    -36.84396,
+                    174.766983
+                  ],
+                  [
+                    -36.843911,
+                    174.766745
+                  ],
+                  [
+                    -36.843811,
+                    174.766365
+                  ],
+                  [
+                    -36.843717,
+                    174.766018
+                  ],
+                  [
+                    -36.843656,
+                    174.765781
+                  ],
+                  [
+                    -36.843649,
+                    174.765751
+                  ],
+                  [
+                    -36.843637,
+                    174.765706
+                  ],
+                  [
+                    -36.84353,
+                    174.76571
+                  ]
+                ]
+              }
+            },
+            {
+              "mode": "bus",
+              "route": "11W",
+              "routeId": "11W-207",
+              "routeType": 3,
+              "agencyId": "TZG",
+              "directionId": 1,
+              "serviceDate": "20260923",
+              "serviceOffset": 0,
+              "headsign": "City Centre To Northwest Via Waimumu Rd",
+              "trip": "1222-01108-30900-2-73d924b0",
+              "origin": 5,
+              "destination": 6125,
+              "departure": 30900,
+              "arrival": 31740,
+              "stops": 12,
+              "stopSequence": 1,
+              "from": {
+                "id": "1005-c105552e",
+                "code": "1005",
+                "name": "Stop D Lower Albert",
+                "lat": -36.84353,
+                "lon": 174.76571,
+                "parent": "31986-b1e95b83",
+                "kind": 0,
+                "wheelchair": 0
+              },
+              "to": {
+                "id": "8122-89235838",
+                "code": "8122",
+                "name": "Western Springs Park & MOTAT",
+                "lat": -36.86823,
+                "lon": 174.72445,
+                "parent": "",
+                "kind": 0,
+                "wheelchair": 0
+              },
+              "startTime": "08:35:00",
+              "stopVisits": 1,
+              "calls": [
+                {
+                  "stopId": "1005-c105552e",
+                  "arrival": 30900,
+                  "departure": 30900
+                },
+                {
+                  "stopId": "7074-886877db",
+                  "arrival": 30960,
+                  "departure": 30960
+                },
+                {
+                  "stopId": "7076-74b8a2f1",
+                  "arrival": 31080,
+                  "departure": 31080
+                },
+                {
+                  "stopId": "1524-cdb32a59",
+                  "arrival": 31260,
+                  "departure": 31260
+                },
+                {
+                  "stopId": "7136-7b4dffe1",
+                  "arrival": 31320,
+                  "departure": 31320
+                },
+                {
+                  "stopId": "8100-81ba814a",
+                  "arrival": 31380,
+                  "departure": 31380
+                },
+                {
+                  "stopId": "8104-19ad44f5",
+                  "arrival": 31440,
+                  "departure": 31440
+                },
+                {
+                  "stopId": "8108-01016126",
+                  "arrival": 31500,
+                  "departure": 31500
+                },
+                {
+                  "stopId": "8110-e76135de",
+                  "arrival": 31500,
+                  "departure": 31500
+                },
+                {
+                  "stopId": "8114-f4e4a02c",
+                  "arrival": 31560,
+                  "departure": 31560
+                },
+                {
+                  "stopId": "8118-170afaad",
+                  "arrival": 31620,
+                  "departure": 31620
+                },
+                {
+                  "stopId": "8120-1485cc06",
+                  "arrival": 31680,
+                  "departure": 31680
+                },
+                {
+                  "stopId": "8122-89235838",
+                  "arrival": 31740,
+                  "departure": 31740
+                }
+              ]
+            },
+            {
+              "mode": "walk",
+              "from": {
+                "id": "8122-89235838",
+                "code": "8122",
+                "name": "Western Springs Park & MOTAT",
+                "lat": -36.86823,
+                "lon": 174.72445,
+                "parent": "",
+                "kind": 0,
+                "wheelchair": 0
+              },
+              "to": {
+                "id": "linz:1076695",
+                "name": "805 Great North Road, Western Springs, Auckland",
+                "lat": -36.867935,
+                "lon": 174.727212,
+                "street": "Great North Road",
+                "placeType": "address",
+                "code": ""
+              },
+              "departure": 31740,
+              "arrival": 31978,
+              "egress": true,
+              "directions": {
+                "seconds": 238,
+                "metres": 286,
+                "steps": [
+                  {
+                    "name": "Access to the walking network",
+                    "metres": 10,
+                    "estimated": true
+                  },
+                  {
+                    "name": "Great North Road",
+                    "metres": 253
+                  },
+                  {
+                    "name": "Access to your destination",
+                    "metres": 23,
+                    "estimated": true
+                  }
+                ],
+                "geometry": [
+                  [
+                    -36.86823,
+                    174.72445
+                  ],
+                  [
+                    -36.868144,
+                    174.724484
+                  ],
+                  [
+                    -36.868114,
+                    174.724874
+                  ],
+                  [
+                    -36.868124,
+                    174.725106
+                  ],
+                  [
+                    -36.86814,
+                    174.725401
+                  ],
+                  [
+                    -36.868143,
+                    174.72561
+                  ],
+                  [
+                    -36.868144,
+                    174.725631
+                  ],
+                  [
+                    -36.868144,
+                    174.725652
+                  ],
+                  [
+                    -36.868144,
+                    174.725695
+                  ],
+                  [
+                    -36.868145,
+                    174.725787
+                  ],
+                  [
+                    -36.868147,
+                    174.725913
+                  ],
+                  [
+                    -36.868144,
+                    174.726008
+                  ],
+                  [
+                    -36.868135,
+                    174.726312
+                  ],
+                  [
+                    -36.868115,
+                    174.726973
+                  ],
+                  [
+                    -36.868136,
+                    174.727129
+                  ],
+                  [
+                    -36.868116,
+                    174.727326
+                  ],
+                  [
+                    -36.867935,
+                    174.727212
+                  ]
+                ]
+              }
+            }
+          ],
+          "timeMode": "arrive",
+          "deadline": 32400
+        }
+      },
+      {
+        "name": "walking",
+        "from": {
+          "id": "linz:1131936",
+          "name": "1 Queen Street, Auckland Central, Auckland",
+          "lat": -36.843387,
+          "lon": 174.766421,
+          "street": "Queen Street",
+          "placeType": "address",
+          "code": ""
+        },
+        "to": {
+          "id": "linz:1131939",
+          "name": "2 Queen Street, Auckland Central, Auckland",
+          "lat": -36.843605,
+          "lon": 174.76741,
+          "street": "Queen Street",
+          "placeType": "address",
+          "code": ""
+        },
+        "modes": [
+          "bus",
+          "train",
+          "ferry"
+        ],
+        "elapsedMs": 555,
+        "journey": {
+          "departure": 32303,
+          "arrival": 32400,
+          "duration": 97,
+          "wait": 0,
+          "transfers": 0,
+          "walking": 97,
+          "walkOnly": true,
+          "legs": [
+            {
+              "mode": "walk",
+              "from": {
+                "id": "linz:1131936",
+                "name": "1 Queen Street, Auckland Central, Auckland",
+                "lat": -36.843387,
+                "lon": 174.766421,
+                "street": "Queen Street",
+                "placeType": "address",
+                "code": ""
+              },
+              "to": {
+                "id": "linz:1131939",
+                "name": "2 Queen Street, Auckland Central, Auckland",
+                "lat": -36.843605,
+                "lon": 174.76741,
+                "street": "Queen Street",
+                "placeType": "address",
+                "code": ""
+              },
+              "departure": 32303,
+              "arrival": 32400,
+              "directions": {
+                "seconds": 97,
+                "metres": 119,
+                "steps": [
+                  {
+                    "name": "Access to the walking network",
+                    "metres": 69,
+                    "estimated": true
+                  },
+                  {
+                    "name": "Queen Street",
+                    "metres": 32
+                  },
+                  {
+                    "name": "Access to your destination",
+                    "metres": 18,
+                    "estimated": true
+                  }
+                ],
+                "geometry": [
+                  [
+                    -36.843387,
+                    174.766421
+                  ],
+                  [
+                    -36.84368,
+                    174.767108
+                  ],
+                  [
+                    -36.843451,
+                    174.767333
+                  ],
+                  [
+                    -36.843605,
+                    174.76741
+                  ]
+                ]
+              }
+            }
+          ],
+          "timeMode": "arrive",
+          "deadline": 32400
+        }
+      }
+    ],
+    "memoryBeforeGC": {
+      "rss": 1194930176,
+      "heapTotal": 929882112,
+      "heapUsed": 874987256,
+      "external": 112851607,
+      "arrayBuffers": 110938283
+    },
+    "memoryAfterGC": {
+      "rss": 1095290880,
+      "heapTotal": 495185920,
+      "heapUsed": 234048144,
+      "external": 112849107,
+      "arrayBuffers": 110938283
+    }
+  },
+  "gtfs_zip_sha256": "db260b1f6b8049fbb883742c5c7711706f83f1a7fa74ed3009c82274a804a061",
+  "snapshot_log_sha256": "6cb2792d7dd408e5b5ffd5c42c57f5ad1470708cf057d2b1c400dca4b3eb7888",
+  "gtfs_validation": "Three transit legs matched original GTFS trip, route, date, stop order, time and pickup/dropoff; all three address cases met 09:00 including final walking leg.",
+  "limits": "Fixed 23 September snapshot and small exhaustive oracle fixtures. Node Linux desktop measurements; no physical phone or cross-platform performance claim."
+}

@@ -19,8 +19,8 @@ def main():
     source = git('rev-parse', 'HEAD')
     manifest_path = ROOT / 'releases/along-regular-upgrade-candidate/build-info.json'
     manifest = json.loads(manifest_path.read_text())
-    if manifest['profile'] != 'along-regular-upgrade-candidate-v1' or manifest['appVersion'] != '41':
-        raise RuntimeError('Build regular candidate 41 before qualification')
+    if manifest['profile'] != 'along-regular-upgrade-candidate-v1' or manifest['appVersion'] != '42':
+        raise RuntimeError('Build regular candidate 42 before qualification')
     actual = {p.relative_to(manifest_path.parent).as_posix() for p in manifest_path.parent.rglob('*') if p.is_file()}
     if actual != set(manifest['files']) | {'build-info.json'}:
         raise RuntimeError('Candidate file set differs from manifest')
@@ -36,6 +36,8 @@ def main():
         if not env.get(name):
             raise RuntimeError(f'Set {name}')
     cases = [
+        ('arrive_by_and_shortcut', {}, 'test/check_arrive_by.mjs'),
+        ('installed_v41_upgrade', {'ALONG_PRIOR_VERSION':'41'}, 'experiments/journey-sync/regular-upgrade.test.mjs'),
         ('journeys', {}, 'experiments/journey-sync/app-integration.test.mjs'),
         ('capacity_reporting', {'CAPACITY':'1'}, 'experiments/journey-sync/app-integration.test.mjs'),
         ('checkpoint_app', {'CHECKPOINT_APP':'1'}, 'experiments/journey-sync/app-integration.test.mjs'),
