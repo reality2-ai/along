@@ -310,3 +310,26 @@ implement automatic checkpoint catch-up through the relay, merge differing
 generations, accept recovery choices automatically, or test rendered Settings.
 Endpoint persistence/selection, app reconciliation callbacks, multi-device lifecycle
 and the release/device acceptance work remain outstanding.
+
+### Durable explicit relay choice
+
+`configuration.mjs` adds an identity-bound IndexedDB preference under
+`along-relay-configuration-v1`, keyed by established group. There is no default
+endpoint and no network access from reading/saving it. An explicit WSS endpoint
+and enabled flag are distinct from membership and journey-sharing consent. Save
+checks the actual installed identity and all observed authority revisions in its
+transaction. Removal writes a revision-preserving tombstone; a stale form cannot
+silently restore an earlier enabled choice. Invalid stored data refuses rather
+than selecting a fallback service. Credentials/query/fragment URLs are refused.
+
+`STORED_IDENTITY=1` now also verifies explicit save, stale form refusal, removal,
+stale re-enable refusal, credential-query refusal and an identity revision change
+immediately before commit. A disabled endpoint survives a fresh page. This is
+storage coverage, not a rendered Settings test; configuration is not yet mounted.
+
+App integration uncovered a peer-discovery prerequisite: saved journey permissions
+contain member IDs, but the other device's certificate is not consistently retained
+by earlier manual connections. Relay discovery must authenticate that certificate
+against the established group and existing permissions before starting a session.
+Do not manufacture certificates, turn a relay roster into membership, or make users
+repeat enrollment merely to select a relay. Settings and discovery remain pending.

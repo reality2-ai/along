@@ -1447,3 +1447,26 @@ does not establish installed-app update behavior. A useful course exercise is to
 ask students which claims each level supports: model merge, durable storage,
 authenticated transport, full interaction, old-version migration and physical
 installation. Passing one level must not silently stand in for the others.
+
+### Relay exception and the failed QR check
+
+The user explicitly allowed an optional, user-selected relay after automatic
+reconnection was explained as requiring device discovery. This refines the earlier
+server-independence requirement: planning and direct AT access remain independent,
+while optional synchronization may contact a selected intermediary. Code this as
+*negotiated architectural constraint*, not abandonment of offline-first operation.
+The choice must remain visible and reversible on the device.
+
+The user also reported repeated timeouts, clarifying that scanning a QR code and
+choosing Use produced no visible progress. Code this as *unclear action outcome*
+and *physical-test contradiction*. It does not identify the failing protocol step
+or prove a network cause. The implementation response added directional pairing
+instructions and failure-stage feedback, then developed relay reconnection tests.
+The local tests exposed a separate teardown defect, which was reproduced and
+fixed; that fix must not be presented as a diagnosis of the user's S23 timeout.
+
+For the course, distinguish three evidence levels: controlled message delivery,
+real local WSS with synthetic identities, and enrolled identities/permissions with
+WSS and durable journey receipts. None establishes external-relay compatibility,
+physical-device usability or deployed availability. These implementation results
+extend the evidence trail; they are not additional user interview observations.

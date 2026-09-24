@@ -18,7 +18,7 @@ try {
     for (const name of ['storage.mjs','membership.mjs','certificate.mjs']) modules.set('/tg-pairing/'+name,await readFile(join(process.env.R2_BROWSER_DIR,name)));
     for (const name of ['software-persona.mjs','local-persona.mjs']) modules.set('/tg-pairing/'+name,await readFile(new URL('../tg-pairing/'+name,import.meta.url)));
     for (const name of ['hive_wasm.js','hive_wasm_bg.wasm']) modules.set('/'+name,await readFile(join(process.env.R2_WASM_DIR,name)));
-    for (const name of ['hello.mjs','local-hello.mjs','stored-identity-check.mjs']) modules.set('/relay/'+name,await readFile(new URL(name,import.meta.url)));
+    for (const name of ['hello.mjs','local-hello.mjs','stored-identity-check.mjs','configuration.mjs','configuration-check.mjs','transport.mjs']) modules.set('/relay/'+name,await readFile(new URL(name,import.meta.url)));
   }
   server=createServer({key:await readFile(join(dir,'key')),cert:await readFile(join(dir,'cert'))},(req,res)=>{
     res.setHeader('Content-Type',req.url.endsWith('.wasm')?'application/wasm':modules.has(req.url)?'text/javascript':'text/html');res.end(modules.get(req.url)||'<!doctype html><title>Relay test</title>');
@@ -76,6 +76,14 @@ try {
       await checkStoredHello();return hello.device_id;
     });
     assert.equal(restored,first);
+    await page.reload();
+    const preference=await page.evaluate(async member=>{
+      const store=await (await import('./tg-pairing/storage.mjs')).openBrowserStorage('relay-stored-identity');
+      try{const record=await store.read('candidate-persona','active');return await (await import('./relay/configuration.mjs')).readRelayConfiguration({store,expectedGroup:record.value.record.group,member});}
+      finally{store.close();}
+    },first);
+    assert.equal(preference.url,'wss://relay.example/r2');assert.equal(preference.enabled,false);assert.ok(preference.revision>0);
+    console.log('PASS: explicit relay preference, stale-form/removal and identity-race guards; disabled selection survives a fresh page.');
     console.log('PASS: real IndexedDB identity signs WSS greetings and survives reload; identity revision races, cancellation and signed local revocation refuse.');
   }
   if(process.env.PEER_HANDSHAKE==='1'){server.forwardPeers=true;await (await import('./peer-network-check.mjs')).checkPeerNetwork({browser,dropPeer:member=>{for(const socket of wss.clients)if(socket.routingMember===member)socket.close(1012,'Test peer reconnect');},url:`https://127.0.0.1:${server.address().port}/`});}

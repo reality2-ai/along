@@ -29,6 +29,7 @@ export async function checkStoredHello() {
   }};
   check(await denied(()=>createLocalRelayHello({wasm,store:racing,expectedGroup:group})) && changed,'changed identity refuses held greeting');
   check(JSON.parse(await createLocalRelayHello({wasm,store,expectedGroup:group})).device_id===localRelayIdentity,'fresh reload of same identity');
+  await (await import('./configuration-check.mjs')).checkRelayConfiguration({wasm,store,group,member:localRelayIdentity});
   const originalVerify=crypto.subtle.verify;let verifications=0,lateChanged=false;
   crypto.subtle.verify=async function(...args){
     const result=await originalVerify.apply(this,args);
