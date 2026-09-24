@@ -5,15 +5,15 @@ export async function checkAppRotation({owner, recipient, move, atBinding = true
     await page.evaluate(name => { window.testDeviceDatabase = name; }, databaseName);
   }
   const state = page => page.evaluate(async ({atBinding, expectRenewal}) => {
-    const wasm = await import('../experiments/tg-pairing/hive_wasm.js'); await wasm.default();
-    const store = await (await import('../experiments/tg-pairing/storage.mjs')).openBrowserStorage(window.testDeviceDatabase);
+    const wasm = await import((window.testExperimentBase ?? '../experiments/') + 'tg-pairing/hive_wasm.js'); await wasm.default();
+    const store = await (await import((window.testExperimentBase ?? '../experiments/') + 'tg-pairing/storage.mjs')).openBrowserStorage(window.testDeviceDatabase);
     try {
       const persona = (await store.read('candidate-persona', 'active')).value;
       const group = Array.from(persona.record.group, b => b.toString(16).padStart(2, '0')).join('');
       const common = {member: Array.from(persona.record.subject, b => b.toString(16).padStart(2, '0')).join(''), epoch: String(persona.epoch),
         journeyPermission: await store.read('along-journey-sharing-v1', group)};
       if (!atBinding) return common;
-      const readers = await import('../experiments/at-credentials/local-owner.mjs');
+      const readers = await import((window.testExperimentBase ?? '../experiments/') + 'at-credentials/local-owner.mjs');
       const {binding} = await (expectRenewal ? readers.loadATBinding : readers.loadATConnectionBinding)({wasm, store, expectedGroup: persona.record.group});
       const key = binding.group + ':' + binding.credential;
       const policy = await store.read('along-at-policy:' + binding.owner, key);
@@ -51,7 +51,7 @@ export async function checkAppRotation({owner, recipient, move, atBinding = true
   await recipient.getByRole('heading', {name: 'Group keys saved on this device', exact: true}).waitFor();
   // Wait for the actual Settings renewal callback, without invoking it in the test.
   if (atBinding && expectRenewal) await recipient.waitForFunction(async () => {
-    const store = await (await import('../experiments/tg-pairing/storage.mjs')).openBrowserStorage(window.testDeviceDatabase);
+    const store = await (await import((window.testExperimentBase ?? '../experiments/') + 'tg-pairing/storage.mjs')).openBrowserStorage(window.testDeviceDatabase);
     try {
       const persona = (await store.read('candidate-persona', 'active')).value;
       const group = Array.from(persona.record.group, b => b.toString(16).padStart(2, '0')).join('');
@@ -60,11 +60,11 @@ export async function checkAppRotation({owner, recipient, move, atBinding = true
     } finally { store.close(); }
   });
   if (atBinding && !expectRenewal) assert.equal(await owner.evaluate(async () => {
-    const wasm = await import('../experiments/tg-pairing/hive_wasm.js'); await wasm.default();
-    const store = await (await import('../experiments/tg-pairing/storage.mjs')).openBrowserStorage(window.testDeviceDatabase);
+    const wasm = await import((window.testExperimentBase ?? '../experiments/') + 'tg-pairing/hive_wasm.js'); await wasm.default();
+    const store = await (await import((window.testExperimentBase ?? '../experiments/') + 'tg-pairing/storage.mjs')).openBrowserStorage(window.testDeviceDatabase);
     try {
       const group = (await store.read('candidate-persona', 'active')).value.record.group;
-      const readers = await import('../experiments/at-credentials/local-owner.mjs');
+      const readers = await import((window.testExperimentBase ?? '../experiments/') + 'at-credentials/local-owner.mjs');
       const options = {wasm, store, expectedGroup: group};
       return (await readers.loadATConnectionBinding(options)).status === 'at-owner-renewal-needed'
         && !await readers.loadATBinding(options).then(() => true, () => false);

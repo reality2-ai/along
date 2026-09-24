@@ -28,6 +28,26 @@ writes are safe. The connected installation guide now describes personal AT keys
 sharing and relay privacy; offline rendering fits 320px, passes axe and supports
 keyboard Back. Automated axe results are not spoken screen-reader acceptance.
 
+## Connected-feature checks
+
+[Candidate integration evidence](evidence/regular-candidate-integration.json) now
+records four passing runs against the flattened `/along/` build:
+
+- Personal synthetic AT-key setup, contextual provider reads, offline fallback,
+  real browser Back restoration, optional-runtime timeout and unreadable storage
+  preservation. The provider is intercepted; this is not a live AT availability check.
+- Relay Settings against the actual R2 relay on loopback: explicit opt-in, saved
+  reconnection, stop/remove, keyboard operation and recovery pause.
+- Two isolated browser profiles: actual UI enrollment, service-preference sharing,
+  current-journey/focus preservation, group-key update, offline edits, permission
+  removal, device removal and narrow/zoom accessibility.
+- Reviewed checkpoint creation/transfer/application followed by sharing further
+  deletion/re-save changes, while retaining local history and the current journey.
+
+The harness copies public connection messages. This is not physical pairing or
+external relay acceptance. A preview relay test also passes after the harness was
+adapted to support both directory layouts. Published app bytes are unchanged.
+
 ## Reproduce without publishing
 
 ```sh
@@ -47,8 +67,9 @@ files remain ignored under `releases/`.
 
 - Remove candidate-only status text only when release qualification and promotion
   are complete. The connected guide is sourced from `CONNECTED_INSTALL.md`.
-- Run the full live/TG, recovery, accessibility and offline-planning checks against
-  the flattened candidate. This test covers upgrade/setup, not every feature.
+- Complete remaining regular-candidate coverage, including shared AT-key
+  delivery/replacement and interrupted older-copy recovery. The four connected
+  feature runs above supplement upgrade/setup, but do not cover every path.
 - Check existing-device cases and shared-generation old-tab behavior where
   applicable. The local pre-sharing old-tab and failed-update checks above pass;
   preview migration evidence is not proof of every regular-app upgrade.

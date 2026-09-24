@@ -3,7 +3,7 @@ import {expect} from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 export async function checkCheckpointApp({pages,owner,candidate,share,closeSharing,reviewPlaces,move}){
   const local=page=>page.evaluate(async()=>{
-    const {readEnvelope}=await import('../experiments/journey-sync/app-preferences.mjs');
+    const {readEnvelope}=await import((window.testExperimentBase ?? '../experiments/') + 'journey-sync/app-preferences.mjs');
     const value=readEnvelope();return {generation:value.sync?.version?.generation??0,journeys:value.data.journeys};
   });
   const before=await Promise.all(pages.map(local));

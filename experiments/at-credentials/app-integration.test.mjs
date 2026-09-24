@@ -8,16 +8,19 @@ import {readFile} from 'node:fs/promises';
 import {join, extname} from 'node:path';
 const {chromium, expect} = await import(process.env.PLAYWRIGHT_MODULE || '@playwright/test');
 const preview = process.env.PREVIEW === '1';
-const root = new URL(preview ? '../../releases/along-device-preview/' : '../../releases/along-experimental-app/', import.meta.url).pathname;
+const regularCandidate = process.env.REGULAR_CANDIDATE === '1';
+assert.ok(!(preview && regularCandidate), 'Select one build profile');
+const root = new URL(regularCandidate ? '../../releases/along-regular-upgrade-candidate/' : preview ? '../../releases/along-device-preview/' : '../../releases/along-experimental-app/', import.meta.url).pathname;
 const manifest = JSON.parse(await readFile(join(root, 'build-info.json'), 'utf8'));
-assert.equal(manifest.profile, preview ? 'along-device-preview-v1' : 'along-experimental-app-v1');
+assert.equal(manifest.profile, regularCandidate ? 'along-regular-upgrade-candidate-v1' : preview ? 'along-device-preview-v1' : 'along-experimental-app-v1');
 const deviceDatabase = manifest.namespaces?.devices ?? 'along-pairing-lab-v1';
 assert.equal(Object.keys(manifest.files).some(name => /APIKey|\.test\./.test(name)), false);
 const sources = new Map(await Promise.all(Object.entries(manifest.files).map(async ([name, hash]) => {
   const bytes = await readFile(join(root, name));
   assert.equal(createHash('sha256').update(bytes).digest('hex'), hash); return [name, bytes];
 })));
-const prefix = '/along-exp/';
+const prefix = regularCandidate ? '/along/' : '/along-exp/';
+const appPath = regularCandidate ? '' : 'public/';
 const server = createServer((req, res) => {
   const path = new URL(req.url, 'http://localhost').pathname;
   const name = path.startsWith(prefix) ? path.slice(prefix.length) + (path.endsWith('/') ? 'index.html' : '') : '';
@@ -34,7 +37,7 @@ try {
   const context = await browser.newContext({viewport: {width: 1280, height: 900}});
   const origin = `http://127.0.0.1:${server.address().port}${prefix}`;
   const page = await context.newPage(), errors = [], requests = [];
-  await page.addInitScript(name => { window.testDeviceDatabase = name; }, deviceDatabase);
+  await page.addInitScript(({name,base}) => { window.testDeviceDatabase = name; window.testExperimentBase = base; }, {name:deviceDatabase,base:origin+'experiments/'});
   let offlineMode = false, offlineAttempts = 0;
   page.on('pageerror', error => errors.push(error.message));
   await context.route('https://api.at.govt.nz/**', async route => {
@@ -45,11 +48,11 @@ try {
     requests.push(new URL(request.url()).pathname);
     await route.fulfill({status: 200, contentType: 'application/json', body: JSON.stringify({header: {timestamp: Math.floor(Date.now()/1000)}, entity: []})});
   });
-  await page.goto(origin + 'public/');
+  await page.goto(origin + appPath);
   await expect(page.locator('#data-status')).toContainText('offline ready', {timeout: 90000});
   await page.locator('#destination').fill('10 Victoria Road');
   await page.locator('#settings-open').click();
-  if (preview) {
+  if (preview || regularCandidate) {
     await expect(page.locator('#settings')).toContainText('saved places and service preferences can be exchanged');
     await expect(page.locator('#settings')).toContainText('directly from AT');
     await expect(page.locator('#clear-history')).toHaveText('Forget history and saved places');
@@ -71,7 +74,7 @@ try {
     await page.getByRole('status').filter({hasText: 'No issued device certificates'}).waitFor();
     await page.getByRole('button', {name: 'Back', exact: true}).click();
     await page.evaluate(async () => {
-      const store = await (await import('../experiments/tg-pairing/storage.mjs')).openBrowserStorage(window.testDeviceDatabase);
+      const store = await (await import((window.testExperimentBase ?? '../experiments/') + 'tg-pairing/storage.mjs')).openBrowserStorage(window.testDeviceDatabase);
       try {
         const persona = await store.read('candidate-persona', 'active');
         const group = Array.from(persona.value.record.group, b => b.toString(16).padStart(2, '0')).join('');
@@ -109,7 +112,7 @@ try {
     await page.getByRole('status').filter({hasText: 'uses key version 1'}).waitFor();
     await page.getByRole('button', {name: 'Back', exact: true}).click();
     await page.evaluate(async () => {
-      const store = await (await import('../experiments/tg-pairing/storage.mjs')).openBrowserStorage(window.testDeviceDatabase);
+      const store = await (await import((window.testExperimentBase ?? '../experiments/') + 'tg-pairing/storage.mjs')).openBrowserStorage(window.testDeviceDatabase);
       try {
         const persona = await store.read('candidate-persona', 'active');
         const group = Array.from(persona.value.record.group, b => b.toString(16).padStart(2, '0')).join('');
@@ -186,17 +189,17 @@ try {
   await expect(page.locator('#journey-live')).toBeVisible();
   // A settings connection change updates this selected journey without a new search.
   await page.evaluate(async () => {
-    const bridge = await import('../experiments/at-credentials/app-live-bridge.mjs');
+    const bridge = await import((window.testExperimentBase ?? '../experiments/') + 'at-credentials/app-live-bridge.mjs');
     window.restoreTestConnection = bridge.configureAppLiveConnection;
     bridge.configureAppLiveConnection(undefined);
   });
   await expect(page.locator('#journey-live')).toBeHidden();
   await page.evaluate(async () => {
-    const wasm = await import('../experiments/tg-pairing/hive_wasm.js');
-    const {openBrowserStorage} = await import('../experiments/tg-pairing/storage.mjs');
+    const wasm = await import((window.testExperimentBase ?? '../experiments/') + 'tg-pairing/hive_wasm.js');
+    const {openBrowserStorage} = await import((window.testExperimentBase ?? '../experiments/') + 'tg-pairing/storage.mjs');
     const store = await openBrowserStorage(window.testDeviceDatabase);
     const saved = await store.read('candidate-persona', 'active');
-    const {createSavedATClient} = await import('../experiments/at-credentials/saved-client.mjs');
+    const {createSavedATClient} = await import((window.testExperimentBase ?? '../experiments/') + 'at-credentials/saved-client.mjs');
     window.testLiveStore = store;
     window.restoreTestConnection(() => createSavedATClient({wasm, store, expectedGroup: saved.value.record.group}));
   });
@@ -210,11 +213,11 @@ try {
   // Deterministic lifecycle checks, explicitly distinct from a real cache restore.
   for (let cycle = 0; cycle < 2; cycle++) {
     await page.evaluate(() => window.dispatchEvent(new PageTransitionEvent('pagehide', {persisted: true})));
-    assert.equal(await page.evaluate(async () => (await import('../experiments/at-credentials/app-live-bridge.mjs')).createLiveClient().configured), false);
+    assert.equal(await page.evaluate(async () => (await import((window.testExperimentBase ?? '../experiments/') + 'at-credentials/app-live-bridge.mjs')).createLiveClient().configured), false);
     assert.equal(await page.getByRole('button', {name: 'Device and AT-key setup', exact: true, includeHidden: true}).count(), 0);
     await page.evaluate(async () => {
       window.dispatchEvent(new PageTransitionEvent('pageshow', {persisted: true}));
-      await (await import('../experiments/at-credentials/app-bootstrap.mjs')).restoration;
+      await (await import((window.testExperimentBase ?? '../experiments/') + 'at-credentials/app-bootstrap.mjs')).restoration;
       window.dispatchEvent(new PageTransitionEvent('pageshow', {persisted: true}));
     });
     assert.equal(await page.getByRole('button', {name: 'Device and AT-key setup', exact: true, includeHidden: true}).count(), 1);
@@ -228,14 +231,14 @@ try {
       window.addEventListener('pageshow', event => { window.cachedReturn = event.persisted; });
       return window.returnToken;
     });
-    await page.goto(origin + 'public/install.html');
+    await page.goto(origin + appPath + 'install.html');
     await page.goBack({waitUntil: 'commit'});
     await page.waitForFunction(() => window.cachedReturn === true || !window.returnToken);
     const returned = await page.evaluate(() => ({token: window.returnToken, persisted: window.cachedReturn,
       reasons: performance.getEntriesByType('navigation')[0]?.notRestoredReasons?.toJSON()}));
     assert.equal(returned.token, token, JSON.stringify(returned));
     assert.equal(returned.persisted, true, JSON.stringify(returned));
-    await page.evaluate(async () => { await (await import('../experiments/at-credentials/app-bootstrap.mjs')).restoration; });
+    await page.evaluate(async () => { await (await import((window.testExperimentBase ?? '../experiments/') + 'at-credentials/app-bootstrap.mjs')).restoration; });
     await expect(page.locator('#journey-live')).toBeVisible();
     assert.equal(await page.locator('#current-step').textContent(), selectedStep);
     await page.locator('#settings-open').click();
@@ -264,10 +267,10 @@ try {
   assert.equal(requests.length, 2);
   // Optional WASM can stall even with a saved identity. Planning must start,
   // and a late runtime result must not silently enable live access afterwards.
-  if (preview) {
-    await page.goto(origin + 'public/install.html');
-    await expect(page.getByRole('heading', {level: 1})).toHaveText('Install Along Device Preview');
-    await expect(page.locator('main')).toContainText('not a security boundary');
+  if (preview || regularCandidate) {
+    await page.goto(origin + appPath + 'install.html');
+    await expect(page.getByRole('heading', {level: 1})).toHaveText(regularCandidate ? 'Install Along and use it offline' : 'Install Along Device Preview');
+    await expect(page.locator('main')).toContainText(regularCandidate ? 'not hardware-backed' : 'not a security boundary');
     await expect(page.locator('main')).toContainText('No Along server stores');
     await page.getByText('Chrome — Android phone or tablet', {exact: true}).click();
     await page.setViewportSize({width: 320, height: 640});
@@ -275,7 +278,7 @@ try {
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     assert.deepEqual((await new AxeBuilder({page}).analyze()).violations.map(v => v.id), []);
     await page.setViewportSize({width: 1280, height: 900});
-    await page.goto(origin + 'public/');
+    await page.goto(origin + appPath);
   }
   await context.setOffline(false); offlineMode = false;
   await page.addInitScript(() => {
@@ -296,7 +299,7 @@ try {
     'Settings handlers must be ready without waiting for optional WASM');
   await expect(page.locator('#data-status')).toContainText('offline ready', {timeout: 15000});
   assert.equal(await page.evaluate(() => typeof releaseOptionalRuntime), 'function');
-  assert.equal(await page.evaluate(async () => (await import('../experiments/at-credentials/app-live-bridge.mjs')).createLiveClient().configured), false);
+  assert.equal(await page.evaluate(async () => (await import((window.testExperimentBase ?? '../experiments/') + 'at-credentials/app-live-bridge.mjs')).createLiveClient().configured), false);
   await choose('destination', '10 Victoria Road Devonport'); await page.locator('#destination-next').click();
   await choose('origin', '277 Broadway Newmarket'); await page.locator('#origin-next').click();
   await page.locator('#journey-preferences > summary').click();
@@ -304,11 +307,11 @@ try {
   await expect(page.locator('.journey-card').first()).toContainText('Ferry', {timeout: 30000});
   await page.locator('[data-follow]').first().click();
   await expect(page.locator('#journey-live')).toBeHidden();
-  await page.evaluate(async () => { releaseOptionalRuntime(); await (await import('../experiments/at-credentials/app-bootstrap.mjs')).restoration; });
-  assert.equal(await page.evaluate(async () => (await import('../experiments/at-credentials/app-live-bridge.mjs')).createLiveClient().configured), false);
+  await page.evaluate(async () => { releaseOptionalRuntime(); await (await import((window.testExperimentBase ?? '../experiments/') + 'at-credentials/app-bootstrap.mjs')).restoration; });
+  assert.equal(await page.evaluate(async () => (await import((window.testExperimentBase ?? '../experiments/') + 'at-credentials/app-live-bridge.mjs')).createLiveClient().configured), false);
   assert.equal(requests.length, 2);
   // A newer, unreadable lab schema must not be reset or hold up the planner.
-  await page.goto(origin + 'public/install.html');
+  await page.goto(origin + appPath + 'install.html');
   const futureCount = await page.evaluate(() => new Promise((resolve, reject) => {
     const request = indexedDB.open('r2-browser:' + window.testDeviceDatabase, 2);
     request.onerror = () => reject(request.error);
@@ -328,10 +331,10 @@ try {
       };
     }
   });
-  await page.goto(origin + 'public/');
+  await page.goto(origin + appPath);
   await expect(page.locator('#data-status')).toContainText('offline ready', {timeout: 15000});
   assert.equal(await page.evaluate(() => r2WriteAttempts), 0);
-  assert.equal(await page.evaluate(async () => (await import('../experiments/at-credentials/app-live-bridge.mjs')).createLiveClient().configured), false);
+  assert.equal(await page.evaluate(async () => (await import((window.testExperimentBase ?? '../experiments/') + 'at-credentials/app-live-bridge.mjs')).createLiveClient().configured), false);
   assert.deepEqual(await page.evaluate(() => new Promise((resolve, reject) => {
     const request = indexedDB.open('r2-browser:' + window.testDeviceDatabase);
     request.onerror = () => reject(request.error);

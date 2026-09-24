@@ -6,13 +6,16 @@ import {readFile} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import {extname} from 'node:path';
 const {chromium, expect} = await import('@playwright/test');
-const root = new URL(process.env.PREVIEW==='1'?'../../releases/along-device-preview/':'../../releases/along-experimental-app/', import.meta.url);
+const regularCandidate=process.env.REGULAR_CANDIDATE==='1';
+assert.ok(!(regularCandidate&&process.env.PREVIEW==='1'));
+const prefix=regularCandidate?'/along/':'/';
+const root = new URL(regularCandidate?'../../releases/along-regular-upgrade-candidate/':process.env.PREVIEW==='1'?'../../releases/along-device-preview/':'../../releases/along-experimental-app/', import.meta.url);
 const manifest = JSON.parse(await readFile(new URL('build-info.json', root)));
-assert.equal(manifest.profile, process.env.PREVIEW==='1'?'along-device-preview-v1':'along-experimental-app-v1');
+assert.equal(manifest.profile, regularCandidate?'along-regular-upgrade-candidate-v1':process.env.PREVIEW==='1'?'along-device-preview-v1':'along-experimental-app-v1');
 const sources = new Map();
 for (const [path, hash] of Object.entries(manifest.files)) {
   const bytes = await readFile(new URL(path, root));
-  assert.equal(createHash('sha256').update(bytes).digest('hex'), hash); sources.set('/' + path, bytes);
+  assert.equal(createHash('sha256').update(bytes).digest('hex'), hash); sources.set(prefix + path, bytes);
 }
 const relay=await createLocalTestRelay((req,res)=>{
   const name=req.url.endsWith('/')?req.url+'index.html':req.url,body=sources.get(name);
@@ -23,14 +26,14 @@ let browser;
 try{
   browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_PATH});
   const context=await browser.newContext({ignoreHTTPSErrors:true,viewport:{width:360,height:780}}),page=await context.newPage();
-  await page.addInitScript(name=>{window.testDeviceStore=name;},manifest.namespaces?.devices||'along-pairing-lab-v1');
+  await page.addInitScript(({name,base})=>{window.testDeviceStore=name;window.testExperimentBase=base;},{name:manifest.namespaces?.devices||'along-pairing-lab-v1',base:prefix+'experiments/'});
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
   const origin=`https://127.0.0.1:${relay.server.address().port}`,endpoint=origin.replace('https:','wss:')+'/r2';
-  await page.goto(origin+'/public/');
+  await page.goto(origin+prefix+(regularCandidate?'':'public/'));
   await page.evaluate(async()=>{
-    const wasm=await import('/experiments/tg-pairing/hive_wasm.js');await wasm.default();
-    const store=await(await import('/experiments/tg-pairing/storage.mjs')).openBrowserStorage(window.testDeviceStore);
-    try{await(await import('/experiments/tg-pairing/software-persona.mjs')).initializeSoftwarePersona({wasm,store});}finally{store.close();}
+    const wasm=await import(window.testExperimentBase+'tg-pairing/hive_wasm.js');await wasm.default();
+    const store=await(await import(window.testExperimentBase+'tg-pairing/storage.mjs')).openBrowserStorage(window.testDeviceStore);
+    try{await(await import(window.testExperimentBase+'tg-pairing/software-persona.mjs')).initializeSoftwarePersona({wasm,store});}finally{store.close();}
   });
   await page.reload();
   const home=async()=>{await page.locator('#settings-open').click();await page.getByRole('button',{name:'Share saved journeys with my devices',exact:true}).click();};
@@ -58,15 +61,15 @@ try{
   // A pending generation migration must prevent startup reconnection, even
   // with explicit saved relay opt-in. Records below model interrupted setup.
   await page.evaluate(async()=>{
-    const wasm=await import('/experiments/tg-pairing/hive_wasm.js');
-    const store=await(await import('/experiments/tg-pairing/storage.mjs')).openBrowserStorage(window.testDeviceStore);
+    const wasm=await import(window.testExperimentBase+'tg-pairing/hive_wasm.js');
+    const store=await(await import(window.testExperimentBase+'tg-pairing/storage.mjs')).openBrowserStorage(window.testDeviceStore);
     try{
       const persona=await store.read('candidate-persona','active');
       const expectedGroup=persona.value.record.group;
-      const identity=await(await import('/experiments/tg-pairing/local-persona.mjs')).loadLocalPersona({wasm,store,expectedGroup});
+      const identity=await(await import(window.testExperimentBase+'tg-pairing/local-persona.mjs')).loadLocalPersona({wasm,store,expectedGroup});
       const group=Array.from(expectedGroup,b=>b.toString(16).padStart(2,'0')).join('');
       const old=await store.read('along-saved-journeys-v1',group);
-      const sourceState=old?.value||(await import('/experiments/journey-sync/state.mjs')).emptyState(group);
+      const sourceState=old?.value||(await import(window.testExperimentBase+'journey-sync/state.mjs')).emptyState(group);
       await store.compareAndSwapMany([
         {scope:'along-saved-journeys-v1',key:group,expectedRevision:old?.revision??0,value:{format:2,profile:'along-journey-generation-migration-v1',group}},
         {scope:'along-saved-journeys-v2',key:group,expectedRevision:0,value:{...sourceState,format:2,generation:0,checkpoint:'0'.repeat(64)}},

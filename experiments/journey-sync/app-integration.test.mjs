@@ -11,11 +11,14 @@ import {join, extname} from 'node:path';
 const {chromium, expect} = await import(process.env.PLAYWRIGHT_MODULE || '@playwright/test');
 const mainSetup = true;
 const preview = process.env.PREVIEW === '1';
+const regularCandidate=process.env.REGULAR_CANDIDATE==='1';
+assert.ok(!(regularCandidate&&preview));
+const appPath=regularCandidate?'':'public/';
 const legacyEnrollment = process.env.LEGACY_ENROLLMENT === '1';
 assert.ok(!legacyEnrollment || preview, 'Legacy upgrade uses the preview storage profile');
-const root = new URL(preview ? '../../releases/along-device-preview/' : '../../releases/along-experimental-app/', import.meta.url).pathname;
+const root = new URL(regularCandidate ? '../../releases/along-regular-upgrade-candidate/' : preview ? '../../releases/along-device-preview/' : '../../releases/along-experimental-app/', import.meta.url).pathname;
 const manifest = JSON.parse(await readFile(join(root, 'build-info.json'), 'utf8'));
-assert.equal(manifest.profile, preview ? 'along-device-preview-v1' : 'along-experimental-app-v1');
+assert.equal(manifest.profile, regularCandidate ? 'along-regular-upgrade-candidate-v1' : preview ? 'along-device-preview-v1' : 'along-experimental-app-v1');
 const namespaces = manifest.namespaces ?? {preferences: 'along-journeys-v1', devices: 'along-pairing-lab-v1'};
 assert.equal(Object.keys(manifest.files).some(name => /APIKey|\.test\./.test(name)), false);
 const sources = new Map(await Promise.all(Object.entries(manifest.files).map(async ([name, hash]) => {
@@ -33,7 +36,7 @@ if (legacyEnrollment) {
     assert.equal(createHash('sha256').update(body).digest('hex'), hash); return [name, body];
   })));
 }
-const prefix = '/along-exp/';
+const prefix = regularCandidate ? '/along/' : '/along-exp/';
 const server = createServer((req, res) => {
   const path = new URL(req.url, 'http://localhost').pathname;
   const name = path.startsWith(prefix) ? path.slice(prefix.length) + (path.endsWith('/') ? 'index.html' : '') : '';
@@ -63,7 +66,8 @@ try {
     } else await page.getByRole('button', {name: 'Restore saved test device', exact: true}).click();
   };
   await Promise.all(pages.map(async (page, index) => {
-    await page.goto(origin + (mainSetup ? 'public/' : 'experiments/'));
+    await page.addInitScript(base=>{window.testExperimentBase=base;},origin+'experiments/');
+    await page.goto(origin + (mainSetup ? appPath : 'experiments/'));
     if (mainSetup) {
       await page.locator('#settings-open').click();
       await page.getByRole('button', {name: 'Device and AT-key setup', exact: true}).click();
@@ -103,7 +107,7 @@ try {
 
   if (legacyEnrollment) {
     const identityState = page => page.evaluate(async name => {
-      const store = await (await import('../experiments/tg-pairing/storage.mjs')).openBrowserStorage(name);
+      const store = await (await import((window.testExperimentBase ?? '../experiments/') + 'tg-pairing/storage.mjs')).openBrowserStorage(name);
       const hex = bytes => bytes && Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('');
       try {
         const persona = await store.read('candidate-persona', 'active'), group = hex(persona.value.record.group);
@@ -117,7 +121,7 @@ try {
     assert.ok(old.every(value => value.directory === null));
     serving = sources;
     for (const page of pages) {
-      await page.goto(origin + 'public/update.html');
+      await page.goto(origin + appPath + 'update.html');
       await page.locator('#recover-update').click();
       await expect(page.locator('#recovery-status')).toContainText(manifest.appVersion, {timeout: 60000});
       await page.locator('#recover-update').click();
@@ -125,9 +129,9 @@ try {
     }
     assert.deepEqual(await Promise.all(pages.map(identityState)), old, 'upgrade does not recreate identities, traffic material or issuer custody');
     await owner.evaluate(async databaseName => {
-      const wasm = await import('../experiments/tg-pairing/hive_wasm.js'); await wasm.default();
-      const store = await (await import('../experiments/tg-pairing/storage.mjs')).openBrowserStorage(databaseName);
-      const {restoreIssuedMembers} = await import('../experiments/tg-pairing/legacy-members.mjs');
+      const wasm = await import((window.testExperimentBase ?? '../experiments/') + 'tg-pairing/hive_wasm.js'); await wasm.default();
+      const store = await (await import((window.testExperimentBase ?? '../experiments/') + 'tg-pairing/storage.mjs')).openBrowserStorage(databaseName);
+      const {restoreIssuedMembers} = await import((window.testExperimentBase ?? '../experiments/') + 'tg-pairing/legacy-members.mjs');
       const hex = bytes => Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('');
       try {
         const group = (await store.read('candidate-persona', 'active')).value.record.group, groupId = hex(group);
@@ -228,13 +232,13 @@ try {
   // Each device holds a different authentic removal for an unrelated synthetic
   // subject. Connection must merge both sets before handing off journey data.
   const removalMessages = await owner.evaluate(async database => {
-    const wasm = await import('../experiments/tg-pairing/hive_wasm.js'); await wasm.default();
-    const store = await (await import('../experiments/tg-pairing/storage.mjs')).openBrowserStorage(database);
+    const wasm = await import((window.testExperimentBase ?? '../experiments/') + 'tg-pairing/hive_wasm.js'); await wasm.default();
+    const store = await (await import((window.testExperimentBase ?? '../experiments/') + 'tg-pairing/storage.mjs')).openBrowserStorage(database);
     let issuer;
     try {
       const group = (await store.read('candidate-persona', 'active')).value.record.group;
-      issuer = await (await import('../experiments/tg-pairing/software-persona.mjs')).loadSoftwareIssuer({wasm, store, expectedGroup: group});
-      const {encodeRemoval, receiveRemoval} = await import('../experiments/tg-pairing/removal-message.mjs');
+      issuer = await (await import((window.testExperimentBase ?? '../experiments/') + 'tg-pairing/software-persona.mjs')).loadSoftwareIssuer({wasm, store, expectedGroup: group});
+      const {encodeRemoval, receiveRemoval} = await import((window.testExperimentBase ?? '../experiments/') + 'tg-pairing/removal-message.mjs');
       const messages = [];
       for (const sequence of [1n, 2n]) messages.push(encodeRemoval(group, await issuer.issueRevocation({subject: crypto.getRandomValues(new Uint8Array(32)), sequence, reason: 0})));
       await receiveRemoval({wasm, store, expectedGroup: group, text: messages[0]});
@@ -242,16 +246,16 @@ try {
     } finally { issuer?.close(); store.close(); }
   }, namespaces.devices);
   await candidate.evaluate(async ({database, text}) => {
-    const wasm = await import('../experiments/tg-pairing/hive_wasm.js'); await wasm.default();
-    const store = await (await import('../experiments/tg-pairing/storage.mjs')).openBrowserStorage(database);
+    const wasm = await import((window.testExperimentBase ?? '../experiments/') + 'tg-pairing/hive_wasm.js'); await wasm.default();
+    const store = await (await import((window.testExperimentBase ?? '../experiments/') + 'tg-pairing/storage.mjs')).openBrowserStorage(database);
     try {
       const group = (await store.read('candidate-persona', 'active')).value.record.group;
-      await (await import('../experiments/tg-pairing/removal-message.mjs')).receiveRemoval({wasm, store, expectedGroup: group, text});
+      await (await import((window.testExperimentBase ?? '../experiments/') + 'tg-pairing/removal-message.mjs')).receiveRemoval({wasm, store, expectedGroup: group, text});
     } finally { store.close(); }
   }, {database: namespaces.devices, text: removalMessages[1]});
   await connectJourneys();
   for (const page of pages) assert.deepEqual(await page.evaluate(async database => {
-    const store = await (await import('../experiments/tg-pairing/storage.mjs')).openBrowserStorage(database);
+    const store = await (await import((window.testExperimentBase ?? '../experiments/') + 'tg-pairing/storage.mjs')).openBrowserStorage(database);
     try {
       const group = (await store.read('candidate-persona', 'active')).value.record.group;
       const key = Array.from(group, byte => byte.toString(16).padStart(2, '0')).join('');
@@ -321,7 +325,7 @@ try {
   await expect(owner.locator('[data-usual]').first()).toBeVisible();
   await expect(owner.locator('#destination')).toBeFocused();
   const stored = page => page.evaluate(async database => {
-    const store = await (await import('../experiments/tg-pairing/storage.mjs')).openBrowserStorage(database);
+    const store = await (await import((window.testExperimentBase ?? '../experiments/') + 'tg-pairing/storage.mjs')).openBrowserStorage(database);
     try {
       const persona = await store.read('candidate-persona', 'active');
       const hex = bytes => Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
@@ -408,7 +412,7 @@ try {
     await owner.reload();
     const beforeCapacity = await stored(owner);
     const queued = await owner.evaluate(async () => {
-      const {readPreferences, writePreferences, readEnvelope} = await import('../experiments/journey-sync/app-preferences.mjs');
+      const {readPreferences, writePreferences, readEnvelope} = await import((window.testExperimentBase ?? '../experiments/') + 'journey-sync/app-preferences.mjs');
       const data = readPreferences(), sample = data.journeys.find(j => j.saved);
       // Boundary fixture uses the production save/journal path; no deletion markers are removed.
       data.journeys = Array.from({length: 257}, (_, n) => ({...sample,
@@ -439,7 +443,7 @@ try {
       const setup = await owner.evaluate(async ({preferences,devices})=>{
         const profile=JSON.parse(localStorage.getItem(preferences+':generation-profile-v1'));
         const data=JSON.parse(profile.currentRaw),group=data.journeySync.group;
-        const store=await (await import('../experiments/tg-pairing/storage.mjs')).openBrowserStorage(devices);
+        const store=await (await import((window.testExperimentBase ?? '../experiments/') + 'tg-pairing/storage.mjs')).openBrowserStorage(devices);
         try {return {source:profile.sourceRaw,current:profile.currentRaw,
           old:(await store.read('along-saved-journeys-v1',group)).value.format,
           generation:(await store.read('along-saved-journeys-v2',group)).value.generation};}

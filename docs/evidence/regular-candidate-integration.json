@@ -1,0 +1,70 @@
+{
+  "date": "2026-09-24T06:56:31.460938+00:00",
+  "status": "passed",
+  "scope": "Generated regular candidate38 served beneath /along/, browser automation on one host. No deployed update or physical acceptance.",
+  "source_base_commit": "697284af7d78239bf290f4f61e605d2affecec86",
+  "candidate_manifest_sha256": "0731cb65ff91985b46f48b5eef3755a3d03d593b8a900a0ac4f24fa34ce69a01",
+  "sources": {
+    "experiments/at-credentials/app-integration.test.mjs": "a58ad08874c5796bda528886fb21dc8d0e771cf3e48aa53455a2b516add19f60",
+    "experiments/at-credentials/rotation-app-check.mjs": "7d16d43e2f09379f8366a9615788ea2e662c28d2e444902fe63744cb38a63733",
+    "experiments/journey-sync/app-integration.test.mjs": "17bb159b89fedcd1efc1fe89d1d78cb0bff284b41f7a47e9b1e4d40639fb69bf",
+    "experiments/journey-sync/checkpoint-app-check.test.mjs": "e4e1734bcf13b0a7b0087357bd7689b78b1d060f4fa821b3ade7d59117e26e30",
+    "experiments/relay/app-settings.test.mjs": "da1e4145f4801bb3f3eedbc0bfae2feaaae2d5e843c28dd13ffbbd524a1c4759"
+  },
+  "runs": {
+    "live": {
+      "status": "passed",
+      "command": "REGULAR_CANDIDATE=1 GROUP_KEYS=1 CHECK_BFCACHE=1 node experiments/at-credentials/app-integration.test.mjs",
+      "log_sha256": "4edf1591da60d60a196d73fe47164b1ce507beec53b364de50800fda14cce763",
+      "output": [
+        "PASS: unreadable AT binding preserves journey-sharing and group-recovery controls before and after reload without resetting saved authority or offering new AT setup.",
+        "PASS: actual app Settings reviews and installs group key version one, then opens the device update picker without claiming peer delivery.",
+        "PASS: actual browser Back restored the same cached document and revived Settings without losing the selected step.",
+        "PASS: unreadable newer lab schema leaves the planner ready and preserves the actual database version and record count.",
+        "PASS: stalled optional WASM cannot block actual bus/ferry planning; late restore cannot enable live access after its startup deadline.",
+        "Offline evidence: {\"uncachedRequestFailed\":true,\"reportedOnline\":true,\"blockedMockProviderAttempts\":2}",
+        "PASS: actual static journey app -> real device/key setup -> address-to-address bus/ferry journey -> explicit direct mocked AT reads using encrypted key; no startup request or displayed key; offline reopen includes experimental runtime and address routing; offline live check falls back quietly without a provider response. Local-only owner-key journey test; Settings setup/reconnect and Back verified; separate two-app test covers shared-device use."
+      ]
+    },
+    "relay": {
+      "status": "passed",
+      "command": "REGULAR_CANDIDATE=1 R2_RELAY_BINARY=<built actual relay> node experiments/relay/app-settings.test.mjs",
+      "log_sha256": "950cc351be1ea125d61fafc79c59a4b1e0000b798f95a332dcf8af11a1a802e4",
+      "output": [
+        "PASS: generated app relay Settings: default off, URL refusal, narrow-screen keyboard enable, real signed local WSS connection, startup restoration, stop persistence, removal, interrupted-recovery pause, Escape/Back and no page errors. No peer enrolled or external relay tested here."
+      ]
+    },
+    "journeys": {
+      "status": "passed",
+      "command": "REGULAR_CANDIDATE=1 ROTATE_GROUP_KEYS=1 node experiments/journey-sync/app-integration.test.mjs",
+      "log_sha256": "cb582bf06dd51959470d760f568b6a2ca1cdff8e1209235c9597031206092dd0",
+      "output": [
+        "PASS: both app Settings rotate and deliver group keys while preserving saved journey permissions across reload.",
+        "PASS: actual Settings enrollment/connection, saved places and service preferences, local history, current-step preservation, focused shortcut preservation and deferred refresh, service-control refresh without route replacement, narrow/zoom accessibility, offline edits and convergence; permission review/removal, retained copies, issued-device selection and offline group removal/reload. Two browser profiles on one host; manual transfer, not physical reachability or automatic discovery."
+      ]
+    },
+    "checkpoint": {
+      "status": "passed",
+      "command": "REGULAR_CANDIDATE=1 CHECKPOINT_APP=1 node experiments/journey-sync/app-integration.test.mjs",
+      "log_sha256": "786afc8bebc5e2385c9c360228957c0478b5c4f859a12a3d98dc112a10ce140c",
+      "output": [
+        "PASS: ongoing generation sharing reconnects through Settings after recovery, carries later deletion/re-save into the other planner, and preserves its current journey.",
+        "PASS: two-profile Settings migration, issuer checkpoint creation, explicit connection and send, authenticated receipt without installation, recipient Back/review/apply, accessibility check and reload preserve saved places, services and local history. Harness copies public signaling; no physical-device claim."
+      ]
+    }
+  },
+  "preview_harness_regression": {
+    "status": "passed",
+    "command": "PREVIEW=1 node experiments/relay/app-settings.test.mjs",
+    "log_sha256": "950cc351be1ea125d61fafc79c59a4b1e0000b798f95a332dcf8af11a1a802e4"
+  },
+  "actual_relay_commit": "b4ae9487bb0b721487b4765b210839c1c7055742",
+  "limits": [
+    "AT responses intercepted, synthetic key only; no current provider reachability claim.",
+    "Pairing/signaling transferred by harness; no camera or S23 network acceptance.",
+    "Relay Settings uses actual loopback relay via temporary test TLS front, one identity and no enrolled peer in that check.",
+    "Offline uncached fetch rejected, while browser reported navigator.onLine true; provider attempts rejected and UI fell back.",
+    "Axe/keyboard/narrow-screen/zoom evidence does not replace spoken TalkBack acceptance.",
+    "Shared AT-key delivery/replacement and interrupted older-copy recovery still need regular-candidate suite coverage."
+  ]
+}
