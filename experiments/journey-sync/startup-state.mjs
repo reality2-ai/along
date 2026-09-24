@@ -66,6 +66,6 @@ export async function readJourneyStartupState({wasm, store, expectedGroup, stora
     if (checked?.member !== identity.member || checked.epoch !== identity.epoch) return unavailable;
     for (const record of observed) if (((await store.read(record.scope, record.key))?.revision ?? 0) !== record.revision) return unavailable;
     if (signal?.aborted || storage.getItem(profileKey) !== profileRaw || storage.getItem(preferenceKey) !== legacyRaw) return unavailable;
-    return result;
+    return {...result, canPrepareCheckpoint: identity.origin === 'initial'};
   } catch { return unavailable; }
 }

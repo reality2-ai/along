@@ -68,36 +68,39 @@ try {
   await expect(page.getByText('Saved-journey migration needs to finish on this device.',{exact:false})).toBeVisible();
   await page.getByRole('button',{name:'Back to settings',exact:true}).click();
   await expect(page.locator('#settings')).toBeVisible();
-  // Prepare a real issuer-signed checkpoint over the fixture generation, then
-  // seed installation records. The UI below uses the actual guarded writer.
+  // The planner's local-only save is a fixture; checkpoint preparation,
+  // installation and choice application below all use the real Settings flow.
   await page.evaluate(async ({group,key}) => {
-    const wasm = await import('/experiments/tg-pairing/hive_wasm.js'); await wasm.default();
-    const store = await (await import('/experiments/tg-pairing/storage.mjs')).openBrowserStorage('along-pairing-lab-v1');
-    try {
-      const bytes = Uint8Array.from(group.match(/../g), n=>parseInt(n,16));
-      const identity = await (await import('/experiments/tg-pairing/local-persona.mjs')).loadLocalPersona({wasm,store,expectedGroup:bytes});
-      const issuer = await (await import('/experiments/tg-pairing/software-persona.mjs')).loadSoftwareIssuer({wasm,store,expectedGroup:bytes});
-      const before = await store.read('along-saved-journeys-v2',group);
-      const prepared = await issuer.prepareJourneyCheckpoint({expectedRevision:before.revision}); issuer.close();
-      const {verifyJourneyCheckpoint} = await import('/experiments/journey-sync/generation-checkpoint.mjs');
-      const next = await verifyJourneyCheckpoint({bytes:prepared.checkpoint,current:before.value,snapshot:prepared.snapshot});
-      const {projectJourney,journeyId} = await import('/experiments/journey-sync/state.mjs');
-      const point = id=>({id,name:id,lat:-36,lon:174});
-      const value = projectJourney({from:point('Home'),to:point('Work'),savedRoutes:[{mode:'bus',route:'75'}]});
-      const raw = JSON.stringify({learning:false,journeys:[{...value,saved:true,count:7,hours:Array(24).fill(0),days:Array(7).fill(0),last:5}],
-        journeySync:{format:1,group,pending:[{id:crypto.randomUUID(),changes:[{id:journeyId(value),value}]}]}});
-      await store.compareAndSwapMany([
-        {scope:'along-saved-journeys-v2',key:group,expectedRevision:before.revision,value:next},
-        {scope:'along-journey-import-v2',key:group,expectedRevision:0,value:{format:2,generation:next.generation,checkpoint:next.checkpoint,operation:null}},
-        {scope:'along-journey-checkpoint-recovery-v1',key:group+':1',expectedRevision:0,value:{format:1,member:identity.member,
-          sourceRevision:before.revision,previous:before.value,localRaw:raw,importReceipt:null,checkpoint:prepared.checkpoint,snapshot:prepared.snapshot}},
-      ]);
-      localStorage.setItem(key,raw);
-      localStorage.setItem(key+':generation-profile-v1',JSON.stringify({format:1,group,sourceRaw:raw,currentRaw:raw}));
-    } finally {store.close();}
+    const {projectJourney} = await import('/experiments/journey-sync/state.mjs');
+    const point = id=>({id,name:id,lat:-36,lon:174});
+    const value = projectJourney({from:point('Home'),to:point('Work'),savedRoutes:[{mode:'bus',route:'75'}]});
+    const raw = JSON.stringify({learning:false,journeys:[{...value,saved:true,count:7,hours:Array(24).fill(0),days:Array(7).fill(0),last:5}],
+      journeySync:{format:1,group,pending:[]}});
+    localStorage.setItem(key,raw);
   },input);
   await page.reload(); await open();
-  await page.getByRole('button',{name:'Review saved-place differences',exact:true}).click();
+  await page.getByRole('button',{name:'Finish saved-journey setup',exact:true}).click();
+  await page.getByRole('button',{name:'Prepare recovery on this device',exact:true}).click();
+  await page.getByRole('button',{name:'Review recovery checkpoint',exact:true}).click();
+  await expect(page.getByRole('heading',{name:'Start a new sharing checkpoint?',exact:true})).toBeFocused();
+  await page.getByRole('button',{name:'Back',exact:true}).click();
+  assert.equal(await page.evaluate(async group=>{
+    const store=await(await import('/experiments/tg-pairing/storage.mjs')).openBrowserStorage('along-pairing-lab-v1');
+    try{return (await store.read('along-saved-journeys-v2',group)).value.generation;}finally{store.close();}
+  },input.group),0);
+  await page.getByRole('button',{name:'Review recovery checkpoint',exact:true}).click();
+  await expect(page.getByRole('heading',{name:'Start a new sharing checkpoint?',exact:true})).toBeFocused();
+  await page.evaluate(key=>{
+    const profile=JSON.parse(localStorage.getItem(key+':generation-profile-v1'));
+    const data=JSON.parse(profile.currentRaw);data.mobility={pace:0.8};
+    profile.currentRaw=JSON.stringify(data);localStorage.setItem(key+':generation-profile-v1',JSON.stringify(profile));
+  },input.key);
+  await page.getByRole('button',{name:'Create checkpoint and review my places',exact:true}).click();
+  await expect(page.getByText('The checkpoint could not be confirmed.',{exact:false})).toBeVisible();
+  await page.getByRole('button',{name:'Back',exact:true}).click();
+  await page.getByRole('button',{name:'Review recovery checkpoint',exact:true}).click();
+  await expect(page.getByText('This checkpoint was prepared earlier.',{exact:false})).toBeVisible();
+  await page.getByRole('button',{name:'Create checkpoint and review my places',exact:true}).click();
   await expect(page.getByRole('heading',{name:'Choose what to keep',exact:true})).toBeFocused();
   await expect(page.getByText('This device: Saved places · Bus 75',{exact:true})).toBeVisible();
   await page.getByRole('button',{name:'Keep this device’s version',exact:true}).click();
@@ -124,11 +127,11 @@ try {
     return {route:current.data.journeys[0].savedRoutes[0].route,count:current.data.journeys[0].count,learning:current.data.learning,
       generation:current.sync.version.generation,pending:current.sync.pending.length,legacy:JSON.parse(localStorage.getItem(key)).journeySync.pending.length};
   },input.key);
-  assert.deepEqual(recovered,{route:'75',count:7,learning:true,generation:1,pending:0,legacy:1});
+  assert.deepEqual(recovered,{route:'75',count:7,learning:true,generation:1,pending:0,legacy:0});
   await page.reload(); await open();
   await expect(page.getByText('Connections for this storage version are not enabled yet.',{exact:false})).toBeVisible();
   await expect(page.getByRole('button',{name:'Review saved-place differences',exact:true})).toHaveCount(0);
   assert.deepEqual(errors,[]);
   console.log('PASS: generated Settings/bootstrap with actual identity and fixture migration records pauses legacy connections for incomplete/recovered generations, reports later old-tab edits, detects a removed isolated profile and returns to Settings without page errors. Actual migration writer is tested separately.');
-  console.log('PASS: Settings opens a real signed-checkpoint review, retains draft choices after leaving, applies them through the guarded writer, preserves history/legacy copy and reopens the recovered generation. Checkpoint installation records are fixtures; issuer signing and review application are real.');
+  console.log('PASS: Settings opens a real signed-checkpoint review, retains draft choices after leaving, applies them through the guarded writer, preserves history/legacy copy and reopens the recovered generation. Initial generation/planner data are fixtures; issuer signing, checkpoint installation and review application use real Settings operations.');
 } finally {await browser?.close();await new Promise(resolve=>server.close(resolve));}

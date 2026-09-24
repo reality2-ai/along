@@ -417,17 +417,17 @@ all evidence at confirmation. Leaving keeps a draft in this Settings session;
 it is reused only when the freshly built review has the same identifier. A newer
 local edit invalidates the old review and draft rather than being overwritten.
 
-The generated Settings test prepares a real issuer-signed checkpoint over its
-fixture generation and seeds the installation records. Through the actual UI it
+The generated Settings test now prepares and installs a real issuer-signed
+checkpoint through Settings over its fixture initial generation. Through the UI it
 leaves/reopens the review, verifies the retained choice, injects a newer learning
 setting, observes refusal of stale confirmation, then completes a fresh review.
 The real guarded writer preserves history, the newer setting and the old storage
 copy, consumes the old journal and reopens the recovered generation. Separate
 screen tests retain their keyboard, reflow, axe, capacity and cancellation checks.
 
-This connects the local review and writer, not the complete migration/installation
-wizard. The generated test's installation records are explicitly fixtures;
-actual installer behavior is covered separately by the migration browser suite.
+This connects the local review and writer to the issuer checkpoint controls
+described below. The test's initial generation/planner data remain fixtures;
+installation records are now produced by the actual installer through the UI.
 Enrolled-device composition, peer checkpoint delivery, later legacy-edit review
 and exact-build qualification are still required before publishing recovery.
 
@@ -459,6 +459,30 @@ two-profile app test exercises the capacity-error entry, cancellation and real
 migration/isolation over all 257 retained local saves and exact pending bytes.
 Checkpoint preparation/installation UI, enrolled-device composition and peer
 delivery remain separate unfinished steps.
+
+## Issuer checkpoint review and installation
+
+Experimental Settings now offers checkpoint review on the group's original device
+after generation-zero setup, or after a later capacity failure. It displays the
+actual retained/proposed snapshot, with saved endpoints and service preferences
+under a disclosure. A previously prepared checkpoint is identified explicitly.
+Confirmation loads the scoped software issuer, checks the displayed snapshot
+against the preparation result, and invokes the guarded installer with the exact
+reviewed replica revision and local bytes. Local-difference review follows.
+
+Back before confirmation does not advance the generation. A local edit after
+review causes installation refusal; any signed preparation is retained for a
+fresh review. The Settings test exercises that retry, then real signing,
+installation, choice application and reload. It separately refuses a stale
+local-choice confirmation and preserves the newer local setting. Initial
+generation/planner records are fixtures; checkpoint installation is no longer
+fixture-seeded in this test. The existing storage-fault/migration suite and normal
+two-profile app integration also pass.
+
+The composed test exposed a startup-render race: cached actions could be clicked
+before a pending diagnosis replaced their screen. Opening Settings now presents
+the checking state until that diagnosis finishes. This does not claim automatic
+peer delivery, enrolled-device checkpoint acceptance or a qualified public release.
 
 ## Required before integration
 

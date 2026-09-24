@@ -1410,3 +1410,13 @@ retained migration. The capacity-path app check keeps all 257 local saves and
 pending bytes rather than treating the replication limit as permission to trim
 the person's data. This illustrates how honest progress reporting belongs in the
 product flow as well as the development notes.
+
+Checkpoint controls now replace another fixture boundary with actual interaction:
+the original device reviews the proposed snapshot, signs and installs it, then
+reviews local differences. A test edits preferences after the review appears;
+installation refuses the stale confirmation while preserving the prepared
+checkpoint for retry. It also found a UI timing race where a late startup render
+could replace an action just opened from cached controls. Showing a checking state
+until diagnosis finishes removes that ambiguity. Tests explicitly wait for the
+review to appear before injecting a concurrent edit, so they exercise the intended
+boundary rather than an edit that happened before the review was captured.

@@ -476,4 +476,13 @@ isolation. It explains that this does not yet free capacity or enable new-format
 peer sharing. Run the migration suite for permission/staleness/quota/concurrency
 checks, and `CAPACITY=1 MIGRATION_SETUP=1` with the generated app integration test
 for the real Settings entry, cancellation and preservation of 257 local saves.
-Checkpoint installation controls and peer delivery still remain to be completed.
+Peer checkpoint delivery still remains to be completed.
+
+The original group device now has checkpoint review/confirmation controls in
+experimental Settings. They show the actual snapshot, identify retained
+preparations, invoke the scoped issuer and guarded installer, then open local
+difference review. The generated Settings test now uses these actual operations
+instead of fixture installation records, including stale-review refusal, retained
+preparation retry, Back, history preservation and reload. Its initial generation
+and local planner data are still fixtures. Enrolled-device delivery/acceptance
+and release qualification remain unfinished.
