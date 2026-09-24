@@ -12,7 +12,7 @@ export async function prepareJourneyCheckpoint({store, current, expectedRevision
       || !Number.isSafeInteger(expectedRevision) || expectedRevision < 1 || !Array.isArray(guards) || !guards.length) throw refuse();
   const checks = structuredClone(guards);
   if (checks.some(g => !g || typeof g.scope !== 'string' || typeof g.key !== 'string'
-      || !Number.isSafeInteger(g.expectedRevision) || g.expectedRevision < 1)) throw refuse();
+      || !Number.isSafeInteger(g.expectedRevision) || g.expectedRevision < 0)) throw refuse();
   const group = heldState.group, key = group + ':' + (heldState.generation + 1);
   const currentCheck = async () => {
     if (signal?.aborted) throw refuse();
@@ -20,7 +20,7 @@ export async function prepareJourneyCheckpoint({store, current, expectedRevision
     const replica = await store.read(replicaScope, group);
     if (replica?.revision !== expectedRevision
         || JSON.stringify(validateGenerationState(replica.value, group)) !== JSON.stringify(heldState)) throw refuse();
-    for (const guard of checks) if ((await store.read(guard.scope, guard.key))?.revision !== guard.expectedRevision) throw refuse();
+    for (const guard of checks) if (((await store.read(guard.scope, guard.key))?.revision ?? 0) !== guard.expectedRevision) throw refuse();
     if (signal?.aborted) throw refuse();
   };
   const validate = async value => {

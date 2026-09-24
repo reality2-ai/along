@@ -1,9 +1,8 @@
 # Saved-journey capacity recovery
 
 Status: generation model, signed-checkpoint verifier and guarded durable
-preparation implemented and tested in source. The preparation browser check uses
-a synthetic custody adapter. No installation, network adoption or recovery control
-is enabled. Public
+preparation implemented and tested in source, including the real software issuer
+adapter. No installation, network adoption or recovery control is enabled. Public
 preview 3805 retains its existing 256-pair replication limit and capacity message.
 
 ## Why deletion alone cannot free space
@@ -86,11 +85,28 @@ bad signing output and storage failure. It uses real Ed25519 signatures but a
 synthetic custody record/check, so it does not prove integration with the actual
 software issuer or its membership/permission checks.
 
+## Real issuer adapter
+
+`loadSoftwareIssuer().prepareJourneyCheckpoint({expectedRevision})` now reads the
+format-2 replica directly from the issuer's group. It refuses a stale review
+revision and supplies the internal signing closure, existing live-custody check,
+and revision guards for encrypted issuer custody, bootstrap, local persona,
+membership and journey-sharing permission. Absence of a permission record is also
+guarded; creating that record during preparation is a change, not a free pass.
+No general signing key or arbitrary signing operation is exposed to the UI.
+
+`experiments/tg-pairing/epoch-preparation.test.mjs`, using the pinned runtime,
+checks real software initialization/custody, concurrent preparation, restoration
+in a fresh document, retention across group-key rotation, stale review refusal,
+old/closed/cancelled issuer handles and a permission creation during the actual
+preparation commit. It verifies that the journey replica does not advance.
+This is not yet a recipient adoption or complete enrollment/recovery-flow test.
+
 ## Required before integration
 
-1. Bind the tested preparation adapter to the actual software issuer, current
-   membership and removal evidence. Verify its custody checks and guards through
-   real enrollment, key rotation, cancellation and permission changes.
+1. Initialize/migrate the format-2 replica under explicit reviewed opt-in. The
+   issuer test currently seeds this replica through storage; the planner bridge
+   still uses format 1. Never treat an arbitrary peer snapshot as migration authority.
 2. Review the live places selected for the new generation. Keep the old replica,
    local saved places and unprocessed edits in a durable recovery record. Do not
    silently replace divergent local data or reinterpret old edits as new saves.

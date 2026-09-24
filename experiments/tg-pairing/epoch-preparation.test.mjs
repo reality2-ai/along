@@ -7,6 +7,8 @@ const sources = new Map();
 for (const name of ['storage.mjs', 'membership.mjs', 'certificate.mjs']) sources.set('/' + name, await readFile(join(process.env.R2_BROWSER_DIR, name)));
 for (const name of ['software-persona.mjs', 'local-persona.mjs', 'epoch-preparation.mjs', 'epoch-recovery-material.mjs', 'epoch-transition.mjs', 'epoch-installation.mjs', 'epoch-watch.mjs', 'software-traffic.mjs', 'member-removal.mjs']) sources.set('/' + name, await readFile(new URL(name, import.meta.url)));
 for (const name of ['hive_wasm.js', 'hive_wasm_bg.wasm']) sources.set('/' + name, await readFile(join(process.env.R2_WASM_DIR, name)));
+for (const name of ['state.mjs', 'generation-state.mjs', 'generation-checkpoint.mjs', 'checkpoint-preparation.mjs'])
+  sources.set('/journey-sync/' + name, await readFile(new URL('../journey-sync/' + name, import.meta.url)));
 const server = createServer((req, res) => {
   res.setHeader('Content-Type', req.url.endsWith('.wasm') ? 'application/wasm' : sources.has(req.url) ? 'text/javascript' : 'text/html');
   res.end(sources.get(req.url) || '<!doctype html><title>Epoch preparation test</title>');
@@ -27,11 +29,19 @@ try {
     const group = Uint8Array.from(setup.group.match(/../g), b => parseInt(b, 16));
     const issuer = await loadSoftwareIssuer({wasm, store, expectedGroup: group});
     const before = await store.read('candidate-persona', 'active');
+    const {emptyState, changeJourney} = await import('./journey-sync/state.mjs');
+    const {initialGeneration} = await import('./journey-sync/generation-state.mjs');
+    const journeyState = initialGeneration(changeJourney(emptyState(setup.group), setup.member,
+      JSON.stringify(['stop', 'from', 'stop', 'gone']), null));
+    await store.compareAndSwap('along-saved-journeys-v2', setup.group, 0, journeyState);
+    const checkpoints = await Promise.all([issuer.prepareJourneyCheckpoint({expectedRevision: 1}), issuer.prepareJourneyCheckpoint({expectedRevision: 1})]);
+    if (JSON.stringify(checkpoints[0]) !== JSON.stringify(checkpoints[1])) throw Error('checkpoint preparation forked');
+    if ((await store.read('along-prepared-journey-checkpoint-v1', setup.group + ':1')).revision !== 1) throw Error('checkpoint rewritten');
     const results = await Promise.all([issuer.prepareRotation(), issuer.prepareRotation()]);
     const saved = await store.read('along-prepared-epoch-v1', setup.group + ':1');
     const after = await store.read('candidate-persona', 'active');
     const membership = await store.read('membership', setup.group);
-    const outcome = {group: setup.group, transitions: results.map(r => Array.from(r.transition)),
+    const outcome = {group: setup.group, checkpoint: Array.from(checkpoints[0].checkpoint), transitions: results.map(r => Array.from(r.transition)),
       revision: saved.revision, unchangedPersona: before.revision === after.revision,
       currentEpoch: String(membership.value.current), encrypted: saved.value.ciphertext.length === 80
         && saved.value.wrappingKey.extractable === false && !('payloadKey' in saved.value),
@@ -52,6 +62,9 @@ try {
     const issuer = await loadSoftwareIssuer({wasm, store, expectedGroup: group});
     const check = (v, text) => { if (!v) throw Error(text); };
     const denied = fn => fn().then(() => false, () => true);
+    const restoredCheckpoint = await issuer.prepareJourneyCheckpoint({expectedRevision: 1});
+    check(JSON.stringify(Array.from(restoredCheckpoint.checkpoint)) === JSON.stringify(first.checkpoint), 'real issuer restores checkpoint');
+    check(await denied(() => issuer.prepareJourneyCheckpoint({expectedRevision: 2})), 'stale review revision refuses');
     const result = await issuer.prepareRotation();
     check(JSON.stringify(Array.from(result.transition)) === JSON.stringify(first.transitions[0]), 'fresh document reuses preparation');
     const scope = 'along-prepared-epoch-v1', key = first.group + ':1';
@@ -92,8 +105,10 @@ try {
     check((await install(1n)).epoch === 1n, 'issuer advances');
     check((await install(1n)).alreadyInstalled, 'explicit target retry does not advance twice');
     check(await denied(() => issuer.issueCertificate(subject)), 'old issuer handle refuses');
+    check(await denied(() => issuer.prepareJourneyCheckpoint({expectedRevision: 1})), 'old epoch issuer cannot prepare checkpoint');
     issuer.close();
     let renewed = await loadSoftwareIssuer({wasm, store, expectedGroup: group});
+    check(JSON.stringify(Array.from((await renewed.prepareJourneyCheckpoint({expectedRevision: 1})).checkpoint)) === JSON.stringify(first.checkpoint), 'new key epoch reuses existing journey checkpoint');
     const next = await renewed.enrollmentMaterial(subject);
     try {
       check(next.epoch === 1n && new DataView(next.certificate.buffer).getBigUint64(64) === 1n, 'renewed enrollment epoch');
@@ -131,7 +146,10 @@ try {
     check(exposedBuffer && new Uint8Array(exposedBuffer).every(b => b === 0), 'failed recovery clears actual decrypted buffer');
     check(removal.evidence.epoch === 2n, 'stale authentic device can be removed at current epoch');
     check(await denied(() => renewed.enrollmentMaterial(subject)), 'removed member cannot get new epoch keys');
-    renewed.close(); store.close();
+    renewed.close();
+    check(await denied(() => renewed.prepareJourneyCheckpoint({expectedRevision: 1})), 'closed issuer cannot prepare checkpoint');
+    check((await store.read('along-saved-journeys-v2', first.group)).revision === 1, 'preparation never installs journey generation');
+    store.close();
     // A failed commit must neither advance membership nor leave half a record.
     const other = await openBrowserStorage('epoch-preparation-failure');
     const created = await initializeSoftwarePersona({wasm, store: other});
@@ -171,7 +189,24 @@ try {
     const resumed = await loadSoftwareIssuer({wasm, store: other, expectedGroup: otherGroup});
     check((await resumed.prepareRotation()).status === 'prepared-locally', 'retry recovers late commit');
     check((await other.read(scope, created.group + ':1')).revision === 1, 'late commit retry does not replace keys');
-    resumed.close(); other.close(); return true;
+    resumed.close();
+    const {initialGeneration} = await import('./journey-sync/generation-state.mjs');
+    const {emptyState} = await import('./journey-sync/state.mjs');
+    await other.compareAndSwap('along-saved-journeys-v2', created.group, 0, initialGeneration(emptyState(created.group)));
+    const permissionRace = {...other, compareAndSwapMany: async (writes, options) => {
+      if (writes.some(write => write.scope === 'along-prepared-journey-checkpoint-v1'))
+        await other.compareAndSwap('along-journey-sharing-v1', created.group, 0, {format: 1, member: created.member, peers: []});
+      return other.compareAndSwapMany(writes, options);
+    }};
+    const guardedIssuer = await loadSoftwareIssuer({wasm, store: permissionRace, expectedGroup: otherGroup});
+    check(await denied(() => guardedIssuer.prepareJourneyCheckpoint({expectedRevision: 1})), 'permission change during preparation refuses');
+    check(await other.read('along-prepared-journey-checkpoint-v1', created.group + ':1') === null, 'no stale permission preparation');
+    guardedIssuer.close();
+    const stopCheckpoint = new AbortController();
+    const stoppedIssuer = await loadSoftwareIssuer({wasm, store: other, expectedGroup: otherGroup, signal: stopCheckpoint.signal});
+    stopCheckpoint.abort();
+    check(await denied(() => stoppedIssuer.prepareJourneyCheckpoint({expectedRevision: 1})), 'cancelled real issuer refuses checkpoint');
+    stoppedIssuer.close(); other.close(); return true;
   }, first), true);
   await restored.close();
   const advanced = await context.newPage(); await advanced.goto(url);
@@ -186,5 +221,5 @@ try {
       return material.epoch === 2n && (await store.read('membership', groupHex)).value.revocations.length === 1;
     } finally { material?.destroy(); issuer?.close(); store.close(); }
   }, first.group), true);
-  console.log('PASS: concurrent encrypted preparation, corruption/refusal and cancellation boundaries; issuer atomic advancement through epochs one and two, explicit-target retry, fresh-document restoration, current-key enrollment material and removal of an older certificate. Old issuer handles and removed recipients refuse. Production cross-epoch delivery and UI remain separate.');
+  console.log('PASS: concurrent encrypted epoch preparation, atomic advancement, reload and removal checks; real software issuer prepares/restores one journey checkpoint, retains it across key rotation, and refuses stale review, old/closed/cancelled handles and a permission change during commit. Journey generation installation and recovery UI remain separate.');
 } finally { await browser?.close(); await new Promise(resolve => server.close(resolve)); }

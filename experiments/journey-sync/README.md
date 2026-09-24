@@ -360,3 +360,11 @@ races, invalid signatures and failed writes. The signer and authority guard are
 synthetic in that test; binding actual issuer custody and durable installation
 remains required. Run `node experiments/journey-sync/checkpoint-preparation.test.mjs`
 with the documented `CHROMIUM_PATH`.
+
+
+The actual software issuer now exposes only a scoped
+`prepareJourneyCheckpoint({expectedRevision})` operation. The pinned-runtime
+`experiments/tg-pairing/epoch-preparation.test.mjs` additionally checks restoration,
+key rotation, stale/closed/cancelled handles and a permission change during the
+commit. Journey replicas are still fixture-seeded for this check: reviewed
+format-2 migration and checkpoint installation are not integrated into the app.

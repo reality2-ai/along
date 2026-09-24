@@ -1308,3 +1308,11 @@ gates in the [recovery design](JOURNEY_CAPACITY_RECOVERY.md). This distinction i
 useful teaching material: a valid signature answers who approved some bytes, not
 whether applying them is timely, authorized in the current state or acceptable to
 the person using this device.
+
+
+The checkpoint preparation work then moved from a synthetic signer to the actual
+browser-held issuer. Its tests distinguish a mathematically valid signature from
+permission to use the signing capability now: a stale review, changed permission
+record or old issuer handle refuses the operation. A checkpoint surviving reload
+and key rotation still does not imply that a peer adopted it or that local edits
+were reconciled. The remaining migration and installation gates remain explicit.
