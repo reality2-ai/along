@@ -1,4 +1,4 @@
-# Along course handover — version 41
+# Along course handover — version 42
 
 Along is a working, experimental Auckland commuter app and a case study of one
 human–AI collaboration. It is used at your own risk, is not an official AT app,
@@ -21,7 +21,7 @@ the learner's judgment, not how much code the assistant generates.
 
 ## Prepare a teaching copy
 
-Ask the assistant to obtain the [v41 ZIP and checksum](https://github.com/reality2-ai/along/releases/tag/v0.41.0),
+Ask the assistant to obtain the [v42 ZIP and checksum](https://github.com/reality2-ai/along/releases/tag/v0.42.0),
 verify the archive, and serve its entire contents on a separate teaching origin.
 Keep the manifest, qualification record, runtime provenance and source notices.
 Use the supplied example addresses and synthetic credentials. A personal AT key,
@@ -102,3 +102,10 @@ a service preference worked technically, but the user expected the visible short
 to disappear. Ask learners to distinguish the original test claim from that user
 expectation, then evaluate explicit shortcut removal. Arrive-by routing is recorded
 as a new requirement, not a completed capability of this release.
+
+
+Version 42 extends that case: the user still found shortcut removal difficult and
+suggested placing it after opening the shortcut. The resulting action sits on the
+journey-options screen. The same release adds Arrive by. Compare the evidence for
+algorithm correctness, original timetable matching and browser usability in the
+[v42 record](../RELEASE_V42.md); none establishes physical acceptance by itself.

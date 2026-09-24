@@ -1,0 +1,18 @@
+{
+  "status": "passed",
+  "version": 42,
+  "browser": "151.0.7922.34",
+  "checks": [
+    "HTTPS shell/service-worker version",
+    "actual device setup",
+    "offline reload",
+    "new-address offline mixed-mode route",
+    "offline installation guide",
+    "service preference removal preserves saved shortcut",
+    "open shortcut then remove from journey options offline",
+    "Arrive by includes final walk and meets address deadline"
+  ],
+  "errors": [],
+  "externalRequests": [],
+  "limits": "Fresh Chromium profile, synthetic journey only. No phone or real AT credential; installed v37/v38/v39/v40/v41-to42 updates separately tested locally."
+}

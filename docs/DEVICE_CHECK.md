@@ -1,4 +1,4 @@
-# Along 41: short S23 and desktop check
+# Along 42: short S23 and desktop check
 
 Use the regular app at <https://reality2.ai/along/>, not Device Preview.
 No coding is needed. Start with pairing; report that result before attempting
@@ -8,7 +8,7 @@ the remaining checks if anything is confusing.
 
 In the browser used to install Along, open
 [Update Along](https://reality2.ai/along/update.html), follow the update prompts,
-and reopen the installed app. Check **App version 41** in Settings on both devices.
+and reopen the installed app. Check **App version 42** in Settings on both devices.
 Record the browser names. Preserve existing saved places and device setup; do not
 clear site storage or create replacement groups to retry an interrupted connection.
 
@@ -68,3 +68,15 @@ On the home screen, open **Manage shortcuts** and use **Remove shortcut** for a
 test journey. Confirm it disappears and stays absent after reopening offline.
 Other saved journeys should remain. Removing only **Preferred services** inside
 a journey keeps the saved places; that is a different action.
+
+
+## Arrive by and removal from journey options
+
+Plan 277 Broadway Newmarket → 10 Victoria Road Devonport for 23 September 2026,
+**Arrive by 09:00**. Confirm the summary says Arrive by, the itinerary includes the
+walk to the address, and the final arrival is before 09:00. This is a fixed test
+snapshot, not current travel advice. Try switching back with Set departure to now.
+
+Open a saved home shortcut and choose **Remove this shortcut** below the journey
+choices. The journey options should stay usable, and the shortcut should remain
+absent when you reopen offline. No coding is needed.

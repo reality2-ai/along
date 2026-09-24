@@ -1,0 +1,8 @@
+{
+  "status": "passed",
+  "version": 42,
+  "base_url": "https://reality2.ai/along/",
+  "files_verified": 286,
+  "release_manifest_sha256": "69982c80836bd2bb1abcb2b1a33d81d44c557d17353fe3fd6665eedb6cc3c29e",
+  "scope": "Every deployed payload plus build-info.json fetched over HTTPS and compared with local release hashes; not physical installation acceptance."
+}

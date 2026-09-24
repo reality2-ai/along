@@ -1,5 +1,9 @@
 # Reality2 browser integration: status and evidence
 
+Current-standard correction (25 September 2026): the relay tests below target an
+older implementation. See the [current standard review](R2_CURRENT_STANDARD_REVIEW.md)
+before using these historical details for a new hive connection.
+
 > **Current release: Along 39.** Optional direct personal-key AT access and device
 > sharing are now included in the regular app. [Installation guide](https://reality2.ai/along/install.html) ·
 > [Download and hosting package](https://github.com/reality2-ai/along/releases/tag/v0.39.0).

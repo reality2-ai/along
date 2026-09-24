@@ -210,8 +210,14 @@ browser/network details are not yet known. Physical pairing/sharing acceptance r
 
 Add **Arrive by** alongside **Leave at**, with the final walk to the destination
 included in the deadline. Keep offline, multimodal and accessibility-aware routing;
-verify transfers and service-day boundaries. This remains pending after version 41.
+verify transfers and service-day boundaries. Implemented in version 42 with automated routing, original-GTFS and offline
+browser checks; physical acceptance remains open.
 
 Relay/server setup is assigned by the user to the AI managing that server. Along
 will retain optional endpoint controls and verify interoperability when an endpoint
 is supplied, but will not configure server services from this project meanwhile.
+
+Current R2 integration must be rechecked against the published 0.9.0 standard;
+the older standalone relay is not the target contract. See the
+[current transport review](R2_CURRENT_STANDARD_REVIEW.md). Server setup remains
+with the server AI; browser binding compatibility and migration remain Along work.

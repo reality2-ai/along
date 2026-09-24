@@ -1,0 +1,31 @@
+{
+  "status": "passed",
+  "metrics": {
+    "buildProfile": "along-regular-upgrade-candidate-v1",
+    "buildManifestSha256": "e233f9327dca522f075ffc28bb9d792794aaf69bd0df856e3f05ce789aba365a",
+    "runtime": "v26.4.0",
+    "browser": "151.0.7922.34",
+    "host": "Local static HTTP, repository subpath, Chromium desktop",
+    "physicalPhone": false,
+    "coldReadyMs": 7516,
+    "installability": {
+      "installabilityErrors": []
+    },
+    "mixedModeRouteMs": 4439,
+    "datasetBytes": 41308937,
+    "storage": {
+      "quota": 10809134878,
+      "usage": 71716638,
+      "usageDetails": {
+        "caches": 1969664,
+        "indexedDB": 69737184,
+        "serviceWorkerRegistrations": 9790
+      }
+    },
+    "mainPageResourceTransferBytes": 1172014,
+    "offlineReadyMs": 3467
+  },
+  "log_sha256": "258aeafbbbe038fabc325ee236832d55e3794ea01b48f95de45f99af6dbb0b40",
+  "test_source_sha256": "ffeeff55f942f91288650b1a597cbbba0027f6aeacba65df8e4f21939836bdf0",
+  "scope": "v42 static candidate browser checks: existing leave-at offline routing/data refresh, shortcut removal, failed writes, keyboard, axe, zoom and narrow layout. Dedicated arrive-by/options-removal check is also included in qualification."
+}

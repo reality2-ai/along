@@ -1586,3 +1586,31 @@ progressively disclosed, with an explicit action, a failed-save state, and focus
 restoration. The user's clarification supports this interpretation; automated tests
 support implementation claims, not a claim that the new interaction has been
 accepted on the phone. Future searches may learn the same pair again, as the UI explains.
+
+
+### Put the action where the user has already gone (25 September 2026)
+
+After the v41 management disclosure was added, the user still had trouble removing
+a shortcut and proposed doing so after choosing that entry. This is contrary
+evidence to treating the added management menu as a sufficient fix. Version 42
+places Remove this shortcut on the journey-options screen, preserving the current
+choices after removal. The interpretation is contextual discoverability: an action
+can be correctly labelled and still be outside the user's expected sequence.
+
+The request for Arrive by likewise changes the planning task, not only its wording.
+It requires finding a feasible departure before an arrival deadline, including
+transfers and the final walk. Reverse-routing tests, a small independent exhaustive
+oracle, original-GTFS checks and an offline browser scenario address different
+claims. Physical usability remains unverified. This is an implementation reflection
+linked to the user's request, not evidence of a commuter study or course effectiveness.
+
+The relay conversation also exposed an assumption: the /r2 URL came from the relay
+project's documentation, not from a server-AI message. A reported running hive or
+relay is not an exact endpoint or proof of compatible protocol behavior. Record
+that distinction instead of attributing an inferred address to another actor.
+
+The user corrected the relay reference as belonging to an older R2 iteration.
+This adds a provenance lesson: a successful test against a real implementation
+proves compatibility with that revision, not with the current standard. The
+[current-standard review](R2_CURRENT_STANDARD_REVIEW.md) separates published
+requirements, historical code and the still-unverified server binding.

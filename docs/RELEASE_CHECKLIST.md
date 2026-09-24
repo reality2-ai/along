@@ -1,6 +1,6 @@
 # Release evidence and remaining gates
 
-Current regular app: **version 41**. Its 20-scenario qualification and static checks pass;
+Current regular app: **version 42**. Its 22-scenario qualification and static checks pass;
 all 286 deployed files match the verified package. Physical acceptance remains open.
 Historical version-37 evidence below describes that earlier release. The separate [device preview 3806](https://reality2.ai/along/preview/public/)
 is published for [S23/desktop checks](PREVIEW_DEVICE_CHECK.md). Both are static
@@ -30,12 +30,20 @@ explicit flows, not unattended synchronization of all trust-group state.
 Regular Along 38 now includes the live/TG controls and preserves separate preview storage. Historical
 entries below retain their original versions and scopes.
 
+## Version 42
+
+The [v42 record](RELEASE_V42.md) adds backward Arrive-by routing, final walking
+connections, latest-departure ordering and contextual shortcut removal after
+opening a home entry. Twenty-two qualification scenarios pass, including the
+v41 upgrade and the new offline UI flow. Original-GTFS and 79 unit checks have
+separate evidence. External relay endpoint details and physical acceptance remain.
+
 ## Version 41
 
 The [v41 record](RELEASE_V41.md) covers explicit shortcut removal, preservation of
 other journeys, failed-write behavior and offline reopening. Twenty qualification
 scenarios pass, including installed v40 upgrades. Physical user acceptance remains.
-Arrive-by routing is newly requested and remains to be implemented.
+Arrive-by routing was newly requested at v41 and is implemented in v42.
 
 ## Version 40
 

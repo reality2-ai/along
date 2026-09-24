@@ -1,5 +1,9 @@
 # Proposal: private cross-device synchronisation through Reality2
 
+Current-standard correction (25 September 2026): the relay tests below target an
+older implementation. See the [current standard review](R2_CURRENT_STANDARD_REVIEW.md)
+before using these historical details for a new hive connection.
+
 Status: experimental device preview, 24 September 2026. Saved-journey sharing is
 enabled in [Device Preview 3806](https://reality2.ai/along/preview/public/), separately
 from the regular version-37 app. Reviewed group removal and group-key rotation are available. Automatic
