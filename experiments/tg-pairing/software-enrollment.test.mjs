@@ -7,6 +7,10 @@ const {chromium} = await import(process.env.PLAYWRIGHT_MODULE || '@playwright/te
 if (!process.env.R2_BROWSER_DIR) throw new Error('Set R2_BROWSER_DIR to the experimental Reality2 browser module directory');
 if (!process.env.R2_WASM_DIR) throw new Error('Set R2_WASM_DIR');
 const sources = new Map(await Promise.all(['peer-session', 'challenge', 'session-statement', 'membership', 'certificate', 'enrollment-session', 'storage', 'invitation-journal', 'enrollment-link', 'enrollment-exchange', 'enrollment-protection', 'peer-link', 'invitation'].map(async name => ['/' + name + '.mjs', await readFile(join(process.env.R2_BROWSER_DIR, name + '.mjs'))])));
+if (process.env.EPOCH_INSTALL === '1') {
+  if (process.env.ABORT_TRAFFIC === '1') throw Error('Epoch installation needs completed enrollment');
+  for (const name of ['epoch-transition.mjs', 'epoch-preparation.mjs', 'epoch-installation.mjs', 'epoch-install-check.mjs']) sources.set('/' + name, await readFile(new URL(name, import.meta.url)));
+}
 for (const name of ['enrollment-profile.mjs', 'enrollment-payloads.mjs', 'core-candidate-session.mjs', 'software-traffic.mjs', 'initial-persona.mjs', 'software-persona.mjs', 'software-invitation.mjs', 'invitation-proof.mjs', 'transfer-view.mjs', 'receive-invitation-view.mjs', 'stored-claim.mjs', 'installation-receipt.mjs', 'local-persona.mjs', 'local-persona-session.mjs', 'receipt-recovery.mjs']) sources.set('/' + name, await readFile(new URL('./' + name, import.meta.url)));
 if (process.env.RECOVERY_MODULE) sources.set('/receipt-recovery.mjs', await readFile(process.env.RECOVERY_MODULE));
 for (const name of ['hive_wasm.js', 'hive_wasm_bg.wasm']) sources.set('/' + name, await readFile(join(process.env.R2_WASM_DIR, name)));
@@ -218,5 +222,57 @@ try {
     } finally { store.close(); }
   }, {group: targetGroup, expectedKeys}), true);
   console.log('PASS: actual restored software issuer derives enrollment material, signs the candidate certificate, and completes core browser installation over WebRTC; fresh-document member restore/sign succeeds. Harness supplies trust review, comparison decision and signaling; encrypted traffic-key restore verified; no hardware custody or physical-device claim.');
+  if (process.env.EPOCH_INSTALL === '1') {
+    const subject = await reopened.evaluate(async () => {
+      const s = await (await import('./storage.mjs')).openBrowserStorage('software-enrollment');
+      try { return Array.from((await s.read('candidate-persona', 'active')).value.record.subject); }
+      finally { s.close(); }
+    });
+    // Test-only fixture: restore the synthetic issuer's encrypted key to sign a
+    // recipient certificate. This is not a production delivery/issuance API.
+    const bundle = await pages[1].evaluate(async subject => {
+      const s = await (await import('./storage.mjs')).openBrowserStorage('software-enrollment');
+      let raw, clear, heldIssuer;
+      try {
+        heldIssuer = await software.loadSoftwareIssuer({wasm, store: s, expectedGroup: group});
+        const prepared = await heldIssuer.prepareRotation();
+        const saved = (await s.read('along-prepared-epoch-v1', heldIssuer.group + ':1')).value;
+        clear = new Uint8Array(await crypto.subtle.decrypt({name: 'AES-GCM', iv: saved.iv,
+          additionalData: new TextEncoder().encode(JSON.stringify(['along/prepared-epoch/v1', heldIssuer.group, heldIssuer.member, '1']))}, saved.wrappingKey, saved.ciphertext));
+        const custody = (await s.read('along-browser-issuer', heldIssuer.group)).value;
+        raw = new Uint8Array(await crypto.subtle.decrypt({name: 'AES-GCM', iv: custody.iv,
+          additionalData: new TextEncoder().encode(JSON.stringify(['along/software-issuer/v1', heldIssuer.group, heldIssuer.member]))}, custody.wrappingKey, custody.ciphertext));
+        const signer = await crypto.subtle.importKey('pkcs8', raw, 'Ed25519', false, ['sign']);
+        const codec = (await import('./certificate.mjs')).certificateCodec(wasm), member = new Uint8Array(subject);
+        const signature = new Uint8Array(await crypto.subtle.sign('Ed25519', signer, codec.signingBytes(member, group, 1n)));
+        const removedSubject = crypto.getRandomValues(new Uint8Array(32));
+        const otherRemoval = await heldIssuer.issueRevocation({subject: removedSubject, sequence: 1n, reason: 0});
+        const selfRemoval = await heldIssuer.issueRevocation({subject: member, sequence: 2n, reason: 0});
+        return {expectedGroup: Array.from(group), transition: Array.from(prepared.transition), certificate: Array.from(codec.encode(member, group, 1n, signature)),
+          payloadKey: Array.from(clear.subarray(0, 32)), integrityKey: Array.from(clear.subarray(32)),
+          removedSubject: Array.from(removedSubject), removedSignature: Array.from(otherRemoval.signature), selfRemovalSignature: Array.from(selfRemoval.signature)};
+      } finally { raw?.fill(0); clear?.fill(0); heldIssuer?.close(); s.close(); }
+    }, subject);
+    assert.equal(await reopened.evaluate(async bundle => {
+      const wasm = await import('./hive_wasm.js'); await wasm.default();
+      const s = await (await import('./storage.mjs')).openBrowserStorage('software-enrollment');
+      try { return await (await import('./epoch-install-check.mjs')).checkEpochInstall(wasm, s, bundle); }
+      finally { s.close(); }
+    }, bundle), true);
+    await reopened.close();
+    const advanced = await contexts[0].newPage(); await advanced.goto(url);
+    assert.equal(await advanced.evaluate(async group => {
+      const wasm = await import('./hive_wasm.js'); await wasm.default();
+      const s = await (await import('./storage.mjs')).openBrowserStorage('software-enrollment');
+      try {
+        const options = {wasm, store: s, expectedGroup: new Uint8Array(group)};
+        const persona = await (await import('./local-persona.mjs')).loadLocalPersona(options);
+        const traffic = await (await import('./software-traffic.mjs')).loadSoftwareTraffic(options);
+        try { return persona.epoch === 1n && traffic.epoch === 1n && (await persona.sign(new Uint8Array(32))).length === 64; }
+        finally { traffic.destroy(); }
+      } finally { s.close(); }
+    }, targetGroup), true);
+    console.log('PASS: enrolled recipient atomically installs prepared epoch-one material, restores/signs in a fresh document, rejects substitutions and stale writes, rolls back interrupted transactions, and recovers duplicate delivery. Test harness supplies renewed certificate/material; production delivery and active-session shutdown are not covered.');
+  }
   }
 } finally { await browser?.close(); await new Promise(resolve => server.close(resolve)); }

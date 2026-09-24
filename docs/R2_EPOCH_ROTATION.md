@@ -1,8 +1,9 @@
 # Browser-subset group epoch rotation
 
-Status: transition framing, signature verification and encrypted durable preparation
-implemented and tested. Preparation is currently limited to epoch zero → one.
-No rotation control or installation path is enabled, including in preview 3803.
+Status: transition framing, signature verification, encrypted durable preparation
+and recipient atomic installation implemented and tested. Preparation is currently
+limited to epoch zero → one. No composed rotation flow is enabled, including in
+preview 3803.
 This is an Along application profile using the R2 group authority; it is not a
 claim of a normative R2 rotation wire format or full R2 conformance.
 
@@ -62,6 +63,25 @@ A late cancellation reports uncertainty while leaving the committed preparation
 available to a later retry. Existing issuer/enrollment/removal tests also run.
 This is software custody evidence, not completed rotation or key delivery.
 
+`installRecipientEpoch()` now checks the established group, signed transition,
+renewed certificate for this recipient and the digest of both supplied traffic
+keys. It retains signed removals, then atomically updates the persona certificate,
+membership epoch, encrypted traffic material and a public installation receipt.
+The transaction guards the consumed enrollment journal and each replaced record.
+An exact duplicate verifies the installed material and returns the retained result
+without rewriting; conflicting or substituted material refuses. The API snapshots
+and erases its temporary key copies. A cancellation after commit cannot turn the
+committed result into a claim that nothing was saved.
+
+`EPOCH_INSTALL=1 node experiments/tg-pairing/software-enrollment.test.mjs` first
+enrolls an actual recipient over the existing WebRTC flow. A test fixture then
+supplies a renewed certificate and keys from the real prepared synthetic issuer.
+It checks substitution refusal, transaction rollback, signed removal during the
+commit race, retained earlier removals, duplicate receipt recovery, invalidation
+of the old persona signing handle and a fresh-document epoch-one restore/sign.
+The fixture explicitly does not establish production delivery, issuer advancement
+or closure of active sessions on other tabs. The API is not mounted in the app.
+
 1. Extend the retained preparation to renew certificates for retained recipients
    and support subsequent epochs. Release only the committed successor. Preserve
    prior removals and recheck recipient standing at delivery, rather than treating
@@ -72,11 +92,9 @@ This is software custody evidence, not completed rotation or key delivery.
    the issuer advances. A signed newer certificate alone is insufficient proof
    that the recipient controls its member key. Bind a fresh challenge, recipient,
    transition and encrypted delivery; recheck removal before releasing keys.
-3. The recipient must verify the ordered transition chain, renewed certificate,
-   exact key digest and local predecessor. Commit persona, membership, encrypted
-   traffic material and durable installation receipt in one guarded transaction.
-   The initial issuer needs this same consistency. Do not reset identity, journey
-   preferences or AT application permissions to work around a mismatch.
+3. Compose the tested one-step recipient installation with ordered offline catch-up
+   and give the initial issuer equivalent atomic advancement. Do not reset identity,
+   journey preferences or AT application permissions to work around a mismatch.
 4. Close old sessions across tabs when advancement commits. Resume interrupted
    delivery using durable receipts, and distinguish local advancement from every
    retained device acknowledging it. Refuse conflicts without replacing state.

@@ -17,8 +17,12 @@ and both traffic-key digests. Unit tests cover tampering and bounds. This does n
 advance membership or enable rotation. Encrypted durable preparation now reuses
 one committed epoch-zero successor across retries and concurrent calls, verified
 in real browser storage including cancellation and custody-change boundaries.
-Authenticated cross-epoch delivery, atomic installation, subsequent epochs and
-the user flow remain unfinished.
+Recipient installation now atomically advances the certificate, membership and
+encrypted keys with a durable receipt. Its browser test starts from actual
+enrollment, uses harness-supplied successor material, and covers removal races,
+rollback and a fresh-document restore. Authenticated cross-epoch delivery, issuer
+advancement, cross-tab session closure, subsequent epochs and the user flow remain
+unfinished; no rotation control is enabled.
 
 The restored software issuer now produces epoch-zero signed revocation evidence
 using the runtime's actual signing bytes. The browser check applies this evidence
