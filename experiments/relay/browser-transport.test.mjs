@@ -14,8 +14,14 @@ const dir=await mkdtemp(join(tmpdir(),'along-relay-')); let browser,server,wss;
 try {
   execFileSync('openssl',['req','-x509','-newkey','rsa:2048','-nodes','-keyout',join(dir,'key'),'-out',join(dir,'cert'),'-days','1','-subj','/CN=localhost','-addext','subjectAltName=IP:127.0.0.1'],{stdio:'ignore'});
   const modules=new Map(await Promise.all(['transport.mjs','hello.mjs'].map(async n=>['/'+n,await readFile(new URL(n,import.meta.url))])));
+  if (process.env.STORED_IDENTITY === '1') {
+    for (const name of ['storage.mjs','membership.mjs','certificate.mjs']) modules.set('/tg-pairing/'+name,await readFile(join(process.env.R2_BROWSER_DIR,name)));
+    for (const name of ['software-persona.mjs','local-persona.mjs']) modules.set('/tg-pairing/'+name,await readFile(new URL('../tg-pairing/'+name,import.meta.url)));
+    for (const name of ['hive_wasm.js','hive_wasm_bg.wasm']) modules.set('/'+name,await readFile(join(process.env.R2_WASM_DIR,name)));
+    for (const name of ['hello.mjs','local-hello.mjs','stored-identity-check.mjs']) modules.set('/relay/'+name,await readFile(new URL(name,import.meta.url)));
+  }
   server=createServer({key:await readFile(join(dir,'key')),cert:await readFile(join(dir,'cert'))},(req,res)=>{
-    res.setHeader('Content-Type',modules.has(req.url)?'text/javascript':'text/html');res.end(modules.get(req.url)||'<!doctype html><title>Relay test</title>');
+    res.setHeader('Content-Type',req.url.endsWith('.wasm')?'application/wasm':modules.has(req.url)?'text/javascript':'text/html');res.end(modules.get(req.url)||'<!doctype html><title>Relay test</title>');
   });
   wss=new wsServer({server,path:'/r2',maxPayload:65536}); let authenticated=0;
   wss.on('connection',socket=>{
@@ -39,16 +45,17 @@ try {
   browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_PATH});
   const context=await browser.newContext({ignoreHTTPSErrors:true});const page=await context.newPage();
   await page.goto(`https://127.0.0.1:${server.address().port}/`);
-  await page.evaluate(async()=>{
+  await page.evaluate(async stored=>{
     const {createRelayHello}=await import('./hello.mjs');const {createRelayTransport}=await import('./transport.mjs');
     const key=await crypto.subtle.generateKey('Ed25519',false,['sign','verify']);
     const hex=b=>Array.from(new Uint8Array(b),v=>v.toString(16).padStart(2,'0')).join('');
     const group=crypto.getRandomValues(new Uint8Array(32));
     const persona={group:hex(group),member:hex(await crypto.subtle.exportKey('raw',key.publicKey)),sign:async b=>new Uint8Array(await crypto.subtle.sign('Ed25519',key.privateKey,b))};
+    const createHello=stored ? await (await import('./relay/stored-identity-check.mjs')).setupStoredHello() : ()=>createRelayHello({persona,expectedGroup:group});
     window.statuses=[];window.frames=[];
-    window.transport=createRelayTransport({url:`wss://${location.host}/r2`,createHello:()=>createRelayHello({persona,expectedGroup:group}),
+    window.transport=createRelayTransport({url:`wss://${location.host}/r2`,createHello,
       onStatus:s=>statuses.push(s),onFrame:f=>frames.push([...f])});transport.start();
-  });
+  },process.env.STORED_IDENTITY === '1');
   await page.waitForFunction(()=>statuses.at(-1)==='connected');
   await page.evaluate(()=>transport.send(new Uint8Array([7,8,9])));
   await page.waitForFunction(()=>frames.length===1);assert.deepEqual(await page.evaluate(()=>frames[0]),[7,8,9]);
@@ -57,6 +64,17 @@ try {
   assert.equal(authenticated,2);
   await page.evaluate(()=>transport.disconnect());
   assert.equal(await page.evaluate(()=>statuses.at(-1)),'disconnected');
+  if (process.env.STORED_IDENTITY === '1') {
+    const first=await page.evaluate(()=>localRelayIdentity);
+    await page.reload();
+    const restored=await page.evaluate(async()=>{
+      const {setupStoredHello,checkStoredHello}=await import('./relay/stored-identity-check.mjs');
+      const create=await setupStoredHello();const hello=JSON.parse(await create());
+      await checkStoredHello();return hello.device_id;
+    });
+    assert.equal(restored,first);
+    console.log('PASS: real IndexedDB identity signs WSS greetings and survives reload; identity revision races, cancellation and signed local revocation refuse.');
+  }
   console.log('PASS: Chromium WSS greeting independently verified; binary echo and fresh authenticated reconnect; explicit disconnect. Synthetic key/payload, not peer authorization or encrypted journey sync.');
 }finally{
   await browser?.close();for(const client of wss?.clients||[])client.terminate();

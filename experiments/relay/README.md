@@ -28,7 +28,8 @@ uses the first eight bytes as lowercase routing hex, and signs the UTF-8 string
 `trust_group:device_id:timestamp` with Ed25519. It independently verifies the
 result before returning JSON. `local-hello.mjs` reloads the existing installed
 persona, whose signer checks current local identity/membership evidence; this
-wrapper still needs the real IndexedDB integration test before app mounting.
+wrapper now has real IndexedDB integration coverage described below; it remains
+unmounted.
 
 Sources inspected: `r2-core` revision `0093a0331e51afde5ff4eff3771d0a6b17fc632d`,
 `crates/r2-wasm/src/lib.rs` (`sign_relay_hello`, `trust_group_hash`), and `r2-relay`
@@ -64,3 +65,20 @@ This is not a deployed R2 relay interoperability test or a test of encrypted
 journeys. The fixture implements the inspected greeting contract; actual server,
 real stored-persona, protected-frame, peer permission and app integration checks
 remain required. No relay has been contacted with the user's identity or data.
+
+
+Stored-identity integration now passes with `STORED_IDENTITY=1` and the pinned
+`R2_BROWSER_DIR` / `R2_WASM_DIR` in the browser transport command. It initializes
+an actual Along software persona, uses its nonextractable IndexedDB signing key
+for two WSS connections, reloads the document and verifies the same member ID.
+It exercises cancellation, a concurrent identity revision change, a membership
+revision change during the final signature verification, and a real issuer-signed
+local revocation. The latter is synthetic self-revocation for verification only;
+the app does not offer self-removal through ordinary member removal controls.
+
+`local-hello.mjs` now audits every observed storage revision and rereads those
+records after greeting verification. Changes invalidate the pending greeting.
+This is a use-time check, not a grant for the socket lifetime: application send and
+receive still need current peer membership, consent, epoch and replay checks.
+No actual AT key, user identity or saved journey is used in this fixture. Real
+enrolled-member relay coverage, protected frames and app integration remain.
