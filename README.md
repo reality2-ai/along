@@ -343,8 +343,11 @@ and used locally. There is no analytics service or background journey tracking.
 The host still receives ordinary asset/API requests; external AT links contact AT.
 Choosing the online street background sends visible map-tile requests to
 OpenStreetMap, revealing the viewed area and ordinary connection metadata.
-There is no cross-device synchronisation; the [Reality2 design](docs/R2_SYNC_DESIGN.md)
-is a proposal, not an implemented feature.
+Regular Along does not synchronise between devices. The separate Device Preview
+supports opt-in saved-place/service-preference sharing and AT-key sharing through
+a documented browser-only R2 subset. Connection messages are transferred manually;
+automatic discovery and reconnection remain unfinished. See the
+[current integration status](docs/REALITY2_INTEGRATION.md).
 Clearing browser site data removes the stored routes and offline datasets.
 
 ## Development and verification
@@ -353,7 +356,7 @@ Clearing browser site data removes the stored routes and offline datasets.
 npm ci
 npx playwright install chromium
 npm test
-# Start python3 server.py in another terminal, with datasets imported:
+# With datasets imported; the browser command manages its own local server:
 npm run test:browser
 npm run test:updates
 npm run build
@@ -362,7 +365,10 @@ python3 test/check_route_exploration.py
 ```
 
 Set `CHROMIUM_PATH` to use an existing Chromium. `TEST_BASE_URL` selects a different
-local server for the browser suite. Real-data tests use 23 September 2026; update
+caller-managed server for the browser suite. Without that override, Playwright
+starts and stops `python3 server.py` on port 3080 with `AT_API_KEY` explicitly empty,
+so the ignored local key file is not loaded. Stop an existing development server
+first; tests will not silently reuse it. Real-data tests use 23 September 2026; update
 fixtures when the feed no longer covers that date. Synthetic unit tests do not
 need downloaded data. See [architecture](docs/ARCHITECTURE.md), [performance evidence](docs/PERFORMANCE.md),
 [contributing](CONTRIBUTING.md), and [release evidence](docs/RELEASE_CHECKLIST.md).

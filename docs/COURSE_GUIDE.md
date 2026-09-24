@@ -39,6 +39,10 @@ environment, set up Node/Python as needed, and run `npm ci` and `npm test`.
 Instructors should arrange tool access and prepare a dated
 public-data snapshot or hosted static bundle in advance; importing everything in
 a short class can consume the session. Preserve `build-info.json` alongside it.
+With that snapshot present, ask the assistant to run `npm run test:browser`.
+The command starts and stops its own local server with AT credentials disabled;
+it does not require learners to manage another terminal. A configured
+`TEST_BASE_URL` instead uses the specified, already-running test server.
 
 For each lab, record: the initial request, your interpretation, a proposed change,
 the evidence you checked, the actual result, and the remaining uncertainty. Do not

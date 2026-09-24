@@ -40,7 +40,7 @@ this audit. Later public-hosting work supplements that brief.
 | 6. Distribution | About 39.2 MiB ZIP/checksum, four data bundles, import scripts, MIT/data/Leaflet notices, AWS/Pages hosting instructions | Public Pages deployment is live; authenticated feeds now verified; direct browser feed access verified; TG credential integration remains incomplete |
 | 7. GitHub documentation | README, architecture, data, hosting, privacy, limits and contribution guidance; v21 course notice and current design-driver/goal summaries | Public source repository: [reality2-ai/along](https://github.com/reality2-ai/along); app hosted at [reality2.ai/along](https://reality2.ai/along/) |
 | 8. Course material | Thematic analysis, six lessons, exercises, assessment rubric and negative-case/contextual-map refinements | Course effectiveness has not been studied |
-| 9. Release checks and handover | Version 37 rebuild: 68 JavaScript and 18 Python tests, static and update checks; version 36 remains the baseline for all 20 browser scenarios; published source/archive/live comparison | Remaining physical and spoken screen-reader checks prevent claiming full goal completion |
+| 9. Release checks and handover | Version 37 rebuild: 68 JavaScript and 18 Python tests, static and update checks; a fresh managed-server run passes all 20 browser scenarios; published source/archive/live comparison | Remaining physical and spoken screen-reader checks prevent claiming full goal completion |
 
 | 10. English / Te reo Māori | Deferred by user instruction; version 31 removes the selector and ignores earlier saved Māori choices | Re-enable only with renewed direction; draft review remains incomplete |
 
@@ -100,7 +100,7 @@ result before reopening, so a no-op could be distinguished from an update.
 Version 15 introduced the guided flow; version 17 adds contextual route/stop maps.
 Earlier measurements remain labelled as historical evidence, not latest acceptance.
 
-## Handover limits
+## Historical handover limits (before live/TG implementation)
 
 The timetable, route shapes and map can be old; transport access fields are often
 unknown. Access connectors are estimated; routing and street coverage are bounded.
@@ -832,3 +832,18 @@ receipt on another offline reload. [Issue 2](https://github.com/reality2-ai/alon
 is explicitly synthetic and closed as completed. No open user reports were present
 when checked after this run. The signed-in composer and final browser submission
 remain untested; the device guide now includes that optional human check.
+
+
+## Regular-app audit with a managed browser-test server
+
+The current regular-app source passed 68 JavaScript tests, 18 Python tests, all
+20 browser scenarios, and independent raw-GTFS bus/train/ferry exploration checks.
+[Audit evidence](evidence/regular-app-managed-server-audit.json) records the source
+base, test-configuration hash and log hashes. The browser command now starts and
+stops its own local server with AT credentials explicitly disabled. An initial
+invocation before this change failed because no server was running; the complete
+managed-server rerun passed. A caller-supplied `TEST_BASE_URL` remains supported.
+
+This updates the ordinary planner's full-browser baseline. It does not qualify a
+new preview, deploy an app update, establish real-provider access or substitute
+for physical-device/spoken screen-reader acceptance.

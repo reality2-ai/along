@@ -1,0 +1,36 @@
+{
+  "profile": "along-regular-regression-audit-v1",
+  "recorded_at": "2026-09-24T01:58:40.074889+00:00",
+  "source_base": "3a6ffe04409f410232d0674482ef43d2328e5ac5",
+  "test_config_sha256": "f2861075e8c8df1ffeac7432dac58d4daa8a8e6359d5616d06c7f032da0942de",
+  "regular_app_version": "37",
+  "checks": {
+    "core": {
+      "command": "npm test",
+      "javascript_passed": 68,
+      "python_passed": 18
+    },
+    "browser": {
+      "command": "npm run test:browser",
+      "passed": 20,
+      "managed_server": true,
+      "at_credentials_disabled": true,
+      "server_stopped_after_run": true
+    },
+    "route_exploration": {
+      "command": "python3 test/check_route_exploration.py",
+      "status": "passed"
+    }
+  },
+  "logs_sha256": {
+    "core": "d1a59d89500956ace4b74ee9a8587c93769f9cc71c37fe5216e1ef1c8bc22fc8",
+    "browser": "596d17a48336ff6042c633d9b4cc9b211f7efae0dd59896529d9118a9889705a",
+    "route_exploration": "46c899c7b47e977684c6bc6895e3f41cedda37fc3ffb59b6961667eedd2d629a"
+  },
+  "limits": [
+    "Local Chromium, preserved timetable; not physical-device or TalkBack acceptance",
+    "Live browser scenarios use mocked provider responses",
+    "No new public deployment or preview qualification",
+    "Initial browser invocation failed because the required server was absent; managed-server rerun passed all scenarios"
+  ]
+}

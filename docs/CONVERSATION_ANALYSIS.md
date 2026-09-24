@@ -1261,3 +1261,18 @@ The 3804 published evidence stays immutable. This source improvement is not yet 
 new deployed release and does not solve distinct-pair capacity or automatic
 reconnection. The course lesson is to identify which resource is exhausted and
 which durable evidence must survive before choosing a recovery mechanism.
+
+
+### Reproducible verification includes the test environment
+
+A fresh wider-goal audit found that the documented browser command depended on a
+server started separately. Running the command alone produced connection failures,
+not evidence that routing had regressed. The test configuration now owns a local
+server for the default run, explicitly disables AT credentials and refuses to
+reuse an unknown process on the same port. An explicit test-server override remains
+available for controlled fixtures.
+
+This supports the no-human-coding course constraint: the assistant can execute the
+verification command without asking the learner to manage a hidden prerequisite.
+It also illustrates an evidence distinction: an environment setup failure must be
+reported and corrected before a test result can support an application claim.
