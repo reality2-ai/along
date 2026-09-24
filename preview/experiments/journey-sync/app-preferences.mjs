@@ -1,11 +1,33 @@
 import {readPreferences as readLocal} from '../../public/preferences.js';
-import {projectJourney, journeyId} from './state.mjs';
+import {projectJourney, journeyId, validateState} from './state.mjs';
 export {recordJourney, suggestions, journeyRoutes, sameRoutes} from '../../public/preferences.js';
 export const preferenceKey = 'along-device-preview-journeys-v1';
 export const changedEvent = 'along-saved-journeys-changed';
 export const appliedEvent = 'along-saved-journeys-applied';
 export const readPreferences = readLocal;
 const hex = /^[0-9a-f]{64}$/;
+// The head may already have an IndexedDB receipt, or be committing in another
+// tab. Keep it byte-for-byte; only its unstarted successors can be coalesced.
+// Retain final deletions even when an earlier pending save is removed: another
+// device may still hold that journey. New operation IDs cannot match old receipts.
+function compactPending(pending, group) {
+  const latest = new Map();
+  for (const operation of pending.slice(1)) {
+    if (!operation || !/^[0-9a-f-]{36}$/.test(operation.id)
+        || !Array.isArray(operation.changes) || operation.changes.length > 512) throw Error('Sharing journal unavailable');
+    for (const change of operation.changes) {
+      validateState({format: 1, group, clock: 1, journeys: [
+        {id: change.id, value: change.value, actor: group, clock: 1},
+      ]}, group);
+      // Reinsert to keep the order of the final local edits across pairs.
+      latest.delete(change.id); latest.set(change.id, change);
+    }
+  }
+  const result = pending.slice(0, 1), changes = [...latest.values()];
+  for (let offset = 0; offset < changes.length; offset += 512)
+    result.push({id: crypto.randomUUID(), changes: changes.slice(offset, offset + 512)});
+  return result;
+}
 export function savedValues(data) {
   const values = new Map();
   for (const journey of data.journeys ?? []) if (journey.saved) {
@@ -30,6 +52,7 @@ export function writePreferences(data, storage = globalThis.localStorage) {
       for (const [id, value] of after) if (JSON.stringify(before.get(id)) !== JSON.stringify(value)) changes.push({id, value});
       for (const id of before.keys()) if (!after.has(id)) changes.push({id, value: null});
       if (changes.length) sync.pending.push({id: crypto.randomUUID(), changes});
+      if (sync.pending.length > 256) sync.pending = compactPending(sync.pending, sync.group);
       if (sync.pending.length > 256) throw Error('Sharing journal full');
     }
     storage.setItem(preferenceKey, JSON.stringify({...data, ...(sync ? {journeySync: sync} : {})}));

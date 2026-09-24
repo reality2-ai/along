@@ -2,6 +2,9 @@
 // No clock time, search history, credentials or current-screen state is included.
 const idPattern = /^[0-9a-f]{64}$/;
 const limit = 256;
+export class JourneyCapacityError extends Error {
+  constructor() { super('Saved-journey sharing capacity reached'); this.name = 'JourneyCapacityError'; }
+}
 const fail = () => { throw new Error('Saved-journey state unavailable'); };
 const exact = (value, keys) => value && typeof value === 'object' && !Array.isArray(value)
   && Object.keys(value).sort().join(',') === [...keys].sort().join(',');
@@ -76,12 +79,15 @@ export function mergeStates(left, right) {
     const held = entries.get(entry.id);
     if (!held || compare(entry, held) > 0) entries.set(entry.id, entry);
   }
+  if (entries.size > limit) throw new JourneyCapacityError();
   return validateState({format: 1, group: a.group, clock: Math.max(a.clock, b.clock), journeys: [...entries.values()]}, a.group);
 }
 export function changeJourney(state, actor, id, value) {
   const saved = validateState(state, state.group);
   if (!idPattern.test(actor) || !validJourneyId(id) || !clock(saved.clock + 1)) fail();
   const next = {id, actor, clock: saved.clock + 1, value: value === null ? null : journeyValue(value)};
+  if (next.value && journeyId(next.value) !== id) fail();
+  if (saved.journeys.length === limit && !saved.journeys.some(entry => entry.id === id)) throw new JourneyCapacityError();
   return validateState({...saved, clock: next.clock, journeys: [...saved.journeys.filter(entry => entry.id !== id), next]}, saved.group);
 }
 export function savedJourneys(state) {

@@ -1,16 +1,28 @@
 {
   "profile": "along-preview-qualification-v1",
-  "app_version": "3804",
-  "source_commit": "335e76c71cec2b20725cc70f1b8da79e385ed2ae",
-  "recorded_at": "2026-09-24T01:43:20.223079+00:00",
-  "candidate_manifest_sha256": "83389f56e8009c528f7233f69cb2bf6cbd81710dd20298cc2cb201454c242510",
+  "app_version": "3805",
+  "source_commit": "96bd8550eb545a36dab9b076c62a0c53f2f797f4",
+  "recorded_at": "2026-09-24T02:04:07.244027+00:00",
+  "candidate_manifest_sha256": "1b37bc67c704bcbfcf4dba71065ad969a7b4dc00478380a7b3ecfe2e8e66dd8f",
   "checks": {
+    "journal_compaction": {
+      "status": "passed",
+      "command": "PREVIEW=1 node experiments/journey-sync/app-store-browser.test.mjs",
+      "exit_code": 0,
+      "log_sha256": "bc256a05359deefad22b3b453d7e9d3c395356f6d1975adb17e8fd0069dfc58a"
+    },
     "upgrade_coexistence": {
       "status": "passed",
       "command": "node experiments/journey-sync/preview-coexistence.test.mjs",
       "exit_code": 0,
-      "log_sha256": "80efbe3c1a24c59a8fd508619ea01022fdbaf090d0583ab18d6df9e6d20567bc",
-      "previous_release_manifest_sha256": "730e2046ee35cd40867e3f4bca8c5e74a36f78fd57bc7f50e48826474f96921c"
+      "log_sha256": "a9ea07454ae8ac97f54974ed368478a16457e0ae4b4fb949133f7fb77cb60d38",
+      "previous_release_manifest_sha256": "fb96fb588e68bf7be65a30bd33b6e505b900358a7f66daf81bf52de2a55532f1"
+    },
+    "capacity_reporting": {
+      "status": "passed",
+      "command": "PREVIEW=1 CAPACITY=1 node experiments/journey-sync/app-integration.test.mjs",
+      "exit_code": 0,
+      "log_sha256": "6abd9784f30d0564f2397053ad17b17d159e8ac1fb353cfd590d3ee4fc666720"
     },
     "owner_key": {
       "status": "passed",
