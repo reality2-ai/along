@@ -724,6 +724,22 @@ paths on the same origin. It is not proof of installed-app update/cache replacem
 The candidate remains DO-NOT-PUBLISH and the published ZIP/site are unchanged.
 Review/application of later older-tab edits remains unfinished.
 
+## Later older-tab edits: review model
+
+`createOlderEditReview` is now a read-only three-way comparison of the retained
+baseline, current older-app data and reconciled recovered state. It identifies
+saved-place changes made since the baseline and asks for current/older choices
+only where they differ from today's recovered copy. Unchanged older values cannot
+overwrite newer choices. Local settings/history are not turned into shared edits.
+
+The model refuses missing/group-mismatched copies, inconsistent pending journals,
+duplicate saved pairs and an unreconciled current view. Applying proposed choices
+is simulated in the current generation to enforce capacity without silently
+trimming. The review digest binds exact inputs; exposed display data is copied.
+Seven combined review-model tests pass. No persistence or UI uses this model yet:
+guarded decisions, acknowledgment of an older baseline, later-edit retry and the
+contextual review screen remain necessary.
+
 ## Required before release
 
 1. Qualify the reviewed migration and format-2 bridge against the exact published

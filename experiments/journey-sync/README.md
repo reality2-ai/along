@@ -668,3 +668,16 @@ releases/along-r2-runtime-1b9229ad`. It requires the DO-NOT-PUBLISH candidate ma
 The two app paths use blocked service workers: this verifies namespace/data
 migration and older-tab behavior, **not** installed-app update discovery, cache
 replacement or release qualification. The public ZIP is never rewritten.
+
+`older-edit-review.mjs` now models the review of later edits in an older tab. It
+compares a retained baseline, the older copy and the reconciled current generation.
+Only saved-place/service changes since the baseline become choices; unrelated
+newer choices remain intact, and history/settings are not imported as shared data.
+Additions, removals and competing service preferences require explicit current/older
+choices. A digest binds all three raw copies and the current replica/actor.
+
+Seven combined older-edit/checkpoint-review Node tests pass, including preserved
+newer choices, deletions, inconsistent journals, duplicate saved pairs, changed
+inputs, caller mutation and capacity refusal without trimming. This is a read-only
+model. A guarded durable decision/acknowledgment writer and a Settings review screen
+remain to be built; the existing older-edit warning is not yet actionable.
