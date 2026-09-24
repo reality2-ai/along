@@ -43,7 +43,8 @@ python3 scripts/build_r2_runtime.py \
 
 The builder reads committed files, creates two fresh builds, and retains matching
 outputs, source, licence notices and provenance. The output directory must be new.
-This workspace-selection path still needs a complete runtime-bundle rehearsal;
-the recorded container builds exercised Cargo and wasm-bindgen directly.
+The [complete runtime-bundle rehearsal](../../docs/evidence/public-runtime-bundle.json)
+also passes from an anonymous public checkout in a rootless container. Browser
+qualification of this new runtime remains pending.
 Use [Along's build guide](../../docs/BUILDING.md) for app qualification and release
 instructions. Course learners ask the AI to perform these technical steps.
