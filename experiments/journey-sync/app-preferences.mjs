@@ -1,0 +1,126 @@
+import {readPreferences as readLocal, recordJourney as recordLocalJourney} from '../../preferences.js';
+import {projectJourney, journeyId, validateState} from './state.mjs';
+export {suggestions, journeyRoutes, sameRoutes} from '../../preferences.js';
+import {preferenceKey, readEnvelope as readRawEnvelope} from './preference-envelope.mjs';
+import {selectPlannerStorage} from './isolated-preferences.mjs';
+export {preferenceKey, selectPlannerStorage};
+export const readEnvelope = (storage = selectPlannerStorage()) => readRawEnvelope(storage);
+export const changedEvent = 'along-saved-journeys-changed';
+export const appliedEvent = 'along-saved-journeys-applied';
+const origins = new WeakMap();
+export function readPreferences(storage) {
+  try {
+    storage ??= selectPlannerStorage();
+    const raw = storage.getItem(preferenceKey);
+    const data = readLocal({getItem: () => raw}); origins.set(data, raw); return data;
+  } catch { return readLocal({getItem: () => null}); }
+}
+export function recordJourney(data, ...args) {
+  const next = recordLocalJourney(data, ...args);
+  if (origins.has(data)) origins.set(next, origins.get(data));
+  return next;
+}
+// Planner-facing async adapter. The source snapshot follows immutable learning
+// updates as well as in-place UI edits; never infer its origin at save time.
+export async function writePlannerPreferences(data, storage, locks = globalThis.navigator?.locks) {
+  if (!origins.has(data)) return false;
+  const expectedRaw = origins.get(data), copy = structuredClone(data);
+  try {
+    storage ??= selectPlannerStorage();
+    const before = readEnvelope(storage);
+    const unchanged = current => {
+      if (current.raw === expectedRaw) return true;
+      if (expectedRaw === null) return false;
+      const original = readEnvelope({getItem: () => expectedRaw});
+      const {journeySync: oldSync, ...oldData} = original.data;
+      const {journeySync: newSync, ...newData} = current.data;
+      // Consuming an already-committed journal head does not change the user's
+      // snapshot. Permit only bookkeeping changes within the same generation.
+      return oldSync?.group === newSync?.group && JSON.stringify(oldSync?.version) === JSON.stringify(newSync?.version)
+        && JSON.stringify(oldData) === JSON.stringify(newData);
+    };
+    if (!unchanged(before)) return false;
+    if (before.sync) {
+      if (!locks?.request) return false;
+      return await locks.request('along-journey-import:' + before.sync.group, () => {
+        const current = readEnvelope(storage);
+        return unchanged(current) && writePreferences(copy, storage);
+      });
+    }
+    if (!locks?.request) return writePreferences(copy, storage);
+    return await locks.request('along-journey-import:local', () => {
+      if (storage.getItem(preferenceKey) !== expectedRaw) return false;
+      return writePreferences(copy, storage);
+    });
+  } catch { return false; }
+}
+const hex = /^[0-9a-f]{64}$/;
+// The head may already have an IndexedDB receipt, or be committing in another
+// tab. Keep it byte-for-byte; only its unstarted successors can be coalesced.
+// Retain final deletions even when an earlier pending save is removed: another
+// device may still hold that journey. New operation IDs cannot match old receipts.
+function compactPending(pending, group, version) {
+  const latest = new Map();
+  for (const operation of pending.slice(1)) {
+    if (!operation || !/^[0-9a-f-]{36}$/.test(operation.id)
+        || !Array.isArray(operation.changes) || operation.changes.length > 512) throw Error('Sharing journal unavailable');
+    const origin = operation.version ?? {generation: 0, checkpoint: '0'.repeat(64)};
+    const target = version ?? {generation: 0, checkpoint: '0'.repeat(64)};
+    if (origin.generation !== target.generation || origin.checkpoint !== target.checkpoint) throw Error('Sharing journal needs recovery');
+    for (const change of operation.changes) {
+      validateState({format: 1, group, clock: 1, journeys: [
+        {id: change.id, value: change.value, actor: group, clock: 1},
+      ]}, group);
+      // Reinsert to keep the order of the final local edits across pairs.
+      latest.delete(change.id); latest.set(change.id, change);
+    }
+  }
+  const result = pending.slice(0, 1), changes = [...latest.values()];
+  for (let offset = 0; offset < changes.length; offset += 512)
+    result.push({id: crypto.randomUUID(), changes: changes.slice(offset, offset + 512), ...(version ? {version: structuredClone(version)} : {})});
+  return result;
+}
+export function savedValues(data) {
+  const values = new Map();
+  for (const journey of data.journeys ?? []) if (journey.saved) {
+    const value = projectJourney(journey); values.set(journeyId(value), value);
+  }
+  return values;
+}
+export function writePreferences(data, storage = selectPlannerStorage()) {
+  try {
+    const previous = readEnvelope(storage), sync = previous.sync && structuredClone(previous.sync);
+    if (sync) {
+      const before = savedValues(previous.data), after = savedValues(data), changes = [];
+      for (const [id, value] of after) if (JSON.stringify(before.get(id)) !== JSON.stringify(value)) changes.push({id, value});
+      for (const id of before.keys()) if (!after.has(id)) changes.push({id, value: null});
+      if (changes.length) sync.pending.push({id: crypto.randomUUID(), changes, ...(sync.version ? {version: structuredClone(sync.version)} : {})});
+      if (sync.pending.length > 256) sync.pending = compactPending(sync.pending, sync.group, sync.version);
+      if (sync.pending.length > 256) throw Error('Sharing journal full');
+    }
+    storage.setItem(preferenceKey, JSON.stringify({...data, ...(sync ? {journeySync: sync} : {})}));
+    globalThis.dispatchEvent?.(new Event(changedEvent)); return true;
+  } catch { return false; }
+}
+// Explicit async path for generation recovery. Callers must retain the raw
+// envelope associated with their edit; a stale tab must reload rather than
+// write its entire older preferences object over recovered data.
+// Older builds still have synchronous callers outside this contract.
+export async function writePreferencesLocked(data, {expectedRaw, storage = selectPlannerStorage(),
+  locks = navigator.locks, signal} = {}) {
+  const copy = structuredClone(data), before = readEnvelope(storage);
+  if (before.raw !== expectedRaw || !before.sync || !locks?.request) return false;
+  return locks.request('along-journey-import:' + before.sync.group, {signal}, () => {
+    if (signal?.aborted || storage.getItem(preferenceKey) !== expectedRaw) return false;
+    return writePreferences(copy, storage);
+  });
+}
+// Explicit opt-in starts local tracking. No identity, consent or delivery claim.
+export function enableJourneyTracking(group, storage = selectPlannerStorage()) {
+  if (!hex.test(group)) throw Error('Journey group unavailable');
+  const {data, sync} = readEnvelope(storage);
+  if (sync) { if (sync.group !== group) throw Error('Different saved sharing group'); return; }
+  const changes = [...savedValues(data)].map(([id, value]) => ({id, value}));
+  data.journeySync = {format: 1, group, pending: changes.length ? [{id: crypto.randomUUID(), changes}] : []};
+  storage.setItem(preferenceKey, JSON.stringify(data));
+}

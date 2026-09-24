@@ -684,7 +684,7 @@ Object.assign(messages, {
     "mi": "I hangaia a Along hei mahi mō tētahi akoranga waehere e tautokona ana e te atamai horihori. He whakamātautau tēnei, ehara i te ratonga mana a Auckland Transport. He kōrero hē, tawhito, kāore rānei i oti mō ngā ara, ngā wā, ngā tohutohu hīkoi me te āhei ki te uru. Tirohia tō haerenga me ō hiahia urunga ki a AT i mua i te haere."
   },
   "settings.privacy": {
-    "en": "Along learns from successful journey searches, not background tracking. Your searches, saved routes and preferences stay on this device. No account or uploaded journey history.",
+    "en": "Search history and current location stay on this device. If you allow journey sharing, saved places and service preferences can be exchanged with your connected devices. An optional relay helps permitted devices reconnect while Along is open. It sees connection metadata; shared journeys are encrypted. No Along server stores your journeys.",
     "mi": "Ka ako a Along i ngā rapunga haerenga kua angitu, kāore mā te aroturuki papamuri. Ka noho ō rapunga, ō ara kua tiakina me ō manakohanga ki tēnei pūrere. Kāore he pūkete, kāore hoki e tukuna ake tō hītori haerenga."
   },
   "settings.suggest": {
@@ -696,7 +696,7 @@ Object.assign(messages, {
     "mi": "Ka hāngai ngā huatau ki te auau o ō rapunga, te wā o te rā, me ngā rā mahi, ngā rā whakatā rānei. Ka taea tonu te whakarite haerenga ki wāhi kē."
   },
   "settings.forget": {
-    "en": "Forget my journey history",
+    "en": "Forget history and saved places",
     "mi": "Mukua tōku hītori haerenga"
   },
   "settings.device": {
@@ -748,7 +748,7 @@ Object.assign(messages, {
     "mi": "Ka mahi tuimotu. Māu e kōwhiri ngā kōrero o nāianei."
   },
   "offline.explanation": {
-    "en": "After preparation, address search and scheduled journey planning work offline on your device. Optional online AT information can add current predictions and alerts. The public app’s live connection is not yet enabled; its journey times use the downloaded timetable. The portal supplies downloads and updates, not your journey calculations.",
+    "en": "Downloaded address search and scheduled planning work offline. Optional AT checks use your configured personal key to request current information directly from AT. Unavailable or unmatched information leaves the schedule in place. The portal supplies downloads and updates, not journey calculations.",
     "mi": "I muri i te whakarite, ka mahi tuimotu te rapu wāhitau me te whakamahere haerenga ā-wātaka ki tō pūrere. Ki te kōwhiria, ka tāpiri ngā kōrero AT ā-ipurangi i ngā matapae me ngā whakatūpato o nāianei. Kāore anō kia whakahohea te hononga wā-tūturu o te taupānga tūmatanui; ka ahu ngā wā haerenga i te wātaka kua tikiakehia. Mā te tomokanga ngā tikiake me ngā whakahoutanga e tuku, ehara i ngā tātaitanga haerenga."
   },
   "offline.guide": {

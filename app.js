@@ -2,13 +2,14 @@ import {vehiclePosition} from './live-vehicles.js';
 import {contextualAlerts} from './live-context.js';
 import {stopAlertContexts,journeyAlertContexts,aucklandWallEpoch} from './live-time.js';
 import {departurePrediction} from './live-predictions.js';
-import {createLiveClient} from './live-client.js';
+import './experiments/at-credentials/app-bootstrap.mjs';
+import {createLiveClient} from './experiments/at-credentials/app-live-bridge.mjs';
 import {liveBaseURL} from './live-config.js';
 import {setupFeedback} from './feedback-ui.js';
 import {createLocalizer, setLocalizedText, errorPhraseKey} from './i18n.js';
 import {setupUpdates} from './updates.js';
 import {aucklandNow} from './planner.js';
-import {readPreferences,writePreferences,recordJourney,suggestions,journeyRoutes,sameRoutes} from './preferences.js';
+import {readPreferences,writePlannerPreferences as writePreferences,recordJourney,suggestions,journeyRoutes,sameRoutes} from './experiments/journey-sync/app-preferences.mjs';
 const $=id=>document.getElementById(id);
 const language=createLocalizer({storage:null});
 const liveClient=createLiveClient({baseURL:liveBaseURL,pageURL:import.meta.url});
@@ -66,14 +67,33 @@ const mobility=state.preferences.mobility||{};
 if([300,600,900,1200].includes(mobility.maxWalk))$('max-walk').value=mobility.maxWalk;
 if([0.8,1,1.25].includes(mobility.pace))$('walking-pace').value=mobility.pace;
 $('avoid-steps').checked=!!mobility.avoidSteps;$('confirmed-access').checked=!!mobility.confirmedAccess;
-for(const id of ['max-walk','walking-pace','avoid-steps','confirmed-access'])$(id).addEventListener('change',()=>{state.preferences.mobility={...accessProfile(),maxWalk:Number($('max-walk').value)};persist();updatePreferenceSummary();if(state.location)refreshNearby();});
+for(const id of ['max-walk','walking-pace','avoid-steps','confirmed-access'])$(id).addEventListener('change',async()=>{state.preferences.mobility={...accessProfile(),maxWalk:Number($('max-walk').value)};await persist();updatePreferenceSummary();if(state.location)refreshNearby();});
 for(const input of document.querySelectorAll('#date,#time,.modes input'))input.addEventListener('change',updatePreferenceSummary);
 $('leave-now').onclick=setNow;
 $('more-stops').onclick=()=>{state.showAllStops=!state.showAllStops;if(state.departureData)renderDepartures(state.departureData);};
 const context=()=>{const at=aucklandNow();return {hour:Number(at.time.slice(0,2)),day:new Date(at.date+'T12:00:00Z').getUTCDay(),timestamp:Date.now()};};
-function persist(){const saved=writePreferences(state.preferences);if(saved)$('storage-message').textContent='';else translated('storage-message','storage.failed');renderUsual();}
+let preferencesSaving=false;
+async function persist(){
+  if(preferencesSaving){translated('storage-message','storage.failed');return false;}
+  preferencesSaving=true;
+  const focused=document.activeElement;
+  const controls=['save-places','prefer-services','clear-history','learning-enabled','max-walk','walking-pace','avoid-steps','confirmed-access'].map(id=>[$(id),$(id).disabled]);
+  for(const [control] of controls)control.disabled=true;
+  let saved=false;
+  try{saved=await writePreferences(state.preferences);}catch{}
+  finally{preferencesSaving=false;state.preferences=readPreferences();for(const [control,disabled] of controls)control.disabled=disabled;if(document.activeElement===document.body&&controls.some(([control])=>control===focused)&&focused.getClientRects().length)focused.focus({preventScroll:true});}
+  if(!saved){const profile=state.preferences.mobility||{};$('max-walk').value=profile.maxWalk||900;$('walking-pace').value=profile.pace||1.25;$('avoid-steps').checked=!!profile.avoidSteps;$('confirmed-access').checked=!!profile.confirmedAccess;}
+  if(saved)$('storage-message').textContent='';else translated('storage-message','storage.failed');
+  $('preference-write-status').hidden=saved;if(!saved)translated('preference-write-status','storage.failed');
+  renderUsual();return saved;
+}
 function serviceMarkup(routes){return routes.length?routes.map(r=>`${message('mode.'+r.mode+'Title')} ${escape(r.route)}`).join(' → '):message('journey.walkRoll');}
-function renderUsual(){
+let usualRefreshPending=false;
+function renderUsual({background=false}={}){
+  // Keep the shortcut under a keyboard user's focus stable while peer updates
+  // arrive. Apply the latest list when focus leaves this group of choices.
+  if(background&&$('usual-journeys').contains(document.activeElement)){usualRefreshPending=true;return;}
+  usualRefreshPending=false;
   const usual=suggestions(state.preferences,context());
   $('usual-journeys').innerHTML=usual.length?usual.map((j,i)=>`<button type="button" class="usual-card" data-usual="${i}"><span class="usual-icon" aria-hidden="true">${j.saved?'☆':'↗'}</span><span><strong>${escape(j.to.name)}</strong><small>${message('usual.from',{place:j.from.name})}</small><small>${j.saved?(j.savedRoutes?message('usual.saved')+' · '+serviceMarkup(j.savedRoutes):message('usual.savedJourney')):message('usual.searches',{count:j.count})}</small></span></button>`).join(''):`<div class="usual-placeholder"><span class="usual-icon" aria-hidden="true">↗</span><div><strong>${message(state.preferences.learning?'usual.begin':'usual.different')}</strong>${message(state.preferences.learning?'usual.learnHelp':'usual.pausedHelp')}</div></div>`;
   document.querySelectorAll('[data-usual]').forEach(button=>button.onclick=()=>{state.intent='plan';const trip=usual[Number(button.dataset.usual)];state.savedPreference=trip.saved&&trip.savedRoutes?{from:trip.from.id,to:trip.to.id,routes:trip.savedRoutes}:null;setPlace('origin',trip.from);setPlace('destination',trip.to);setNow();searchJourney();});
@@ -81,6 +101,9 @@ function renderUsual(){
   $('learning-enabled').checked=state.preferences.learning;
   translated('learning-note',state.preferences.learning?'learning.active':'learning.paused');
 }
+$('usual-journeys').addEventListener('focusout',()=>{
+  if(usualRefreshPending)queueMicrotask(()=>renderUsual({background:true}));
+});
 function setNow(){const now=aucklandNow();$('date').value=now.date;$('time').value=now.time;updatePreferenceSummary();}
 function setPlace(field,stop){state[field==='origin'?'from':'to']=stop;$(field).value=stop?.name||'';$(field+'-options').hidden=true;$(field).setAttribute('aria-expanded','false');if(field==='origin'){state.location=null;if(stop){state.location={lat:stop.lat,lon:stop.lon};state.locationLabel=stop.name;}}}
 function renderFlowLanguage(){
@@ -202,7 +225,7 @@ async function searchJourney(){
   try{
     const journeys=await ask('plan',{from,to,date,time,modes,maxWalk:Number($('max-walk').value),profile:accessProfile(),preferredRoutes:state.savedPreference?.routes});if(sequence!==state.searchSequence)return;
     state.journeys=journeys;state.lastSearch={from,to,date,time};translated('journey-title',journeys.length?(journeys.length===1?'journey.oneWay':'journey.ways'):'journey.noneWindow',{count:journeys.length});
-    if(journeys.length){state.preferences=recordJourney(state.preferences,from,to,{hour:Number(time.slice(0,2)),day:new Date(date+'T12:00:00Z').getUTCDay(),timestamp:Date.now()});persist();}renderJourneys();translated('announcement',journeys.length?'journey.announced':'journey.noneAnnounced',{count:journeys.length,time:journeys.length?clock(journeys[0].arrival):''});$('journey-title').focus();
+    if(journeys.length){state.preferences=recordJourney(state.preferences,from,to,{hour:Number(time.slice(0,2)),day:new Date(date+'T12:00:00Z').getUTCDay(),timestamp:Date.now()});await persist();}if(sequence!==state.searchSequence)return;renderJourneys();translated('announcement',journeys.length?'journey.announced':'journey.noneAnnounced',{count:journeys.length,time:journeys.length?clock(journeys[0].arrival):''});$('journey-title').focus();
   }catch(error){if(sequence===state.searchSequence){showScreen('review');showError('form-error',error);$('form-error').focus();}}
   finally{if(sequence===state.searchSequence)$('find').disabled=false;}
 }
@@ -218,7 +241,7 @@ function placeDetail(place){
   const link=detailLink(label,place.name,async()=>{
     const now=explorationTime(),departures=place.placeType==='address'?[]:await ask('stopDetails',{id:place.id,now});
     stopRows=departures;stopNow=now;
-    return `<p>${message(place.placeType==='address'?'place.addressType':'explore.stationStop')}${place.code?' · '+message('place.stopType',{code:place.code}):''}</p>${mapMarkup()}<p>${message('explore.access')}</p>${place.placeType==='address'?'':`<h3>${message('board.heading',{time:clock(now.seconds),date:now.date})}</h3><p>${message('board.limit')}</p><p><a href="https://at.govt.nz/atmobile/" target="_blank" rel="noopener noreferrer">${message('board.at')}</a> <small>${message('board.online')}</small></p>${liveClient.configured?'<button type="button" class="secondary-button" id="stop-live">Check live times and alerts</button><p class="field-help">Optional online check. Your journey details stay on this device; the server receives your IP address.</p><p id="stop-live-status" class="field-help" role="status"></p><div id="stop-alerts"></div>':''}${departures.length?`<div class="departure-board"><table><caption>${message('board.caption')}</caption><thead><tr><th scope="col">${message('board.time')}</th><th scope="col">${message('board.route')}</th><th scope="col">${message('board.destination')}</th></tr></thead><tbody>${departures.map((d,i)=>`<tr><td class="board-time" data-stop-time="${i}">${clock(d.departure)}</td><td>${routeLink(escape(d.route),{routeId:d.routeId,tripId:d.trip},'board-route')}</td><td>${escape(d.headsign)}</td></tr>`).join('')}</tbody></table></div>`:`<p>${message('board.none')}</p>`}`}`;
+    return `<p>${message(place.placeType==='address'?'place.addressType':'explore.stationStop')}${place.code?' · '+message('place.stopType',{code:place.code}):''}</p>${mapMarkup()}<p>${message('explore.access')}</p>${place.placeType==='address'?'':`<h3>${message('board.heading',{time:clock(now.seconds),date:now.date})}</h3><p>${message('board.limit')}</p><p><a href="https://at.govt.nz/atmobile/" target="_blank" rel="noopener noreferrer">${message('board.at')}</a> <small>${message('board.online')}</small></p>${liveClient.configured?'<button type="button" class="secondary-button" id="stop-live">Check live times and alerts</button><p class="field-help">Optional online check. Your journey details stay on this device; Auckland Transport receives your IP address and personal key.</p><p id="stop-live-status" class="field-help" role="status"></p><div id="stop-alerts"></div>':''}${departures.length?`<div class="departure-board"><table><caption>${message('board.caption')}</caption><thead><tr><th scope="col">${message('board.time')}</th><th scope="col">${message('board.route')}</th><th scope="col">${message('board.destination')}</th></tr></thead><tbody>${departures.map((d,i)=>`<tr><td class="board-time" data-stop-time="${i}">${clock(d.departure)}</td><td>${routeLink(escape(d.route),{routeId:d.routeId,tripId:d.trip},'board-route')}</td><td>${escape(d.headsign)}</td></tr>`).join('')}</tbody></table></div>`:`<p>${message('board.none')}</p>`}`}`;
   });detailViews.get(id).mount=()=>{mountMap(null,[place]);mountStopLive(id,stopRows,stopNow,place);};return link;
 }
 function mountStopLive(id,rows,at,place){
@@ -347,7 +370,7 @@ function routeLink(label,args,className='detail-link'){
 }
 function routeVariantMarkup(data,v){
   const run=v.runs.find(r=>r.trip===v.selectedTrip)||v.runs[0];
-  return `<p>${escape(data.date)} · ${message('explore.scheduled')}</p>${mapMarkup()}${liveClient.configured?'<button type="button" class="secondary-button" id="route-vehicle">Check this service’s current position</button><p class="field-help">Optional online check for the selected departure. Your route selection stays on this device; the server receives your IP address.</p><p id="route-vehicle-status" class="field-help" role="status"></p>':''}<p>${message(v.shape?'explore.geometry':'explore.noGeometry')}</p><label class="preference-field">${message('explore.run')}<select id="route-run">${v.runs.map(r=>`<option value="${escape(r.trip)}" ${r.trip===run.trip?'selected':''}>${clock(r.departure)}</option>`).join('')}</select></label><label class="preference-field">${message('explore.filter')}<input id="route-stop-filter" data-i18n-placeholder="explore.filterHint" type="search" placeholder="For example, Symonds"></label><p class="field-help">${message('explore.filterHelp')}</p><p id="route-match-status" role="status"></p><ol class="route-stop-list">${run.stops.map((s,i)=>`<li data-stop-name="${escape(s.stop.name.toLowerCase())}"><span class="stop-schedule">${clock(s.time)}</span> ${placeDetail(s.stop)}${i===run.stops.length-1?message('explore.lastStop'):!s.pickup?message('explore.noPickup'):''}</li>`).join('')}</ol>`;
+  return `<p>${escape(data.date)} · ${message('explore.scheduled')}</p>${mapMarkup()}${liveClient.configured?'<button type="button" class="secondary-button" id="route-vehicle">Check this service’s current position</button><p class="field-help">Optional online check for the selected departure. Your route selection stays on this device; Auckland Transport receives your IP address and personal key.</p><p id="route-vehicle-status" class="field-help" role="status"></p>':''}<p>${message(v.shape?'explore.geometry':'explore.noGeometry')}</p><label class="preference-field">${message('explore.run')}<select id="route-run">${v.runs.map(r=>`<option value="${escape(r.trip)}" ${r.trip===run.trip?'selected':''}>${clock(r.departure)}</option>`).join('')}</select></label><label class="preference-field">${message('explore.filter')}<input id="route-stop-filter" data-i18n-placeholder="explore.filterHint" type="search" placeholder="For example, Symonds"></label><p class="field-help">${message('explore.filterHelp')}</p><p id="route-match-status" role="status"></p><ol class="route-stop-list">${run.stops.map((s,i)=>`<li data-stop-name="${escape(s.stop.name.toLowerCase())}"><span class="stop-schedule">${clock(s.time)}</span> ${placeDetail(s.stop)}${i===run.stops.length-1?message('explore.lastStop'):!s.pickup?message('explore.noPickup'):''}</li>`).join('')}</ol>`;
 }
 function mountVehicle(view){
   const button=$('route-vehicle'),status=$('route-vehicle-status'),map=contextMap;
@@ -412,6 +435,11 @@ function renderFollow(){
   $('itinerary-legs').innerHTML=journey.legs.map(legMarkup).join('');
   $('previous-leg').hidden=state.legIndex===0;
   translated('next-leg',state.legIndex===journey.legs.length-1?'follow.arrived':'action.nextStep');
+  renderServicePreference();
+}
+function renderServicePreference(){
+  const journey=state.selectedJourney;
+  if(!journey||!state.lastSearch)return;
   const previousSave=state.preferences.journeys.find(j=>j.saved&&j.from.id===state.lastSearch.from.id&&j.to.id===state.lastSearch.to.id);
   const saved=!!previousSave&&sameRoutes(previousSave.savedRoutes,journeyRoutes(journey));
   translated('prefer-services',saved?'service.preferred':previousSave?.savedRoutes?'service.instead':'service.prefer');$('prefer-services').setAttribute('aria-pressed',String(saved));
@@ -469,22 +497,22 @@ function renderSavedPlaces(){
   $('save-places').hidden=state.intent==='nearby';$('save-places-help').hidden=state.intent==='nearby';
   translated('save-places',saved?'save.saved':'save.places');$('save-places').setAttribute('aria-pressed',String(saved));
 }
-$('save-places').onclick=()=>{
+$('save-places').onclick=async()=>{
   const {from,to}=state;if(!from||!to)return;
   let journey=state.preferences.journeys.find(j=>j.from.id===from.id&&j.to.id===to.id);
   if(!journey){journey={from,to,count:0,hours:Array(24).fill(0),days:Array(7).fill(0),last:Date.now(),saved:false};state.preferences.journeys.push(journey);}
   journey.saved=!journey.saved;
   if(!journey.saved){journey.savedRoutes=null;state.savedPreference=null;}
-  persist();renderSavedPlaces();translated('announcement',journey.saved?'save.done':'save.removed');
+  const saved=await persist();renderSavedPlaces();if(saved)translated('announcement',journey.saved?'save.done':'save.removed');
 };
-$('prefer-services').onclick=()=>{
+$('prefer-services').onclick=async()=>{
   const {from,to}=state.lastSearch;let journey=state.preferences.journeys.find(j=>j.from.id===from.id&&j.to.id===to.id);
   if(!journey){journey={from,to,count:0,hours:Array(24).fill(0),days:Array(7).fill(0),last:Date.now(),saved:false};state.preferences.journeys.push(journey);}
   const routes=journeyRoutes(state.selectedJourney);
   const wasSaved=journey.saved&&sameRoutes(journey.savedRoutes,routes);
   journey.saved=true;journey.savedRoutes=wasSaved?null:routes;
   state.savedPreference=null;for(const option of state.journeys)delete option.preferred;
-  renderJourneys();persist();renderFollow();translated('announcement',wasSaved?'service.removed':'service.saved',()=>({services:routes.length?routes.map(r=>`${language.text('mode.'+r.mode+'Title')} ${r.route}`).join(' → '):language.text('journey.walkRoll')}));
+  const saved=await persist();renderJourneys();renderFollow();if(saved)translated('announcement',wasSaved?'service.removed':'service.saved',()=>({services:routes.length?routes.map(r=>`${language.text('mode.'+r.mode+'Title')} ${r.route}`).join(' → '):language.text('journey.walkRoll')}));
 };
 $('sort').onchange=renderJourneys;
 $('use-any-route').onclick=()=>{state.savedPreference=null;searchJourney();};
@@ -523,8 +551,8 @@ $('refresh').onclick=()=>refreshNearby();$('nearby-live').onclick=()=>refreshNea
 $('location').onclick=()=>{if(!navigator.geolocation){translated('form-error','location.unavailable');return;}$('location').disabled=true;translated('location','location.finding');navigator.geolocation.getCurrentPosition(position=>{setPlace('origin',{id:`location:${position.coords.latitude.toFixed(5)},${position.coords.longitude.toFixed(5)}`,name:'Current location',lat:position.coords.latitude,lon:position.coords.longitude,placeType:'address'});state.locationLabel='your location';$('location').disabled=false;translated('location','location.use');translated('announcement','location.selected');},()=>{$('location').disabled=false;translated('location','location.use');translated('form-error','location.failed');},{enableHighAccuracy:false,timeout:12000,maximumAge:60000});};
 $('try-britomart').onclick=async()=>{try{const matches=await ask('search',{query:'Waitemata'});const alternatives=matches.length?matches:await ask('search',{query:'Britomart'});const stop=alternatives.find(s=>s.kind===1)||alternatives[0];if(!stop)throw new Error('Try searching for Waitematā or Britomart in the origin field.');setPlace('origin',stop);review();}catch(error){showError('form-error',error);}};
 $('settings-open').onclick=()=>$('settings').showModal();document.querySelectorAll('.close-dialog').forEach(b=>b.onclick=()=>b.closest('dialog').close());
-$('learning-enabled').onchange=()=>{state.preferences.learning=$('learning-enabled').checked;persist();};
-$('clear-history').onclick=()=>{state.preferences.journeys=[];persist();translated('storage-message','learning.cleared');if(state.lastSearch)renderJourneys();if(state.selectedJourney)renderFollow();};
+$('learning-enabled').onchange=async()=>{state.preferences.learning=$('learning-enabled').checked;await persist();$('learning-enabled').checked=state.preferences.learning;};
+$('clear-history').onclick=async()=>{state.preferences.journeys=[];if(await persist())translated('storage-message','learning.cleared');if(state.lastSearch)renderJourneys();if(state.selectedJourney)renderFollow();};
 $('alerts-open').onclick=async()=>{$('alerts').showModal();$('alerts-content').innerHTML=`<div class="loading">${message('alerts.loading')}</div>`;try{const data=await liveClient.read('alerts',{requested:true});if(!data.available)throw new Error();$('alerts-content').innerHTML=data.available?(data.alerts.length?data.alerts.map(a=>`<article class="alert-item" lang="en-NZ"><h3>${escape(a.title)}</h3><p>${escape(a.description)}</p></article>`).join(''):`<p>${message('alerts.none')}</p>`):`<p><span lang="en-NZ">${escape(data.message)}</span> ${message('alerts.website')}</p>`;}catch{$('alerts-content').innerHTML=`<p>${message('alerts.offline')}</p>`;}};
 let installPrompt;
 window.addEventListener('beforeinstallprompt',event=>{event.preventDefault();installPrompt=event;$('install').hidden=false;});
@@ -542,3 +570,23 @@ if('serviceWorker' in navigator){navigator.serviceWorker.register(new URL('./sw.
 ask('init').then(async result=>{ready(result);navigator.storage?.persist?.().catch(()=>{});await loadStreets();}).catch(error=>{translated('data-status','status.unavailable');showError('form-error',error);showError('offline-info',error);});
 
 setupFeedback(language,()=>({version:document.querySelector('#settings').textContent.match(/App version (\d+)/)?.[1],language:language.language,screen:state.screen}));
+
+// Experimental connection changes update affordances without changing the journey.
+window.addEventListener('along-live-connection-changed', () => {
+  $('nearby-live').hidden = !liveClient.configured;
+  $('nearby-live-help').hidden = !liveClient.configured;
+  resetJourneyAlerts();
+  $('journey-live').hidden = !journeyAlertClient.configured || !state.selectedJourney?.legs.slice(state.legIndex).some(leg => leg.trip);
+  for (const view of detailViews.values()) {
+    if (view.variant) view.markup = routeVariantMarkup(view.routeData, view.variant);
+    else if (typeof view.body === 'function') delete view.markup;
+  }
+  // Existing dated detail results keep their normal expiry; preserve map/scroll.
+  for (const id of ['stop-live', 'route-vehicle']) if ($(id)) $(id).hidden = !liveClient.configured;
+});
+window.addEventListener('along-saved-journeys-applied', () => {
+  state.preferences = readPreferences();
+  renderUsual({background:true}); renderSavedPlaces(); renderServicePreference();
+  // A peer's changes update saved choices for next time. Do not replace the
+  // current route, current leg, screen, focused control or route-detail map.
+});

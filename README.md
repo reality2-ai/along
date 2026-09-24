@@ -1,46 +1,11 @@
-# Host Along
+# Along — Auckland public transport
 
-> **Course exercise — use at your own risk.** Along was created as an exercise
-> for an AI-assisted coding course. It is an experimental educational webapp,
-> not an official Auckland Transport service. Routes, times, walking directions
-> and accessibility information may be incomplete, outdated or incorrect.
-> Check your journey and access requirements with AT before travelling.
+Use at your own risk. An experimental AI-coding course app, not an official AT service.
 
-This is the complete static Along webapp. Extract the ZIP and upload **its contents**
-to an HTTPS website, at either the site root or a folder such as `/along/`.
-You do not need Python or Node on the production host.
+Serve this whole directory over HTTPS, including its experiments/ modules. Open index.html through the server. A subpath such as /along/ works. See INSTALL.md or install.html for desktop/mobile installation and offline use.
 
-Keep every file, including `data/`, `vendor/`, the icons, licence notices and
-`.nojekyll`. The four gzip data bundles are required for the complete offline
-experience. Serve `.json.gz` as `application/gzip` without `Content-Encoding`:
-the app decompresses these bytes itself.
+Downloaded scheduled planning runs on your device without the portal. Personal-key AT access and device sharing are optional. No Along proxy is needed. A user-selected relay can reconnect permitted devices while their apps are open. Browser software custody is a limited R2 subset, not hardware-backed protection.
 
-GitHub Pages: put the extracted files at the root of a deployment branch and
-select that branch in Settings → Pages. Open `https://OWNER.github.io/REPO/`.
+Source: https://github.com/reality2-ai/along/tree/643c6eebe4a748afca5ed6dc00d8b756dbbe8386
 
-AWS: upload into your existing HTTPS apps site, or use S3 with CloudFront/Amplify.
-The app folder URL must serve its `index.html`; missing data or API requests must
-return real errors, not that HTML page. Allow HTML, `sw.js` and unversioned assets
-to revalidate on updates. Publish the bundle together and invalidate the app's
-CDN prefix when needed. Preserve the trailing slash in the app URL.
-
-Open the hosted app, check offline readiness in Settings, then use Install app or
-Add to Home Screen. A ZIP or file:// page cannot provide the installed/offline app.
-The first download is around 40 MB; browser storage can be evicted.
-
-Routes, stops, scheduled times and AT route geometry run locally. Online street
-backgrounds are optional requests to OpenStreetMap, not an offline tile archive.
-Allow https://tile.openstreetmap.org in img-src if setting a Content Security Policy.
-
-Live predictions and alerts require a separate authenticated backend at the app's
-api/predictions and api/alerts paths. Never put an AT API key in this directory.
-Without that backend, Along uses labelled schedules. It does not show live vehicles.
-
-Moving to another hostname does not transfer saved journeys: storage is local to
-that browser and origin. Current coverage, accessibility and schedule limitations
-are explained in the app. Keep LICENSE, NOTICE.md and vendor licences when sharing.
-
-For Android, iPhone/iPad, Windows, macOS, Linux and Chromebook installation steps,
-read INSTALL.md or open install.html on the hosted site. Once prepared, core Along
-operations do not require the portal. Journey searches, saved routes and preferences
-stay on the device; the guide explains optional online requests and storage limits.
+Qualification records automated browser checks, not physical-device or external-relay acceptance. Source licences, data attribution, runtime provenance and third-party notices are included.
