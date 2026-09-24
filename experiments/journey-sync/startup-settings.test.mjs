@@ -56,9 +56,9 @@ try {
   assert.equal(await page.evaluate(key=>localStorage.getItem(key+':generation-profile-v1'),input.key),null);
   await page.getByRole('button',{name:'Finish saved-journey setup',exact:true}).click();
   await page.getByRole('button',{name:'Prepare recovery on this device',exact:true}).click();
-  await expect(page.getByText('Connections for this storage version are not enabled yet.',{exact:false})).toBeVisible();
+  await expect(page.getByText('Ongoing sharing for this storage version is not enabled yet.',{exact:false})).toBeVisible();
   await page.reload(); await open();
-  await expect(page.getByText('Connections for this storage version are not enabled yet.',{exact:false})).toBeVisible();
+  await expect(page.getByText('Ongoing sharing for this storage version is not enabled yet.',{exact:false})).toBeVisible();
   await expect(page.getByRole('button',{name:'Start journey connection',exact:true})).toHaveCount(0);
   await page.evaluate(({raw,key})=>localStorage.setItem(key,raw+' '),input);
   await page.getByRole('button',{name:'Check saved-journey recovery',exact:true}).click();
@@ -129,7 +129,7 @@ try {
   },input.key);
   assert.deepEqual(recovered,{route:'75',count:7,learning:true,generation:1,pending:0,legacy:0});
   await page.reload(); await open();
-  await expect(page.getByText('Connections for this storage version are not enabled yet.',{exact:false})).toBeVisible();
+  await expect(page.getByText('Ongoing sharing for this storage version is not enabled yet.',{exact:false})).toBeVisible();
   await expect(page.getByRole('button',{name:'Review saved-place differences',exact:true})).toHaveCount(0);
   // Stage a genuinely signed next checkpoint as an inbox fixture. Transport is
   // independently exercised with enrolled peers; this checks the receiving UI.

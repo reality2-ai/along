@@ -1,6 +1,7 @@
 // Generated journey app in two isolated profiles. Real UI enrollment and saved
 // places; the harness copies public connection text. No AT key or provider needed.
 import assert from 'node:assert/strict';
+import {checkCheckpointApp} from './checkpoint-app-check.test.mjs';
 import {checkAppRotation} from '../at-credentials/rotation-app-check.mjs';
 import AxeBuilder from '@axe-core/playwright';
 import {createHash} from 'node:crypto';
@@ -262,6 +263,9 @@ try {
   assert.deepEqual((await saved(candidate)).find(j => j.to.id === preferred.to.id).savedRoutes, preferred.savedRoutes);
   assert.equal((await saved(candidate)).find(j => j.to.id === preferred.to.id).count, 0, 'owner learning history stays local');
   assert.equal(await owner.locator('#current-step').textContent(), originalStep, 'receipt preserves current journey');
+  if(process.env.CHECKPOINT_APP==='1'){
+    await checkCheckpointApp({pages,owner,candidate,share,move});
+  }else{
   // Remote changes should refresh the saved-service control without rebuilding
   // the route being followed or removing its focused action.
   await owner.locator('#prefer-services').focus();
@@ -448,6 +452,7 @@ try {
     await closeSharing(owner);
     console.log('PASS: capacity refusal remains specific after reload/retry, preserves all 257 local saves and exact queued changes, and leaves replicated state and identity unchanged.');
   }
+  }
   assert.equal(providerRequests.length, 0); assert.deepEqual(errors, []);
-  console.log('PASS: actual Settings enrollment/connection, saved places and service preferences, local history, current-step preservation, focused shortcut preservation and deferred refresh, service-control refresh without route replacement, narrow/zoom accessibility, offline edits and convergence; permission review/removal, retained copies, issued-device selection and offline group removal/reload. Two browser profiles on one host; manual transfer, not physical reachability or automatic discovery.');
+  if(process.env.CHECKPOINT_APP!=='1')console.log('PASS: actual Settings enrollment/connection, saved places and service preferences, local history, current-step preservation, focused shortcut preservation and deferred refresh, service-control refresh without route replacement, narrow/zoom accessibility, offline edits and convergence; permission review/removal, retained copies, issued-device selection and offline group removal/reload. Two browser profiles on one host; manual transfer, not physical reachability or automatic discovery.');
 } finally { await browser?.close(); await new Promise(resolve => server.close(resolve)); }

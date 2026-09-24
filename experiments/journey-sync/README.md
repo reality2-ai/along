@@ -590,3 +590,21 @@ transfers this way, also checking archived evidence, absent successors and wrong
 parents. Node tests cover damaged signatures, changed records and malformed
 positions. Settings still needs to mount the connection and use this selection;
 the public preview remains unchanged.
+
+Experimental Settings now mounts the checkpoint connection flow after reviewed
+migration. The connected screen selects the peer's next retained checkpoint and
+offers **Send checkpoint for review** only when evidence exists. It reports
+retention separately from installation. **Check received saved places** returns
+to local recovery and opens the received review if one is waiting; receiving does
+not replace planner data or force navigation. Back closes this transfer channel.
+Ordinary continuous sharing of the new generation format is still unavailable.
+
+Run `CHECKPOINT_APP=1` with `app-integration.test.mjs` against the generated
+experimental build. This now checks real UI enrollment in two browser profiles,
+saved places/services, reviewed migration on both, issuer checkpoint creation,
+Settings connection and explicit sending, receipt without installation,
+recipient Back/review/apply, axe and narrow keyboard checks, and reopening with
+unchanged saved places, service choices and local learning history. The harness
+copies public signaling text; this does not verify physical-device reachability,
+automatic discovery or exact public-preview upgrades. Public preview 3805 remains
+unchanged pending the remaining integration and release gates.

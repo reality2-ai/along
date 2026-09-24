@@ -1,4 +1,4 @@
-import {showJourneyConnection} from './connection-view.mjs';
+import {showJourneyConnection,showCheckpointConnection} from './connection-view.mjs';
 import {showJourneyDevices} from './devices-view.mjs';
 import {openAppJourneyStore} from './app-store.mjs';
 import {openGenerationAppJourneyStore} from './generation-app-store.mjs';
@@ -33,7 +33,7 @@ export function mountAppJourneySettings({wasm, store, expectedGroup, member}) {
     checking: 'Checking this device’s saved journeys…',
     'isolation-required': 'Saved-journey migration needs to finish on this device. Your existing copies are kept; sharing is paused.',
     'local-review-required': 'Review the retained saved-place differences before sharing again. Your existing copies are kept.',
-    'generation-ready': (startup.generation === 0 ? 'Saved-journey storage is prepared on this device. ' : 'This device has recovered saved journeys. ') + 'Connections for this storage version are not enabled yet. You can still plan and save here.',
+    'generation-ready': (startup.generation === 0 ? 'Saved-journey storage is prepared on this device. ' : 'This device has recovered saved journeys. ') + 'You can transfer a sharing checkpoint for review. Ongoing sharing for this storage version is not enabled yet. You can still plan and save here.',
     unavailable: 'Saved-journey recovery could not be checked. Your stored copies have not been cleared. Sharing is paused.',
   })[startup.status];
   const checkStartup = async () => {
@@ -158,7 +158,7 @@ export function mountAppJourneySettings({wasm, store, expectedGroup, member}) {
       clear(); screen = 'migration-setup';
       const heading = node('h2', 'Prepare saved-journey recovery?'); heading.tabIndex = -1;
       content.append(heading,node('p','Keep your current saved places and queued edits in separate storage so older app copies cannot overwrite recovered data. The original copy is retained.'),
-        node('p','This prepares this device only. It does not free sharing space yet. Connections for the new storage version are not enabled; you can still plan and save offline.'));
+        node('p','This prepares this device only. It does not free sharing space yet. Checkpoint transfers become available; ongoing sharing for the new storage version is not enabled. You can still plan and save offline.'));
       const note = node('p',''); note.setAttribute('role','status'); content.append(note);
       const controller = new AbortController(); view = {dispose:()=>controller.abort()};
       const confirm = action('Prepare recovery on this device',async()=>{
@@ -255,6 +255,46 @@ export function mountAppJourneySettings({wasm, store, expectedGroup, member}) {
     }catch(error){if(!disposed&&generation===selected)reportFailure(error);}
     finally{if(generation===selected)starting=false;}
   };
+  const connectCheckpoint = async role => {
+    if(starting)return;starting=true;const selected=generation;
+    try{
+      if(await checkStartup()!=='generation-ready')throw Error('Review local places first');
+      if(disposed||!dialog.open||generation!==selected)return;
+      clear();screen='checkpoint-connection';
+      let transferNote;
+      view=showCheckpointConnection(content,{wasm,store,expectedGroup,role,focus:true,signal:lifetime.signal,onBack:home,
+        onSaved:()=>{if(transferNote?.isConnected)transferNote.textContent='A checkpoint is retained here. Choose Check received saved places to review it.';},
+        onConnected:connected=>{
+          if(disposed||!dialog.open){connected.close();return;}
+          clear();screen='checkpoint-transfer';view={dispose:()=>connected.close()};
+          const active=generation,heading=node('h2','Share a checkpoint');heading.tabIndex=-1;
+          content.append(heading,node('p','Your devices are connected. Sending keeps the received places waiting for review; it does not replace them automatically.'));
+          transferNote=node('p','Checking which checkpoint your other device needs…');transferNote.setAttribute('role','status');content.append(transferNote);
+          const send=action('Send checkpoint for review',async()=>{
+            send.disabled=true;transferNote.textContent='Sending the checkpoint…';
+            try{
+              const bundle=await connected.nextCheckpoint();if(!bundle)throw Error('No checkpoint');
+              const receipt=await connected.sendCheckpoint(bundle);
+              if(!disposed&&generation===active)transferNote.textContent=receipt.status==='peer-retained-checkpoint'
+                ?'Your other device confirmed keeping the checkpoint for review. Review it there before reconnecting for further changes.'
+                :'Checkpoint receipt could not be confirmed. The other device may have retained it; check there before reconnecting.';
+            }catch{if(!disposed&&generation===active)transferNote.textContent='Delivery could not be confirmed. Your stored copies are kept. Check the other device, then reconnect if needed.';}
+          });send.className='pairing-primary';send.hidden=true;
+          action('Check received saved places',async()=>{
+            await checkStartup();if(disposed||generation!==active)return;
+            home();if(receivedCheckpoint)await reviewReceived();
+          });
+          action('Back',home);heading.focus();
+          void connected.nextCheckpoint().then(bundle=>{
+            if(disposed||generation!==active)return;
+            send.hidden=!bundle;
+            transferNote.textContent=bundle?'A signed checkpoint is available for your other device. Send it when you are ready.'
+              :'No next checkpoint is stored here for that device. If it has an update for you, send it from there, then check received saved places.';
+          }).catch(()=>{if(!disposed&&generation===active)transferNote.textContent='The next checkpoint could not be checked. Your copies are kept. Go Back and reconnect.';});
+        }});
+    }catch(error){if(!disposed&&generation===selected)reportFailure(error);}
+    finally{if(generation===selected)starting=false;}
+  };
   const home = () => {
     clear(); screen = 'home';
     const heading = node('h2', session ? 'Your journeys are connected' : 'Share your saved journeys'); heading.tabIndex = -1;
@@ -269,6 +309,10 @@ export function mountAppJourneySettings({wasm, store, expectedGroup, member}) {
       if(receivedCheckpoint)action('Review received saved places',reviewReceived).className='pairing-primary';
       const canCheckpoint=!receivedCheckpoint&&!receivedError&&startup.status==='generation-ready'&&startup.canPrepareCheckpoint&&(startup.generation===0||capacityReached);
       if(canCheckpoint)action('Review recovery checkpoint',reviewCheckpoint).className='pairing-primary';
+      if(startup.status==='generation-ready'){
+        action('Start checkpoint connection',()=>connectCheckpoint('start'));
+        action('Join checkpoint connection',()=>connectCheckpoint('join'));
+      }
       action('Check saved-journey recovery', async () => {
         const selected = generation; await checkStartup();
         if (!disposed && dialog.open && generation === selected) home();
@@ -280,7 +324,7 @@ export function mountAppJourneySettings({wasm, store, expectedGroup, member}) {
       action('Start journey connection', () => connect('start')).className = 'pairing-primary';
       action('Join journey connection', () => connect('join'));
     }
-    if (startup.status === 'legacy' && capacityReached) action('Review sharing recovery',reviewMigrationSetup);
+    if (startup.status === 'legacy') action('Review sharing recovery',reviewMigrationSetup);
     action('Manage journey-sharing devices', () => {
       clear(); screen = 'devices';
       view = showJourneyDevices(content, {wasm, store, expectedGroup, focus: true, onBack: home,

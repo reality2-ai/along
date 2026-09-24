@@ -638,23 +638,43 @@ successors and wrong parents. Node tests check malformed positions, signature
 damage and changed source revisions. Settings mounting and complete app-based
 catch-up remain unfinished.
 
-## Required before integration
+## Settings-to-Settings checkpoint flow
 
-1. Wire the tested migration and format-2 bridge to explicit reviewed opt-in,
-   and verify enrolled-device migration. The installed app still uses format 1.
-   Never use an arbitrary peer snapshot as authority.
-2. Review the live places selected for the new generation. Keep the old replica,
-   local saved places and unprocessed edits in a durable recovery record. Do not
-   silently replace divergent local data or reinterpret old edits as new saves.
-3. Connect the tested installer to reviewed issuer/recipient flows and verify
-   enrolled-device installation, authorization changes and session invalidation.
-   Finish the separate local-difference review without relabelling old edits.
-4. Stop old-generation sessions and require ordered checkpoint catch-up. An old
-   peer's ordinary snapshot must never establish or replace a generation. New
-   peers need authenticated current-checkpoint acquisition as well as membership.
-5. Offer a clear review of retained local differences before reapplying chosen
-   edits. Cancellation keeps local planning usable. A missing checkpoint or lost
-   issuer must explain what can be recovered without suggesting storage clearing.
+Experimental Settings now offers reviewed migration without first forcing a
+capacity error. Ready generations can start or join the checkpoint connection.
+After authenticated handoff the connected screen chooses the peer's next retained
+checkpoint and offers an explicit send action. The status distinguishes retention
+from installation. Checking received places closes the channel and returns to the
+local received-checkpoint review; receipt does not navigate or replace saved data.
+
+`CHECKPOINT_APP=1 node experiments/journey-sync/app-integration.test.mjs` exercises
+this through the generated app in two separate browser profiles: real UI enrollment,
+saved places and service preferences, migration on both, issuer creation, connection,
+send, receipt while the recipient remains at generation zero, recipient Back,
+review/application and reload at generation one. Local saved places, services and
+learning histories compare unchanged. It includes axe on the receiving review and
+keyboard sending at narrow width. The harness transfers public signaling text;
+physical devices, discovery/reconnect, generation-aware continuous snapshot sharing
+and exact public-preview upgrade qualification remain outstanding.
+
+## Required before release
+
+1. Qualify the reviewed migration and format-2 bridge against the exact published
+   preview and its older open tabs. Experimental issuer/recipient UI migration
+   now passes; the public installed app still uses format 1.
+2. Finish the policy and usable recovery path for more than 256 active saved
+   places, plus long-term recovery archive bounds. Preserve divergent local data;
+   never silently trim or reinterpret old edits as new saves.
+3. Verify multi-checkpoint catch-up through the full app UI, including interrupted
+   review, permission changes and session invalidation. Two successive checkpoints
+   pass at the enrolled component level; the full Settings flow checks one.
+4. Implement generation-aware ordinary snapshot sessions and ordered catch-up.
+   An old peer's ordinary snapshot must never establish or replace a generation.
+   Newly enrolled devices need checkpoint acquisition as well as membership.
+5. Add review of later edits retained from older app tabs. The current received
+   checkpoint/local-difference flow preserves its copies; older-tab reconciliation
+   remains separate. Missing checkpoints or a lost issuer must explain recovery
+   without suggesting storage clearing.
 6. Verify storage faults, concurrent tabs, interrupted installation, replay,
    offline edits, removal and confirmation loss through the actual app. Then
    qualify the exact build and its upgrade path before publishing a new preview.
