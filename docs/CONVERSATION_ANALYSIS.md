@@ -1470,3 +1470,13 @@ real local WSS with synthetic identities, and enrolled identities/permissions wi
 WSS and durable journey receipts. None establishes external-relay compatibility,
 physical-device usability or deployed availability. These implementation results
 extend the evidence trail; they are not additional user interview observations.
+
+A subsequent code inspection found that the candidate's proof timer closed its
+internal state without updating the waiting screen. The implementation now reports
+expiry and immediately displays the return QR after invitation review. This is
+*missing system feedback* supported by code inspection and a reproduced browser
+test. Keep it separate from the user's report: the actual S23 failure has not been
+reproduced. The scan-to-next-screen test uses a simulated camera result, followed by
+real enrollment; it cannot establish physical scan reliability. This distinction
+is a useful course exercise in separating a plausible explanation from a verified
+diagnosis.

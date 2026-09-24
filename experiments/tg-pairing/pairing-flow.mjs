@@ -123,8 +123,8 @@ export function showPairingFlow(container, {wasm, store, role, expectedGroup, fo
       } else {
         const review = showReceiveInvitation(screen(), {focus, onBack: leave}); views.push(review);
         const reviewed = await review.completed; current();
-        proof = createInvitationProof({wasm, reviewed});
-        transfer({title: 'Check your other device', explanation: 'Next: show this challenge as a QR code and scan it on your other device, or copy it there. On that device choose Create device reply. Then scan or paste its reply here and choose Check reply. Scanning the invitation has not connected the devices yet.', outgoing: proof.request,
+        proof = createInvitationProof({wasm, reviewed, onExpired: fail});
+        transfer({title: 'Check your other device', showQrInitially: true, explanation: 'Next: show this challenge as a QR code and scan it on your other device, or copy it there. On that device choose Create device reply. Then scan or paste its reply here and choose Check reply. Scanning the invitation has not connected the devices yet.', outgoing: proof.request,
           onReceive: async response => {
             const verified = proof.verify(response);
             session = await createCoreCandidateSession({wasm, store, invitation: verified.invitation, authorized: verified.authorized,

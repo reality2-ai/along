@@ -25,7 +25,7 @@ try {
   const pages = await Promise.all(contexts.map(c => c.newPage()));
   await Promise.all(pages.map(async (page, index) => {
     await page.goto(`http://127.0.0.1:${server.address().port}`);
-    if (index === 1 && process.env.TIMEOUT_FLOW === '1') await page.clock.install();
+    if (index === 1 && process.env.TIMEOUT_FLOW === '1' || index === 0 && process.env.CANDIDATE_TIMEOUT === '1') await page.clock.install();
     await page.evaluate(async ({index, loseInstallReply, loseAckReply, recoverConnection, rotatedIssuer}) => {
       window.wasm = await import('./hive_wasm.js'); await wasm.default();
       window.store = await (await import('./storage.mjs')).openBrowserStorage('pairing-flow');
@@ -88,9 +88,38 @@ try {
     await to.getByLabel(label, {exact: true}).fill(text);
     await to.getByRole('button', {name: action, exact: true}).click();
   };
-  await move(owner, candidate, 'Invitation text', 'Review invitation');
+  if(process.env.QR_FLOW==='1'){
+    const text=await owner.getByLabel('Device message to copy').inputValue();
+    await candidate.evaluate(text=>{
+      window.cameraStopped=0;
+      HTMLMediaElement.prototype.play=async()=>{};
+      window.BarcodeDetector=class{static async getSupportedFormats(){return ['qr_code'];}async detect(){return [{format:'qr_code',rawValue:text}];}};
+      Object.defineProperty(navigator.mediaDevices,'getUserMedia',{configurable:true,value:async()=>{
+        const stream=new MediaStream();Object.defineProperty(stream,'getTracks',{value:()=>[{stop:()=>cameraStopped++}]});return stream;
+      }});
+    },text);
+    await candidate.getByRole('button',{name:'Scan invitation QR code',exact:true}).click();
+    await candidate.waitForFunction(()=>window.cameraStopped===1);
+    assert.equal(await candidate.getByLabel('Invitation text',{exact:true}).inputValue(),text);
+    await candidate.getByRole('button',{name:'Review invitation',exact:true}).click();
+  }else await move(owner, candidate, 'Invitation text', 'Review invitation');
   await candidate.getByRole('button', {name: 'Use invitation from my other device', exact: true}).click();
   await candidate.getByRole('heading', {name: 'Check your other device', exact: true}).waitFor();
+  await candidate.getByRole('img',{name:'Device message QR code. Copyable text is also available.',exact:true}).waitFor();
+  assert.equal(await candidate.getByRole('heading',{name:'Check your other device',exact:true}).evaluate(el=>el===document.activeElement),true);
+  if(process.env.CANDIDATE_TIMEOUT==='1'){
+    const before=await candidate.evaluate(async()=>(await store.read('candidate-persona','active')).revision);
+    await candidate.clock.fastForward(65000);
+    await candidate.getByRole('heading',{name:'Connection did not finish',exact:true}).waitFor();
+    assert.match(await candidate.getByRole('status').textContent(),/exchange ended during: Check your other device/);
+    assert.equal(await candidate.evaluate(async()=>(await store.read('candidate-persona','active')).revision),before);
+    await candidate.clock.resume();
+    await candidate.evaluate(async()=>{flow.dispose();window.flow=(await import('./pairing-flow.mjs')).showPairingFlow(document.querySelector('#flow'),{wasm,store,role:'candidate',expectedGroup:group,focus:true});});
+    await move(owner,candidate,'Invitation text','Review invitation');
+    await candidate.getByRole('button',{name:'Use invitation from my other device',exact:true}).click();
+    await candidate.getByRole('heading',{name:'Check your other device',exact:true}).waitFor();
+    console.log('PASS: candidate proof expiry visibly ends the waiting step without changing identity; a fresh review can continue.');
+  }
   await move(candidate, owner, 'Challenge from your other device', 'Create device reply');
   await owner.getByRole('heading', {name: 'Send your device reply', exact: true}).waitFor();
   await move(owner, candidate, 'Reply from your other device', 'Check reply');

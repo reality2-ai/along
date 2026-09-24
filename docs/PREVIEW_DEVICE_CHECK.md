@@ -26,6 +26,14 @@ the same Wi-Fi, and browser/version on each. Do not publish connection messages
 or keys. The current preview has no relay fallback; optional user-selected relay
 support is approved for development, but is not deployed.
 
+Development checks found a separate candidate-side expiry gap: its proof timed out
+internally while the screen continued waiting. The source now reports the unfinished
+step and shows the return QR immediately after Use. A narrow-screen Chromium test
+covers simulated scan → review → Use, visible return QR, expiry without identity
+changes, and a successful retry through actual enrollment. Camera input is mocked;
+this does not establish the cause of the S23 report. These fixes are not in the
+published 3805 preview yet.
+
 ## Install and plan offline
 
 1. Open the supplied preview URL in the browser used for installation. In Settings,

@@ -2,7 +2,7 @@
 // owns protocol resources. No automatic clipboard read or network transmission.
 const mounted = new WeakMap();
 export function showDeviceTransfer(container, {title, explanation, outgoing, incomingLabel = 'Reply from your other device',
-  action = 'Check reply', receive = true, onReceive, signal, focus = false, onBack = () => {}}) {
+  action = 'Check reply', receive = true, showQrInitially = false, onReceive, signal, focus = false, onBack = () => {}}) {
   if (typeof receive !== 'boolean' || typeof onReceive !== 'function' || typeof outgoing !== 'string' || outgoing.length > 65536) throw new Error('Transfer configuration unavailable');
   mounted.get(container)?.();
   const document = container.ownerDocument, lifetime = new AbortController();
@@ -43,13 +43,15 @@ export function showDeviceTransfer(container, {title, explanation, outgoing, inc
   const leave = () => { if (!left) { left = true; end(); onBack(); } };
   back.addEventListener('click', leave);
   panel.addEventListener('keydown', event => { if (event.key === 'Escape') { event.preventDefault(); leave(); } });
-  qr.addEventListener('click', async event => {
-    if (!event.isTrusted || disposed || finished) return;
+  const showQr = async () => {
+    if (disposed || finished) return;
     try {
       const module = await import('./qr-transfer.mjs');
       if (!disposed && !finished) module.renderTransferQr(qrArea, outgoing);
     } catch { if (!disposed && !finished) status.textContent = 'This message cannot be shown as a QR code. Use Copy device message instead.'; }
-  });
+  };
+  qr.addEventListener('click', event => { if(event.isTrusted)void showQr(); });
+  if(showQrInitially && outgoing)void showQr();
   scan.addEventListener('click', async event => {
     if (!event.isTrusted || disposed || busy || finished || scan.disabled) return;
     scan.disabled = true;
