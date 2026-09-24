@@ -51,7 +51,8 @@ being developed and tested, but trusted-device sync and credential access are
 not enabled in the regular version-37 app. A separate
 [device preview 3806](https://reality2.ai/along/preview/public/) now makes the tested
 experimental flows available for [S23/desktop checks](PREVIEW_DEVICE_CHECK.md),
-with explicit limits and manual reconnection. Publication of this test copy does
+with explicit limits, manual initial pairing and optional user-selected relay
+reconnection for permitted journey-sharing devices. Publication of this test copy does
 not complete the wider synchronization, TG lifecycle or physical-acceptance requirements.
 See the [original sync design](R2_SYNC_DESIGN.md)
 and [current integration evidence](REALITY2_INTEGRATION.md).
@@ -60,8 +61,8 @@ Use the [release evidence and remaining gates](RELEASE_CHECKLIST.md) to audit ea
 numbered requirement against implementation, automated checks and user device
 observations. The goal is not yet fully verified: spoken screen-reader checks and
 physical checks of the latest contextual details remain outstanding. The supplied AT key
-has verified authenticated feeds; the optional public live-data connection remains
-undeployed. Documented
+has verified authenticated feeds; direct personal-key access is exposed in the
+separate preview, while the regular version-37 app remains offline/scheduled. Documented
 limits and an educational disclaimer do not count as passing these checks.
 
 

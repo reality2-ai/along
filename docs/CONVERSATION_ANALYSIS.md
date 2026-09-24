@@ -1480,3 +1480,22 @@ reproduced. The scan-to-next-screen test uses a simulated camera result, followe
 real enrollment; it cannot establish physical scan reliability. This distinction
 is a useful course exercise in separating a plausible explanation from a verified
 diagnosis.
+
+### Post-3806 release reflection (implementation evidence)
+
+The user asked for both an installable app and a course example with no human
+coding. Preview 3806 makes the distinction between implementation progress and
+completion especially visible: source changes, a qualified candidate, served
+release bytes, and physical acceptance are separate evidence categories. One
+qualification run failed because a test server omitted two existing dependencies.
+The corrected fixture passed against unchanged candidate bytes; the record keeps
+both attempts. Code this as *evidence preservation* and *scope of verification*,
+not as an additional user interview observation.
+
+The older-copy recovery work is an implementation response to the recurring
+requirements for offline use, local data ownership and understandable next actions.
+It introduces explicit choices when interrupted writes and later edits disagree.
+That connection is an analyst interpretation; the user did not specify the storage
+protocol or report all simulated faults. The [release-evidence lab](course/RELEASE_EVIDENCE_LAB.md)
+asks learners to test that interpretation without claiming that a local regression
+suite resolved the reported S23 pairing failure.

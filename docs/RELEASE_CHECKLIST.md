@@ -1,31 +1,32 @@
 # Release evidence and remaining gates
 
-Current regular app: **version 37**. The separate [device preview 3805](https://reality2.ai/along/preview/public/)
-is published for [physical checks](PREVIEW_DEVICE_CHECK.md); see its release record below.
-The version-37 static ZIP
-is prepared and the private server is retired. GitHub Pages is published at `reality2.ai/along/`; no AWS deployment has been made.
-This register separates automated evidence, user observations and remaining checks.
+Current regular app: **version 37**. The separate [device preview 3806](https://reality2.ai/along/preview/public/)
+is published for [S23/desktop checks](PREVIEW_DEVICE_CHECK.md). Both are static
+GitHub Pages deployments; the retired private server is not required.
 
-Preview 3805 adds safe compaction of repeated queued journey edits and clear local
-capacity reporting. It retains reviewed group-key updates, selected-device delivery,
-verified installation confirmations, removal and older-enrollment recovery.
-[Qualification](evidence/device-preview-3805-qualification.json) records eleven
-passing browser runs (twelve requirement entries, with Settings rotation covered
-in the owner-key run) against the exact candidate. They include two-tab compaction,
-257-place capacity reporting, the byte-verified published 3804 upgrade, completed
-3801 enrollment recovery, removal, key replacement and sharing after rotation with
-either group member owning the AT key. The upgrade preserves saved places,
-identity and encrypted test-key bytes, and leaves regular Along's shell cache
-unchanged. AT responses are mocked.
-See the [HTTPS check](evidence/device-preview-3805-public.json) and
-[release record](evidence/device-preview-3805-release.json).
+Preview 3806 adds clearer pairing feedback, optional user-selected relay
+reconnection, reviewed journey checkpoints, and review/recovery of older-copy
+edits. [Qualification](evidence/device-preview-3806-qualification.json) contains
+21 passing requirement entries from 19 distinct checks, including two entries
+covered by other runs. One initial check failed because its test server omitted
+preference dependencies; the corrected fixture passed against unchanged candidate
+bytes. That failure and retry are retained rather than silently replaced.
 
-Update both devices before pairing or reconnecting; invitation and AT reconnect
-formats changed. Older interrupted enrollments without installation receipts can
-remain absent from the device index. Automatic propagation/reconnection, capacity
-recovery, receipt tracking for removal messages, physical-device and TalkBack
-acceptance remain unfinished. Historical evidence below retains its original
-version and scope.
+The [public check](evidence/device-preview-3806-public.json) verified all 304
+released payload hashes, HTTPS setup/reload, offline installation guidance and a
+new offline bus/ferry address journey, with no page errors or external requests.
+The [release record](evidence/device-preview-3806-release.json) binds the archive,
+source and successful Pages deployment. The installed 3805 → 3806 test preserved
+saved places, identity, encrypted test keys and regular Along's shell cache.
+
+These are local automated and public-file checks, not physical acceptance.
+Initial pairing still requires transferred messages. The relay is off by default;
+its discovery only connects already permitted devices. Interoperability with the
+actual R2 relay implementation and an external selected endpoint remains to be
+verified. Group-removal/key-update propagation and checkpoint catch-up are still
+explicit flows, not unattended synchronization of all trust-group state.
+Regular Along does not yet include the preview's live/TG controls. Historical
+entries below retain their original versions and scopes.
 
 ## Goal audit
 
@@ -38,15 +39,38 @@ this audit. Later public-hosting work supplements that brief.
 | 2. Real journeys | Address-based train/ferry, bus and walking examples; independent raw GTFS validation; nearby and transfer fixtures; route 70/Symonds browser check | Snapshot correctness does not establish on-street conditions |
 | 3. Inclusion | Keyboard, axe, contrast, zoom, narrow screens, touch emulation, reduced motion and forced colours; text alternatives to maps | Spoken TalkBack/desktop-reader check; no disabled-commuter participant study |
 | 4. Installation and updates | Icons/manifest/installability; offline reopening; old-tab migration; quiet offline pull; failed/successful dataset refresh with saved journeys retained; Android update repair accepted after v23 | Exact Android installation browser not recorded; latest contextual interface needs physical checks |
-| 5. Browser independence | Static `/along/` host with no Python API; offline new address routes; stored route geometry; measured download/storage/time | Low-memory phone performance not characterised; no evidence requiring WASM |
-| 6. Distribution | About 39.2 MiB ZIP/checksum, four data bundles, import scripts, MIT/data/Leaflet notices, AWS/Pages hosting instructions | Public Pages deployment is live; authenticated feeds now verified; direct browser feed access verified; TG credential integration remains incomplete |
+| 5. Browser independence | Static `/along/` host with no Python API; offline new address routes; stored route geometry; measured download/storage/time | Low-memory phone performance not characterised; routing stays JavaScript, while the preview uses the scoped R2 WASM runtime for device security |
+| 6. Distribution | About 39.2 MiB ZIP/checksum, four data bundles, import scripts, MIT/data/Leaflet notices, AWS/Pages hosting instructions | Public Pages deployment is live; authenticated feeds now verified; direct browser feed access verified; preview has direct personal-key/TG controls; regular-app integration and physical acceptance remain incomplete |
 | 7. GitHub documentation | README, architecture, data, hosting, privacy, limits and contribution guidance; v21 course notice and current design-driver/goal summaries | Public source repository: [reality2-ai/along](https://github.com/reality2-ai/along); app hosted at [reality2.ai/along](https://reality2.ai/along/) |
 | 8. Course material | Thematic analysis, six lessons, exercises, assessment rubric and negative-case/contextual-map refinements | Course effectiveness has not been studied |
-| 9. Release checks and handover | Version 37 rebuild: 68 JavaScript and 18 Python tests, static and update checks; a fresh managed-server run passes all 20 browser scenarios; published source/archive/live comparison | Remaining physical and spoken screen-reader checks prevent claiming full goal completion |
+| 9. Release checks and handover | Version 37 rebuild: 68 JavaScript and 18 Python tests, static and update checks; a fresh managed-server run passes all 20 browser scenarios; published source/archive/live comparison | Preview 3806 release evidence above supplements these regular-app checks; current physical/TalkBack acceptance and regular-app integration still prevent full completion |
 
 | 10. English / Te reo Māori | Deferred by user instruction; version 31 removes the selector and ignores earlier saved Māori choices | Re-enable only with renewed direction; draft review remains incomplete |
 
 | 11. Contextual repository feedback | [Draft/handoff/receipt evidence](FEEDBACK.md); fixture checks and real repository acceptance/anonymous receipt; preview 3801 check starts with an actual UI draft and retains it/its receipt offline | Signed-in GitHub composer/submission and physical assistive-technology checks; real user feedback still needs next-round triage |
+
+## Next work against the full goal
+
+1. Verify Along against the actual R2 relay implementation, then a user-selected
+   endpoint if one is available. The local forwarding fixture proves protected
+   Along exchange, not interoperability with a deployed relay.
+2. Obtain S23/desktop observations for the deployed preview, especially the failed
+   scan → Use transition, installation, touch and spoken screen-reader use. The
+   user withdrew an earlier TalkBack-success statement; treat it as untested.
+3. Validate the regular-app upgrade path before promoting preview TG/live features.
+   Its separate storage is intentional; installing the preview is not evidence
+   that regular-app credentials or preferences have migrated.
+4. Complete the signed-in GitHub composer/submission check for contextual feedback.
+   Actual CLI submission and anonymous browser receipt are already evidenced in
+   [FEEDBACK.md](FEEDBACK.md); those do not test the interactive final submission.
+5. Finish the course handover against the final distributed build, with measured
+   performance and accessibility limits attached to their tested versions. Review
+   broader synchronization requirements without treating saved-journey exchange
+   as automatic propagation of every group update.
+
+No new public issues were open at the 24 September post-3806 audit. This is a
+triage observation, not evidence that users have no problems. Māori translation
+remains deferred; no human coding is required for any remaining implementation.
 
 ## Evidence and reproduction
 

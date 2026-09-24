@@ -374,3 +374,13 @@ Assessment: identify a misleading automatic-repair proposal, explain why a
 private-key export refusal is not proof of hardware sealing, and name the
 remaining work needed for optional contextual AT access. A passing component
 test earns no credit as evidence of a completed public TG feature.
+
+## Release-evidence lab: preview 3806
+
+The [release-evidence lab](course/RELEASE_EVIDENCE_LAB.md) connects the evolving
+requirements to an actual public release. Learners distinguish candidate, deployed
+and physical-device evidence; diagnose a failed fixture without concealing it;
+and examine explicit recovery choices after an interrupted save. It includes a
+claim/evidence table, non-coding learner prompts and assessment criteria. The
+published records are historical evidence, not a substitute for checking a future
+build or for the remaining S23/TalkBack observations.
