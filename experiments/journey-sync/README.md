@@ -681,3 +681,17 @@ newer choices, deletions, inconsistent journals, duplicate saved pairs, changed
 inputs, caller mutation and capacity refusal without trimming. This is a read-only
 model. A guarded durable decision/acknowledgment writer and a Settings review screen
 remain to be built; the existing older-edit warning is not yet actionable.
+
+`retainOlderEditDecision` now persists an explicit choice and its exact compared
+copies in `along-older-edit-decisions-v1`, with one unfinished-decision pointer per
+group. It rebuilds the review under the group lock, verifies ready identity and
+recovery state, and guards those record revisions in the transaction. It stages
+the decision only: no planner/replica changes and no acknowledgment of older edits.
+A newer older-tab edit makes the retained review stale, without discarding either
+the decision or the newer copy. Another decision cannot silently replace it.
+
+The real identity/IndexedDB migration suite now checks quota failure, changed
+membership evidence, cancellation after commit, retry and fresh-page restoration.
+The planner and replica remain byte-for-byte unchanged during staging. Applying a
+retained decision, handling stale decisions, acknowledging the reviewed baseline
+and mounting the screen are still required.

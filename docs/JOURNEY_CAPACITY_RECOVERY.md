@@ -740,6 +740,21 @@ Seven combined review-model tests pass. No persistence or UI uses this model yet
 guarded decisions, acknowledgment of an older baseline, later-edit retry and the
 contextual review screen remain necessary.
 
+## Durable staging of older-tab decisions
+
+The first guarded writer now retains the exact model inputs, choices and resolved
+proposal, together with a single unfinished-decision pointer. It verifies a ready
+installed identity/recovery state under the group Web Lock and checks observed
+record revisions atomically. A matching retry validates the saved model and
+choices; it reports whether the inputs still match rather than silently replacing
+them. Staging never changes the planner, replica or older baseline.
+
+The real browser/IndexedDB suite verifies quota refusal, a membership-revision
+change at commit, cancellation after a successful transaction, retained retry,
+fresh-page restoration, and preservation of a later older-tab edit. A different
+decision cannot replace an unfinished one. Application/acknowledgment, stale-review
+resolution and the Settings screen remain unfinished.
+
 ## Required before release
 
 1. Qualify the reviewed migration and format-2 bridge against the exact published

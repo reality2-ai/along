@@ -4,7 +4,7 @@ import {readFile} from 'node:fs/promises';
 import {join} from 'node:path';
 const {chromium} = await import('@playwright/test');
 const sources = new Map();
-for (const name of ['state.mjs', 'store.mjs', 'generation-state.mjs', 'generation-migration.mjs', 'generation-app-store.mjs', 'app-preferences.mjs', 'preference-envelope.mjs', 'isolated-preferences.mjs', 'startup-state.mjs', 'migration-setup.mjs', 'generation-checkpoint.mjs', 'checkpoint-preparation.mjs', 'checkpoint-installation.mjs', 'checkpoint-review.mjs', 'checkpoint-choice-commit.mjs'])
+for (const name of ['state.mjs', 'store.mjs', 'generation-state.mjs', 'generation-migration.mjs', 'generation-app-store.mjs', 'app-preferences.mjs', 'preference-envelope.mjs', 'isolated-preferences.mjs', 'startup-state.mjs', 'migration-setup.mjs', 'generation-checkpoint.mjs', 'checkpoint-preparation.mjs', 'checkpoint-installation.mjs', 'checkpoint-review.mjs', 'checkpoint-choice-commit.mjs','older-edit-review.mjs','older-edit-decision.mjs','older-edit-decision-check.test.mjs'])
   sources.set('/journey-sync/' + name, await readFile(new URL(name, import.meta.url)));
 sources.set('/public/preferences.js', await readFile(new URL('../../public/preferences.js', import.meta.url)));
 for (const name of ['software-persona.mjs', 'local-persona.mjs'])
@@ -315,7 +315,7 @@ try {
       return result.alreadyCommitted && result.localReviewRequired;
     } finally { store.close(); }
   }, result.choiceRetry), true);
-  console.log('PASS: actual recovery choices commit once and survive reload; stale review, changed choices, permission race and interrupted transaction refuse; final cutover retains history, handles local write failure, refuses newer local data and retries without duplicate replica edits. App integration remains pending.');
+  console.log('PASS: actual recovery choices commit once and survive reload; stale review, changed choices, permission race and interrupted transaction refuse; final cutover retains history, handles local write failure, refuses newer local data and retries without duplicate replica edits. This suite checks storage APIs; app integration is checked separately.');
   const peerTab = await page.context().newPage();
   await peerTab.goto(`http://127.0.0.1:${server.address().port}/`);
   const rawForTabs = await page.evaluate(() => localStorage.getItem('choice-valid'));
@@ -451,8 +451,24 @@ try {
       return refused && localStorage.getItem(prefs.preferenceKey) === legacy;
     } finally { localStorage.setItem(storage.key, saved); }
   }), true);
-  console.log('PASS: default planner startup and generation bridge use the isolated profile; journal import, later planner saves and reload preserve recovered generation/history while legacy writes stay separate. Recovery UI and peer checkpoint delivery are not mounted.');
+  const olderDecision=await page.evaluate(async()=>{
+    const wasm=await import('./hive_wasm.js');await wasm.default();
+    const store=await(await import('./tg-pairing/storage.mjs')).openBrowserStorage('older-edit-decision-check');
+    try{return await(await import('./journey-sync/older-edit-decision-check.test.mjs')).checkOlderEditDecision({wasm,store});}
+    finally{store.close();}
+  });
+  await page.reload();
+  assert.equal(await page.evaluate(async expected=>{
+    const store=await(await import('./tg-pairing/storage.mjs')).openBrowserStorage('older-edit-decision-check');
+    try{
+      const saved=await store.read('along-older-edit-decisions-v1',expected.reviewId);
+      const pending=await store.read('along-older-edit-pending-v1',expected.group);
+      return saved.value.input.olderRaw===expected.olderRaw&&pending.value.reviewId===expected.reviewId;
+    }finally{store.close();}
+  },olderDecision),true);
+  console.log('PASS: older-tab choices and compared copies survive atomic staging, cancellation/retry and reload; quota, changed membership and replacing an unfinished decision refuse. Staging changes neither replica nor planner; later older-tab edits survive.');
+  console.log('PASS: default planner startup and generation bridge use the isolated profile; journal import, later planner saves and reload preserve recovered generation/history while legacy writes stay separate. This suite checks storage primitives; recovery UI and peer delivery are checked separately.');
   console.log('PASS: actual software identity and IndexedDB migration preserve replica/tombstones/import receipt/local pending edits; concurrent/reloaded retries do not rewrite; stale review, permission race, cancellation and interrupted transaction preserve old state; old in-flight format-1 writer cannot overwrite migration. This suite invokes migration storage APIs directly.');
   console.log('PASS: format-2 bridge consumes an archived receipt without duplicating its edit, imports queued deletion, retains history, recovers an IDB/localStorage interruption and refuses old queued edits after a fixture generation advance. The separate real installation cases follow.');
-  console.log('PASS: real issuer checkpoint installation atomically retains prior replica/local journal and starts a new receipt; retry/reload, permission races, interrupted writes, stale review, changed local data, signature damage, late cancellation and concurrent local edits preserve the documented boundary. Settings review is checked separately; peer delivery remains unfinished.');
+  console.log('PASS: real issuer checkpoint installation atomically retains prior replica/local journal and starts a new receipt; retry/reload, permission races, interrupted writes, stale review, changed local data, signature damage, late cancellation and concurrent local edits preserve the documented boundary. Settings review and authenticated peer delivery are checked separately.');
 } finally { await browser?.close(); await new Promise(resolve => server.close(resolve)); }
