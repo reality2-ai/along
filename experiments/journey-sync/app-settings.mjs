@@ -1,3 +1,5 @@
+import {showRelaySettings} from '../relay/settings-view.mjs';
+import {createAppRelayController} from '../relay/app-controller.mjs';
 import {showJourneyConnection,showCheckpointConnection} from './connection-view.mjs';
 import {showJourneyDevices} from './devices-view.mjs';
 import {openAppJourneyStore} from './app-store.mjs';
@@ -26,6 +28,7 @@ export function mountAppJourneySettings({wasm, store, expectedGroup, member}) {
   const content = node('section', ''); content.className = 'pairing-comparison'; dialog.append(content); document.body.append(dialog);
   const lifetime = new AbortController();
   let startup = {status: 'checking'};
+  let relay,relayStatus,relayMessage='Automatic relay sharing is off.';
   let reviewDraft;
   let receivedCheckpoint,receivedError=false;
   let capacityReached = false;
@@ -73,6 +76,7 @@ export function mountAppJourneySettings({wasm, store, expectedGroup, member}) {
         await replica.reconcile({signal: lifetime.signal});
       }
       if (disposed) return;
+      if (send && relay) await relay.synchronize();
       if (send && session) {
         await session.synchronize();
         report('Your other device confirmed saving this snapshot. Later changes will be sent while both devices stay connected.');
@@ -338,6 +342,11 @@ export function mountAppJourneySettings({wasm, store, expectedGroup, member}) {
       action('Join journey connection', () => connect('join'));
     }
     if (startup.status === 'legacy') action('Review sharing recovery',reviewMigrationSetup);
+    relayStatus=node('p',relayMessage);relayStatus.setAttribute('role','status');content.append(relayStatus);
+    action('Automatic connection with a relay',()=>{
+      clear();screen='relay';
+      view=showRelaySettings(content,{wasm,store,expectedGroup,member,focus:true,onBack:home,onChanged:()=>relay.refresh()});
+    });
     action('Manage journey-sharing devices', () => {
       clear(); screen = 'devices';
       view = showJourneyDevices(content, {wasm, store, expectedGroup, focus: true, onBack: home,
@@ -352,11 +361,32 @@ export function mountAppJourneySettings({wasm, store, expectedGroup, member}) {
     settings.close(); dialog.showModal(); startup={status:'checking'}; home(); const selected = generation;
     void checkStartup().then(() => { if (!disposed && dialog.open && generation === selected) home(); });
   } });
-  dialog.addEventListener('cancel', event => { event.preventDefault(); back(); });
+  dialog.addEventListener('cancel', event => { event.preventDefault(); if(screen==='relay')home();else back(); });
   dialog.addEventListener('close', clear);
-  void reconcile();
+  relay=createAppRelayController({wasm,store,expectedGroup,member,signal:lifetime.signal,
+    prepare:async()=>{
+      const state=await readJourneyStartupState({wasm,store,expectedGroup,signal:lifetime.signal});
+      if(state.status==='legacy'){enableJourneyTracking(group);await replica.reconcile({signal:lifetime.signal});}
+      else if(state.status==='generation-ready')await openGenerationAppJourneyStore({store,group,actor:member}).reconcile({signal:lifetime.signal});
+      else throw Error('Journey review required');
+    },onSaved:()=>{void reconcile();},onStatus:state=>{
+      const text=({off:'Automatic relay sharing is off.',
+        'review-required':'Automatic sharing is paused until saved-journey recovery is reviewed.',
+        'peer-saved-snapshot':'Your other device confirmed saving the shared journeys.',
+        'peer-connected':'A permitted device is connected through your relay.',
+        'relay-connected':'Relay connected. Waiting for a permitted device with Along open.',
+        'relay-waiting':'Relay unavailable. Saved changes stay here; reconnection will retry.',
+        'relay-connecting':'Connecting to your chosen relay…',
+        'relay-refused':'The relay refused this connection. Check its address and access requirements in relay settings.',
+        'peer-unavailable':'A permitted device could not connect. Saved journeys stay here until it reconnects.',
+        'sharing-unavailable':'Journey sharing could not continue. Check device permissions and recovery status.',
+        unavailable:'Relay sharing is unavailable. Your saved places stay here.',
+        stopped:'Relay sharing stopped. Your saved places stay here.'})[state];
+      if(text&&text!==relayMessage){relayMessage=text;if(relayStatus?.isConnected)relayStatus.textContent=text;}
+    }});
+  void reconcile();void relay.refresh();
   return Object.freeze({dispose() {
-    if (disposed) return; disposed = true; lifetime.abort(); clear(); disconnect();
+    if (disposed) return; disposed = true; lifetime.abort(); relay.close(); clear(); disconnect();
     window.removeEventListener(changedEvent, localChange); window.removeEventListener('storage', localChange); open.remove(); dialog.remove();
   }});
 }

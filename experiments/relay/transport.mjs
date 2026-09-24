@@ -1,6 +1,6 @@
 // Experimental Notekeeper-shaped relay transport. Caller supplies verified
 // authentication and protected frames; this module provides neither membership
-// authorization nor encryption. Not mounted in Along.
+// authorization nor encryption. Used by the experimental integration only.
 export function relayEndpoint(value) {
   if (typeof value !== 'string' || value.length > 2048 || value !== value.trim()) throw Error('Relay address unavailable');
   const url = new URL(value);

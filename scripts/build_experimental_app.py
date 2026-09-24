@@ -40,7 +40,7 @@ def build(browser, wasm, notices=None, runtime=None, preview=False):
                 continue
             relative = Path(name)
             if (relative.is_absolute() or '..' in relative.parts or relative.suffix not in ('.mjs', '.js')
-                    or not name.startswith(('experiments/tg-pairing/', 'experiments/at-credentials/', 'experiments/journey-sync/', 'public/'))):
+                    or not name.startswith(('experiments/tg-pairing/', 'experiments/at-credentials/', 'experiments/journey-sync/', 'experiments/relay/', 'public/'))):
                 raise ValueError('Unexpected module path')
             source = ROOT / relative
             if name == 'experiments/tg-pairing/hive_wasm.js':
@@ -100,7 +100,12 @@ window.addEventListener('along-saved-journeys-applied', () => {
         text = text.replace('</head>', '<link rel="stylesheet" href="../experiments/tg-pairing/comparison.css"></head>')
         text = text.replace('<body>', '<body><p role="note">Local integration experiment — use dummy AT keys only. Do not publish this build. Device and AT-key setup is in Settings.</p>')
         text = text.replace('the server receives your IP address.', 'Auckland Transport receives your IP address and personal key.')
+        privacy_before = 'Your searches, saved routes and preferences stay on this device. No account or uploaded journey history.'
+        privacy_after = 'Your searches and learning history stay on this device. You can choose to share saved places and service preferences with permitted devices. An optional relay sees connection metadata; shared journeys are encrypted.'
+        text = text.replace(privacy_before, privacy_after)
         index.write_text(text)
+        locales = stage / 'public/locales.js'
+        locales.write_text(locales.read_text().replace(privacy_before, privacy_after))
         manifest = json.loads((stage / 'public/manifest.webmanifest').read_text())
         for key in ('id', 'scope', 'start_url'):
             manifest[key] = './'

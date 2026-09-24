@@ -1,8 +1,11 @@
 # Optional relay transport — development only
 
 The user approved an optional user-selected R2 relay on 24 September 2026.
-Nothing here is mounted in Along or deployed. No endpoint is selected, contacted
-or enabled automatically. Planning and direct AT access remain independent.
+Relay controls are mounted only in the local experimental build, not deployed.
+No endpoint is selected by default. A saved explicit opt-in restores connection
+while Along is open. Planning and direct AT access remain independent.
+The sections below record implementation stages; see the final Settings section
+for current integration and test scope.
 
 `transport.mjs` implements a bounded WebSocket connection lifecycle shaped around
 Notekeeper's observed client at revision
@@ -385,3 +388,32 @@ sharing. The full enrolled browser fixture passes; the 22 relay unit tests pass.
 This is one-host Chromium evidence, not S23 acceptance or external relay
 interoperability. Settings integration, initial-pairing improvements and publication
 remain unfinished. The published Device Preview remains 3805.
+
+### Experimental Settings integration
+
+The local experimental app now mounts `settings-view.mjs` under **Share saved
+journeys with my devices → Automatic connection with a relay**. There is no default
+address. Users can enter a secure WSS endpoint, enable it, stop automatic sharing
+while retaining the address, or remove it. The screen discloses visible relay
+metadata, browser custody limits, background suspension and the requirement to
+pair devices and grant sharing separately. It does not solve first-time pairing.
+
+`app-controller.mjs` restores the explicit saved choice during app startup and
+owns the service independently of the dialog. Local saved changes trigger
+synchronization; incoming merges reconcile into the planner without replacing the
+current journey. Interrupted migration or pending recovery review pauses relay
+connections. Configuration and startup changes are observed while the app runs;
+this is not a mobile background-service guarantee. Manual connections remain
+available. Checkpoint catch-up still uses the existing reviewed transfer flow.
+
+Build with `python3 scripts/build_experimental_app.py --runtime
+releases/along-r2-runtime-1b9229ad`, then run
+`node experiments/relay/app-settings.test.mjs` with `CHROMIUM_PATH` configured.
+The test serves the actual generated app and independently verifies signed
+WebSocket greetings at a local TLS relay. It covers default-off, address validation,
+keyboard opt-in at 360px width, reload restoration, persistent stop, removal,
+Back/Escape focus, and interrupted-recovery pause. Existing
+`experiments/journey-sync/startup-settings.test.mjs` covers recovery UI regression.
+Peer exchange remains covered by the separate enrolled service fixture. Neither
+check proves physical-device pairing, external relay compatibility, or release
+readiness. The public preview is still 3805; this integration is not deployed.
