@@ -229,11 +229,70 @@ export async function checkRecoveryProof(owner, recipient) {
     const previous = await recoveryStore.read('along-epoch-delivery-v1', key.slice(0, -1) + '2');
     return previous?.value?.epoch === 2n && (await recoveryStore.read('along-epoch-delivery-v1', key)).revision === receipt.revision;
   }), true, 'owner retains signed installation evidence');
+  await owner.evaluate(async () => {
+    const {readRecoveryReceipt} = await import('./epoch-recovery-receipt.mjs');
+    window.readConfirmation = options => readRecoveryReceipt({wasm, store: recoveryStore, group,
+      subject: new Uint8Array(recoveryPeer.subject), epoch: 3n, ...options});
+    const bytes = new Uint8Array(64); bytes.set(group); bytes.set(recoveryPeer.subject, 32);
+    window.deliveryKey = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)), b => b.toString(16).padStart(2, '0')).join('') + ':3';
+    window.originalDelivery = (await recoveryStore.read('along-epoch-delivery-v1', deliveryKey)).value;
+    const readonly = {...recoveryStore, compareAndSwap: () => { throw Error('Unexpected write'); },
+      compareAndSwapMany: () => { throw Error('Unexpected write'); }};
+    if ((await readConfirmation({store: readonly})).epoch !== 3n) throw Error('Saved confirmation not verified');
+    if (await readConfirmation({subject: crypto.getRandomValues(new Uint8Array(32))}) !== null) throw Error('Absent confirmation not distinguished');
+    const cancelled = new AbortController(); cancelled.abort();
+    if (await readConfirmation({signal: cancelled.signal}).then(() => true, () => false)) throw Error('Cancelled read accepted');
+    const issuer = await (await import('./software-persona.mjs')).loadSoftwareIssuer({wasm, store: recoveryStore, expectedGroup: group});
+    try { await issuer.issueCertificate(crypto.getRandomValues(new Uint8Array(32))); } finally { issuer.close(); }
+    const {showMemberDevices} = await import('./member-devices-view.mjs');
+    window.devicePanel = document.createElement('div'); document.body.append(devicePanel);
+    window.showDevices = async () => {
+      window.deviceView?.dispose();
+      window.deviceView = showMemberDevices(devicePanel, {wasm, store: recoveryStore, expectedGroup: group}); await deviceView.ready;
+    };
+    await showDevices();
+  });
+  await owner.getByText('Confirmed installation of key version 3. This is a saved receipt, not online status.', {exact: true}).waitFor();
+  await owner.getByText('No installation confirmation saved for key version 3.', {exact: true}).waitFor();
+  assert.equal(await owner.evaluate(() => [...devicePanel.querySelectorAll('button[aria-describedby]')].every(button =>
+    document.getElementById(button.getAttribute('aria-describedby'))?.textContent.length > 0)), true);
+  for (const field of ['signature', 'nonce', 'certificate', 'transition', 'group', 'subject', 'epoch']) {
+    assert.equal(await owner.evaluate(async field => {
+      const held = await recoveryStore.read('along-epoch-delivery-v1', deliveryKey);
+      const changed = structuredClone(originalDelivery);
+      if (field === 'epoch') changed.epoch = 2n; else changed[field][0] ^= 1;
+      await recoveryStore.compareAndSwap('along-epoch-delivery-v1', deliveryKey, held.revision, changed);
+      const refused = await readConfirmation().then(() => false, () => true);
+      await showDevices();
+      return refused;
+    }, field), true, 'stored ' + field + ' corruption refuses confirmation');
+    await owner.getByText('Key-update confirmation could not be verified. No saved data was changed.', {exact: true}).waitFor();
+  }
+  await owner.evaluate(async () => {
+    const held = await recoveryStore.read('along-epoch-delivery-v1', deliveryKey);
+    await recoveryStore.compareAndSwap('along-epoch-delivery-v1', deliveryKey, held.revision, originalDelivery);
+    let replaced = false;
+    const raced = {...recoveryStore, read: async (scope, key) => {
+      if (scope === 'along-prepared-epoch-v1' && !replaced) {
+        replaced = true;
+        const before = await recoveryStore.read('along-epoch-delivery-v1', deliveryKey);
+        await recoveryStore.compareAndSwap('along-epoch-delivery-v1', deliveryKey, before.revision, before.value);
+      }
+      return recoveryStore.read(scope, key);
+    }};
+    if (await readConfirmation({store: raced}).then(() => true, () => false)) throw Error('Changed receipt accepted during read');
+    if ((await readConfirmation()).epoch !== 3n) throw Error('Restored receipt not verified');
+  });
   const removed = await answer(await begin());
   await owner.evaluate(async () => {
     await (await import('./member-removal.mjs')).removeSoftwareMember({wasm, store: recoveryStore, expectedGroup: group,
       subject: new Uint8Array(recoveryPeer.subject), certificate: new Uint8Array(recoveryPeer.certificate)});
   });
+  assert.equal(await owner.evaluate(() => readConfirmation().then(() => true, () => false)), false, 'removed peer cannot be reported as currently authorized confirmation');
+  await owner.evaluate(() => showDevices());
+  await owner.getByText('Removal saved here.', {exact: true}).waitFor();
+  assert.equal(await owner.getByText('Confirmed installation of key version 3.', {exact: false}).count(), 0);
+  await owner.evaluate(() => deviceView.dispose());
   assert.equal(await verify(removed), false, 'removal after challenge refuses');
   await assert.rejects(begin(), 'removed member cannot obtain another recovery challenge');
   for (const page of [owner, recipient]) {

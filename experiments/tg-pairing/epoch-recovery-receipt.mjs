@@ -44,3 +44,40 @@ export async function saveRecoveryReceipt({wasm, store, group, subject, epoch, t
   }
   throw fail();
 }
+
+// Read-only evidence for one named device and version. Absence is distinct from
+// unreadable/invalid evidence. A confirmation is historical, not online presence.
+export async function readRecoveryReceipt({wasm, store, group: inputGroup, subject: inputSubject, epoch, signal}) {
+  if (!fixed(inputGroup, 32) || !fixed(inputSubject, 32) || typeof epoch !== 'bigint'
+      || epoch < 1n || epoch > 0xffffffffffffffffn) throw fail();
+  const group = inputGroup.slice(), subject = inputSubject.slice(), groupId = hex(group);
+  const live = () => { if (signal?.aborted) throw fail(); }; live();
+  const keyBytes = new Uint8Array(64); keyBytes.set(group); keyBytes.set(subject, 32);
+  const key = hex(new Uint8Array(await crypto.subtle.digest('SHA-256', keyBytes))) + ':' + epoch;
+  const scope = 'along-epoch-delivery-v1';
+  const persona = await store.read('candidate-persona', 'active'), membership = await store.read('membership', groupId);
+  const identity = await loadLocalPersona({wasm, store, expectedGroup: group}); live();
+  if (identity?.origin !== 'initial' || identity.epoch < epoch) throw fail();
+  const saved = await store.read(scope, key);
+  const checks = [['candidate-persona', 'active', persona?.revision], ['membership', groupId, membership?.revision], [scope, key, saved?.revision]];
+  if (saved) {
+    const value = saved.value;
+    if (value?.format !== 1 || value.epoch !== epoch || !same(value.group, group) || !same(value.subject, subject)
+        || !fixed(value.nonce, 16) || !fixed(value.signature, 64)) throw fail();
+    const statement = await recoveryReceiptStatement(value);
+    await verifyEpochTransition({bytes: value.transition, expectedGroup: group, currentEpoch: epoch - 1n});
+    const preparedKey = groupId + ':' + epoch;
+    const prepared = await store.read('along-prepared-epoch-v1', preparedKey);
+    if (!same(prepared?.value?.transition, value.transition)) throw fail();
+    checks.push(['along-prepared-epoch-v1', preparedKey, prepared?.revision]);
+    const verifier = wasm.BrowserMembership.establish(group, epoch, 0n);
+    try {
+      for (const r of membership.value.revocations) if (!verifier.apply_revocation(r.subject, r.epoch, r.sequence, r.reason, r.signature)) throw fail();
+      if (!verifier.verify_nonce(value.certificate, subject, statement, value.nonce, value.signature)) throw fail();
+    } finally { verifier.free(); }
+  }
+  for (const [scope, key, revision] of checks) {
+    if ((await store.read(scope, key))?.revision !== revision) throw fail(); live();
+  }
+  return saved ? Object.freeze({status: 'peer-installation-confirmed', epoch}) : null;
+}

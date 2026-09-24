@@ -56,7 +56,10 @@ keys are redelivered or installation records rewritten; a corrupted saved
 installation refuses confirmation. A standalone owner key-update review now
 passes real-browser keyboard, cancellation, stale-approval and accessibility checks.
 It confirms local installation only and is not yet wired into Settings; recipient
-connection controls and per-device confirmation remain unfinished. See
+connection controls remain unfinished. The source device list now verifies saved
+per-device receipts and distinguishes missing, unreadable and removed-device
+status without claiming online presence. Composed browser checks use real
+WebRTC receipts and corrupt/race their stored evidence. See
 [the rotation design](R2_EPOCH_ROTATION.md#recovery-only-possession-check).
 
 The restored software issuer now produces epoch-zero signed revocation evidence

@@ -931,3 +931,14 @@ The test checks keyboard activation, cancellation on each side of commit,
 fresh-document restoration, stale views/approval and narrow-screen/axe behavior.
 The complete recipient recovery and app integration remain pending; see the
 [rotation design](../../docs/R2_EPOCH_ROTATION.md#owner-review-screen).
+
+
+The source group-device list now checks saved key-update receipts through
+`readRecoveryReceipt` in `epoch-recovery-receipt.mjs`. It displays installation
+confirmation only after verifying the receipt's exact device/version, transition,
+member signature, current held removals and unchanged storage revisions. Missing
+and unverifiable evidence have separate wording; neither is shown as confirmation.
+The status describes saved evidence, not online presence, and is associated with
+the device button for screen readers. `EPOCH_INSTALL=1` in the software-enrollment
+browser test covers these labels with real network-produced receipts, corrupted
+fields, concurrent replacement and removal. This is not yet a new public release.

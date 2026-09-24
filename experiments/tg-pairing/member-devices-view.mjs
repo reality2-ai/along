@@ -1,7 +1,11 @@
 import {readIssuedMembers} from './software-persona.mjs';
 import {showMemberRemoval} from './member-removal-view.mjs';
+import {loadLocalPersona} from './local-persona.mjs';
+import {openMembership} from './membership.mjs';
+import {readRecoveryReceipt} from './epoch-recovery-receipt.mjs';
 import {restoreIssuedMembers} from './legacy-members.mjs';
 
+let nextDescription = 0;
 export function showMemberDevices(container, {wasm, store, expectedGroup, databaseName, focus = false, onBack = () => {}}) {
   const group = expectedGroup.slice(), document = container.ownerDocument;
   let child, disposed = false, generation = 0, reading;
@@ -21,9 +25,13 @@ export function showMemberDevices(container, {wasm, store, expectedGroup, databa
     panel.append(heading, explanation, status, list, back); container.append(panel);
     panel.addEventListener('keydown', event => { if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); leave(); } });
     if (focus) heading.focus();
+    let membership;
     try {
       if (databaseName) await restoreIssuedMembers({wasm, store, expectedGroup: group, databaseName, signal: reading.signal});
       const members = await readIssuedMembers({wasm, store, expectedGroup: group});
+      const identity = await loadLocalPersona({wasm, store, expectedGroup: group});
+      if (identity?.origin !== 'initial') throw Error('Group authority unavailable');
+      membership = openMembership(store, wasm, group, Uint8Array.from(identity.member.match(/../g), b => parseInt(b, 16)));
       if (!current(selected)) return;
       status.textContent = members.length ? 'Select a device to see its full identity and saved removal status.' : 'No issued device certificates are saved in this list.';
       for (const entry of members) {
@@ -34,9 +42,28 @@ export function showMemberDevices(container, {wasm, store, expectedGroup, databa
           if (!event.isTrusted || !current(selected)) return;
           clear(); child = showMemberRemoval(container, {wasm, store, expectedGroup: group,
             subject: entry.subject, certificate: entry.certificate, deviceName: label, focus, onBack: home});
-        }); list.append(button);
+        });
+        let confirmation = '';
+        try {
+          const standing = await membership.peerStatus(entry.certificate, entry.subject);
+          if (standing === 'revoked') confirmation = 'Removal saved here.';
+          else if (!['current', 'stale'].includes(standing)) throw Error('Device standing unavailable');
+          else if (identity.epoch > 0n) {
+            const receipt = await readRecoveryReceipt({wasm, store, group, subject: entry.subject, epoch: identity.epoch, signal: reading.signal});
+            confirmation = receipt ? `Confirmed installation of key version ${receipt.epoch}. This is a saved receipt, not online status.`
+              : `No installation confirmation saved for key version ${identity.epoch}.`;
+          }
+        } catch { confirmation = 'Key-update confirmation could not be verified. No saved data was changed.'; }
+        if (!current(selected)) return;
+        const row = node('div', ''); row.append(button);
+        if (confirmation) {
+          const description = node('p', confirmation); description.id = `along-device-confirmation-${++nextDescription}`;
+          button.setAttribute('aria-describedby', description.id); row.append(description);
+        }
+        list.append(row);
       }
     } catch { if (current(selected)) status.textContent = 'The saved device list could not be read. Nothing has been replaced. Go Back to continue planning.'; }
+    finally { membership?.close(); }
   };
   const ready = home();
   return Object.freeze({ready, dispose});

@@ -272,7 +272,31 @@ obsolete asynchronous views, unreadable custody, 320px layout at 200% text size,
 and axe checks. Physical screen-reader testing is still separate.
 
 This screen is not yet wired into app Settings. The recipient's reviewed recovery
-connection, the per-device confirmation list and the complete app permission flow
-must be composed before enabling it and qualifying a public preview. A signed
+connection and the complete app permission flow must be composed before enabling it and qualifying a public preview. A signed
 receipt must be verified before a device is labelled as having confirmed an update;
 a saved membership certificate alone is insufficient.
+
+
+## Verified confirmations in the device list
+
+`readRecoveryReceipt` verifies a saved acknowledgment for an explicitly selected
+device and key version without writing or decrypting traffic keys. It binds the
+group, subject and epoch, verifies the signed transition against the owner's
+retained preparation, and verifies the member certificate and fresh-nonce
+signature under the currently held removals. Persona, membership, receipt and
+preparation revisions are checked again before returning the result. Missing
+receipts return no confirmation; damaged or changed records produce an error.
+
+The source device-list screen uses this reader after a key update. It distinguishes
+confirmed installation, no saved confirmation, unverifiable confirmation and
+removal saved here. Each device button has its status as an accessible description.
+The text says a receipt is not online status. An issued certificate alone never
+becomes an installation confirmation. These are saved observations, not a live
+roster or proof that a device has retained its data indefinitely.
+
+The composed browser test uses the receipts from its actual WebRTC exchange,
+checks the visible confirmed and certificate-only states, damages each signed
+field in storage, changes a receipt during its read, and verifies removal replaces
+the confirmation label. Reader checks also cover cancellation and prohibit writes.
+Public preview 3803 is unchanged; this source UI awaits qualification with the
+remaining recovery controls.
