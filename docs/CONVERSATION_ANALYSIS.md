@@ -1276,3 +1276,18 @@ This supports the no-human-coding course constraint: the assistant can execute t
 verification command without asking the learner to manage a hidden prerequisite.
 It also illustrates an evidence distinction: an environment setup failure must be
 reported and corrected before a test result can support an application claim.
+
+
+### Preview 3805: publish the verified recovery boundaries
+
+The queued-edit and capacity-message changes are now bundled as preview 3805.
+Qualification adds a two-tab compaction check against the generated modules and a
+257-place import through the app's actual preferences path, alongside the existing
+rotation/removal/sharing checks. The upgrade starts from the exact released 3804
+archive. Eleven runs qualify one frozen candidate; the published bytes are checked
+separately rather than inferred from a successful source push.
+
+The change makes repeated pending edits more sustainable and capacity failures
+understandable. It does not reclaim replicated deletion records or make devices
+reconnect automatically. Keeping that distinction in release notes makes the
+course's evidence chain reviewable without narrowing the original goal.

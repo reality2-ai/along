@@ -1,0 +1,16 @@
+{
+  "profile": "along-preview-public-check-v1",
+  "checked_at": "2026-09-24T02:05:53.448Z",
+  "url": "https://reality2.ai/along/preview/",
+  "app_version": "3805",
+  "source_commit": "96bd8550eb545a36dab9b076c62a0c53f2f797f4",
+  "manifest_sha256": "2e62dcc2c3860ce523baa52d29aad8f628749732397c00613a795e7ef9fcc320",
+  "payload_files_verified": 261,
+  "https_setup_reload": true,
+  "offline_install_guide": true,
+  "group_review_controls": true,
+  "offline_new_address_bus_ferry_journey": true,
+  "page_errors": [],
+  "external_requests": [],
+  "limits": "Fresh Chromium profile on one host; physical-device and real-provider checks remain separate."
+}

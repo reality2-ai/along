@@ -1,6 +1,6 @@
 # Pairing comparison component (not released)
 
-Current distribution: [Device Preview 3804](https://reality2.ai/along/preview/public/)
+Current distribution: [Device Preview 3805](https://reality2.ai/along/preview/public/)
 includes the tested Settings integration, group-key update/recovery and
 post-rotation sharing. Regular Along remains version 37. The implementation
 sections below record development stages; use the

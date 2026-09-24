@@ -3,13 +3,18 @@
 Along should contact AT directly and keep each person's AT key within their own
 trust group, without requiring an Along-operated central server. Offline planning
 must continue without a key, a peer connection or a portal. The implementation described here is experimental and is not yet enabled in
-the regular version-37 app. A separate [device preview, version 3804](https://reality2.ai/along/preview/public/),
+the regular version-37 app. A separate [device preview, version 3805](https://reality2.ai/along/preview/public/),
 is now published for S23/desktop testing with dummy AT keys. It includes the
 experimental Settings flows and saved-journey sharing, with separate ordinary
 storage names and explicit software-security limits. See the
-[device-check guide](PREVIEW_DEVICE_CHECK.md) and [HTTPS evidence](evidence/device-preview-3804-public.json).
+[device-check guide](PREVIEW_DEVICE_CHECK.md) and [HTTPS evidence](evidence/device-preview-3805-public.json).
 
 ## Current status
+
+Preview 3805 adds compaction of repeated unstarted journey edits and specific local
+capacity reporting. Its [qualification](evidence/device-preview-3805-qualification.json)
+includes eleven browser runs against the frozen candidate, including the exact
+3804 upgrade. This does not reclaim deletion records or enable automatic discovery.
 
 The group-lifecycle implementation is documented in [epoch rotation](R2_EPOCH_ROTATION.md).
 An Along-specific signed successor format now verifies authority, exact next epoch

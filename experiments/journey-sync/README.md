@@ -1,6 +1,6 @@
 # Saved-journey synchronization data layer
 
-Current distribution: [Device Preview 3804](https://reality2.ai/along/preview/public/)
+Current distribution: [Device Preview 3805](https://reality2.ai/along/preview/public/)
 includes the tested Settings integration, group-key update/recovery and
 post-rotation sharing. Regular Along remains version 37. The implementation
 sections below record development stages; use the
@@ -242,8 +242,8 @@ commit/replay interruption and failed local writes. With `CHROMIUM_PATH` set,
 IndexedDB and Web Locks across two tabs: one compacts while the other is paused
 before committing its head; after a simulated interruption and reload, the receipt
 prevents duplicate import and final deletion/service preference/history survive.
-These new compaction changes are source-only; published preview 3804 retains the
-previous journal behavior until a new candidate is qualified.
+These compaction changes are included in preview 3805; its exact candidate
+qualification also runs the two-tab test against the generated modules.
 
 **Manage journey-sharing devices** lists locally saved permissions, including when
 the other device is offline. Selecting a device opens the existing removal review,
@@ -325,7 +325,7 @@ payload hashes, identity setup/reload, offline help and new-address bus/ferry ro
 Physical observations remain pending.
 
 
-### Distinct-place capacity reporting (source, after preview 3804)
+### Distinct-place capacity reporting (preview 3805)
 
 Local imports that exceed 256 replicated pairs now produce a distinct capacity
 error. Settings retains it across failed connection attempts and explains that

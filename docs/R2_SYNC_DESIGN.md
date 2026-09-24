@@ -1,7 +1,7 @@
 # Proposal: private cross-device synchronisation through Reality2
 
 Status: experimental device preview, 24 September 2026. Saved-journey sharing is
-enabled in [Device Preview 3804](https://reality2.ai/along/preview/public/), separately
+enabled in [Device Preview 3805](https://reality2.ai/along/preview/public/), separately
 from the regular version-37 app. Reviewed group removal and group-key rotation are available. Automatic
 discovery/reconnection, capacity recovery and physical acceptance remain unfinished. See the [device checks](PREVIEW_DEVICE_CHECK.md).
 
@@ -11,11 +11,11 @@ tombstones and atomic snapshot persistence. Model and real IndexedDB checks cove
 concurrent saves, replay, deletion and restart. It now connects to an authenticated
 peer controller and the preview app's saved places and service preferences.
 Its documented limits include whole-journey conflict resolution and a bounded
-tombstone set without garbage collection. Source journal compaction now coalesces
+tombstone set without garbage collection. Preview 3805 journal compaction coalesces
 unstarted repeated edits while preserving the head operation and final deletions;
 this is not tombstone garbage collection or distinct-pair capacity recovery. Real
 two-tab storage/reload checks are recorded in the journey-sync README. Preview
-3804 predates this change.
+3805 also explains local capacity failures without suggesting ineffective retries.
 It includes independent per-peer application permission, verified
 against actual enrollment evidence, and transaction guards that prevent a merge
 when permission is removed during its commit. These checks use real browser
