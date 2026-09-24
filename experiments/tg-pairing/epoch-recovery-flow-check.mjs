@@ -6,10 +6,13 @@ export async function checkEpochRecoveryFlow(owner, recipient, peer) {
     await owner.evaluate(async peer => {
       const panel = document.createElement('div'); document.body.replaceChildren(panel);
       window.keyFlow?.dispose();
-      window.keyFlow = (await import('./epoch-recovery-flow.mjs')).showEpochRecoveryFlow(panel, {
-        wasm, store: recoveryStore, expectedGroup: group, role: 'owner', peer: new Uint8Array(peer.subject), focus: true});
+      window.keyFlow = (await import('./member-devices-view.mjs')).showMemberDevices(panel, {
+        wasm, store: recoveryStore, expectedGroup: group, purpose: 'update', focus: true});
       await keyFlow.ready;
     }, peer);
+    const member = peer.subject.map(b => b.toString(16).padStart(2, '0')).join('');
+    await owner.getByRole('button', {name: `Device ${member.slice(0, 8)}…${member.slice(-8)}`, exact: true}).click();
+    await owner.getByRole('heading', {name: 'Connect the device to update', exact: true}).waitFor();
     await recipient.evaluate(async group => {
       const panel = document.createElement('div'); document.body.replaceChildren(panel);
       window.keyFlow?.dispose();
@@ -51,7 +54,10 @@ export async function checkEpochRecoveryFlow(owner, recipient, peer) {
     await owner.getByRole('heading', {name: 'Other device confirmed its keys', exact: true}).waitFor();
     await recipient.getByRole('heading', {name: 'Group keys saved on this device', exact: true}).waitFor();
     const epoch = scenario === 'confirm' ? '3' : '4';
-    assert.deepEqual(await owner.evaluate(async () => { const result = await keyFlow.completed; return [result.status, String(result.epoch)]; }), ['peer-installation-confirmed', epoch]);
+    assert.deepEqual(await owner.evaluate(async epoch => {
+      const result = await (await import('./epoch-recovery-receipt.mjs')).readRecoveryReceipt({wasm, store: recoveryStore, group, subject: new Uint8Array(recoveryPeer.subject), epoch: BigInt(epoch)});
+      return [result.status, String(result.epoch)];
+    }, epoch), ['peer-installation-confirmed', epoch]);
     assert.deepEqual(await recipient.evaluate(async () => { const result = await keyFlow.completed; return [result.status, String(result.epoch)]; }), ['installed-local', epoch]);
   }
   const removalSets = await Promise.all([owner, recipient].map(page => page.evaluate(async () => {

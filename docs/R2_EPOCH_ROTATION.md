@@ -2,9 +2,9 @@
 
 Status: transition framing, signature verification, encrypted durable preparation
 and atomic issuer/recipient installation implemented and tested, including two
-successive issuer advances. The standalone owner review screen is implemented
-and browser-tested; the full rotation/recovery flow is not enabled in the app or
-preview 3803.
+successive issuer advances. Owner review, device selection and recovery are connected in the local
+experimental app Settings. Shared AT permission renewal remains incomplete; none
+of this rotation UI is enabled in public preview 3803.
 This is an Along application profile using the R2 group authority; it is not a
 claim of a normative R2 rotation wire format or full R2 conformance.
 
@@ -271,7 +271,7 @@ fresh-document reopening, stale approval, pre- and post-commit cancellation,
 obsolete asynchronous views, unreadable custody, 320px layout at 200% text size,
 and axe checks. Physical screen-reader testing is still separate.
 
-This screen is not yet wired into app Settings. The complete app permission flow
+This screen is wired into local experimental Settings. The complete app permission flow
 must be composed with the visible recovery connection before enabling it and qualifying a public preview. A signed
 receipt must be verified before a device is labelled as having confirmed an update;
 a saved membership certificate alone is insufficient.
@@ -326,7 +326,7 @@ confirmation is approved through the same review. Narrow 320px layout at 200%
 text size and axe checks pass. Physical TalkBack is not established by these tests.
 
 The earlier review checks supply signaling from the test harness. The visible
-message exchange is now composed below. Settings composition remains pending;
+message exchange is now composed below and linked from local experimental Settings;
 this does not enable a public recovery flow or change preview 3803.
 
 
@@ -355,5 +355,37 @@ recipient acceptance without premature key delivery, signed-removal catch-up and
 fresh-document restoration. It no longer injects SDP directly for these cases.
 The earlier low-level failure tests still supply signaling directly.
 
-Settings entry points and renewed journey/AT permission integration remain
-unfinished. This source flow is not yet deployed in public preview 3803.
+Settings entry points are implemented locally. Renewed journey/AT permission
+integration remains unfinished. This source flow is not yet deployed in public preview 3803.
+
+
+## Local Settings integration and remaining permission work
+
+Owner Settings now offers a reviewed local key update and, after the first update,
+a device picker for sending keys or checking a saved confirmation. The picker
+refuses removed/unverifiable members and opens the actual recovery flow for the
+selected identity. Enrolled devices have a receive-update option even when their
+original enrollment was already acknowledged. These controls stay under the
+existing connection/recovery disclosure rather than the journey-planning flow.
+
+An unreadable AT binding no longer prevents access to group recovery. The binding
+is preserved and AT setup actions are withheld, rather than treating the failure
+as an absent binding and offering to create a new authority. This matters when a
+recipient retains an owner's old certificate after a group epoch change.
+
+`GROUP_KEYS=1 node experiments/at-credentials/app-integration.test.mjs` runs against
+the freshly generated local experimental app. It updates group keys through
+Settings, opens the device picker, checks unreadable-binding preservation and
+recovery access, then exercises personal encrypted AT-key setup, real local
+bus/ferry planning, mocked direct AT requests, offline reopening, delayed optional
+runtime and incompatible-storage preservation. The composed enrollment browser
+test now enters the visible recovery flow through its actual device picker.
+
+Journey permission records are keyed by stable member identities; the journey
+connection obtains a fresh certificate from its incoming descriptor. Shared AT
+restoration additionally checks the pinned owner's saved certificate for current
+epoch membership. That certificate needs verified renewal without changing the
+pinned owner, credential identity, consent or policy. Full shared-device AT and
+journey exchanges after rotation are not yet verified and remain release blockers.
+Only `along-experimental-app` was rebuilt; the qualified preview 3803 artifacts and
+public deployments are unchanged.

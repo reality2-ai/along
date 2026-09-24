@@ -963,3 +963,15 @@ text areas/buttons for a mismatched reply, saved-key confirmation and delivery o
 a new key version. QR controls reuse the transfer component; physical scanning
 and Settings/full app integration still need verification. Public preview 3803
 remains unchanged.
+
+
+The local experimental app now exposes rotation and delivery through device
+Settings. Owners update keys locally, then choose a device to update; recipients
+choose Receive a group key update. Removed devices cannot be selected for delivery.
+Group recovery remains accessible when a saved AT binding cannot be verified,
+without discarding that binding or offering to replace its authority.
+`GROUP_KEYS=1` in `experiments/at-credentials/app-integration.test.mjs` verifies the
+Settings path alongside personal-key, planning and offline checks. The visible
+multi-device recovery test now starts through the device picker. Shared AT-owner
+certificate renewal and complete post-rotation app exchanges remain pending;
+these changes are not deployed in public preview 3803.

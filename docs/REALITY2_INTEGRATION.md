@@ -55,14 +55,17 @@ fresh authenticated, recipient-approved receipt exchange at the same epoch. No
 keys are redelivered or installation records rewritten; a corrupted saved
 installation refuses confirmation. A standalone owner key-update review now
 passes real-browser keyboard, cancellation, stale-approval and accessibility checks.
-It confirms local installation only and is not yet wired into Settings. The
+It confirms local installation only and is now wired into local experimental Settings. The
 recipient review now runs over real authenticated sessions, including keyboard
 acceptance, cancellation, failed installation and equal-version confirmation.
 The visible three-message flow now composes signed-removal catch-up, authenticated
 connection, recipient acceptance and owner send/confirmation. Browser tests copy
 its displayed messages, reject a mismatched reply, confirm existing keys and
-deliver a new version. Settings and full application permission composition remain
-unfinished. The source device list now verifies saved
+deliver a new version through the device picker. Local Settings now offers owner
+rotation, selected-device delivery and recipient recovery. Its generated-app check
+keeps group recovery reachable when a saved AT binding cannot be verified. Shared
+AT-owner certificate renewal and full post-rotation application checks remain
+unfinished; public preview 3803 is unchanged. The source device list now verifies saved
 per-device receipts and distinguishes missing, unreadable and removed-device
 status without claiming online presence. Composed browser checks use real
 WebRTC receipts and corrupt/race their stored evidence. See

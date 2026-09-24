@@ -58,6 +58,60 @@ try {
   await page.getByRole('button', {name: 'Device and AT-key setup', exact: true}).click();
   await page.getByRole('button', {name: 'Set up my device', exact: true}).click();
   await page.getByRole('button', {name: 'Create my device group', exact: true}).click();
+  if (process.env.GROUP_KEYS === '1') {
+    await page.getByText('Connect or recover another device', {exact: true}).click();
+    assert.equal(await page.getByRole('button', {name: 'Send a group key update', exact: true}).count(), 0);
+    await page.getByRole('button', {name: 'Update group keys on this device', exact: true}).click();
+    await page.getByRole('button', {name: 'Update keys on this device', exact: true}).click();
+    await page.getByRole('heading', {name: 'Group keys updated on this device', exact: true}).waitFor();
+    await page.getByRole('button', {name: 'Back', exact: true}).click();
+    await page.getByText('Connect or recover another device', {exact: true}).click();
+    await page.getByRole('button', {name: 'Send a group key update', exact: true}).click();
+    await page.getByRole('heading', {name: 'Choose a device to update', exact: true}).waitFor();
+    await page.getByRole('status').filter({hasText: 'No issued device certificates'}).waitFor();
+    await page.getByRole('button', {name: 'Back', exact: true}).click();
+    await page.evaluate(async () => {
+      const store = await (await import('../experiments/tg-pairing/storage.mjs')).openBrowserStorage(window.testDeviceDatabase);
+      try {
+        const persona = await store.read('candidate-persona', 'active');
+        const group = Array.from(persona.value.record.group, b => b.toString(16).padStart(2, '0')).join('');
+        await store.compareAndSwap('along-at-owners', group, 0, {format: 1});
+      } finally { store.close(); }
+    });
+    await page.getByRole('button', {name: 'Back to settings', exact: true}).click();
+    await page.getByRole('button', {name: 'Device and AT-key setup', exact: true}).click();
+    await page.getByRole('status').filter({hasText: 'Your saved AT setup could not be verified'}).waitFor();
+    assert.equal(await page.getByRole('button', {name: 'Use my own AT key', exact: true}).count(), 0);
+    await page.getByText('Connect or recover another device', {exact: true}).click();
+    await page.getByRole('button', {name: 'Update group keys on this device', exact: true}).click();
+    await page.getByRole('status').filter({hasText: 'uses key version 1'}).waitFor();
+    await page.getByRole('button', {name: 'Back', exact: true}).click();
+    await page.evaluate(async () => {
+      const store = await (await import('../experiments/tg-pairing/storage.mjs')).openBrowserStorage(window.testDeviceDatabase);
+      try {
+        const persona = await store.read('candidate-persona', 'active');
+        const group = Array.from(persona.value.record.group, b => b.toString(16).padStart(2, '0')).join('');
+        const anchor = await store.read('along-at-owners', group);
+        if (Object.keys(anchor.value).join(',') !== 'format') throw Error('Unreadable AT binding changed');
+        // Remove only this intentionally injected corrupt fixture. Adapter
+        // remove() retains a revisioned tombstone, which is not original absence.
+        await new Promise((resolve, reject) => {
+          const request = indexedDB.open('r2-browser:' + window.testDeviceDatabase, 1);
+          request.onerror = () => reject(request.error);
+          request.onsuccess = () => {
+            const db = request.result, tx = db.transaction('records', 'readwrite');
+            tx.objectStore('records').delete(['along-at-owners', group]);
+            tx.oncomplete = () => { db.close(); resolve(); };
+            tx.onabort = () => { db.close(); reject(tx.error); };
+          };
+        });
+      } finally { store.close(); }
+    });
+    await page.getByRole('button', {name: 'Back to settings', exact: true}).click();
+    await page.getByRole('button', {name: 'Device and AT-key setup', exact: true}).click();
+    console.log('PASS: unreadable AT binding preserves group-recovery controls without resetting saved authority or offering new AT setup.');
+    console.log('PASS: actual app Settings reviews and installs group key version one, then opens the device update picker without claiming peer delivery.');
+  }
   await page.getByRole('button', {name: 'Use my own AT key', exact: true}).click();
   await page.getByRole('button', {name: 'Set up live information', exact: true}).click();
   await page.getByLabel('Personal AT API key').fill('synthetic-full-app-key');
