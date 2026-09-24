@@ -15,7 +15,7 @@ export async function openRelaySharingService({wasm,store,expectedGroup,member,g
   const group=expectedGroup.slice(),options={wasm,store,expectedGroup:group,member};
   const saved=await readRelayConfiguration(options);
   if(!saved.enabled||!saved.url)return null;
-  let closed=false,connected=false,transport,watchTimer,announceTimer,announcement,permissionRevision,networkGeneration=0;
+  let closed=false,connected=false,transport,watchTimer,announceTimer,announcement,permissionRevision,membershipRevision,networkGeneration=0;
   let incoming=Promise.resolve(),outgoing=Promise.resolve(),pendingIn=0,pendingOut=0;
   const peers=new Map(),lifetime=new AbortController();
   const status=(state,peer)=>{try{onStatus({state,peer});}catch{}};
@@ -69,13 +69,22 @@ export async function openRelaySharingService({wasm,store,expectedGroup,member,g
     try{
       await guard();const permission=await readJourneyPermission(options);current();
       if(permission.member!==member)throw Error('Relay identity changed');
-      if(permission.revision!==permissionRevision){
-        permissionRevision=permission.revision;
+      const membership=await store.read('membership',hex(group));current();
+      if(!membership)throw Error('Relay membership unavailable');
+      const membershipChanged=membership.revision!==membershipRevision;
+      if(permission.revision!==permissionRevision||membershipChanged){
+        permissionRevision=permission.revision;membershipRevision=membership.revision;
+        // Discard queued frames from the prior authority and renew the signed
+        // discovery certificate as well as each peer's audited session.
+        networkGeneration++;clearTimeout(announceTimer);announcement=undefined;
         // Every held handshake audits this record, including changes to other
         // peers. Reopen all sessions with current authority after discovery.
         const previous=[...peers];peers.clear();
-        for(const [id,entry] of previous){entry.connection?.close();status(permission.peers.includes(id)?'permission-changed':'permission-removed',id);}
-        announce();
+        for(const [id,entry] of previous){entry.connection?.close();status(permission.peers.includes(id)?(membershipChanged?'membership-changed':'permission-changed'):'permission-removed',id);}
+        if(connected){
+          const n=networkGeneration,value=await createRelayAnnouncement({...options,signal:lifetime.signal});
+          await guard();if(n===networkGeneration&&connected){announcement=value;announce();}
+        }
       }
       watchTimer=setTimeout(()=>{void watch();},1000);
     }catch{close();}
@@ -85,6 +94,8 @@ export async function openRelaySharingService({wasm,store,expectedGroup,member,g
     await guard();const permission=await readJourneyPermission(options);current();
     if(permission.member!==member)throw Error('Relay identity changed');
     permissionRevision=permission.revision;
+    membershipRevision=(await store.read('membership',hex(group)))?.revision;current();
+    if(membershipRevision===undefined)throw Error('Relay membership unavailable');
     transport=transportFactory({url:saved.url,
       createHello:async()=>{await guard();const hello=await createLocalRelayHello({...options,signal:lifetime.signal});await guard();if(JSON.parse(hello).device_id!==member)throw Error('Relay identity changed');return hello;},
       onStatus:s=>{
