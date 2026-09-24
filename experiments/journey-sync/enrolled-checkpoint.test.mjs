@@ -4,7 +4,7 @@ import {setupJourneyGeneration} from './migration-setup.mjs';
 import {openIsolatedPlannerStorage} from './isolated-preferences.mjs';
 import {loadSoftwareIssuer} from '../tg-pairing/software-persona.mjs';
 import {readJourneyPermission,setJourneyPermission} from './permission.mjs';
-import {acceptPermittedJourneyCheckpoint} from './checkpoint-permission.mjs';
+import {acceptPermittedJourneyCheckpoint,retainPermittedJourneyCheckpoint} from './checkpoint-permission.mjs';
 import {createCheckpointReview} from './checkpoint-review.mjs';
 import {applyCheckpointChoices} from './checkpoint-choice-commit.mjs';
 import {preferenceKey,readEnvelope} from './app-preferences.mjs';
@@ -31,7 +31,33 @@ export async function checkEnrolledCheckpoint({wasm,owner,receiver,group}) {
   const grant=async allow=>setJourneyPermission({...consent,allow,expectedRevision:(await readJourneyPermission(consent)).revision});
   const input={...consent,expectedRevision:before.revision,expectedLocalRaw:readEnvelope(adapters[1]).raw,
     checkpoint:prepared.checkpoint,snapshot:prepared.snapshot,storage:adapters[1]};
-  await grant(false);await refuses(acceptPermittedJourneyCheckpoint(input));await grant(true);
+  await grant(false);await refuses(acceptPermittedJourneyCheckpoint(input));
+  await refuses(retainPermittedJourneyCheckpoint(input));await grant(true);
+  const inboxScope='along-journey-checkpoint-inbox-v1';
+  let retentionRace=false;
+  await refuses(retainPermittedJourneyCheckpoint({...input,store:{...receiver.store,compareAndSwapMany:async(...args)=>{
+    if(!retentionRace){retentionRace=true;await grant(false);}return receiver.store.compareAndSwapMany(...args);
+  }}}));
+  check(retentionRace&&await receiver.store.read(inboxScope,groupId)===null,'denied retention left a checkpoint');
+  await grant(true);
+  await refuses(retainPermittedJourneyCheckpoint({...input,store:{...receiver.store,compareAndSwapMany:async()=>{
+    throw new DOMException('test storage full','QuotaExceededError');
+  }}}));
+  check(await receiver.store.read(inboxScope,groupId)===null,'failed storage retained a checkpoint');
+  const damaged=prepared.checkpoint.slice();damaged[183]^=1;
+  await refuses(retainPermittedJourneyCheckpoint({...input,checkpoint:damaged}));
+  const cancelled=new AbortController();
+  await refuses(retainPermittedJourneyCheckpoint({...input,signal:cancelled.signal,
+    store:{...receiver.store,compareAndSwapMany:async(...args)=>{
+      const result=await receiver.store.compareAndSwapMany(...args);cancelled.abort();return result;
+    }}}));
+  const retained=await retainPermittedJourneyCheckpoint(input);
+  check(retained.status==='checkpoint-retained-for-review'&&retained.alreadyRetained,'retention after cancelled confirmation failed');
+  check((await retainPermittedJourneyCheckpoint(input)).alreadyRetained,'retention retry failed');
+  check((await receiver.store.read('along-saved-journeys-v2',groupId)).revision===before.revision,'retention installed checkpoint');
+  check(readEnvelope(adapters[1]).raw===input.expectedLocalRaw,'retention changed planner');
+  const inbox=await receiver.store.read(inboxScope,groupId);
+  check(inbox.value.checkpoint.length===184&&inbox.value.previous.generation===0,'retained bundle incomplete');
   await refuses(acceptPermittedJourneyCheckpoint({...input,peer:receiver.subject,certificate:receiver.certificate}));
   const bad=prepared.checkpoint.slice();bad[183]^=1;
   await refuses(acceptPermittedJourneyCheckpoint({...input,checkpoint:bad}));
@@ -57,5 +83,6 @@ export async function checkEnrolledCheckpoint({wasm,owner,receiver,group}) {
   check(local.data.journeys.some(j=>j.to.id==='sync-denied'&&j.saved),'recipient-only local save lost');
   // Revoking application consent also denies retry of already installed evidence.
   await grant(false);await refuses(acceptPermittedJourneyCheckpoint(input));
+  await refuses(retainPermittedJourneyCheckpoint(input));
   console.log('PASS: actual enrolled device migrates/isolate storage, accepts an explicitly permitted signed checkpoint, retries and reviews retained differences while preserving its independent save/history; absent permission, wrong peer, bad signature and permission removal during commit leave no partial installation. Checkpoint bytes are a direct fixture handoff, not wire transport.');
 }

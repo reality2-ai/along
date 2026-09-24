@@ -530,6 +530,23 @@ combined exchange/checkpoint suites pass 15 tests. A durable bounded inbox,
 authenticated session composition, ordered catch-up and recipient UI remain
 unfinished. Public preview 3805 is unchanged.
 
+## Durable checkpoint staging
+
+`checkpoint-inbox.mjs` uses one `along-journey-checkpoint-inbox-v1` record per
+group, containing the signed checkpoint, snapshot and verified local predecessor.
+`retainPermittedJourneyCheckpoint` applies the same current peer membership and
+local consent guards as reviewed installation. The inbox write additionally checks
+the replica revision atomically. Readback verifies the saved bundle before a
+retention receipt; retries also verify consent and the predecessor or installed
+successor. A different checkpoint is refused while the slot is occupied.
+
+The actual enrolled-browser fixture tests denied consent, consent removal during
+commit, storage quota failure, signature damage, cancellation after a committed
+write, retry, unchanged planner/replica and cryptographic verification after opening
+a fresh page. This verifies IndexedDB retention, not checkpoint wire delivery.
+Slot retirement/advancement, session composition and receiver review controls are
+still required. The public build remains unchanged.
+
 ## Required before integration
 
 1. Wire the tested migration and format-2 bridge to explicit reviewed opt-in,

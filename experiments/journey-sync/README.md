@@ -508,3 +508,14 @@ for the 15 model/codec checks. These cover chunk bounds, tampering, frame-domain
 separation, actual-parent refusal, false/lost receipts, retry and closure during
 retention. The callback fixtures use memory, so they do not establish browser
 durability, peer authentication or end-to-end device delivery.
+
+`checkpoint-inbox.mjs` now stages one signed bundle per group through
+`retainPermittedJourneyCheckpoint`. Retention checks the actual local predecessor,
+guards its replica revision in the same transaction as the write, and rereads and
+verifies the retained record before acknowledging. Consent and membership guards
+also apply to retries. It never writes planner preferences or installs a generation.
+The real enrolled-browser fixture now checks permission removal during retention,
+storage failure, damaged signatures, cancellation after commit, retry and fresh-page
+IndexedDB restoration. Bytes still arrive by direct fixture handoff. A different
+checkpoint cannot overwrite the occupied slot; reviewed retirement/advancement,
+authenticated wire composition and receiving UI remain integration work.
