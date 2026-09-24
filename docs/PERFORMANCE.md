@@ -105,3 +105,26 @@ and 3.40 seconds for the Newmarket–Devonport mixed-mode search. Chromium repor
 These are single-run desktop observations, not a controlled comparison with
 previous releases or evidence about Samsung S23 memory/performance. The app still
 needs physical-device observations before these figures can support phone claims.
+
+
+## Version 42 measurements
+
+The [v42 static Chromium run](evidence/regular-v42-static.json) measured 7.516 s
+from a fresh profile to offline-ready, 3.467 s for offline reopening and 4.439 s
+for the mixed-mode departure search. Reported origin storage was 71,716,638 bytes;
+the four compressed data bundles total 41,308,937 bytes. The distribution ZIP is
+41,718,843 bytes. These are different quantities: installed storage is not download
+size, and browser quota is not memory use.
+
+The [arrival-routing diagnostic](evidence/arrive-by-routing.json) also records
+Node memory before and after explicit garbage collection. After collection,
+heap use was 234,048,144 bytes and process RSS 1,095,290,880 bytes. RSS includes
+more than the JavaScript heap and is not a phone/browser peak measurement. This
+large process footprint warrants physical-device measurement before making a
+low-memory-device claim. It does not by itself identify a memory leak.
+
+These are individual desktop observations, not a controlled speed comparison
+between versions. The public browser verifies functional offline arrival routing;
+it does not establish Samsung S23 performance. No human coding is needed to test
+responsiveness: report the device/browser, journey, approximate waiting time and
+any reload or lost state.

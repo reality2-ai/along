@@ -46,7 +46,9 @@ reopen Along. Try a new search, such as 277 Broadway Newmarket → 1 Queen Stree
 Auckland Central, and pull down to refresh. Scheduled planning should still work
 without an update error. Reconnect before expecting changes from the other device.
 
-An optional relay can reconnect already permitted devices while the app is open.
+The older relay protocol can reconnect permitted devices in local tests.
+Integration with the current R2 hive is still being checked; leave relay setup
+alone until a compatible endpoint has been verified.
 It needs an explicitly chosen endpoint; none is configured by default. It does
 not replace the initial pairing exchange above. No real AT key is needed here.
 
@@ -80,3 +82,17 @@ snapshot, not current travel advice. Try switching back with Set departure to no
 Open a saved home shortcut and choose **Remove this shortcut** below the journey
 choices. The journey options should stay usable, and the shortcut should remain
 absent when you reopen offline. No coding is needed.
+
+
+## Optional feedback submission check
+
+If you can use a GitHub account, open **Give feedback on this screen** in regular
+Along and type a short synthetic report such as “Device acceptance test — no bug
+reported.” Leave optional context off and include no personal addresses, keys or
+connection messages. Review the body and choose the GitHub action. On GitHub,
+sign in if needed and deliberately submit the issue; opening the composer alone
+is not submission. Return to Along, paste the new issue URL into its receipt
+check, and verify that it opens the existing report instead of offering a new one.
+If already submitted, check the existing issue before retrying. Report its issue
+number so the maintainer can identify and close the test. This creates a public
+issue; skip it and report **not tested** if you do not want to submit one.

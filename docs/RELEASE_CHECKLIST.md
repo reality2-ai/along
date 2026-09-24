@@ -61,69 +61,53 @@ v38 identity and saved data survive failed-download recovery and the completed
 upgrade. Automatic delivery of group updates remains outside this fix. Historical
 v38 evidence below remains labelled with its original scope.
 
-## Goal audit
+## Goal audit — version 42, 25 September 2026
 
-The [original goal and completion criteria](PROJECT_GOAL.md) define the scope of
-this audit. Later public-hosting work supplements that brief.
+The [full goal](PROJECT_GOAL.md), including later user decisions, remains active.
+The preceding goal turn made progress: an isolated public-source rebuild matched
+all 283 v42 application files. Publication does not establish full completion.
 
-| Requirement | Current evidence | Remaining limits or gates |
+| Requirement | Authoritative evidence inspected | Assessment and remaining work |
 | --- | --- | --- |
-| 1. Contextual interaction | Guided destination/origin/review/options/follow flow; route → direction/branch → stops/map → stop departures; Back/Escape and focus/filter restoration tested | Physical assessment of new contextual maps |
-| 2. Real journeys | Address-based train/ferry, bus and walking examples; independent raw GTFS validation; nearby and transfer fixtures; route 70/Symonds browser check | Snapshot correctness does not establish on-street conditions |
-| 3. Inclusion | Keyboard, axe, contrast, zoom, narrow screens, touch emulation, reduced motion and forced colours; text alternatives to maps | Spoken TalkBack/desktop-reader check; no disabled-commuter participant study |
-| 4. Installation and updates | Icons/manifest/installability; offline reopening; old-tab migration; quiet offline pull; failed/successful dataset refresh with saved journeys retained; Android update repair accepted after v23 | Exact Android installation browser not recorded; latest contextual interface needs physical checks |
-| 5. Browser independence | Static `/along/` host with no Python API; offline new address routes; stored route geometry; measured download/storage/time | Low-memory phone performance not characterised; routing stays JavaScript; regular v40 and preview both use the scoped R2 WASM runtime for device security |
-| 6. Distribution | v40 ZIP: 41,716,306 bytes, checksum, four data bundles, import scripts, runtime/data/library notices, AWS/Pages hosting instructions | Regular v40 is deployed with direct personal-key/TG controls; provider-access evidence and synthetic contextual tests have separate scopes. Physical acceptance remains incomplete |
-| 7. GitHub documentation | README, architecture, data, hosting, privacy, limits and contribution guidance; v21 course notice and current design-driver/goal summaries | Public source repository: [reality2-ai/along](https://github.com/reality2-ai/along); app hosted at [reality2.ai/along](https://reality2.ai/along/) |
-| 8. Course material | Thematic analysis, six lessons, exercises, assessment rubric and negative-case/contextual-map refinements | Course effectiveness has not been studied |
-| 9. Release checks and handover | v40: 19 integration scenarios, static/offline checks, installed v37/v38/v39 upgrades, complete public-file comparison and fresh public-site setup/offline routing; historical v38 source reproduction and isolated public-source runtime rebuild | Current S23 pairing, installation and TalkBack acceptance remain; browser tests do not establish physical usability |
-
-| 10. English / Te reo Māori | Deferred by user instruction; version 31 removes the selector and ignores earlier saved Māori choices | Re-enable only with renewed direction; draft review remains incomplete |
-
-| 11. Contextual repository feedback | [Draft/handoff/receipt evidence](FEEDBACK.md); fixture checks and real repository acceptance/anonymous receipt; preview 3801 check starts with an actual UI draft and retains it/its receipt offline | Signed-in GitHub composer/submission and physical assistive-technology checks; real user feedback still needs next-round triage |
+| 1. Calm, contextual interaction | Guided destination/origin/review/options/follow UI; [v42 qualification](evidence/regular-v42-qualification.json), including arrival and contextual shortcut removal; [static checks](evidence/regular-v42-static.json) | Implemented and browser-checked. Current physical touch acceptance remains open. |
+| 2. Real multimodal address journeys | [Arrival routing and raw GTFS comparison](evidence/arrive-by-routing.json); [route exploration](evidence/route-exploration.json); public offline browser check | Schedule and algorithm evidence exists, including transfers and final walks. This does not verify on-street accessibility or current service operation. |
+| 3. Inclusion | Keyboard, axe, reflow, media-preference and focus checks; [accessibility guide](ACCESSIBILITY.md) | Spoken TalkBack/desktop-reader acceptance remains unverified. Earlier TalkBack success was withdrawn. No disabled-commuter study is claimed. |
+| 4. Installation, updates and offline refresh | v42 qualification covers installed v37–v41 upgrades; static checks cover quiet offline refresh, failed downloads and retained data | Browser evidence passes. Exact S23 browser, current installation and touch observations remain needed. |
+| 5. Browser independence and performance | [Public v42 browser](evidence/regular-v42-public-browser.json); [current measurements](PERFORMANCE.md#version-42-measurements) | Static subpath and offline searches pass. Desktop measurements do not establish phone memory/performance. |
+| 6. Public distribution and reproduction | [v42 package](evidence/regular-v42-package.json), [286 deployed-file checks](evidence/regular-v42-public-files.json), [283-file isolated rebuild](evidence/regular-v42-public-source-rebuild.json); import/build instructions and notices | Current application rebuild passes using public inputs. Runtime compiler reproduction is separate; fresh data imports are not byte-identical snapshot reproduction. |
+| 7. GitHub documentation and privacy | README, [build](BUILDING.md), [hosting](HOSTING.md), [goal](PROJECT_GOAL.md), source notices and current release record | Published. Local searches/history stay local; sharing is explicit. Current-standard relay correction must accompany older compatibility evidence. |
+| 8. AI-coding course | [Six-session guide and rubric](COURSE_GUIDE.md), [handover](course/HANDOVER.md), [thematic analysis](CONVERSATION_ANALYSIS.md), historical evidence labs | Materials exist. Human work is requirements, judgment and observation; AI performs coding/commands. Course effectiveness has not been studied. |
+| 9. Release and handover | [v42 release](RELEASE_V42.md): 22 qualification scenarios, public deployment and rebuild evidence | Release published; full goal incomplete for the acceptance and integration items below. |
+| 10. English / Te reo Māori | User deferred translation; English UI ignores prior Māori selection; official names preserved | Deferred, not an active completion gate. Re-enable only on renewed instruction. |
+| 11. Contextual GitHub feedback | [Draft, handoff and real receipt evidence](FEEDBACK.md); offline persistence and privacy fixtures | Actual receipt is verified, but signed-in browser composer Submit remains untested. No open issues at this audit; absence is not proof of usability. |
+| Optional direct/contextual AT | [Real provider browser access](evidence/at-direct-browser.json), dated 23 September; v42 synthetic owner/shared-key tests and contextual matching/freshness checks | Direct access was demonstrated with separate historical scope. Current live availability and every commuter's key are not established. Offline fallback remains required. No Along proxy. |
+| Browser TG custody and device lifecycle | v42 qualification: enrollment, owner/shared credentials, removal, rotation, checkpoints, recovery and storage-failure cases; [browser subset](REALITY2_INTEGRATION.md) | Implemented Along profile with encrypted software custody; no hardware or full-current-R2 conformance claim. Physical pairing remains unresolved. |
+| Cross-device synchronization and optional relay | Saved-journey model/browser checks; [current-standard review](R2_CURRENT_STANDARD_REVIEW.md) | Legacy relay tests prove only the pinned old protocol. Current hive browser contract and interoperability remain open. Security updates/checkpoints use explicit flows; seamless delivery is not finished. |
+| Arrive by | Reverse search, generated-network comparison, original timetable checks, final walking deadline and overnight fixtures in v42 | Implemented and browser-verified. Physical timing-control usability remains open. |
 
 ## Next work against the full goal
 
-The user confirmed that removing a service preference left the shortcut visible.
-Version 41 adds explicit shortcut removal, including that pair's local learning
-history, and clarifies the difference from removing only preferred services.
-[Browser verification](evidence/regular-v41-static.json) covers keyboard removal,
-failed saves, unrelated journeys and offline reopening. Physical acceptance remains.
-Relay setup is assigned to the AI managing the user's server; Along made no server changes.
+1. Obtain the current server implementation's browser endpoint and transport
+   contract, then adapt and verify Along against it. The server AI owns server
+   configuration. Do not deploy the old relay to fit Along or treat an old
+   signed greeting as the current standard. The endpoint question is pending.
+2. Resolve the original S23 scan → Use failure using the [v42 device guide](DEVICE_CHECK.md).
+   Verify pairing, saved places/preferences, offline reopening, arrival timing,
+   shortcut removal, touch and spoken-screen-reader behaviour. A partial report
+   is useful; unperformed checks remain untested.
+3. Finish seamless synchronization against the agreed current transport,
+   including how security updates reach permitted devices. Existing explicit
+   rotation/recovery and saved-journey exchange do not prove automatic delivery
+   of every group update. Preserve revocation, consent and offline independence.
+4. Complete the signed-in browser GitHub submission check. CLI submission and
+   anonymous receipt checks are evidence of different boundaries. The regular
+   [device guide](DEVICE_CHECK.md#optional-feedback-submission-check) describes
+   the remaining user action without requiring coding.
+5. Reconcile the final course handover with the eventual integrated release and
+   physical results. Preserve versioned evidence and corrections rather than
+   converting historical passes into current acceptance.
 
-1. Verify a user-selected external relay endpoint when available. The actual R2
-   implementation now passes on loopback behind test TLS; that does not establish
-   public-network reachability or mobile reconnection.
-2. Obtain S23/desktop observations using the [regular v40 guide](DEVICE_CHECK.md), especially the failed
-   scan → Use transition, installation, touch and spoken screen-reader use. The
-   user withdrew an earlier TalkBack-success statement; treat it as untested.
-3. Regular-app promotion is complete. The [release record](REGULAR_UPGRADE.md)
-   passes exact published-v37 update, saved-data retention, optional identity setup
-   and offline reopening on the same `/along/` scope. The expanded check covers
-   failed-download recovery, a pre-sharing old-tab edit and connected installation
-   wording. [Connected integration checks](evidence/regular-candidate-integration.json)
-   cover personal-key live fallback, actual-relay Settings, two-profile saved-journey
-   sharing/group updates and checkpoints. [Shared-key checks](evidence/regular-candidate-shared-keys.json)
-   cover replacement, removal, different-owner rotation, interrupted delivery and
-   recovery Settings. [Actual v37 older-copy recovery](evidence/regular-older-copy-recovery.json)
-   found and fixed missing-metadata compatibility; UI and quota/race checks pass.
-   [Final candidate qualification](evidence/regular-v38-qualification.json) and
-   [static checks](evidence/regular-v38-static.json) now pass; the verified v38
-   archive is deployed: [public files](evidence/regular-v38-public-files.json) and
-   [live browser checks](evidence/regular-v38-public-browser.json) pass. Physical
-   acceptance remains. Preview storage stays separate;
-   this does not migrate preview credentials into regular Along.
-4. Complete the signed-in GitHub composer/submission check for contextual feedback.
-   Actual CLI submission and anonymous browser receipt are already evidenced in
-   [FEEDBACK.md](FEEDBACK.md); those do not test the interactive final submission.
-5. Finish the course handover against the final distributed build, with measured
-   performance and accessibility limits attached to their tested versions. Review
-   broader synchronization requirements without treating saved-journey exchange
-   as automatic propagation of every group update.
-
-No public issues were open at the 25 September v38 documentation/test audit. This is a
-triage observation, not evidence that users have no problems. Māori translation
-remains deferred; no human coding is required for any remaining implementation.
+Māori remains deferred. No remaining implementation requires human coding.
 
 ## Evidence and reproduction
 

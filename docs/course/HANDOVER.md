@@ -109,3 +109,15 @@ suggested placing it after opening the shortcut. The resulting action sits on th
 journey-options screen. The same release adds Arrive by. Compare the evidence for
 algorithm correctness, original timetable matching and browser usability in the
 [v42 record](../RELEASE_V42.md); none establishes physical acceptance by itself.
+
+
+For the current release, the [v42 public-source rebuild](../evidence/regular-v42-public-source-rebuild.json)
+reproduces all 283 application files; [v42 measurements](../PERFORMANCE.md#version-42-measurements)
+separate download, origin storage and desktop process memory. Use these for a
+current-release handover while retaining the earlier exercises as historical cases.
+
+The user's correction about the old relay is another evidence exercise: compare
+[the current-standard review](../R2_CURRENT_STANDARD_REVIEW.md) with a passing test
+against the older server. Ask the AI to identify exactly what each source proves.
+A strong answer neither discards a valid historical test nor promotes it into
+current compatibility, and does not ask the human to implement the missing adapter.

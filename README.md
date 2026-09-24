@@ -19,8 +19,10 @@ It is **not an official AT app** and does not reproduce AT Mobile's journey plan
 **Offline planning is the foundation; live information is an optional addition.**
 When connected, current AT predictions and alerts can help refine the scheduled
 picture. Version **42** includes optional direct AT access using your own API key,
-plus device pairing and saved-journey sharing. A user-selected relay can reconnect
-permitted devices while Along is open; none is enabled by default. Losing
+plus device pairing and saved-journey sharing. Optional reconnection has been
+tested with an older relay protocol; integration with the current R2 hive is
+[still being checked](docs/R2_CURRENT_STANDARD_REVIEW.md). No relay is enabled
+by default. Losing
 connectivity will not remove offline planning. Choose **Leave at** or **Arrive by**,
 including the walk to your destination. Open a saved shortcut to remove it directly
 from the journey-options screen.
