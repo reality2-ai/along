@@ -6,6 +6,7 @@ import {readJourneyStartupState} from './startup-state.mjs';
 import {createCheckpointReview} from './checkpoint-review.mjs';
 import {showCheckpointReview} from './checkpoint-review-view.mjs';
 import {applyCheckpointChoices} from './checkpoint-choice-commit.mjs';
+import {setupJourneyGeneration} from './migration-setup.mjs';
 import {enableJourneyTracking, readEnvelope, changedEvent, preferenceKey} from './app-preferences.mjs';
 import {JourneyCapacityError} from './state.mjs';
 
@@ -21,11 +22,12 @@ export function mountAppJourneySettings({wasm, store, expectedGroup, member}) {
   const lifetime = new AbortController();
   let startup = {status: 'checking'};
   let reviewDraft;
+  let capacityReached = false;
   const startupMessage = () => ({
     checking: 'Checking this device’s saved journeys…',
     'isolation-required': 'Saved-journey migration needs to finish on this device. Your existing copies are kept; sharing is paused.',
     'local-review-required': 'Review the retained saved-place differences before sharing again. Your existing copies are kept.',
-    'generation-ready': 'This device has recovered saved journeys. Connections for this storage version are not enabled yet. You can still plan and save here.',
+    'generation-ready': (startup.generation === 0 ? 'Saved-journey storage is prepared on this device. ' : 'This device has recovered saved journeys. ') + 'Connections for this storage version are not enabled yet. You can still plan and save here.',
     unavailable: 'Saved-journey recovery could not be checked. Your stored copies have not been cleared. Sharing is paused.',
   })[startup.status];
   const checkStartup = async () => {
@@ -36,9 +38,13 @@ export function mountAppJourneySettings({wasm, store, expectedGroup, member}) {
   let view, session, disposed = false, status, queue = Promise.resolve(), message = '', generation = 0, starting = false, screen = 'home';
   const clear = () => { generation++; starting = false; view?.dispose(); view = undefined; content.replaceChildren(); };
   const report = text => { message = text; if (status?.isConnected) status.textContent = text; };
-  const reportFailure = error => report(error instanceof JourneyCapacityError
+  const reportFailure = error => {
+    capacityReached ||= error instanceof JourneyCapacityError;
+    report(error instanceof JourneyCapacityError
     ? 'Sharing has reached its 256-place limit, including deleted places. Your saved places and queued changes remain here. You can continue planning on this device. Reconnecting or deleting places will not free sharing space.'
     : 'Sharing is unavailable. Your saved places and pending changes remain on this device. Try connecting again.');
+    if (capacityReached && dialog.open && screen === 'home') home();
+  };
   const reconcile = (send = false) => {
     queue = queue.then(async () => {
       if (disposed) return;
@@ -127,6 +133,40 @@ export function mountAppJourneySettings({wasm, store, expectedGroup, member}) {
     } catch (error) { if (!disposed && dialog.open && generation === selected) reportFailure(error); }
     finally { if (generation === selected) starting = false; }
   };
+  const reviewMigrationSetup = async () => {
+    if (starting) return; starting = true;
+    const selected = generation;
+    try {
+      const state = await checkStartup();
+      if (state !== 'legacy' && !(state === 'isolation-required' && startup.generation === 0)) throw Error('Setup state changed');
+      const archive = await store.read('along-journey-migration-v1', group);
+      const old = await store.read('along-saved-journeys-v1', group);
+      const expectedRevision = archive?.value.sourceRevision ?? old?.revision ?? 0;
+      const expectedRaw = localStorage.getItem(preferenceKey);
+      if (disposed || !dialog.open || generation !== selected) return;
+      clear(); screen = 'migration-setup';
+      const heading = node('h2', 'Prepare saved-journey recovery?'); heading.tabIndex = -1;
+      content.append(heading,node('p','Keep your current saved places and queued edits in separate storage so older app copies cannot overwrite recovered data. The original copy is retained.'),
+        node('p','This prepares this device only. It does not free sharing space yet. Connections for the new storage version are not enabled; you can still plan and save offline.'));
+      const note = node('p',''); note.setAttribute('role','status'); content.append(note);
+      const controller = new AbortController(); view = {dispose:()=>controller.abort()};
+      const confirm = action('Prepare recovery on this device',async()=>{
+        disconnect();
+        confirm.disabled=true; note.textContent='Preparing your saved journeys…';
+        try {
+          await setupJourneyGeneration({wasm,store,expectedGroup,expectedRevision,expectedRaw,signal:controller.signal});
+          if (controller.signal.aborted || disposed) return;
+          await checkStartup();
+          if (controller.signal.aborted || disposed) return;
+          capacityReached=false; home();
+        } catch {
+          if (!controller.signal.aborted && !disposed) note.textContent='Setup could not be confirmed. Your retained copies are kept. Go Back and check recovery status before trying again.';
+        }
+      }); confirm.className='pairing-primary';
+      action('Back',()=>{controller.abort();home();}); heading.focus();
+    } catch(error) {if(!disposed&&generation===selected)reportFailure(error);}
+    finally {if(generation===selected)starting=false;}
+  };
   const home = () => {
     clear(); screen = 'home';
     const heading = node('h2', session ? 'Your journeys are connected' : 'Share your saved journeys'); heading.tabIndex = -1;
@@ -135,11 +175,12 @@ export function mountAppJourneySettings({wasm, store, expectedGroup, member}) {
     if (startup.status !== 'legacy') {
       status.textContent = startupMessage();
       if (startup.legacyChangesPending) content.append(node('p', 'An older app copy has additional edits. They remain separate and still need review.'));
+      if (startup.status === 'isolation-required' && startup.generation === 0) action('Finish saved-journey setup',reviewMigrationSetup).className='pairing-primary';
       if (startup.status === 'local-review-required') action('Review saved-place differences', reviewLocalDifferences).className = 'pairing-primary';
       action('Check saved-journey recovery', async () => {
         const selected = generation; await checkStartup();
         if (!disposed && dialog.open && generation === selected) home();
-      }).className = startup.status === 'local-review-required' ? '' : 'pairing-primary';
+      }).className = startup.status === 'local-review-required' || (startup.status === 'isolation-required' && startup.generation === 0) ? '' : 'pairing-primary';
     } else if (session) {
       action('Check for saved journey changes', () => reconcile(true)).className = 'pairing-primary';
       action('Disconnect journey sharing', () => { disconnect(); message = 'Disconnected. Saved changes stay here until you reconnect.'; home(); });
@@ -147,6 +188,7 @@ export function mountAppJourneySettings({wasm, store, expectedGroup, member}) {
       action('Start journey connection', () => connect('start')).className = 'pairing-primary';
       action('Join journey connection', () => connect('join'));
     }
+    if (startup.status === 'legacy' && capacityReached) action('Review sharing recovery',reviewMigrationSetup);
     action('Manage journey-sharing devices', () => {
       clear(); screen = 'devices';
       view = showJourneyDevices(content, {wasm, store, expectedGroup, focus: true, onBack: home,

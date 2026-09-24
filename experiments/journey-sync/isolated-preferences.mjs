@@ -1,6 +1,6 @@
 // Explicit namespace cutover for a reviewed generation migration. This storage
 // layer establishes neither membership nor authorization; its caller must first
-// complete those checks. Not mounted by the app yet.
+// complete those checks. The Settings setup coordinator provides that composition.
 import {readEnvelope, preferenceKey} from './preference-envelope.mjs';
 const fail = () => new Error('Isolated planner storage unavailable; existing copies are retained');
 const parse = raw => readEnvelope({getItem: () => raw});
@@ -38,12 +38,20 @@ export function openIsolatedPlannerStorage({group, storage = globalThis.localSto
   });
 }
 export async function isolatePlannerPreferences({group, expectedRaw, storage = globalThis.localStorage,
-  legacyKey = preferenceKey, locks = globalThis.navigator?.locks, signal}) {
+  legacyKey = preferenceKey, locks = globalThis.navigator?.locks, signal, prepare}) {
   if (!/^[0-9a-f]{64}$/.test(group) || typeof expectedRaw !== 'string' || !locks?.request
       || parse(expectedRaw).sync?.group !== group) throw fail();
   const key = keyFor(legacyKey);
-  return locks.request('along-journey-import:' + group, {signal}, () => {
+  return locks.request('along-journey-import:' + group, {signal}, async () => {
     if (signal?.aborted) throw fail();
+    // A composed migration may prepare its guarded IndexedDB records while this
+    // lock excludes cooperating planner writers. Recheck local bytes afterwards.
+    if (prepare) {
+      const existing = storage.getItem(key);
+      if (existing !== null ? validate(existing, group).sourceRaw !== expectedRaw : storage.getItem(legacyKey) !== expectedRaw) throw fail();
+      await prepare();
+      if (signal?.aborted) throw fail();
+    }
     const heldRaw = storage.getItem(key);
     let alreadyIsolated = false;
     if (heldRaw !== null) {

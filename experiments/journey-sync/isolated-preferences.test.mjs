@@ -102,5 +102,5 @@ try {
     return true;
   }, fixture);
   assert.equal(faults, true);
-  console.log('PASS: byte-verified preview 3805 writer in another tab cannot overwrite isolated planner data; its later route edit and the exact predecessor remain reviewable across reload/retry. Quota, stale review, pre/late cancellation and corruption retain data without fallback. Storage primitive only: no app/membership migration flow is mounted.');
+  console.log('PASS: byte-verified preview 3805 writer in another tab cannot overwrite isolated planner data; its later route edit and the exact predecessor remain reviewable across reload/retry. Quota, stale review, pre/late cancellation and corruption retain data without fallback. This test covers the storage primitive, not the composed app/membership flow.');
 } finally { await browser?.close(); await new Promise(resolve => server.close(resolve)); }

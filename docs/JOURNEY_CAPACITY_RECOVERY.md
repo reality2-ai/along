@@ -431,6 +431,35 @@ actual installer behavior is covered separately by the migration browser suite.
 Enrolled-device composition, peer checkpoint delivery, later legacy-edit review
 and exact-build qualification are still required before publishing recovery.
 
+## Reviewed migration setup
+
+`migration-setup.mjs` composes the real generation migration with local storage
+isolation under the planner lock. It checks the reviewed local bytes before
+migration and again before copying, verifies startup evidence after each stage,
+and reports only generation-zero setup. It explicitly reports that capacity has
+not been recovered and peer sharing is unavailable for the new format.
+
+If IndexedDB migration commits but the isolated-copy write fails, the retained
+migration remains available. Retrying checks the same original replica revision
+and resumes isolation without rewriting the replica. The composed browser tests
+cover concurrent setup, stale local data, a permission race and quota failure
+between the two storage systems. Original preferences remain intact.
+
+Settings offers this review after a capacity error, or as “Finish saved-journey
+setup” for a retained generation-zero migration. Back before confirmation does
+not migrate data. Confirmation disconnects any current legacy session, performs
+the guarded setup and returns to a status explaining that peer connections remain
+unavailable. Setup can preserve more than 256 local saves without importing or
+silently trimming them; a later checkpoint and explicit difference review must
+resolve replication capacity.
+
+The generated Settings test now resumes isolation through the real setup action,
+rather than seeding that isolated record. `CAPACITY=1 MIGRATION_SETUP=1` on the
+two-profile app test exercises the capacity-error entry, cancellation and real
+migration/isolation over all 257 retained local saves and exact pending bytes.
+Checkpoint preparation/installation UI, enrolled-device composition and peer
+delivery remain separate unfinished steps.
+
 ## Required before integration
 
 1. Wire the tested migration and format-2 bridge to explicit reviewed opt-in,

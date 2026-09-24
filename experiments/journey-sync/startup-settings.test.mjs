@@ -50,7 +50,13 @@ try {
   await expect(page.getByText('Saved-journey migration needs to finish on this device.',{exact:false})).toBeVisible();
   await expect(page.getByRole('button',{name:'Start journey connection',exact:true})).toHaveCount(0);
   assert.equal(await page.evaluate(key=>localStorage.getItem(key),input.key),input.raw);
-  await page.evaluate(({group,raw,key})=>localStorage.setItem(key+':generation-profile-v1',JSON.stringify({format:1,group,sourceRaw:raw,currentRaw:raw})),input);
+  await page.getByRole('button',{name:'Finish saved-journey setup',exact:true}).click();
+  await expect(page.getByRole('heading',{name:'Prepare saved-journey recovery?',exact:true})).toBeFocused();
+  await page.getByRole('button',{name:'Back',exact:true}).click();
+  assert.equal(await page.evaluate(key=>localStorage.getItem(key+':generation-profile-v1'),input.key),null);
+  await page.getByRole('button',{name:'Finish saved-journey setup',exact:true}).click();
+  await page.getByRole('button',{name:'Prepare recovery on this device',exact:true}).click();
+  await expect(page.getByText('Connections for this storage version are not enabled yet.',{exact:false})).toBeVisible();
   await page.reload(); await open();
   await expect(page.getByText('Connections for this storage version are not enabled yet.',{exact:false})).toBeVisible();
   await expect(page.getByRole('button',{name:'Start journey connection',exact:true})).toHaveCount(0);

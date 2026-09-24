@@ -468,3 +468,12 @@ and actual UI confirmation over fixture installation records, and checks stale
 confirmation refusal, refreshed review, history/learning preservation and reload.
 The migration/installation wizard and peer delivery are still unfinished; this
 does not replace the separate real installer tests or release qualification.
+
+`migration-setup.mjs` now composes guarded generation-zero migration and storage
+isolation, retaining an interrupted first-stage commit for retry. Settings exposes
+a reviewed setup action after capacity failure or for unfinished generation-zero
+isolation. It explains that this does not yet free capacity or enable new-format
+peer sharing. Run the migration suite for permission/staleness/quota/concurrency
+checks, and `CAPACITY=1 MIGRATION_SETUP=1` with the generated app integration test
+for the real Settings entry, cancellation and preservation of 257 local saves.
+Checkpoint installation controls and peer delivery still remain to be completed.

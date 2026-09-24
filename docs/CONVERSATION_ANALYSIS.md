@@ -1401,3 +1401,12 @@ then completes recovery while retaining that setting and travel history. Draft
 choices survive leaving only if their review identifier is still current. This
 turns the design principle of user control into an observable behavior under
 concurrency, while keeping fixture installation distinct from actual UI writes.
+
+Migration setup now spans the real replica migration and isolated planner copy.
+The review explains what the step accomplishes and what it does not: preparing
+generation zero retains data but does not free capacity or restore peer sharing.
+Fault tests interrupt between IndexedDB and localStorage, then retry against the
+retained migration. The capacity-path app check keeps all 257 local saves and
+pending bytes rather than treating the replication limit as permission to trim
+the person's data. This illustrates how honest progress reporting belongs in the
+product flow as well as the development notes.

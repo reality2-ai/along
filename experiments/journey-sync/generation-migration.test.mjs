@@ -4,7 +4,7 @@ import {readFile} from 'node:fs/promises';
 import {join} from 'node:path';
 const {chromium} = await import('@playwright/test');
 const sources = new Map();
-for (const name of ['state.mjs', 'store.mjs', 'generation-state.mjs', 'generation-migration.mjs', 'generation-app-store.mjs', 'app-preferences.mjs', 'preference-envelope.mjs', 'isolated-preferences.mjs', 'startup-state.mjs', 'generation-checkpoint.mjs', 'checkpoint-preparation.mjs', 'checkpoint-installation.mjs', 'checkpoint-review.mjs', 'checkpoint-choice-commit.mjs'])
+for (const name of ['state.mjs', 'store.mjs', 'generation-state.mjs', 'generation-migration.mjs', 'generation-app-store.mjs', 'app-preferences.mjs', 'preference-envelope.mjs', 'isolated-preferences.mjs', 'startup-state.mjs', 'migration-setup.mjs', 'generation-checkpoint.mjs', 'checkpoint-preparation.mjs', 'checkpoint-installation.mjs', 'checkpoint-review.mjs', 'checkpoint-choice-commit.mjs'])
   sources.set('/journey-sync/' + name, await readFile(new URL(name, import.meta.url)));
 sources.set('/public/preferences.js', await readFile(new URL('../../public/preferences.js', import.meta.url)));
 for (const name of ['software-persona.mjs', 'local-persona.mjs'])
@@ -99,6 +99,36 @@ try {
         assert(await f.store.read(newScope, f.setup.group) === null && await f.store.read(archiveScope, f.setup.group) === null, 'partial migration');
         assert(equal((await f.store.read(oldScope, f.setup.group)).value, f.state), 'failure changed legacy data');
       }
+      f.store.close();
+    }
+    const {setupJourneyGeneration} = await import('./journey-sync/migration-setup.mjs');
+    for (const mode of ['valid', 'quota', 'stale', 'permission-race']) {
+      const f = await fixture('composed-setup-' + mode);
+      const prefix = 'composed-' + mode + ':';
+      const raw = JSON.stringify({learning:false,journeys:[{...live,saved:true,count:7}],journeySync:{format:1,group:f.setup.group,pending:[]}});
+      localStorage.setItem(prefix + 'along-journeys-v1',raw);
+      let refuseWrite = mode === 'quota';
+      const storage = {getItem:key=>localStorage.getItem(prefix+key),setItem(key,value){if(refuseWrite)throw Error('full');localStorage.setItem(prefix+key,value);}};
+      let input = {...f.input,expectedRaw:raw,storage};
+      if(mode==='stale')localStorage.setItem(prefix+'along-journeys-v1',raw+' ');
+      if(mode==='permission-race')input.store={...f.store,compareAndSwapMany:async(...args)=>{
+        await f.store.compareAndSwap('along-journey-sharing-v1',f.setup.group,0,{format:1,member:f.setup.member,peers:[]});
+        return f.store.compareAndSwapMany(...args);
+      }};
+      if(mode==='valid') {
+        const both=await Promise.all([setupJourneyGeneration(input),setupJourneyGeneration(input)]);
+        assert(both.every(r=>r.status==='journey-generation-setup-locally'&&!r.capacityRecovered&&!r.peerSharingAvailable),'false setup completion');
+      } else await refuses(setupJourneyGeneration(input));
+      if(mode==='quota') {
+        assert((await f.store.read(newScope,f.setup.group)).value.generation===0,'migration not retained after quota');
+        assert(localStorage.getItem(prefix+'along-journeys-v1:generation-profile-v1')===null,'partial isolated copy');
+        refuseWrite=false; await setupJourneyGeneration(input);
+      }
+      if(['valid','quota'].includes(mode)) {
+        const isolated=JSON.parse(localStorage.getItem(prefix+'along-journeys-v1:generation-profile-v1'));
+        assert(isolated.sourceRaw===raw&&isolated.currentRaw===raw,'setup lost reviewed local bytes');
+        assert((await f.store.read(newScope,f.setup.group)).revision===1,'setup retry rewrote replica');
+      } else assert(await f.store.read(newScope,f.setup.group)===null,'stale or unauthorized setup migrated data');
       f.store.close();
     }
     const {loadSoftwareIssuer} = await import('./tg-pairing/software-persona.mjs');
@@ -422,7 +452,7 @@ try {
     } finally { localStorage.setItem(storage.key, saved); }
   }), true);
   console.log('PASS: default planner startup and generation bridge use the isolated profile; journal import, later planner saves and reload preserve recovered generation/history while legacy writes stay separate. Recovery UI and peer checkpoint delivery are not mounted.');
-  console.log('PASS: actual software identity and IndexedDB migration preserve replica/tombstones/import receipt/local pending edits; concurrent/reloaded retries do not rewrite; stale review, permission race, cancellation and interrupted transaction preserve old state; old in-flight format-1 writer cannot overwrite migration. No app migration UI enabled.');
+  console.log('PASS: actual software identity and IndexedDB migration preserve replica/tombstones/import receipt/local pending edits; concurrent/reloaded retries do not rewrite; stale review, permission race, cancellation and interrupted transaction preserve old state; old in-flight format-1 writer cannot overwrite migration. This suite invokes migration storage APIs directly.');
   console.log('PASS: format-2 bridge consumes an archived receipt without duplicating its edit, imports queued deletion, retains history, recovers an IDB/localStorage interruption and refuses old queued edits after a fixture generation advance. The separate real installation cases follow.');
-  console.log('PASS: real issuer checkpoint installation atomically retains prior replica/local journal and starts a new receipt; retry/reload, permission races, interrupted writes, stale review, changed local data, signature damage, late cancellation and concurrent local edits preserve the documented boundary. Local review and peer delivery remain unfinished.');
+  console.log('PASS: real issuer checkpoint installation atomically retains prior replica/local journal and starts a new receipt; retry/reload, permission races, interrupted writes, stale review, changed local data, signature damage, late cancellation and concurrent local edits preserve the documented boundary. Settings review is checked separately; peer delivery remains unfinished.');
 } finally { await browser?.close(); await new Promise(resolve => server.close(resolve)); }

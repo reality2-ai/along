@@ -424,6 +424,27 @@ try {
     assert.deepEqual(afterCapacity.journeys, beforeCapacity.journeys, 'oversized import never partly replaces replicated state');
     assert.equal(afterCapacity.personaRevision, beforeCapacity.personaRevision);
     assert.deepEqual((await new AxeBuilder({page: owner}).analyze()).violations.map(v => v.id), []);
+    if (process.env.MIGRATION_SETUP === '1') {
+      await owner.getByRole('button',{name:'Review sharing recovery',exact:true}).click();
+      await expect(owner.getByText('It does not free sharing space yet.',{exact:false})).toBeVisible();
+      await owner.getByRole('button',{name:'Back',exact:true}).click();
+      assert.equal(await owner.evaluate(key=>localStorage.getItem(key),namespaces.preferences),queued);
+      await owner.getByRole('button',{name:'Review sharing recovery',exact:true}).click();
+      await owner.getByRole('button',{name:'Prepare recovery on this device',exact:true}).click();
+      await expect(owner.getByText('Saved-journey storage is prepared on this device.',{exact:false})).toBeVisible();
+      const setup = await owner.evaluate(async ({preferences,devices})=>{
+        const profile=JSON.parse(localStorage.getItem(preferences+':generation-profile-v1'));
+        const data=JSON.parse(profile.currentRaw),group=data.journeySync.group;
+        const store=await (await import('../experiments/tg-pairing/storage.mjs')).openBrowserStorage(devices);
+        try {return {source:profile.sourceRaw,current:profile.currentRaw,
+          old:(await store.read('along-saved-journeys-v1',group)).value.format,
+          generation:(await store.read('along-saved-journeys-v2',group)).value.generation};}
+        finally {store.close();}
+      },namespaces);
+      assert.deepEqual(setup,{source:queued,current:queued,old:2,generation:0});
+      await expect(owner.getByRole('button',{name:'Start journey connection',exact:true})).toHaveCount(0);
+      console.log('PASS: actual capacity-limit Settings action reviews/cancels then migrates and isolates all 257 local saves/queued bytes without claiming capacity recovery or enabling incompatible peer connections.');
+    }
     await closeSharing(owner);
     console.log('PASS: capacity refusal remains specific after reload/retry, preserves all 257 local saves and exact queued changes, and leaves replicated state and identity unchanged.');
   }
