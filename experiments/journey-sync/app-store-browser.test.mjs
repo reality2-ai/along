@@ -3,11 +3,15 @@ import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
 import {readFile} from 'node:fs/promises';
 const {chromium} = await import(process.env.PLAYWRIGHT_MODULE || '@playwright/test');
+const preview = process.env.PREVIEW === '1';
+const sourceRoot = new URL(preview ? '../../releases/along-device-preview/experiments/journey-sync/' : './', import.meta.url);
 const sources = new Map();
 for (const name of ['state.mjs', 'app-store.mjs', 'app-preferences.mjs'])
-  sources.set('/' + name, await readFile(new URL(name, import.meta.url)));
-sources.set('/public/preferences.js', await readFile(new URL('../../public/preferences.js', import.meta.url)));
-sources.set('/storage.mjs', await readFile(new URL('../../releases/along-r2-runtime-1b9229ad/browser/storage.mjs', import.meta.url)));
+  sources.set('/' + name, await readFile(new URL(name, sourceRoot)));
+sources.set('/public/preferences.js', await readFile(new URL('../../public/preferences.js', sourceRoot)));
+sources.set('/storage.mjs', await readFile(preview
+  ? new URL('../tg-pairing/storage.mjs', sourceRoot)
+  : new URL('../../releases/along-r2-runtime-1b9229ad/browser/storage.mjs', import.meta.url)));
 const server = createServer((req, res) => {
   const body = req.url === '/' ? '<!doctype html><title>Journey journal check</title>' : sources.get(req.url);
   res.writeHead(body ? 200 : 404, {'Content-Type': req.url === '/' ? 'text/html' : 'text/javascript'}); res.end(body);
