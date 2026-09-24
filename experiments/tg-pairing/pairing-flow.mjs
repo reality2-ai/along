@@ -13,6 +13,7 @@ export function showPairingFlow(container, {wasm, store, role, expectedGroup, fo
   if (!['candidate', 'provisioner'].includes(role)) throw new Error('Pairing role required');
   mounted.get(container)?.();
   const document = container.ownerDocument, lifetime = new AbortController(), views = [];
+  let lastStep = 'Review invitation';
   let disposed = false, completed = false, session, invitation, proof, payloads, installation, acknowledgment, localInstalled = false;
   const current = () => { if (disposed || lifetime.signal.aborted) throw new Error('Pairing ended'); };
   const stop = () => {
@@ -26,6 +27,7 @@ export function showPairingFlow(container, {wasm, store, role, expectedGroup, fo
   const leave = () => { if (!disposed) { stop(); onBack(); } };
   const screen = (terminal = false) => { if (disposed) throw new Error('Pairing view closed'); if (!terminal) current(); const node = document.createElement('div'); container.replaceChildren(node); return node; };
   const message = (title, text, terminal = false) => {
+    if (!terminal && !completed) lastStep = title;
     const node = screen(terminal), panel = document.createElement('section'); panel.className = 'pairing-comparison';
     const heading = document.createElement('h2'); heading.textContent = title; heading.tabIndex = -1;
     const status = document.createElement('p'); status.setAttribute('role', 'status'); status.textContent = text;
@@ -34,6 +36,7 @@ export function showPairingFlow(container, {wasm, store, role, expectedGroup, fo
   };
   const fail = () => {
     if (disposed || completed) return;
+    const unfinishedStep = lastStep;
     completed = true;
     message('Checking saved device state', 'The connection ended. Checking whether this device finished saving before it closed.');
     lifetime.abort(); invitation?.close(); proof?.close();
@@ -52,7 +55,7 @@ export function showPairingFlow(container, {wasm, store, role, expectedGroup, fo
       if (acknowledged) message('Device connected', 'This device saved its group membership and confirmation before the connection ended.', true);
       else message(localInstalled ? 'Device group saved locally' : 'Connection did not finish', localInstalled
         ? 'This device joined the group, but confirmation from the other device was not completed. Keep the saved device data for recovery.'
-        : 'Go Back and start a new invitation with both devices ready. Your downloaded journeys are still available.', true);
+        : `The exchange ended during: ${unfinishedStep}. Invitations expire after one minute. Keep both devices open, preferably on the same Wi-Fi. Go Back and start a new invitation; send each requested reply back to the other device. Keep your saved device data. Your downloaded journeys are still available.`, true);
     })();
   };
   const watchSession = () => {
@@ -64,6 +67,7 @@ export function showPairingFlow(container, {wasm, store, role, expectedGroup, fo
     if (session.signal.aborted) throw new Error('Connection ended');
   };
   const transfer = options => {
+    lastStep = options.title;
     const view = showDeviceTransfer(screen(), {...options, focus, signal: lifetime.signal, onBack: leave,
       onReceive: async (text, signal) => {
         try { current(); await options.onReceive(text, signal); current(); }
@@ -72,7 +76,7 @@ export function showPairingFlow(container, {wasm, store, role, expectedGroup, fo
     views.push(view); return view;
   };
   const compare = async () => {
-    message('Connecting to your other device', 'Keep both devices open while the comparison code is prepared.');
+    message('Connecting to your other device', 'Waiting for a direct connection. On the other device, send its connection reply, then choose Compare device codes. Keep both devices open, preferably on the same Wi-Fi.');
     const code = await session.comparison(); current();
     const view = showComparison(screen(), {code, focus, signal: lifetime.signal, onDecision: async (matched, signal) => {
       try {
@@ -104,7 +108,7 @@ export function showPairingFlow(container, {wasm, store, role, expectedGroup, fo
         message('Preparing an invitation', 'Keep both devices ready. The invitation stays open for up to one minute.');
         invitation = await createSoftwareInvitation({wasm, store, expectedGroup, signal: lifetime.signal}); current();
         invitation.signal.addEventListener('abort', fail, {once: true});
-        transfer({title: 'Invite your other device', explanation: 'Copy this invitation into Along on your other device. Then paste the challenge it gives you here.',
+        transfer({title: 'Invite your other device', explanation: 'Show this invitation as a QR code for your other device to scan, or copy it there. Next, scan or paste the challenge that device shows back here. Pairing needs replies in both directions; keep both screens open. This invitation expires after one minute.',
           outgoing: invitation.descriptor, incomingLabel: 'Challenge from your other device', action: 'Create device reply', onReceive: async request => {
             const response = await answerInvitationProof(invitation, request); current();
             session = await createEnrollmentSession({wasm, store, invitation: invitation.invitation(), role}); watchSession(); current();
@@ -120,7 +124,7 @@ export function showPairingFlow(container, {wasm, store, role, expectedGroup, fo
         const review = showReceiveInvitation(screen(), {focus, onBack: leave}); views.push(review);
         const reviewed = await review.completed; current();
         proof = createInvitationProof({wasm, reviewed});
-        transfer({title: 'Check your other device', explanation: 'Copy this challenge to your other device, then paste its reply here.', outgoing: proof.request,
+        transfer({title: 'Check your other device', explanation: 'Next: show this challenge as a QR code and scan it on your other device, or copy it there. On that device choose Create device reply. Then scan or paste its reply here and choose Check reply. Scanning the invitation has not connected the devices yet.', outgoing: proof.request,
           onReceive: async response => {
             const verified = proof.verify(response);
             session = await createCoreCandidateSession({wasm, store, invitation: verified.invitation, authorized: verified.authorized,

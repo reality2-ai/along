@@ -25,6 +25,7 @@ try {
   const pages = await Promise.all(contexts.map(c => c.newPage()));
   await Promise.all(pages.map(async (page, index) => {
     await page.goto(`http://127.0.0.1:${server.address().port}`);
+    if (index === 1 && process.env.TIMEOUT_FLOW === '1') await page.clock.install();
     await page.evaluate(async ({index, loseInstallReply, loseAckReply, recoverConnection, rotatedIssuer}) => {
       window.wasm = await import('./hive_wasm.js'); await wasm.default();
       window.store = await (await import('./storage.mjs')).openBrowserStorage('pairing-flow');
@@ -66,6 +67,22 @@ try {
   }));
   const [candidate, owner] = pages;
   await owner.getByRole('heading', {name: 'Invite your other device', exact: true}).waitFor();
+  if (process.env.TIMEOUT_FLOW === '1') {
+    const before = await owner.evaluate(async () => (await store.read('candidate-persona', 'active')).revision);
+    await owner.clock.fastForward(65000);
+    await owner.getByRole('heading', {name: 'Connection did not finish', exact: true}).waitFor();
+    assert.match(await owner.getByRole('status').textContent(), /exchange ended during: Invite your other device/);
+    assert.match(await owner.getByRole('status').textContent(), /Invitations expire after one minute/);
+    assert.equal(await owner.evaluate(async () => (await store.read('candidate-persona', 'active')).revision), before);
+    await owner.clock.resume();
+    await owner.evaluate(async () => {
+      flow.dispose();
+      window.flow = (await import('./pairing-flow.mjs')).showPairingFlow(document.querySelector('#flow'),
+        {wasm, store, role: 'provisioner', expectedGroup: group, focus: true});
+    });
+    await owner.getByRole('heading', {name: 'Invite your other device', exact: true}).waitFor();
+    console.log('PASS: expired invitation identifies the unfinished step and preserves identity before retry.');
+  }
   const move = async (from, to, label, action) => {
     const text = await from.getByLabel('Device message to copy').inputValue();
     await to.getByLabel(label, {exact: true}).fill(text);
@@ -93,6 +110,10 @@ try {
   if (process.env.CANCEL_FLOW === '1') {
     await candidate.getByRole('button', {name: 'Cancel — codes differ or I’m unsure', exact: true}).click();
     await Promise.all(pages.map(page => page.getByRole('heading', {name: 'Connection did not finish', exact: true}).waitFor()));
+    for (const page of pages) {
+      assert.match(await page.getByRole('status').textContent(), /exchange ended during: Connecting to your other device/);
+      assert.match(await page.getByRole('status').textContent(), /Keep your saved device data/);
+    }
     assert.equal(await candidate.evaluate(async () => (await store.read('candidate-persona', 'active')).value.origin), 'initial');
     console.log('PASS: rejecting comparison ends both flows and preserves the candidate’s initial membership.');
   } else {

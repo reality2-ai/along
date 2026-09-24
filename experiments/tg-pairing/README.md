@@ -1001,3 +1001,21 @@ reload, reconnect and continue mocked contextual AT reads or offline journey-edi
 convergence. See [the recorded evidence](../../docs/evidence/group-rotation-app-checks.json).
 This covers the AT owner also being the group issuer; a different AT owner,
 physical-device checks and release qualification remain outstanding.
+
+
+### QR pairing timeout follow-up
+
+Following the physical-device report of no progress after scanning and choosing
+Use, the pairing flow now explains that the invitation requires messages in both
+directions. The challenge screen names the action on the other device, and the
+connection wait explains the remaining reply/code step. Failed enrollment reports
+the last screen title without including connection messages or identity material,
+notes the one-minute invitation lifetime, and preserves saved device data.
+
+`TIMEOUT_FLOW=1 node experiments/tg-pairing/pairing-flow.test.mjs` advances the
+browser clock to expire a real invitation, verifies the failure stage and unchanged
+identity revision, then completes a new real WebRTC enrollment. The ordinary
+runtime/browser environment variables are required. `CANCEL_FLOW=1` also passed,
+including stage guidance and preserved initial membership. These are browser
+harness checks, not reproduction or resolution of the reported S23 failure.
+No invitation lifetime or protocol security rule was changed. Not yet deployed.
