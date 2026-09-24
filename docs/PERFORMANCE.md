@@ -1,5 +1,22 @@
 # Performance evidence
 
+## Current regular version 38
+
+The [repeatable v38 static check](evidence/regular-v38-static-harness.json) on
+25 September 2026 observed 7.59 seconds to offline-ready, 3.92 seconds for the
+first Newmarket–Devonport search, and 2.76 seconds for offline reopening.
+Compressed datasets total 41,308,937 bytes; browser-reported storage was
+71,704,094 bytes. This is one local Chromium desktop run, not a phone or network
+benchmark. Earlier v38 qualification ran alongside other jobs and recorded
+different timings; do not infer an application speedup from this difference.
+
+To reproduce, prepare the current candidate using [Building Along](BUILDING.md),
+then run `REGULAR_CANDIDATE=1 CHROMIUM_PATH=/path/to/chromium npm run test:static`.
+The measurements record the candidate manifest hash. Main-page transfer bytes
+exclude worker dataset downloads and are not total download size.
+
+## Historical version 17
+
 Measured on 23 September 2026 using Chromium 151.0.7922.34 on the development
 Linux desktop, local static HTTP serving under `/along/`. This is not a mobile
 benchmark or a network-speed prediction. Raw results are in
@@ -42,7 +59,7 @@ regional datasets or more compact on-disk formats before adding a second runtime
 A WASM implementation should be compared against the same journeys, memory limits
 and offline behaviour, with correctness and accessibility unchanged.
 
-## Reproduce
+## Reproduce the legacy planner checks
 
 ```sh
 npm run build

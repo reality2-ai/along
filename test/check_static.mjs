@@ -3,11 +3,26 @@ import {createServer} from 'node:http';
 import {readFile,stat,writeFile,mkdir,mkdtemp,rm} from 'node:fs/promises';
 import {fileURLToPath} from 'node:url';
 import {resolve,extname} from 'node:path';
+import {createHash} from 'node:crypto';
 import {gunzipSync,gzipSync} from 'node:zlib';
 import {chromium,expect} from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-const root=fileURLToPath(new URL('../dist/',import.meta.url));
+const regular=process.env.REGULAR_CANDIDATE==='1';
+const root=fileURLToPath(new URL(regular?'../releases/along-regular-upgrade-candidate/':'../dist/',import.meta.url));
 await stat(root);
+const buildBytes=await readFile(resolve(root,'build-info.json'));
+const build=JSON.parse(buildBytes);
+const digest=bytes=>createHash('sha256').update(bytes).digest('hex');
+if(regular){
+  expect(build.profile).toBe('along-regular-upgrade-candidate-v1');
+  expect(build.appVersion).toBe('38');
+  for(const [name,hash] of Object.entries(build.files)){
+    const file=resolve(root,name);
+    expect(file.startsWith(root)).toBe(true);
+    expect(digest(await readFile(file)),name).toBe(hash);
+  }
+}
+const artifact=name=>`test-results/${regular?'regular-candidate-':''}${name}`;
 const prefix='/along/';
 let datasetRevision=0;
 const server=createServer(async(req,res)=>{
@@ -22,7 +37,7 @@ const server=createServer(async(req,res)=>{
       network.metadata.feed_version=`refresh-regression-${datasetRevision}`;
       body=gzipSync(JSON.stringify(network));
     }
-    const mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.gz':'application/gzip','.png':'image/png','.svg':'image/svg+xml','.webmanifest':'application/manifest+json','.json':'application/json'};
+    const mime={'.mjs':'text/javascript','.wasm':'application/wasm','.html':'text/html','.js':'text/javascript','.css':'text/css','.gz':'application/gzip','.png':'image/png','.svg':'image/svg+xml','.webmanifest':'application/manifest+json','.json':'application/json'};
     res.writeHead(200,{'Content-Type':mime[extname(file)]||'text/plain','Cache-Control':'no-cache'});res.end(body);
   }catch{res.writeHead(404);res.end('Not found');}
 });
@@ -32,7 +47,7 @@ await mkdir('test-results',{recursive:true});
 const profile=await mkdtemp('.along-static-profile-');
 const context=await chromium.launchPersistentContext(profile,{executablePath:process.env.CHROMIUM_PATH||undefined,viewport:{width:1280,height:900},reducedMotion:'reduce'});
 const browser=context.browser();
-const measurements={runtime:process.version,browser:browser.version(),host:'Local static HTTP, repository subpath, Chromium desktop',physicalPhone:false};
+const measurements={buildProfile:build.profile||'legacy-static',buildManifestSha256:digest(buildBytes),runtime:process.version,browser:browser.version(),host:'Local static HTTP, repository subpath, Chromium desktop',physicalPhone:false};
 try{
 
  const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
@@ -70,18 +85,18 @@ try{
  await expect(page.locator('#prefer-services')).toBeFocused();
  const audit=await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa','wcag22aa']).analyze();expect(audit.violations).toEqual([]);
  await mkdir('test-results',{recursive:true});
- await writeFile('test-results/accessibility-tree.txt',await page.locator('main').ariaSnapshot());
- await page.screenshot({path:'test-results/static-desktop.png',fullPage:true});
+ await writeFile(artifact('accessibility-tree.txt'),await page.locator('main').ariaSnapshot());
+ await page.screenshot({path:artifact('static-desktop.png'),fullPage:true});
  await page.evaluate(()=>document.documentElement.style.zoom='2');
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
  await page.evaluate(()=>document.documentElement.style.zoom='');
  await page.setViewportSize({width:320,height:800});
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
  await page.emulateMedia({forcedColors:'active',reducedMotion:'reduce'});
- await page.screenshot({path:'test-results/static-forced-colors.png',fullPage:true});
+ await page.screenshot({path:artifact('static-forced-colors.png'),fullPage:true});
  await page.emulateMedia({forcedColors:'none',reducedMotion:'reduce'});
- await page.screenshot({path:'test-results/static-mobile.png',fullPage:true});
- measurements.datasetBytes=Object.values(JSON.parse(await readFile(resolve(root,'build-info.json'),'utf8')).datasets).reduce((n,d)=>n+d.bytes,0);
+ await page.screenshot({path:artifact('static-mobile.png'),fullPage:true});
+ measurements.datasetBytes=(await Promise.all(['network','streets','addresses','routes'].map(name=>stat(resolve(root,`data/${name}.json.gz`))))).reduce((total,file)=>total+file.size,0);
  measurements.storage=await page.evaluate(()=>navigator.storage.estimate());
  measurements.mainPageResourceTransferBytes=await page.evaluate(()=>performance.getEntriesByType('resource').reduce((n,r)=>n+r.transferSize,0));
  // A failed walking-map refresh must retain the current map and saved journeys.
@@ -122,13 +137,13 @@ try{
  await page.locator('#find').click();await expect(page.locator('.journey-card').first()).toBeVisible({timeout:30000});
  // The help itself remains available when the host is unreachable.
  await page.goto(origin+prefix+'install.html');await expect(page.locator('h1:visible')).toContainText('offline');
- await expect(page.locator('main')).toContainText('Your journey searches');
+ await expect(page.locator('main')).toContainText(regular?'Search history and current location stay on your device.':'Your journey searches');
  for(const name of ['Chrome — Windows','Edge — Windows','Brave — Windows','Safari — macOS','Safari — iPhone'])await expect(page.locator('summary:visible').filter({hasText:name})).toBeVisible();
  await page.locator('summary:visible').filter({hasText:'Brave — Windows'}).click();
  await page.setViewportSize({width:320,height:800});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
  expect((await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa']).analyze()).violations).toEqual([]);
  expect(errors).toEqual([]);
- await writeFile('test-results/static-metrics.json',JSON.stringify(measurements,null,2)+'\n');
+ await writeFile(artifact('static-metrics.json'),JSON.stringify(measurements,null,2)+'\n');
  console.log(JSON.stringify(measurements,null,2));
  console.log('PASS: static subpath installability, keyboard and AX semantics, contrast, 200% zoom, 320px reflow, failed and successful data refresh, offline address routing and saved journey.');
 }finally{await context.close();await rm(profile,{recursive:true,force:true});server.closeAllConnections();await new Promise(r=>server.close(r));}

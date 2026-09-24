@@ -41,11 +41,11 @@ this audit. Later public-hosting work supplements that brief.
 | 2. Real journeys | Address-based train/ferry, bus and walking examples; independent raw GTFS validation; nearby and transfer fixtures; route 70/Symonds browser check | Snapshot correctness does not establish on-street conditions |
 | 3. Inclusion | Keyboard, axe, contrast, zoom, narrow screens, touch emulation, reduced motion and forced colours; text alternatives to maps | Spoken TalkBack/desktop-reader check; no disabled-commuter participant study |
 | 4. Installation and updates | Icons/manifest/installability; offline reopening; old-tab migration; quiet offline pull; failed/successful dataset refresh with saved journeys retained; Android update repair accepted after v23 | Exact Android installation browser not recorded; latest contextual interface needs physical checks |
-| 5. Browser independence | Static `/along/` host with no Python API; offline new address routes; stored route geometry; measured download/storage/time | Low-memory phone performance not characterised; routing stays JavaScript, while the preview uses the scoped R2 WASM runtime for device security |
-| 6. Distribution | About 39.2 MiB ZIP/checksum, four data bundles, import scripts, MIT/data/Leaflet notices, AWS/Pages hosting instructions | Public Pages deployment is live; authenticated feeds now verified; direct browser feed access verified; preview has direct personal-key/TG controls; regular-app integration and physical acceptance remain incomplete |
+| 5. Browser independence | Static `/along/` host with no Python API; offline new address routes; stored route geometry; measured download/storage/time | Low-memory phone performance not characterised; routing stays JavaScript; regular v38 and preview both use the scoped R2 WASM runtime for device security |
+| 6. Distribution | v38 ZIP: 41,762,118 bytes, checksum, four data bundles, import scripts, runtime/data/library notices, AWS/Pages hosting instructions | Regular v38 is deployed with direct personal-key/TG controls; provider-access evidence and synthetic contextual tests have separate scopes. Physical acceptance remains incomplete |
 | 7. GitHub documentation | README, architecture, data, hosting, privacy, limits and contribution guidance; v21 course notice and current design-driver/goal summaries | Public source repository: [reality2-ai/along](https://github.com/reality2-ai/along); app hosted at [reality2.ai/along](https://reality2.ai/along/) |
 | 8. Course material | Thematic analysis, six lessons, exercises, assessment rubric and negative-case/contextual-map refinements | Course effectiveness has not been studied |
-| 9. Release checks and handover | Version 37 rebuild: 68 JavaScript and 18 Python tests, static and update checks; a fresh managed-server run passes all 20 browser scenarios; published source/archive/live comparison | Preview 3806 release evidence above supplements these regular-app checks; current physical/TalkBack acceptance and regular-app integration still prevent full completion |
+| 9. Release checks and handover | v38: 16 integration scenarios, static/offline checks, installed v37 upgrade, complete public-file comparison and fresh public-site setup/offline routing; 301 application files reproduced from committed source | Current S23 pairing, installation and TalkBack acceptance remain; browser tests do not establish physical usability |
 
 | 10. English / Te reo Māori | Deferred by user instruction; version 31 removes the selector and ignores earlier saved Māori choices | Re-enable only with renewed direction; draft review remains incomplete |
 
@@ -56,10 +56,10 @@ this audit. Later public-hosting work supplements that brief.
 1. Verify a user-selected external relay endpoint when available. The actual R2
    implementation now passes on loopback behind test TLS; that does not establish
    public-network reachability or mobile reconnection.
-2. Obtain S23/desktop observations for the deployed preview, especially the failed
+2. Obtain S23/desktop observations using the [regular v38 guide](DEVICE_CHECK.md), especially the failed
    scan → Use transition, installation, touch and spoken screen-reader use. The
    user withdrew an earlier TalkBack-success statement; treat it as untested.
-3. Complete regular-app promotion checks. The [local upgrade candidate](REGULAR_UPGRADE.md)
+3. Regular-app promotion is complete. The [release record](REGULAR_UPGRADE.md)
    passes exact published-v37 update, saved-data retention, optional identity setup
    and offline reopening on the same `/along/` scope. The expanded check covers
    failed-download recovery, a pre-sharing old-tab edit and connected installation
@@ -83,7 +83,7 @@ this audit. Later public-hosting work supplements that brief.
    broader synchronization requirements without treating saved-journey exchange
    as automatic propagation of every group update.
 
-No new public issues were open at the 24 September post-3806 audit. This is a
+No public issues were open at the 25 September v38 documentation/test audit. This is a
 triage observation, not evidence that users have no problems. Māori translation
 remains deferred; no human coding is required for any remaining implementation.
 

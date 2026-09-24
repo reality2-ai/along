@@ -87,8 +87,18 @@ an existing run directory. Do not reuse old qualification evidence for changed f
 matching candidate. It refuses existing versioned release outputs. These scripts
 currently target version 38; a new app release needs a deliberate version change
 and fresh qualification, rather than overwriting the published v38 archive.
-Static accessibility/offline checks, deployed-file verification and physical
-acceptance are additional checks, documented in the
+Run the committed static browser check against the same candidate:
+
+```sh
+REGULAR_CANDIDATE=1 CHROMIUM_PATH=/path/to/chromium npm run test:static
+```
+
+This verifies the candidate manifest's file hashes before testing installability,
+keyboard/accessible names, contrast, 200% zoom, 320px reflow, offline new-address
+routing, saved service preferences and failed/successful timetable refresh.
+Screenshots and measurements use `test-results/regular-candidate-*`. Without
+`REGULAR_CANDIDATE=1`, the command still checks the legacy `dist/` build.
+Deployed-file verification and physical acceptance are additional checks in the
 [release record](REGULAR_UPGRADE.md) and [release checklist](RELEASE_CHECKLIST.md).
 
 ## What has and has not been reproduced

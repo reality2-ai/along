@@ -1,0 +1,39 @@
+{
+  "status": "passed",
+  "recorded_at": "2026-09-24T19:46:09.112207+00:00",
+  "command": "REGULAR_CANDIDATE=1 CHROMIUM_PATH=/path/to/chromium npm run test:static",
+  "test_source_sha256": "0525d8fb99048f759db146542674e522a086ea65fe9e81684af55517ead90184",
+  "log_sha256": "c28d9716a4ee56fb058578264721afd0a5db6cfa7b02ce06a34b8153090ca776",
+  "metrics": {
+    "buildProfile": "along-regular-upgrade-candidate-v1",
+    "buildManifestSha256": "06fc8446a8e15e348a287b50519d4881ed8b58cbb4324ee8d45e7c7e85748379",
+    "runtime": "v26.4.0",
+    "browser": "151.0.7922.34",
+    "host": "Local static HTTP, repository subpath, Chromium desktop",
+    "physicalPhone": false,
+    "coldReadyMs": 7594,
+    "installability": {
+      "installabilityErrors": []
+    },
+    "mixedModeRouteMs": 3919,
+    "datasetBytes": 41308937,
+    "storage": {
+      "quota": 10809122334,
+      "usage": 71704094,
+      "usageDetails": {
+        "caches": 1957120,
+        "indexedDB": 69737184,
+        "serviceWorkerRegistrations": 9790
+      }
+    },
+    "mainPageResourceTransferBytes": 1153517,
+    "offlineReadyMs": 2764
+  },
+  "scope": "Committed static harness against unchanged v38 candidate under /along/, real Chromium service worker, offline routing and installation help, data refresh failures/successes, keyboard and automated accessibility. One desktop run; not physical phone performance or spoken screen-reader acceptance.",
+  "legacy_mode_regression": {
+    "status": "passed",
+    "command": "CHROMIUM_PATH=/path/to/chromium npm run test:static",
+    "log_sha256": "e47331a1fb3badc2806408d8ba7fb48d1feceb190f0fb3c5d381d9cffac6c090",
+    "scope": "Existing legacy dist build; compatibility check for the shared harness, not current v38 acceptance."
+  }
+}
