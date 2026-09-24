@@ -444,3 +444,11 @@ concurrent setup and divergence. Opening corrupted/missing isolated storage neve
 falls back to the legacy key. This primitive does not authorize migration or mount
 itself; startup/bridge/recovery integration and review of later old-tab edits
 remain required before enabling it.
+
+The default preference reader now selects an existing isolated profile, and the
+format-2 bridge/checkpoint operations use that selector. They never create a
+profile on startup. The migration browser test composes stored recovery with
+default journal import, later planner edits and reload while legacy edits stay
+separate. Envelope validation is shared through `preference-envelope.mjs`.
+Verified bootstrap/Settings lifecycle, creating isolation and legacy-edit review
+are still not mounted; storage selection alone does not authorize recovery.

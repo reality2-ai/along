@@ -3,7 +3,7 @@
 import {loadLocalPersona} from '../tg-pairing/local-persona.mjs';
 import {createCheckpointReview} from './checkpoint-review.mjs';
 import {validateGenerationState, changeGenerationJourney} from './generation-state.mjs';
-import {readEnvelope, preferenceKey, appliedEvent} from './app-preferences.mjs';
+import {selectPlannerStorage, readEnvelope, preferenceKey, appliedEvent} from './app-preferences.mjs';
 import {journeyId, projectJourney} from './state.mjs';
 const replicaScope = 'along-saved-journeys-v2', receiptScope = 'along-journey-import-v2';
 const recoveryScope = 'along-journey-checkpoint-recovery-v1';
@@ -12,13 +12,13 @@ const hex = bytes => Array.from(bytes, b => b.toString(16).padStart(2, '0')).joi
 const equal = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 const fail = () => new Error('Journey recovery choices unavailable; a retained decision may already exist');
 export async function commitCheckpointChoices({wasm, store, expectedGroup, generation, reviewId, choices,
-  storage = globalThis.localStorage, locks = navigator.locks, signal}) {
+  storage = selectPlannerStorage(), locks = navigator.locks, signal}) {
   return recover({wasm, store, expectedGroup, generation, reviewId, choices, storage, locks, signal}, false);
 }
 // Requires all planner writers to participate in the same Web Lock. This is not
 // mounted in the app until those call sites and older-tab handling are migrated.
 export async function applyCheckpointChoices({wasm, store, expectedGroup, generation, reviewId, choices,
-  storage = globalThis.localStorage, locks = navigator.locks, signal}) {
+  storage = selectPlannerStorage(), locks = navigator.locks, signal}) {
   return recover({wasm, store, expectedGroup, generation, reviewId, choices, storage, locks, signal}, true);
 }
 async function recover({wasm, store, expectedGroup, generation, reviewId, choices, storage, locks, signal}, applyLocal) {

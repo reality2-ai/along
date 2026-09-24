@@ -1376,3 +1376,11 @@ and are reported for review. The lesson is that a new locking convention cannot
 retroactively constrain an already-running older program. Storage separation can
 preserve both copies, but a usable reconciliation flow and startup integration
 are still needed before that primitive becomes a finished feature.
+
+The next composition test follows recovered data through startup reading,
+pending-journal import, a later service preference and browser reload. It verifies
+the callers' default storage selection, rather than only an adapter explicitly
+supplied by a fixture. Missing or corrupt storage is a separate issue from choosing
+a profile: verified migration history must still govern whether sharing resumes.
+A successful reload therefore provides useful evidence without proving complete
+recovery or current authorization.

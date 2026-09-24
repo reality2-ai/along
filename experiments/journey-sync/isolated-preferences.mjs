@@ -1,7 +1,7 @@
 // Explicit namespace cutover for a reviewed generation migration. This storage
 // layer establishes neither membership nor authorization; its caller must first
 // complete those checks. Not mounted by the app yet.
-import {readEnvelope, preferenceKey} from './app-preferences.mjs';
+import {readEnvelope, preferenceKey} from './preference-envelope.mjs';
 const fail = () => new Error('Isolated planner storage unavailable; existing copies are retained');
 const parse = raw => readEnvelope({getItem: () => raw});
 const keyFor = key => {
@@ -62,4 +62,13 @@ export async function isolatePlannerPreferences({group, expectedRaw, storage = g
     return {status: 'planner-storage-isolated', alreadyIsolated,
       legacyChangesPending: adapter.inspectLegacy().changed, storage: adapter};
   });
+}
+
+// Startup selects an already-installed profile; it never creates one. Bind a
+// returned adapter for an operation/bridge so deletion cannot trigger fallback.
+export function selectPlannerStorage({storage = globalThis.localStorage, legacyKey = preferenceKey} = {}) {
+  const raw = storage.getItem(keyFor(legacyKey));
+  if (raw === null) return storage;
+  const value = JSON.parse(raw);
+  return openIsolatedPlannerStorage({storage, legacyKey, group: value?.group});
 }

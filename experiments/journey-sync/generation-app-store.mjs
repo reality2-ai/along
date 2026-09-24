@@ -2,12 +2,12 @@
 // adopts a generation. A reviewed installer must have established local state.
 import {journeyId, projectJourney} from './state.mjs';
 import {validateGenerationState, changeGenerationJourney, JourneyGenerationMismatch} from './generation-state.mjs';
-import {readEnvelope, preferenceKey, appliedEvent} from './app-preferences.mjs';
+import {selectPlannerStorage, readEnvelope, preferenceKey, appliedEvent} from './app-preferences.mjs';
 const scope = 'along-saved-journeys-v2', receipts = 'along-journey-import-v2';
 const archiveScope = 'along-journey-migration-v1', zero = '0'.repeat(64);
 const tag = state => ({generation: state.generation, checkpoint: state.checkpoint});
 const matches = (a, b) => a?.generation === b.generation && a?.checkpoint === b.checkpoint;
-export function openGenerationAppJourneyStore({store, group, actor, storage = globalThis.localStorage, locks = navigator.locks}) {
+export function openGenerationAppJourneyStore({store, group, actor, storage = selectPlannerStorage(), locks = navigator.locks}) {
   if (!/^[0-9a-f]{64}$/.test(group) || !/^[0-9a-f]{64}$/.test(actor)
       || !locks?.request || store.capabilities?.transactionChecks !== true) throw Error('Journey sharing storage unavailable');
   const read = async () => {

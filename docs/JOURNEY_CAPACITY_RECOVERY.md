@@ -350,9 +350,32 @@ without fallback and an old edit during the write. It reads release bytes from
 the archived ZIP, not the mutable local candidate directory.
 
 The caller must still authenticate membership and complete reviewed generation
-migration before requesting isolation. App startup, every bridge/recovery caller,
-storage-event handling and review of later legacy edits must be connected to this
-adapter before enabling recovery. The new primitive is not mounted in the app.
+migration before requesting isolation. Creating the isolated profile is not yet
+mounted in the app. Startup selection and format-2 bridge/recovery defaults are
+connected below; storage-event handling, verified Settings lifecycle and review
+of later legacy edits remain required before enabling recovery.
+
+## Reopening and using the isolated profile
+
+Envelope validation now lives in `preference-envelope.mjs`, avoiding circular
+imports between storage selection and planner operations. The experimental planner
+selects an existing isolated profile when reading preferences. The generation-aware
+bridge and checkpoint installation/application use the same selector by default.
+None creates isolation on startup. The old format-1 bridge keeps its old storage
+binding and remains subject to the migrated IndexedDB refusal marker.
+
+The real-runtime migration suite composes isolation with the default planner and
+generation bridge: pending-journal import, a later service preference, preserved
+history, separate old-key edits and reload all pass. Corrupt isolated data produces
+no writable planner snapshot. An already-bound adapter refuses a missing record
+instead of reading the old key. The journal/review unit tests, archived-version
+isolation, two-tab compaction and rebuilt two-profile app integration also pass.
+
+Selection is not authorization. A missing profile on a fresh startup is
+indistinguishable at this synchronous storage layer from a device that never
+isolated its data. Verified Settings/bootstrap must check retained migration
+history before authorizing further sharing. Completing that lifecycle, mounting
+reviewed migration/recovery and handling legacy edits remain release gates.
 
 ## Required before integration
 

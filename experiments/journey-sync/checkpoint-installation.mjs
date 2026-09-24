@@ -5,14 +5,14 @@ import {loadLocalPersona} from '../tg-pairing/local-persona.mjs';
 import {validateState} from './state.mjs';
 import {validateGenerationState} from './generation-state.mjs';
 import {verifyJourneyCheckpoint} from './generation-checkpoint.mjs';
-import {readEnvelope} from './app-preferences.mjs';
+import {selectPlannerStorage, readEnvelope} from './app-preferences.mjs';
 const scope = 'along-saved-journeys-v2', receipts = 'along-journey-import-v2';
 const recovery = 'along-journey-checkpoint-recovery-v1';
 const hex = value => Array.from(value, b => b.toString(16).padStart(2, '0')).join('');
 const same = (a, b) => a instanceof Uint8Array && b instanceof Uint8Array && a.length === b.length && a.every((v, i) => v === b[i]);
 const fail = () => new Error('Journey checkpoint installation unavailable; a committed installation may already exist');
 export async function installJourneyCheckpoint({wasm, store, expectedGroup, expectedRevision, expectedLocalRaw,
-  checkpoint, snapshot, storage = globalThis.localStorage, locks = navigator.locks, signal}) {
+  checkpoint, snapshot, storage = selectPlannerStorage(), locks = navigator.locks, signal}) {
   if (!(expectedGroup instanceof Uint8Array) || expectedGroup.length !== 32 || !(checkpoint instanceof Uint8Array)
       || checkpoint.length !== 184 || !Number.isSafeInteger(expectedRevision) || expectedRevision < 1
       || typeof expectedLocalRaw !== 'string' || !locks?.request || store.capabilities?.transactionChecks !== true) throw fail();

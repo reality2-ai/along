@@ -6,7 +6,7 @@ import {execFileSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 const {chromium} = await import('@playwright/test');
 const sources = new Map();
-for (const name of ['isolated-preferences.mjs', 'app-preferences.mjs', 'state.mjs'])
+for (const name of ['isolated-preferences.mjs', 'preference-envelope.mjs', 'app-preferences.mjs', 'state.mjs'])
   sources.set('/new/experiments/journey-sync/' + name, await readFile(new URL(name, import.meta.url)));
 sources.set('/new/public/preferences.js', await readFile(new URL('../../public/preferences.js', import.meta.url)));
 const archive = fileURLToPath(new URL('../../releases/along-device-preview-3805.zip', import.meta.url));

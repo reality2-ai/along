@@ -6,7 +6,7 @@ const {chromium} = await import(process.env.PLAYWRIGHT_MODULE || '@playwright/te
 const preview = process.env.PREVIEW === '1';
 const sourceRoot = new URL(preview ? '../../releases/along-device-preview/experiments/journey-sync/' : './', import.meta.url);
 const sources = new Map();
-for (const name of ['state.mjs', 'app-store.mjs', 'app-preferences.mjs'])
+for (const name of ['state.mjs', 'app-store.mjs', 'app-preferences.mjs', ...(!preview ? ['preference-envelope.mjs', 'isolated-preferences.mjs'] : [])])
   sources.set('/' + name, await readFile(new URL(name, sourceRoot)));
 sources.set('/public/preferences.js', await readFile(new URL('../../public/preferences.js', sourceRoot)));
 sources.set('/storage.mjs', await readFile(preview

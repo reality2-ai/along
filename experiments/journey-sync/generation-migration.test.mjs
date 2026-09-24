@@ -4,7 +4,7 @@ import {readFile} from 'node:fs/promises';
 import {join} from 'node:path';
 const {chromium} = await import('@playwright/test');
 const sources = new Map();
-for (const name of ['state.mjs', 'store.mjs', 'generation-state.mjs', 'generation-migration.mjs', 'generation-app-store.mjs', 'app-preferences.mjs', 'generation-checkpoint.mjs', 'checkpoint-preparation.mjs', 'checkpoint-installation.mjs', 'checkpoint-review.mjs', 'checkpoint-choice-commit.mjs'])
+for (const name of ['state.mjs', 'store.mjs', 'generation-state.mjs', 'generation-migration.mjs', 'generation-app-store.mjs', 'app-preferences.mjs', 'preference-envelope.mjs', 'isolated-preferences.mjs', 'generation-checkpoint.mjs', 'checkpoint-preparation.mjs', 'checkpoint-installation.mjs', 'checkpoint-review.mjs', 'checkpoint-choice-commit.mjs'])
   sources.set('/journey-sync/' + name, await readFile(new URL(name, import.meta.url)));
 sources.set('/public/preferences.js', await readFile(new URL('../../public/preferences.js', import.meta.url)));
 for (const name of ['software-persona.mjs', 'local-persona.mjs'])
@@ -345,6 +345,51 @@ try {
     } finally { store.close(); }
   }, result);
   assert.deepEqual(bridgeResult, {clock: 3, finalClock: 4, pending: 1, count: 7});
+  await page.evaluate(async ({group}) => {
+    const prefs = await import('./journey-sync/app-preferences.mjs');
+    const {isolatePlannerPreferences} = await import('./journey-sync/isolated-preferences.mjs');
+    const {openGenerationAppJourneyStore} = await import('./journey-sync/generation-app-store.mjs');
+    const store = await (await import('./tg-pairing/storage.mjs')).openBrowserStorage('checkpoint-choice-valid');
+    try {
+      const decision = await store.read('along-journey-checkpoint-recovery-v1', group + ':1');
+      const local = JSON.parse(localStorage.getItem('choice-valid'));
+      for (const journey of local.journeys) { journey.hours = Array(24).fill(0); journey.days = Array(7).fill(0); }
+      const original = JSON.stringify(local); localStorage.setItem(prefs.preferenceKey, original);
+      await isolatePlannerPreferences({group, expectedRaw: original});
+      const bridge = openGenerationAppJourneyStore({store, group, actor: decision.value.member});
+      await bridge.reconcile();
+      const data = prefs.readPreferences(); data.journeys[0].savedRoutes = [{mode: 'bus', route: '99'}];
+      if (!await prefs.writePlannerPreferences(data)) throw Error('default isolated writer failed');
+      await bridge.reconcile();
+      if (localStorage.getItem(prefs.preferenceKey) !== original) throw Error('new bridge wrote old namespace');
+      const state = await store.read('along-saved-journeys-v2', group);
+      if (state.value.journeys[0].value.savedRoutes[0].route !== '99') throw Error('isolated journal not imported');
+      local.journeys[0].savedRoutes = [{mode: 'bus', route: '75'}];
+      localStorage.setItem(prefs.preferenceKey, JSON.stringify(local));
+      if (prefs.readPreferences().journeys[0].savedRoutes[0].route !== '99') throw Error('old edit replaced isolated planner');
+    } finally { store.close(); }
+  }, result.choiceRetry);
+  await page.reload();
+  assert.deepEqual(await page.evaluate(async () => {
+    const prefs = await import('./journey-sync/app-preferences.mjs');
+    const data = prefs.readPreferences(), envelope = prefs.readEnvelope();
+    return {route: data.journeys[0].savedRoutes[0].route, count: data.journeys[0].count,
+      generation: envelope.sync.version.generation, pending: envelope.sync.pending.length};
+  }), {route: '99', count: 7, generation: 1, pending: 0});
+  assert.equal(await page.evaluate(async () => {
+    const prefs = await import('./journey-sync/app-preferences.mjs');
+    const storage = prefs.selectPlannerStorage(), saved = localStorage.getItem(storage.key);
+    const legacy = localStorage.getItem(prefs.preferenceKey);
+    try {
+      localStorage.setItem(storage.key, '{}');
+      const unreadable = prefs.readPreferences();
+      if (unreadable.journeys.length || await prefs.writePlannerPreferences(unreadable)) return false;
+      localStorage.removeItem(storage.key);
+      let refused = false; try { storage.getItem(prefs.preferenceKey); } catch { refused = true; }
+      return refused && localStorage.getItem(prefs.preferenceKey) === legacy;
+    } finally { localStorage.setItem(storage.key, saved); }
+  }), true);
+  console.log('PASS: default planner startup and generation bridge use the isolated profile; journal import, later planner saves and reload preserve recovered generation/history while legacy writes stay separate. Recovery UI and peer checkpoint delivery are not mounted.');
   console.log('PASS: actual software identity and IndexedDB migration preserve replica/tombstones/import receipt/local pending edits; concurrent/reloaded retries do not rewrite; stale review, permission race, cancellation and interrupted transaction preserve old state; old in-flight format-1 writer cannot overwrite migration. No app migration UI enabled.');
   console.log('PASS: format-2 bridge consumes an archived receipt without duplicating its edit, imports queued deletion, retains history, recovers an IDB/localStorage interruption and refuses old queued edits after a fixture generation advance. The separate real installation cases follow.');
   console.log('PASS: real issuer checkpoint installation atomically retains prior replica/local journal and starts a new receipt; retry/reload, permission races, interrupted writes, stale review, changed local data, signature damage, late cancellation and concurrent local edits preserve the documented boundary. Local review and peer delivery remain unfinished.');

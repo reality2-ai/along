@@ -1,12 +1,16 @@
 import {readPreferences as readLocal, recordJourney as recordLocalJourney} from '../../public/preferences.js';
 import {projectJourney, journeyId, validateState} from './state.mjs';
 export {suggestions, journeyRoutes, sameRoutes} from '../../public/preferences.js';
-export const preferenceKey = 'along-journeys-v1';
+import {preferenceKey, readEnvelope as readRawEnvelope} from './preference-envelope.mjs';
+import {selectPlannerStorage} from './isolated-preferences.mjs';
+export {preferenceKey, selectPlannerStorage};
+export const readEnvelope = (storage = selectPlannerStorage()) => readRawEnvelope(storage);
 export const changedEvent = 'along-saved-journeys-changed';
 export const appliedEvent = 'along-saved-journeys-applied';
 const origins = new WeakMap();
-export function readPreferences(storage = globalThis.localStorage) {
+export function readPreferences(storage) {
   try {
+    storage ??= selectPlannerStorage();
     const raw = storage.getItem(preferenceKey);
     const data = readLocal({getItem: () => raw}); origins.set(data, raw); return data;
   } catch { return readLocal({getItem: () => null}); }
@@ -18,10 +22,11 @@ export function recordJourney(data, ...args) {
 }
 // Planner-facing async adapter. The source snapshot follows immutable learning
 // updates as well as in-place UI edits; never infer its origin at save time.
-export async function writePlannerPreferences(data, storage = globalThis.localStorage, locks = globalThis.navigator?.locks) {
+export async function writePlannerPreferences(data, storage, locks = globalThis.navigator?.locks) {
   if (!origins.has(data)) return false;
   const expectedRaw = origins.get(data), copy = structuredClone(data);
   try {
+    storage ??= selectPlannerStorage();
     const before = readEnvelope(storage);
     const unchanged = current => {
       if (current.raw === expectedRaw) return true;
@@ -82,19 +87,7 @@ export function savedValues(data) {
   }
   return values;
 }
-export function readEnvelope(storage = globalThis.localStorage) {
-  const raw = storage.getItem(preferenceKey);
-  const data = raw === null ? {learning: true, journeys: []} : JSON.parse(raw);
-  if (!data || !Array.isArray(data.journeys)) throw Error('Saved places unavailable');
-  const sync = data.journeySync;
-  if (sync !== undefined && (sync?.format !== 1 || !hex.test(sync.group) || !Array.isArray(sync.pending)
-      || sync.pending.length > 256)) throw Error('Saved sharing journal unavailable');
-  if (sync?.version !== undefined && (!Number.isSafeInteger(sync.version?.generation) || sync.version.generation < 0
-      || sync.version.generation >= Number.MAX_SAFE_INTEGER || !hex.test(sync.version.checkpoint)
-      || (sync.version.generation === 0) !== (sync.version.checkpoint === '0'.repeat(64)))) throw Error('Saved sharing generation unavailable');
-  return {raw, data, sync};
-}
-export function writePreferences(data, storage = globalThis.localStorage) {
+export function writePreferences(data, storage = selectPlannerStorage()) {
   try {
     const previous = readEnvelope(storage), sync = previous.sync && structuredClone(previous.sync);
     if (sync) {
@@ -113,7 +106,7 @@ export function writePreferences(data, storage = globalThis.localStorage) {
 // envelope associated with their edit; a stale tab must reload rather than
 // write its entire older preferences object over recovered data.
 // Older builds still have synchronous callers outside this contract.
-export async function writePreferencesLocked(data, {expectedRaw, storage = globalThis.localStorage,
+export async function writePreferencesLocked(data, {expectedRaw, storage = selectPlannerStorage(),
   locks = navigator.locks, signal} = {}) {
   const copy = structuredClone(data), before = readEnvelope(storage);
   if (before.raw !== expectedRaw || !before.sync || !locks?.request) return false;
@@ -123,7 +116,7 @@ export async function writePreferencesLocked(data, {expectedRaw, storage = globa
   });
 }
 // Explicit opt-in starts local tracking. No identity, consent or delivery claim.
-export function enableJourneyTracking(group, storage = globalThis.localStorage) {
+export function enableJourneyTracking(group, storage = selectPlannerStorage()) {
   if (!hex.test(group)) throw Error('Journey group unavailable');
   const {data, sync} = readEnvelope(storage);
   if (sync) { if (sync.group !== group) throw Error('Different saved sharing group'); return; }
