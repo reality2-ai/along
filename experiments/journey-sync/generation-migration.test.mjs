@@ -4,7 +4,7 @@ import {readFile} from 'node:fs/promises';
 import {join} from 'node:path';
 const {chromium} = await import('@playwright/test');
 const sources = new Map();
-for (const name of ['state.mjs', 'store.mjs', 'generation-state.mjs', 'generation-migration.mjs', 'generation-app-store.mjs', 'app-preferences.mjs', 'preference-envelope.mjs', 'isolated-preferences.mjs', 'generation-checkpoint.mjs', 'checkpoint-preparation.mjs', 'checkpoint-installation.mjs', 'checkpoint-review.mjs', 'checkpoint-choice-commit.mjs'])
+for (const name of ['state.mjs', 'store.mjs', 'generation-state.mjs', 'generation-migration.mjs', 'generation-app-store.mjs', 'app-preferences.mjs', 'preference-envelope.mjs', 'isolated-preferences.mjs', 'startup-state.mjs', 'generation-checkpoint.mjs', 'checkpoint-preparation.mjs', 'checkpoint-installation.mjs', 'checkpoint-review.mjs', 'checkpoint-choice-commit.mjs'])
   sources.set('/journey-sync/' + name, await readFile(new URL(name, import.meta.url)));
 sources.set('/public/preferences.js', await readFile(new URL('../../public/preferences.js', import.meta.url)));
 for (const name of ['software-persona.mjs', 'local-persona.mjs'])
@@ -52,7 +52,10 @@ try {
       pending: [{id: receipt.value.operation, changes: [{id: journeyId(live), value: live}]},
         {id: crypto.randomUUID(), changes: [{id: journeyId(live), value: null}]}]}});
     localStorage.setItem('along-journeys-v1', pending);
+    const {readJourneyStartupState} = await import('./journey-sync/startup-state.mjs');
+    assert((await readJourneyStartupState(first.input)).status === 'legacy', 'legacy startup refused');
     const both = await Promise.all([migrateJourneyGeneration(first.input), migrateJourneyGeneration(first.input)]);
+    assert((await readJourneyStartupState(first.input)).status === 'isolation-required', 'migration incorrectly fell back to legacy');
     assert(both.filter(r => !r.alreadyMigrated).length === 1, 'migration committed twice');
     const migrated = await first.store.read(newScope, first.setup.group), archive = await first.store.read(archiveScope, first.setup.group);
     assert(migrated.revision === 1 && migrated.value.generation === 0, 'wrong migrated generation');
@@ -376,6 +379,35 @@ try {
     return {route: data.journeys[0].savedRoutes[0].route, count: data.journeys[0].count,
       generation: envelope.sync.version.generation, pending: envelope.sync.pending.length};
   }), {route: '99', count: 7, generation: 1, pending: 0});
+  assert.equal(await page.evaluate(async ({group}) => {
+    const wasm = await import('./hive_wasm.js'); await wasm.default();
+    const prefs = await import('./journey-sync/app-preferences.mjs');
+    const {readJourneyStartupState} = await import('./journey-sync/startup-state.mjs');
+    const store = await (await import('./tg-pairing/storage.mjs')).openBrowserStorage('checkpoint-choice-valid');
+    const input = {wasm, store, expectedGroup: Uint8Array.from(group.match(/../g), n => parseInt(n, 16))};
+    const profileKey = prefs.selectPlannerStorage().key, raw = localStorage.getItem(profileKey);
+    try {
+      const ready = await readJourneyStartupState(input);
+      if (ready.status !== 'generation-ready' || !ready.legacyChangesPending) throw Error('ready startup not diagnosed');
+      localStorage.removeItem(profileKey);
+      if ((await readJourneyStartupState(input)).status !== 'isolation-required') throw Error('missing isolated data allowed legacy sharing');
+      localStorage.setItem(profileKey, '{}');
+      if ((await readJourneyStartupState(input)).status !== 'unavailable') throw Error('corrupt profile accepted');
+      localStorage.setItem(profileKey, raw);
+      const record = await store.read('along-journey-checkpoint-recovery-v1', group + ':1');
+      const profile = JSON.parse(raw); profile.currentRaw = record.value.localRaw;
+      localStorage.setItem(profileKey, JSON.stringify(profile));
+      if ((await readJourneyStartupState(input)).status !== 'local-review-required') throw Error('pending review not diagnosed');
+      localStorage.setItem(profileKey, raw);
+      const damaged = structuredClone(record.value); damaged.checkpoint[183] ^= 1;
+      await store.compareAndSwap('along-journey-checkpoint-recovery-v1', group + ':1', record.revision, damaged);
+      if ((await readJourneyStartupState(input)).status !== 'unavailable') throw Error('damaged checkpoint accepted on startup');
+      await store.compareAndSwap('along-journey-checkpoint-recovery-v1', group + ':1', record.revision + 1, record.value);
+      const abort = new AbortController(); abort.abort();
+      if ((await readJourneyStartupState({...input, signal: abort.signal})).status !== 'unavailable') throw Error('cancelled startup accepted');
+      return true;
+    } finally { localStorage.setItem(profileKey, raw); store.close(); }
+  }, result.choiceRetry), true);
   assert.equal(await page.evaluate(async () => {
     const prefs = await import('./journey-sync/app-preferences.mjs');
     const storage = prefs.selectPlannerStorage(), saved = localStorage.getItem(storage.key);

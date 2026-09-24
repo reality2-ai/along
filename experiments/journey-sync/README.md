@@ -452,3 +452,11 @@ default journal import, later planner edits and reload while legacy edits stay
 separate. Envelope validation is shared through `preference-envelope.mjs`.
 Verified bootstrap/Settings lifecycle, creating isolation and legacy-edit review
 are still not mounted; storage selection alone does not authorize recovery.
+
+Settings now uses `startup-state.mjs` to diagnose retained migration state before
+starting or reconciling legacy sharing. Migrated/missing/corrupt state cannot
+fall back to legacy connection controls. A ready generation can reconcile local
+edits but cannot yet open a peer session. The actual migration browser suite
+checks startup diagnosis; `startup-settings.test.mjs` checks generated Settings
+with real identity and explicit migration fixtures. Creating/reviewing migration,
+legacy-edit reconciliation and peer checkpoint delivery remain unfinished.

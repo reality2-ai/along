@@ -377,6 +377,34 @@ isolated its data. Verified Settings/bootstrap must check retained migration
 history before authorizing further sharing. Completing that lifecycle, mounting
 reviewed migration/recovery and handling legacy edits remain release gates.
 
+## Verified startup diagnosis and Settings guard
+
+`startup-state.mjs` reads the actual local persona/membership, migration marker,
+archive and generation replica. Later generations require the retained signed
+checkpoint evidence. It checks observed record revisions and local storage bytes
+again before reporting legacy state, required isolation, required local review or
+a ready generation. Cancellation, damaged evidence, changed records and corrupt
+profiles report unavailable. The result is a read-only diagnosis, not a token
+authorizing a future write.
+
+Settings now checks that diagnosis on opening, before starting a legacy connection
+and before reconciliation. Migrated or unavailable state closes an existing legacy
+session and offers recovery status instead of legacy connection controls. A ready
+generation may reconcile local pending edits through the generation bridge, but
+peer connections for that format remain disabled. Settings listens for isolated
+profile changes as well as legacy storage events and reports retained old-tab
+edits without merging them. Offline planning remains available.
+
+The real-runtime migration suite checks legacy startup, unfinished isolation,
+completed generation, pending review, missing/corrupt profiles, damaged checkpoint
+signatures and cancellation. `startup-settings.test.mjs` checks actual generated
+Settings/bootstrap with real identity and explicitly fixture-created migration
+records: connection controls stay absent, missing storage does not reopen legacy
+sharing, older-copy edits are explained and Back returns to Settings. The full
+two-profile app sharing integration also passes. The fixture UI test is not proof
+of an end-to-end migration wizard; that flow and authenticated checkpoint delivery
+remain unfinished.
+
 ## Required before integration
 
 1. Wire the tested migration and format-2 bridge to explicit reviewed opt-in,

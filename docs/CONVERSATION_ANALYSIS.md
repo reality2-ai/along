@@ -1384,3 +1384,12 @@ supplied by a fixture. Missing or corrupt storage is a separate issue from choos
 a profile: verified migration history must still govern whether sharing resumes.
 A successful reload therefore provides useful evidence without proving complete
 recovery or current authorization.
+
+Startup diagnosis now joins the storage state to verified local identity and
+retained migration/checkpoint evidence. The interface uses that diagnosis to show
+the relevant recovery status and withhold incompatible legacy connection actions.
+Missing isolated data therefore does not silently reopen old sharing. Tests keep
+their evidential scope explicit: the migration suite uses the actual writer,
+whereas the generated Settings test creates migration records as fixtures to
+exercise presentation and startup behavior. Neither alone proves the unfinished
+end-to-end migration wizard or peer checkpoint transfer.
