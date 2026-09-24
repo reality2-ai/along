@@ -513,6 +513,23 @@ Checkpoint bytes are handed directly between the fixture's controllers, so this
 does not establish checkpoint framing, authenticated wire delivery, ordered catch-up
 or remote confirmation. Those remain the next transport gates.
 
+## Checkpoint transfer framing
+
+The separate `checkpoint-exchange.mjs` codec uses frame types 17–20 and the
+`along-journey-checkpoint-transfer-v1` payload profile. Ordinary journey frames
+remain unchanged. Payloads are limited to 2 MiB and paced in 1 KiB chunks; the
+final receipt binds the transmitted bytes. The decoder verifies the root signature,
+snapshot digest and signed identifiers before invoking retention. The receiving
+application must additionally check the actual local predecessor, membership and
+consent, and durably retain the bundle before acknowledging it.
+
+Its receipt means retained for review, not installed or reconciled. Tests cover
+lost receipt/retry and cancellation after the memory fixture retains a bundle,
+without inventing a successful confirmation or undoing the retained input. The
+combined exchange/checkpoint suites pass 15 tests. A durable bounded inbox,
+authenticated session composition, ordered catch-up and recipient UI remain
+unfinished. Public preview 3805 is unchanged.
+
 ## Required before integration
 
 1. Wire the tested migration and format-2 bridge to explicit reviewed opt-in,

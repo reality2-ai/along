@@ -494,3 +494,17 @@ that remains the transport's responsibility. Run the real enrollment/credential
 fixture with `ENROLLED_CHECKPOINT=1` to exercise enrolled-device migration,
 checkpoint acceptance, local review and fresh-page restoration. The fixture
 hands checkpoint bytes directly to the adapter; wire transport is still unfinished.
+
+`checkpoint-exchange.mjs` now provides a separate checkpoint frame domain using
+the bounded exchange engine. It verifies the signed snapshot before calling a
+retention callback and reports only `peer-retained-checkpoint`, never installation.
+The callback must enforce the actual local predecessor and current consent and
+persist the input before returning `checkpoint-retained-for-review`. Reconstructing
+the signed predecessor for cryptographic verification is not proof of local
+ordering. No durable inbox or authenticated checkpoint session is connected yet.
+
+Run `node --test experiments/journey-sync/exchange.test.mjs experiments/journey-sync/checkpoint-exchange.test.mjs experiments/journey-sync/generation-checkpoint.test.mjs`
+for the 15 model/codec checks. These cover chunk bounds, tampering, frame-domain
+separation, actual-parent refusal, false/lost receipts, retry and closure during
+retention. The callback fixtures use memory, so they do not establish browser
+durability, peer authentication or end-to-end device delivery.
