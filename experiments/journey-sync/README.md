@@ -608,3 +608,17 @@ unchanged saved places, service choices and local learning history. The harness
 copies public signaling text; this does not verify physical-device reachability,
 automatic discovery or exact public-preview upgrades. Public preview 3805 remains
 unchanged pending the remaining integration and release gates.
+
+`generation-store.mjs` and `generation-exchange.mjs` now provide the internal
+merge/transfer layer for ongoing sharing within an installed generation. The
+store requires existing format-2 state and binds each controller to an exact
+generation/checkpoint. A concurrent checkpoint install causes refusal on retry;
+same-generation concurrent edits merge without dropping either device's values.
+The transfer uses its own frame domain (49–52) and confirms replicated storage,
+not planner reconciliation. It does not initialize or adopt generations.
+
+The combined generation-store, ordinary-exchange and checkpoint-exchange Node
+suites pass 16 tests. These use memory stores and in-process packet delivery;
+current identity/consent guards, authenticated generation sessions, planner review
+gating and Settings integration still need composition and browser verification.
+Neither new module is a standalone authorization boundary or public feature.

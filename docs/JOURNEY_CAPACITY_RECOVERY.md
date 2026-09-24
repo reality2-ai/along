@@ -657,6 +657,22 @@ keyboard sending at narrow width. The harness transfers public signaling text;
 physical devices, discovery/reconnect, generation-aware continuous snapshot sharing
 and exact public-preview upgrade qualification remain outstanding.
 
+## Ongoing generation snapshot foundation
+
+The new internal generation store and exchange bind ordinary snapshots to one
+installed generation and checkpoint. They reject missing storage, legacy shapes,
+different checkpoints and a generation advanced during a compare-and-swap retry.
+Same-generation merges retain deletion records and concurrent saves. The dedicated
+frame domain (49–52) preserves the existing bounded/chunked transport behavior;
+its receipt means the replicated snapshot was stored, not that local preferences
+have been reconciled.
+
+Sixteen combined Node tests pass, including cancellation, concurrent writers,
+multiple chunks and mismatched receiver generations. The store fixture is in
+memory. Permission/identity guards, authenticated session integration, local-review
+gating and actual browser/app composition remain required before this becomes
+ongoing device sharing.
+
 ## Required before release
 
 1. Qualify the reviewed migration and format-2 bridge against the exact published
