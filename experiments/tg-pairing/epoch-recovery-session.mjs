@@ -24,7 +24,7 @@ export async function openEpochRecoverySession({wasm, store, expectedGroup, role
       || (role === 'owner' && !fixed(certificate, 136))) throw Error('Recovery context unavailable');
   const group = expectedGroup.slice(), remote = peer.slice(), peerCertificate = certificate?.slice();
   let closed = false, phase = 'opening', link, membership, watcher, unsubscribe, timer, challenge, transcript;
-  let identity, memberStatement, ownerNonce, from, to, ready, queue = Promise.resolve();
+  let identity, memberStatement, ownerNonce, verifiedOwnerCertificate, from, to, ready, queue = Promise.resolve();
   let accepted = false, recipientAccepted = false, busy = false, pending, progress, confirmationChecked = false;
   const lifetime = new AbortController();
   const started = performance.now();
@@ -105,7 +105,7 @@ export async function openEpochRecoverySession({wasm, store, expectedGroup, role
           for (const r of held.value.revocations) if (!verifier.apply_revocation(r.subject, r.epoch, r.sequence, r.reason, r.signature)) throw Error('Invalid held removal');
           if (!verifier.verify_nonce(cert, remote, ownerStatement(memberStatement), ownerNonce, proof)) throw Error('Issuer recovery proof refused');
         } finally { verifier.free(); }
-        await current(); phase = 'waiting-ready'; send({type: 'ready'});
+        await current(); verifiedOwnerCertificate = cert.slice(); phase = 'waiting-ready'; send({type: 'ready'});
       } else if (phase === 'waiting-ready' && frame.type === 'ready' && fields(frame, ['type'])) {
         await current(); if (role === 'owner') send({type: 'ready'}); authenticated();
       } else if (role === 'owner' && phase === 'authenticated' && frame.type === 'accept-recovery' && fields(frame, ['type']) && !recipientAccepted) {
@@ -178,7 +178,8 @@ export async function openEpochRecoverySession({wasm, store, expectedGroup, role
       state: () => phase,
       installation: async () => {
         if (role !== 'recipient') throw Error('Local recipient installation unavailable');
-        return installation;
+        const saved = await installation;
+        return Object.freeze({...saved, ownerCertificate: verifiedOwnerCertificate.slice()});
       },
       accepted: async () => {
         if (role !== 'owner') throw Error('Remote acceptance unavailable');

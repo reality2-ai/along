@@ -3,7 +3,8 @@
 Status: transition framing, signature verification, encrypted durable preparation
 and atomic issuer/recipient installation implemented and tested, including two
 successive issuer advances. Owner review, device selection and recovery are connected in the local
-experimental app Settings. Shared AT permission renewal remains incomplete; none
+experimental app Settings. Pinned AT-owner certificate renewal is implemented;
+full post-rotation app exchanges remain unverified. None
 of this rotation UI is enabled in public preview 3803.
 This is an Along application profile using the R2 group authority; it is not a
 claim of a normative R2 rotation wire format or full R2 conformance.
@@ -384,8 +385,38 @@ test now enters the visible recovery flow through its actual device picker.
 Journey permission records are keyed by stable member identities; the journey
 connection obtains a fresh certificate from its incoming descriptor. Shared AT
 restoration additionally checks the pinned owner's saved certificate for current
-epoch membership. That certificate needs verified renewal without changing the
-pinned owner, credential identity, consent or policy. Full shared-device AT and
+epoch membership. The renewal operation below replaces that certificate without
+changing the pinned owner, credential identity, consent or policy. Full shared-device AT and
 journey exchanges after rotation are not yet verified and remain release blockers.
 Only `along-experimental-app` was rebuilt; the qualified preview 3803 artifacts and
 public deployments are unchanged.
+
+
+## AT-owner certificate renewal
+
+`owner-certificate.mjs` renews membership evidence for an existing pinned AT owner.
+It verifies both the old and new certificates for exactly that owner and group,
+requires the new certificate to match the local epoch and current held membership,
+and verifies the existing signed policy. The transaction changes only the owner's
+certificate, guarded by persona, membership, enrollment/bootstrap evidence, policy
+and anchor revisions. It does not change consent, policy revision/generation,
+credential identity or key bytes. Missing bindings are not initialized; local
+owners need no remote-certificate renewal. Exact duplicate renewal is read-only.
+
+The recipient recovery result now includes a copy of the public owner certificate
+verified by the mutual recovery proof. After recovery, experimental Settings passes
+that certificate into renewal and restores the binding. An error preserves the
+saved AT state and does not turn successful group installation into a claim of
+successful AT access. If the AT owner is a different group member from the group
+issuer, this certificate does not match: it is refused rather than changing the
+chosen AT owner. Renewal from that other member remains to be composed.
+
+The real two-profile enrollment/recovery test establishes an explicit AT-owner
+binding and signed permission before rotation. After the visible update to epoch
+four, the old certificate fails restoration. The certificate from the actual
+completed recovery renews it, preserving the binding and signed policy bytes.
+Wrong-subject, damaged, stale and cancelled renewal refuse, as do membership,
+policy and enrollment evidence changed during the transaction. Exact retry does
+not rewrite, and the restored binding loads in a fresh document. This does not yet
+prove AT-key delivery/provider reads or journey exchange after rotation in the
+complete app; those tests and release qualification remain required.

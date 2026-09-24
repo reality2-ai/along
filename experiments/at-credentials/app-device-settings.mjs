@@ -90,7 +90,22 @@ export function mountAppDeviceSettings({onChanged}) {
           : binding?.role === 'recipient'
           ? 'This device has a saved sharing choice. Use the connection option in Settings when you want live information.'
           : 'Your device identity is saved. Choose only the optional setup you need.';
-        const show = (view, options = {}) => { clear(); child = view(content, {wasm, store, expectedGroup: group, focus: true, onBack: home, ...options}); };
+        const show = (view, options = {}) => {
+          clear(); child = view(content, {wasm, store, expectedGroup: group, focus: true, onBack: home, ...options});
+          if (view === showEpochRecoveryFlow && options.role === 'recipient') {
+            // Renew evidence for an existing AT owner only. Group-key recovery
+            // does not create an AT binding or change its policy/credential.
+            void child.completed.then(async installed => {
+              if (disposed) return;
+              const {renewATOwnerCertificate} = await import('./owner-certificate.mjs');
+              if (disposed) return;
+              await renewATOwnerCertificate({wasm, store, expectedGroup: group, certificate: installed.ownerCertificate});
+              const restored = await loadATBinding({wasm, store, expectedGroup: group});
+              const local = await loadLocalPersona({wasm, store, expectedGroup: group});
+              if (!disposed && local) onChanged({wasm, store, group, binding: restored, member: local.member});
+            }).catch(() => { /* Group installation remains saved; unreadable AT state is preserved. */ });
+          }
+        };
         if (bindingAvailable) {
           action(panel, binding ? 'Manage my AT key' : 'Use my own AT key', () => show(showATSettings), true);
           action(panel, binding?.role === 'owner' ? 'Share my AT key' : 'Receive a shared AT key', () => show(showKeySharingFlow, {role: binding?.role === 'owner' ? 'owner' : 'recipient'}));

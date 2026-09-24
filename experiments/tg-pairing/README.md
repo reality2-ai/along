@@ -975,3 +975,13 @@ Settings path alongside personal-key, planning and offline checks. The visible
 multi-device recovery test now starts through the device picker. Shared AT-owner
 certificate renewal and complete post-rotation app exchanges remain pending;
 these changes are not deployed in public preview 3803.
+
+
+AT-owner renewal now uses `../at-credentials/owner-certificate.mjs` after recipient
+recovery in local Settings. Only the current group-signed certificate for the
+already pinned owner can replace its old certificate; the signed policy, chosen
+credential and permissions remain unchanged. The real recovery test checks that
+binding before/after rotation, invalid evidence, concurrent changes, idempotence
+and fresh-document restoration. The certificate comes from the authenticated
+recovery result. A different AT owner is not silently replaced with the group
+issuer. Full post-rotation shared AT use and journey exchange remain unverified.

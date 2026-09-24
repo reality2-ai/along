@@ -1,5 +1,6 @@
 // Node-side browser harness. Transcript bytes are a fixture, not a live link.
 import assert from 'node:assert/strict';
+import {prepareATOwnerRenewal} from './at-owner-renewal-check.mjs';
 import {checkEpochRecoveryFlow} from './epoch-recovery-flow-check.mjs';
 import AxeBuilder from '@axe-core/playwright';
 export async function checkRecoveryProof(owner, recipient) {
@@ -325,7 +326,9 @@ export async function checkRecoveryProof(owner, recipient) {
     if (await readConfirmation({store: raced}).then(() => true, () => false)) throw Error('Changed receipt accepted during read');
     if ((await readConfirmation()).epoch !== 3n) throw Error('Restored receipt not verified');
   });
+  const checkATRenewal = await prepareATOwnerRenewal(owner, recipient, peer);
   await checkEpochRecoveryFlow(owner, recipient, peer);
+  await checkATRenewal();
   await owner.evaluate(() => document.body.append(devicePanel));
   const removed = await answer(await begin());
   await owner.evaluate(async () => {
@@ -355,7 +358,9 @@ export async function checkRecoveryProof(owner, recipient) {
       const options = {wasm, store, expectedGroup: new Uint8Array(group)};
       const local = await (await import('./local-persona.mjs')).loadLocalPersona(options);
       material = await (await import('./software-traffic.mjs')).loadSoftwareTraffic(options);
-      return local.epoch === 4n && material.epoch === 4n && (await local.sign(new Uint8Array(32))).length === 64;
+      const at = await (await import('./at-credentials/local-owner.mjs')).loadATBinding(options);
+      return local.epoch === 4n && material.epoch === 4n && at.role === 'recipient'
+        && (await local.sign(new Uint8Array(32))).length === 64;
     } finally { material?.destroy(); store.close(); }
   }, peer.group), true, 'network-delivered epoch restores in a fresh document');
   await reopened.close();

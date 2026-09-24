@@ -64,8 +64,10 @@ its displayed messages, reject a mismatched reply, confirm existing keys and
 deliver a new version through the device picker. Local Settings now offers owner
 rotation, selected-device delivery and recipient recovery. Its generated-app check
 keeps group recovery reachable when a saved AT binding cannot be verified. Shared
-AT-owner certificate renewal and full post-rotation application checks remain
-unfinished; public preview 3803 is unchanged. The source device list now verifies saved
+AT-owner certificate renewal now preserves the pinned binding and signed policy
+using the authenticated recovery certificate. Real-browser checks cover invalid
+evidence, concurrent changes, retry and fresh restoration. Full post-rotation
+application checks and renewal from a different AT-owner member remain unfinished; public preview 3803 is unchanged. The source device list now verifies saved
 per-device receipts and distinguishes missing, unreadable and removed-device
 status without claiming online presence. Composed browser checks use real
 WebRTC receipts and corrupt/race their stored evidence. See

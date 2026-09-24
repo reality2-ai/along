@@ -13,6 +13,12 @@ if (process.env.EPOCH_INSTALL === '1') {
   for (const name of ['epoch-transition.mjs', 'epoch-preparation.mjs', 'epoch-recovery-material.mjs', 'epoch-installation.mjs', 'epoch-install-check.mjs', 'epoch-recovery-proof.mjs', 'epoch-recovery-session.mjs', 'epoch-recovery-view.mjs', 'epoch-recovery-flow.mjs', 'removal-set.mjs', 'comparison.css', 'epoch-recovery-receipt.mjs', 'member-removal.mjs', 'member-devices-view.mjs', 'member-removal-view.mjs', 'legacy-members.mjs', 'removal-transfer-view.mjs', 'removal-message.mjs']) sources.set('/' + name, await readFile(new URL(name, import.meta.url)));
 }
 for (const name of ['enrollment-profile.mjs', 'enrollment-payloads.mjs', 'core-candidate-session.mjs', 'software-traffic.mjs', 'initial-persona.mjs', 'software-persona.mjs', 'software-invitation.mjs', 'invitation-proof.mjs', 'transfer-view.mjs', 'receive-invitation-view.mjs', 'stored-claim.mjs', 'installation-receipt.mjs', 'local-persona.mjs', 'local-persona-session.mjs', 'epoch-watch.mjs', 'receipt-recovery.mjs']) sources.set('/' + name, await readFile(new URL('./' + name, import.meta.url)));
+if (process.env.EPOCH_INSTALL === '1') {
+  for (const [path, bytes] of [...sources]) sources.set('/tg-pairing' + path, bytes);
+  for (const name of ['local-owner.mjs', 'remote-owner.mjs', 'owner-policy.mjs', 'owner-certificate.mjs', 'policy.mjs', 'policy-store.mjs']) {
+    sources.set('/at-credentials/' + name, await readFile(new URL('../at-credentials/' + name, import.meta.url)));
+  }
+}
 if (process.env.RECOVERY_MODULE) sources.set('/receipt-recovery.mjs', await readFile(process.env.RECOVERY_MODULE));
 for (const name of ['hive_wasm.js', 'hive_wasm_bg.wasm']) sources.set('/' + name, await readFile(join(process.env.R2_WASM_DIR, name)));
 for (const name of ['qr-transfer.mjs', 'vendor/qrcode.mjs']) sources.set('/' + name, await readFile(new URL(name, import.meta.url)));
