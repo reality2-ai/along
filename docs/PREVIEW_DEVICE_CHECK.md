@@ -196,3 +196,21 @@ message formats changed. Keep the same saved group and AT sharing choices.
 Report confusing wording, missing controls, update/reconnect failures and TalkBack
 announcements. These are manual device checks; browser automation does not prove
 physical installation, QR camera use or network reachability.
+
+## Candidate 3806 qualification progress (not deployed)
+
+The builder now assigns 3806 consistently to the candidate, shell cache and
+recovery page. Preview-specific privacy wording describes the optional relay.
+New release gates require pairing QR/expiry, relay Settings, enrolled and
+generation relay tests, recovery Settings, published migration, checkpoint app
+flow and older-edit Settings evidence in addition to the existing checks.
+
+Development runs passed the actual generated preview's relay Settings and
+recovery Settings tests. The coexistence test now verifies the exact published
+3805 ZIP and its manifest/payload hashes before testing the 3806 installed update:
+saved places, verified identity and exact encrypted key remain intact, as do the
+regular app's preferences, feedback, pairing record and byte-identical shell cache.
+The separate published-migration test also passes; it deliberately blocks service
+workers and is not installed-update evidence. These runs are development evidence,
+not a completed release qualification record. Older-copy edit review remains
+unfinished; do not package or deploy the candidate yet.

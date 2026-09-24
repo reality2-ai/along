@@ -30,6 +30,9 @@ def prepare(qualification):
         required.update({'rotated_journeys', 'rotated_at_owner', 'rotated_different_at_owner', 'rotation_settings'})
     if int(manifest.get('appVersion', '0')) >= 3805:
         required.update({'journal_compaction', 'capacity_reporting'})
+    if int(manifest.get('appVersion', '0')) >= 3806:
+        required.update({'pairing_qr_expiry', 'relay_settings', 'enrolled_relay', 'generation_relay',
+                         'recovery_settings', 'published_migration', 'checkpoint_app', 'older_edit_settings'})
     if (evidence.get('profile') != 'along-preview-qualification-v1'
             or evidence.get('candidate_manifest_sha256') != digest(manifest_path)
             or any(evidence.get('checks', {}).get(name, {}).get('status') != 'passed' for name in required)

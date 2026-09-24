@@ -6,9 +6,9 @@ import {readFile} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import {extname} from 'node:path';
 const {chromium, expect} = await import('@playwright/test');
-const root = new URL('../../releases/along-experimental-app/', import.meta.url);
+const root = new URL(process.env.PREVIEW==='1'?'../../releases/along-device-preview/':'../../releases/along-experimental-app/', import.meta.url);
 const manifest = JSON.parse(await readFile(new URL('build-info.json', root)));
-assert.equal(manifest.profile, 'along-experimental-app-v1');
+assert.equal(manifest.profile, process.env.PREVIEW==='1'?'along-device-preview-v1':'along-experimental-app-v1');
 const sources = new Map();
 for (const [path, hash] of Object.entries(manifest.files)) {
   const bytes = await readFile(new URL(path, root));
@@ -23,12 +23,13 @@ let browser;
 try{
   browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_PATH});
   const context=await browser.newContext({ignoreHTTPSErrors:true,viewport:{width:360,height:780}}),page=await context.newPage();
+  await page.addInitScript(name=>{window.testDeviceStore=name;},manifest.namespaces?.devices||'along-pairing-lab-v1');
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
   const origin=`https://127.0.0.1:${relay.server.address().port}`,endpoint=origin.replace('https:','wss:')+'/r2';
   await page.goto(origin+'/public/');
   await page.evaluate(async()=>{
     const wasm=await import('/experiments/tg-pairing/hive_wasm.js');await wasm.default();
-    const store=await(await import('/experiments/tg-pairing/storage.mjs')).openBrowserStorage('along-pairing-lab-v1');
+    const store=await(await import('/experiments/tg-pairing/storage.mjs')).openBrowserStorage(window.testDeviceStore);
     try{await(await import('/experiments/tg-pairing/software-persona.mjs')).initializeSoftwarePersona({wasm,store});}finally{store.close();}
   });
   await page.reload();
@@ -58,7 +59,7 @@ try{
   // with explicit saved relay opt-in. Records below model interrupted setup.
   await page.evaluate(async()=>{
     const wasm=await import('/experiments/tg-pairing/hive_wasm.js');
-    const store=await(await import('/experiments/tg-pairing/storage.mjs')).openBrowserStorage('along-pairing-lab-v1');
+    const store=await(await import('/experiments/tg-pairing/storage.mjs')).openBrowserStorage(window.testDeviceStore);
     try{
       const persona=await store.read('candidate-persona','active');
       const expectedGroup=persona.value.record.group;

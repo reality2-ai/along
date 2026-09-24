@@ -1,6 +1,7 @@
 // Preview and regular app share an origin but must not share persistence names.
 // This is coexistence evidence, not same-origin script isolation.
 import assert from 'node:assert/strict';
+import {execFileSync} from 'node:child_process';
 import {createServer} from 'node:http';
 import {readFile} from 'node:fs/promises';
 import {join, extname} from 'node:path';
@@ -10,21 +11,21 @@ const root = new URL('../../releases/along-device-preview/', import.meta.url).pa
 const regularRoot = new URL('../../dist/', import.meta.url).pathname;
 const manifest = JSON.parse(await readFile(join(root, 'build-info.json'), 'utf8'));
 assert.equal(manifest.profile, 'along-device-preview-v1');
-assert.equal(manifest.appVersion, '3805');
+assert.equal(manifest.appVersion, '3806');
 const sources = new Map(await Promise.all(Object.entries(manifest.files).map(async ([name, hash]) => {
   const body = await readFile(join(root, name));
   assert.equal(createHash('sha256').update(body).digest('hex'), hash); return [name, body];
 })));
 // Use the exact published prior release, not a version-substituted current shell.
-const priorRoot = new URL('../../releases/along-device-preview-3804/', import.meta.url).pathname;
-const priorBytes = await readFile(join(priorRoot, 'build-info.json'));
-assert.equal(createHash('sha256').update(priorBytes).digest('hex'), 'fb96fb588e68bf7be65a30bd33b6e505b900358a7f66daf81bf52de2a55532f1');
-const priorManifest = JSON.parse(priorBytes);
-assert.equal(priorManifest.appVersion, '3804');
-const priorSources = new Map(await Promise.all(Object.entries(priorManifest.files).map(async ([name, hash]) => {
-  const body = await readFile(join(priorRoot, name));
-  assert.equal(createHash('sha256').update(body).digest('hex'), hash); return [name, body];
-})));
+const priorZip = new URL('../../releases/along-device-preview-3805.zip', import.meta.url).pathname;
+assert.equal(createHash('sha256').update(await readFile(priorZip)).digest('hex'), 'ccfd7943aedd1c2de81ddf2cd13358165c882496024a02346dea973e6ec82119');
+const priorFile=name=>execFileSync('unzip',['-p',priorZip,name],{maxBuffer:64*1024*1024});
+const priorBytes=priorFile('build-info.json');
+assert.equal(createHash('sha256').update(priorBytes).digest('hex'), '2e62dcc2c3860ce523baa52d29aad8f628749732397c00613a795e7ef9fcc320');
+const priorManifest=JSON.parse(priorBytes);assert.equal(priorManifest.appVersion,'3805');
+const priorSources=new Map(Object.entries(priorManifest.files).map(([name,hash])=>{
+  const body=priorFile(name);assert.equal(createHash('sha256').update(body).digest('hex'),hash);return [name,body];
+}));
 let serveCurrent = false;
 const server = createServer(async (req, res) => {
   const path = new URL(req.url, 'http://localhost').pathname;
@@ -79,7 +80,7 @@ try {
   await expect(preview.locator('#address-status')).toContainText('ready offline', {timeout: 60000});
   await expect.poll(() => preview.evaluate(() => navigator.serviceWorker.controller?.scriptURL)).toBe(origin + '/along/preview/public/sw.js');
   await preview.locator('#settings-open').click();
-  await expect(preview.locator('#settings')).toContainText('App version 3804');
+  await expect(preview.locator('#settings')).toContainText('App version 3805');
   await preview.getByRole('button', {name: 'Device and AT-key setup', exact: true}).click();
   await preview.getByRole('button', {name: 'Set up my device', exact: true}).click();
   await preview.getByRole('button', {name: 'Create my device group', exact: true}).click();
@@ -114,10 +115,10 @@ try {
   serveCurrent = true;
   await preview.goto(origin + '/along/preview/public/update.html');
   await preview.locator('#recover-update').click();
-  await expect(preview.locator('#recovery-status')).toContainText('3805', {timeout: 60000});
+  await expect(preview.locator('#recovery-status')).toContainText('3806', {timeout: 60000});
   await preview.locator('#recover-update').click();
   await expect(preview.locator('#address-status')).toContainText('ready offline', {timeout: 60000});
-  await expect(preview.locator('#settings')).toContainText('App version 3805');
+  await expect(preview.locator('#settings')).toContainText('App version 3806');
   assert.deepEqual(await previewState(), previewBefore, 'upgrade retains saved places, identity and exact encrypted key record');
   await preview.locator('#settings-open').click();
   await preview.getByRole('button', {name: 'Device and AT-key setup', exact: true}).click();
@@ -143,5 +144,5 @@ try {
   assert.deepEqual(after, original); assert.deepEqual(sentinel, {revision: 1, value: {kept: 'regular pairing lab'}});
   assert.deepEqual(await previewState(), previewBefore);
   assert.deepEqual(errors, []);
-  console.log('PASS: regular and preview coexist on one origin; the published 3804→3805 update preserves preview saved places, verified identity and exact encrypted key; offline reopening preserves regular preferences, feedback, pairing record and byte-identical shell cache. Namespacing is not a same-origin security boundary.');
+  console.log('PASS: regular and preview coexist on one origin; the published 3805→candidate 3806 update preserves preview saved places, verified identity and exact encrypted key; offline reopening preserves regular preferences, feedback, pairing record and byte-identical shell cache. Namespacing is not a same-origin security boundary.');
 } finally { await browser?.close(); await new Promise(resolve => server.close(resolve)); }

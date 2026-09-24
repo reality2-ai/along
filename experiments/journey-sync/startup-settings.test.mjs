@@ -6,9 +6,9 @@ import {readFile} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import {extname} from 'node:path';
 const {chromium, expect} = await import('@playwright/test');
-const root = new URL('../../releases/along-experimental-app/', import.meta.url);
+const root = new URL(process.env.PREVIEW==='1'?'../../releases/along-device-preview/':'../../releases/along-experimental-app/', import.meta.url);
 const manifest = JSON.parse(await readFile(new URL('build-info.json', root)));
-assert.equal(manifest.profile, 'along-experimental-app-v1');
+assert.equal(manifest.profile, process.env.PREVIEW==='1'?'along-device-preview-v1':'along-experimental-app-v1');
 const sources = new Map();
 for (const [path, hash] of Object.entries(manifest.files)) {
   const bytes = await readFile(new URL(path, root));
@@ -23,11 +23,12 @@ let browser;
 try {
   browser = await chromium.launch({headless: true, executablePath: process.env.CHROMIUM_PATH});
   const context = await browser.newContext(), page = await context.newPage();
+  await page.addInitScript(name=>{window.testDeviceStore=name;},manifest.namespaces?.devices||'along-pairing-lab-v1');
   const errors = []; page.on('pageerror', error => errors.push(error.message));
   await page.goto(`http://127.0.0.1:${server.address().port}/public/`);
   const input = await page.evaluate(async () => {
     const wasm = await import('/experiments/tg-pairing/hive_wasm.js'); await wasm.default();
-    const store = await (await import('/experiments/tg-pairing/storage.mjs')).openBrowserStorage('along-pairing-lab-v1');
+    const store = await (await import('/experiments/tg-pairing/storage.mjs')).openBrowserStorage(window.testDeviceStore);
     try {
       const setup = await (await import('/experiments/tg-pairing/software-persona.mjs')).initializeSoftwarePersona({wasm, store});
       const {emptyState} = await import('/experiments/journey-sync/state.mjs');
@@ -85,7 +86,7 @@ try {
   await expect(page.getByRole('heading',{name:'Start a new sharing checkpoint?',exact:true})).toBeFocused();
   await page.getByRole('button',{name:'Back',exact:true}).click();
   assert.equal(await page.evaluate(async group=>{
-    const store=await(await import('/experiments/tg-pairing/storage.mjs')).openBrowserStorage('along-pairing-lab-v1');
+    const store=await(await import('/experiments/tg-pairing/storage.mjs')).openBrowserStorage(window.testDeviceStore);
     try{return (await store.read('along-saved-journeys-v2',group)).value.generation;}finally{store.close();}
   },input.group),0);
   await page.getByRole('button',{name:'Review recovery checkpoint',exact:true}).click();
@@ -135,7 +136,7 @@ try {
   // independently exercised with enrolled peers; this checks the receiving UI.
   await page.evaluate(async group=>{
     const wasm=await import('/experiments/tg-pairing/hive_wasm.js');await wasm.default();
-    const store=await(await import('/experiments/tg-pairing/storage.mjs')).openBrowserStorage('along-pairing-lab-v1');
+    const store=await(await import('/experiments/tg-pairing/storage.mjs')).openBrowserStorage(window.testDeviceStore);
     const expectedGroup=Uint8Array.from(group.match(/../g),b=>parseInt(b,16));
     const issuer=await(await import('/experiments/tg-pairing/software-persona.mjs')).loadSoftwareIssuer({wasm,store,expectedGroup});
     try{
@@ -157,7 +158,7 @@ try {
   await page.getByRole('button',{name:'Review received saved places',exact:true}).click();
   await expect(page.getByRole('heading',{name:'Review received saved places',exact:true})).toBeFocused();
   await page.evaluate(async group=>{
-    const store=await(await import('/experiments/tg-pairing/storage.mjs')).openBrowserStorage('along-pairing-lab-v1');
+    const store=await(await import('/experiments/tg-pairing/storage.mjs')).openBrowserStorage(window.testDeviceStore);
     try{
       const inbox=await store.read('along-journey-checkpoint-inbox-v1',group);
       await store.compareAndSwapMany([{scope:'along-journey-checkpoint-inbox-v1',key:group,

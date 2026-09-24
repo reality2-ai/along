@@ -102,10 +102,12 @@ window.addEventListener('along-saved-journeys-applied', () => {
         text = text.replace('the server receives your IP address.', 'Auckland Transport receives your IP address and personal key.')
         privacy_before = 'Your searches, saved routes and preferences stay on this device. No account or uploaded journey history.'
         privacy_after = 'Your searches and learning history stay on this device. You can choose to share saved places and service preferences with permitted devices. An optional relay sees connection metadata; shared journeys are encrypted.'
-        text = text.replace(privacy_before, privacy_after)
+        if not preview:
+            text = text.replace(privacy_before, privacy_after)
         index.write_text(text)
         locales = stage / 'public/locales.js'
-        locales.write_text(locales.read_text().replace(privacy_before, privacy_after))
+        if not preview:
+            locales.write_text(locales.read_text().replace(privacy_before, privacy_after))
         manifest = json.loads((stage / 'public/manifest.webmanifest').read_text())
         for key in ('id', 'scope', 'start_url'):
             manifest[key] = './'
@@ -144,12 +146,12 @@ window.addEventListener('along-saved-journeys-applied', () => {
                           'devices': replacements['along-pairing-lab-v1'],
                           'offline': replacements['along-offline'],
                           'cachePrefix': replacements['along-experimental-shell-']}
-            index.write_text(re.sub(r'App version \d+', 'App version 3805 · Device preview', index.read_text())
+            index.write_text(re.sub(r'App version \d+', 'App version 3806 · Device preview', index.read_text())
                              .replace('Local integration experiment — use dummy AT keys only. Do not publish this build. Device and AT-key setup is in Settings.',
                                       'Device preview — use dummy AT keys for testing. Saved places and device setup are separate from the regular Along app.'))
-            worker.write_text(re.sub(r"(const CACHE = 'along-device-preview-shell-v)\d+", r'\g<1>3805', worker.read_text()))
+            worker.write_text(re.sub(r"(const CACHE = 'along-device-preview-shell-v)\d+", r'\g<1>3806', worker.read_text()))
             update = stage / 'public/update.html'
-            update.write_text(re.sub(r'(recovery=|Recovery page )\d+', r'\g<1>3805', update.read_text()))
+            update.write_text(re.sub(r'(recovery=|Recovery page )\d+', r'\g<1>3806', update.read_text()))
             manifest['name'] = 'Along Device Preview'
             manifest['short_name'] = 'Along Preview'
             (stage / 'public/manifest.webmanifest').write_text(json.dumps(manifest, indent=2) + '\n')
@@ -159,7 +161,7 @@ window.addEventListener('along-saved-journeys-applied', () => {
             + ('Runtime provenance is included; see runtime-provenance.json.\n' if runtime else 'Runtime source/compiler provenance is not verified by this build.\n'))
         files = {str(p.relative_to(stage)): hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(stage.rglob('*')) if p.is_file()}
         (stage / 'build-info.json').write_text(json.dumps({'profile': profile, 'files': files,
-            **({'namespaces': namespaces, 'appVersion': '3805'} if preview else {})}, indent=2) + '\n')
+            **({'namespaces': namespaces, 'appVersion': '3806'} if preview else {})}, indent=2) + '\n')
         if output.exists():
             marker = output / 'build-info.json'
             if not marker.is_file() or json.loads(marker.read_text()).get('profile') != profile:

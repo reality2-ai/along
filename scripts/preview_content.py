@@ -9,7 +9,7 @@ ROOT = Path(__file__).resolve().parents[1]
 def prepare_preview_content(stage):
     replacements = {
         'Along learns from successful journey searches, not background tracking. Your searches, saved routes and preferences stay on this device. No account or uploaded journey history.':
-            'Search history and current location stay on this device. If you allow journey sharing, saved places and service preferences can be exchanged with your connected devices. No Along server stores your journeys.',
+            'Search history and current location stay on this device. If you allow journey sharing, saved places and service preferences can be exchanged with your connected devices. An optional relay helps permitted devices reconnect while Along is open. It sees connection metadata; shared journeys are encrypted. No Along server stores your journeys.',
         'After preparation, address search and scheduled journey planning work offline on your device. Optional online AT information can add current predictions and alerts. The public app’s live connection is not yet enabled; its journey times use the downloaded timetable. The portal supplies downloads and updates, not your journey calculations.':
             'Downloaded address search and scheduled planning work offline. Optional AT checks use your configured personal key to request current information directly from AT. Unavailable or unmatched information leaves the schedule in place. The portal supplies downloads and updates, not journey calculations.',
         'Forget my journey history': 'Forget history and saved places',
