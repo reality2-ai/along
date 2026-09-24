@@ -1,10 +1,54 @@
-import {readPreferences as readLocal} from '../../public/preferences.js';
+import {readPreferences as readLocal, recordJourney as recordLocalJourney} from '../../public/preferences.js';
 import {projectJourney, journeyId, validateState} from './state.mjs';
-export {recordJourney, suggestions, journeyRoutes, sameRoutes} from '../../public/preferences.js';
+export {suggestions, journeyRoutes, sameRoutes} from '../../public/preferences.js';
 export const preferenceKey = 'along-journeys-v1';
 export const changedEvent = 'along-saved-journeys-changed';
 export const appliedEvent = 'along-saved-journeys-applied';
-export const readPreferences = readLocal;
+const origins = new WeakMap();
+export function readPreferences(storage = globalThis.localStorage) {
+  try {
+    const raw = storage.getItem(preferenceKey);
+    const data = readLocal({getItem: () => raw}); origins.set(data, raw); return data;
+  } catch { return readLocal({getItem: () => null}); }
+}
+export function recordJourney(data, ...args) {
+  const next = recordLocalJourney(data, ...args);
+  if (origins.has(data)) origins.set(next, origins.get(data));
+  return next;
+}
+// Planner-facing async adapter. The source snapshot follows immutable learning
+// updates as well as in-place UI edits; never infer its origin at save time.
+export async function writePlannerPreferences(data, storage = globalThis.localStorage, locks = globalThis.navigator?.locks) {
+  if (!origins.has(data)) return false;
+  const expectedRaw = origins.get(data), copy = structuredClone(data);
+  try {
+    const before = readEnvelope(storage);
+    const unchanged = current => {
+      if (current.raw === expectedRaw) return true;
+      if (expectedRaw === null) return false;
+      const original = readEnvelope({getItem: () => expectedRaw});
+      const {journeySync: oldSync, ...oldData} = original.data;
+      const {journeySync: newSync, ...newData} = current.data;
+      // Consuming an already-committed journal head does not change the user's
+      // snapshot. Permit only bookkeeping changes within the same generation.
+      return oldSync?.group === newSync?.group && JSON.stringify(oldSync?.version) === JSON.stringify(newSync?.version)
+        && JSON.stringify(oldData) === JSON.stringify(newData);
+    };
+    if (!unchanged(before)) return false;
+    if (before.sync) {
+      if (!locks?.request) return false;
+      return await locks.request('along-journey-import:' + before.sync.group, () => {
+        const current = readEnvelope(storage);
+        return unchanged(current) && writePreferences(copy, storage);
+      });
+    }
+    if (!locks?.request) return writePreferences(copy, storage);
+    return await locks.request('along-journey-import:local', () => {
+      if (storage.getItem(preferenceKey) !== expectedRaw) return false;
+      return writePreferences(copy, storage);
+    });
+  } catch { return false; }
+}
 const hex = /^[0-9a-f]{64}$/;
 // The head may already have an IndexedDB receipt, or be committing in another
 // tab. Keep it byte-for-byte; only its unstarted successors can be coalesced.
@@ -68,7 +112,7 @@ export function writePreferences(data, storage = globalThis.localStorage) {
 // Explicit async path for generation recovery. Callers must retain the raw
 // envelope associated with their edit; a stale tab must reload rather than
 // write its entire older preferences object over recovered data.
-// Existing synchronous app callers are not yet migrated to this contract.
+// Older builds still have synchronous callers outside this contract.
 export async function writePreferencesLocked(data, {expectedRaw, storage = globalThis.localStorage,
   locks = navigator.locks, signal} = {}) {
   const copy = structuredClone(data), before = readEnvelope(storage);

@@ -1357,3 +1357,13 @@ new path uses a shared Web Lock and rejects an edit based on stale input. Its
 two-tab test establishes that behavior for cooperating writers. Older synchronous
 callers must still be migrated before release, so the source implementation does
 not yet justify claiming that the installed app has completed recovery support.
+
+Integrating the writer into the planner revealed that “changed storage” and
+“changed user data” are different. Background consumption of a committed journal
+entry should not reject an otherwise current save. The adapter now permits that
+bookkeeping change within the same generation, while retaining strict checks on
+the actual planner snapshot. The UI also waits for durable-save results before
+announcing success and displays a failure near the current task. A two-device test
+caught the overly strict first implementation; a separate expectation was updated
+to wait for the visible async completion instead of reading storage immediately
+after a click. Older builds remain a distinct compatibility boundary to resolve.

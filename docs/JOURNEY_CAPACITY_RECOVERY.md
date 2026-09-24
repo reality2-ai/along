@@ -290,10 +290,39 @@ tagged operation. The migration suite also checks failed local writes, cutover
 retries, preserved history and refusal of newer local data.
 
 This is a cooperating-writer protocol, not an atomic localStorage compare-and-swap.
-Existing synchronous planner callers and older app tabs do not participate yet.
-Migrating those callers, handling stale in-memory preferences and excluding older
-writers are required before mounting recovery. App UI, enrolled-device coverage,
+The experimental builder now routes planner writes through the async adapter
+described below. Older app tabs do not participate yet; excluding those writers
+is required before mounting recovery. App UI, enrolled-device coverage,
 peer/session integration and release qualification remain separate gates.
+
+## Planner write integration
+
+The generated experimental app uses `writePlannerPreferences`, which retains each
+read snapshot through both in-place edits and immutable learning updates. Under
+the shared lock, it refuses changed planner data or a changed generation. It
+allows consumption of pending journal entries when the planner data and generation
+remain identical; that bookkeeping must not make the next ordinary save fail.
+The two-device integration test exposed this distinction during implementation.
+
+Planner actions now await persistence before announcing success, temporarily
+disable editing controls, refresh their stored view afterwards and show failures
+on the current screen. The ordinary app still uses its original local writer;
+the experimental builder substitutes the cooperating adapter. Source tests cover
+stale snapshots, immutable learning, journal-only changes, generation changes and
+storage failure. The generated app's two-profile sharing test passes, including
+save/delete, service preferences, offline edits and focus preservation.
+
+Validation also passed 11 journal/adapter tests and the core 68 JavaScript/18
+Python checks. The initial 20-browser-test run passed; after the final focus and
+status refinements, the targeted commute run exposed an existing five-second
+offline route expectation while calculation was still in progress. It now uses
+the route helper's 30-second budget; the complete guided journey passes. A new
+forced-storage-failure browser check verifies visible failure, unchanged stored
+data, an unsaved button state and restored button usability.
+
+These changes do not exclude an already-open older build from writing the same
+localStorage key. That upgrade boundary remains a release gate, alongside mounting
+the recovery flow and qualifying a new preview. Public preview 3805 is unchanged.
 
 ## Required before integration
 

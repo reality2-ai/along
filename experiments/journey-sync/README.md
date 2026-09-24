@@ -424,5 +424,13 @@ composed review-screen flow remains unfinished.
 exact reviewed local data and preserving history. `writePreferencesLocked` gives
 cooperating tabs a stale-input check under the same lock. Real-browser tests cover
 local write failure/retry, newer-data refusal and competing tab writes. Existing
-synchronous planner callers and older-tab handling must be migrated before this
-protocol can be enabled in the app; it is not a guarantee for uncoordinated writers.
+older-tab handling must be completed before this protocol can be enabled in the
+app; it is not a guarantee for uncoordinated writers.
+
+The experimental builder now selects `writePlannerPreferences` for planner saves.
+It binds edits to their read snapshot, retains that binding through learned-journey
+updates and uses the sharing lock. Only journal bookkeeping may change without
+invalidating the snapshot; changed planner data or generation requires a reload.
+The main planner awaits saves before success announcements and displays failure
+on the current screen. The real two-profile app integration passes; recovery itself
+is still unmounted pending older-writer isolation and the other recovery gates.

@@ -35,7 +35,7 @@ test('guided journey, local learning, manual progress, return and offline reopen
  await context.setOffline(true);await page.reload();await expect(page.locator('#data-status')).toContainText(/offline ready|Offline · journeys ready/,{timeout:60000});
  expect(await page.evaluate(()=>fetch('/api/status').then(()=>false).catch(()=>true))).toBe(true);
  expect(await page.evaluate(()=>fetch('/icons/maskable-512.png').then(r=>r.ok))).toBe(true);
- await expect(page.locator('.usual-card')).toHaveCount(1);await page.locator('.usual-card').first().click();await expect(page.locator('#journey-panel')).toBeVisible();await expect(page.locator('.journey-card').first()).toBeVisible();await expect(page.locator('#saved-route-context')).toContainText('Train S-C');await page.locator('#use-any-route').click();await expect(page.locator('#saved-route-context')).toBeHidden();await plan(page);
+ await expect(page.locator('.usual-card')).toHaveCount(1);await page.locator('.usual-card').first().click();await expect(page.locator('#journey-panel')).toBeVisible();await expect(page.locator('.journey-card').first()).toBeVisible({timeout:30000});await expect(page.locator('#saved-route-context')).toContainText('Train S-C');await page.locator('#use-any-route').click();await expect(page.locator('#saved-route-context')).toBeHidden();await plan(page);
  await page.locator('#new-journey').click();await expect(page.locator('#destination')).toHaveValue('');await expect(page.locator('#origin')).toHaveValue('');
  await page.locator('#settings-open').click();await page.locator('#learning-enabled').uncheck();await page.locator('#clear-history').click();await expect(page.locator('#storage-message')).toContainText('cleared');await page.locator('#settings .close-dialog').click();await expect(page.locator('.usual-section')).toBeHidden();
  expect(errors).toEqual([]);
@@ -120,4 +120,17 @@ test('course acknowledgement still works for the session when storage is blocked
  await page.goto('/');await page.locator('#course-understood').click();
  await expect(page.locator('footer #course-notice')).toBeAttached();await expect(page.locator('#course-notice')).not.toHaveAttribute('open','');
  await page.reload();await expect(page.locator('#course-notice')).toHaveAttribute('open','');
+});
+
+test('failed place save stays unsaved and reports the failure on the current screen',async({page})=>{
+ await page.goto('/');await expect(page.locator('#data-status')).toContainText('offline ready',{timeout:60000});
+ await plan(page);await page.locator('#change-search').click();
+ const original=await page.evaluate(()=>localStorage.getItem('along-journeys-v1'));
+ await page.evaluate(()=>{const write=Storage.prototype.setItem;Storage.prototype.setItem=function(key,value){if(key==='along-journeys-v1')throw new DOMException('Blocked','QuotaExceededError');return write.call(this,key,value);};});
+ await page.locator('#save-places').click();
+ await expect(page.locator('#preference-write-status')).toBeVisible();
+ await expect(page.locator('#preference-write-status')).not.toBeEmpty();
+ await expect(page.locator('#save-places')).toHaveAttribute('aria-pressed','false');
+ await expect(page.locator('#save-places')).toBeEnabled();
+ expect(await page.evaluate(()=>localStorage.getItem('along-journeys-v1'))).toBe(original);
 });

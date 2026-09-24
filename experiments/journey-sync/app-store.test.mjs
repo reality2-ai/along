@@ -147,3 +147,42 @@ test('versioned edits and compaction keep their generation; mixed generations ar
   assert.equal(writePreferences(next, f.storage), false);
   assert.equal(f.storage.getItem(preferenceKey), before);
 });
+
+test('planner writes retain their read snapshot through learning and refuse stale data', async () => {
+  const {writePlannerPreferences, recordJourney} = await import('./app-preferences.mjs');
+  const f = fixture(); writePreferences({learning: true, journeys: [journey(1)]}, f.storage);
+  enableJourneyTracking(group, f.storage);
+  const locks = {request: async (_, options, run) => (run ?? options)()};
+  const stale = readPreferences(f.storage), fresh = readPreferences(f.storage);
+  fresh.journeys[0].savedRoutes = [{mode: 'bus', route: '75'}];
+  assert.equal(await writePlannerPreferences(fresh, f.storage, locks), true);
+  const held = readEnvelope(f.storage).raw;
+  const learned = recordJourney(stale, journey(1).from, journey(1).to, {hour: 9, day: 2, timestamp: 4321});
+  assert.equal(await writePlannerPreferences(learned, f.storage, locks), false);
+  assert.equal(readEnvelope(f.storage).raw, held);
+  assert.equal(await writePlannerPreferences(structuredClone(fresh), f.storage, locks), false);
+  const next = readPreferences(f.storage); next.learning = false;
+  assert.equal(await writePlannerPreferences(next, f.storage, locks), true);
+  assert.equal(readPreferences(f.storage).learning, false);
+  f.fail(true);
+  assert.equal(await writePlannerPreferences(readPreferences(f.storage), f.storage, locks), false);
+});
+
+test('planner accepts consumed journal bookkeeping but refuses generation changes', async () => {
+  const {writePlannerPreferences} = await import('./app-preferences.mjs');
+  const f = fixture(); writePreferences({learning: true, journeys: [journey(1)]}, f.storage); enableJourneyTracking(group, f.storage);
+  const data = readPreferences(f.storage);
+  const envelope = readEnvelope(f.storage); envelope.data.journeySync.pending = [];
+  f.storage.setItem(preferenceKey, JSON.stringify(envelope.data));
+  data.journeys[0].saved = false;
+  const locks = {request: async (_, options, run) => (run ?? options)()};
+  assert.equal(await writePlannerPreferences(data, f.storage, locks), true);
+  assert.equal(readEnvelope(f.storage).sync.pending.length, 1);
+  assert.equal(readEnvelope(f.storage).sync.pending[0].changes[0].value, null);
+  const older = readPreferences(f.storage), advanced = readEnvelope(f.storage);
+  advanced.data.journeySync.version = {generation: 1, checkpoint: 'a'.repeat(64)};
+  f.storage.setItem(preferenceKey, JSON.stringify(advanced.data));
+  older.learning = false;
+  assert.equal(await writePlannerPreferences(older, f.storage, locks), false);
+  assert.equal(readPreferences(f.storage).learning, true);
+});

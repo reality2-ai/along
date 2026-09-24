@@ -190,6 +190,7 @@ try {
   await owner.locator('#date').fill('2026-09-23'); await owner.locator('#time').fill('09:00'); await owner.locator('#find').click();
   await expect(owner.locator('.journey-card').first()).toBeVisible({timeout: 30000});
   await owner.locator('[data-follow]').first().click(); await owner.locator('#prefer-services').click();
+  await expect(owner.locator('#prefer-services')).toHaveAttribute('aria-pressed', 'true');
   const originalStep = await owner.locator('#current-step').textContent();
   const preferred = (await saved(owner))[0]; assert.ok(preferred.savedRoutes.length);
   await savePlaces(candidate, '1 Queen Street Auckland Central');

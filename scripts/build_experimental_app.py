@@ -70,6 +70,8 @@ def build(browser, wasm, notices=None, runtime=None, preview=False):
             raise ValueError('App integration point changed')
         text = text.replace(old, "import '../experiments/at-credentials/app-bootstrap.mjs';\nimport {createLiveClient} from '../experiments/at-credentials/app-live-bridge.mjs';")
         text = text.replace("from './preferences.js';", "from '../experiments/journey-sync/app-preferences.mjs';")
+        text = text.replace('readPreferences,writePreferences,recordJourney',
+                            'readPreferences,writePlannerPreferences as writePreferences,recordJourney')
         text = text.replace('the server receives your IP address.', 'Auckland Transport receives your IP address and personal key.')
         text += """
 // Experimental connection changes update affordances without changing the journey.
