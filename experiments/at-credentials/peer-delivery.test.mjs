@@ -6,6 +6,8 @@ import {join} from 'node:path';
 const {chromium} = await import(process.env.PLAYWRIGHT_MODULE || '@playwright/test');
 const sources = new Map();
 for (const name of ['state.mjs', 'store.mjs', 'permission.mjs', 'permission-view.mjs', 'connection-view.mjs', 'exchange.mjs', 'journey-session.mjs', 'permission-check.test.mjs', 'session-check.test.mjs']) sources.set('/' + name, await readFile(new URL('../journey-sync/' + name, import.meta.url)));
+for (const name of ['app-preferences.mjs','preference-envelope.mjs','isolated-preferences.mjs','generation-state.mjs','generation-migration.mjs','generation-checkpoint.mjs','checkpoint-preparation.mjs','checkpoint-installation.mjs','checkpoint-review.mjs','checkpoint-choice-commit.mjs','startup-state.mjs','migration-setup.mjs','checkpoint-permission.mjs','enrolled-checkpoint.test.mjs']) sources.set('/'+name,await readFile(new URL('../journey-sync/'+name,import.meta.url)));
+sources.set('/preferences.js',await readFile(new URL('../../public/preferences.js',import.meta.url)));
 for (const name of ['storage.mjs', 'membership.mjs', 'certificate.mjs', 'peer-session.mjs', 'peer-link.mjs', 'challenge.mjs', 'session-statement.mjs', 'enrollment-session.mjs', 'invitation-journal.mjs', 'enrollment-link.mjs', 'enrollment-exchange.mjs', 'enrollment-protection.mjs', 'invitation.mjs']) sources.set('/' + name, await readFile(join(process.env.R2_BROWSER_DIR, name)));
 for (const name of ['../tg-pairing/removal-set.mjs', '../tg-pairing/initial-persona.mjs', '../tg-pairing/software-persona.mjs', '../tg-pairing/core-candidate-session.mjs', '../tg-pairing/software-traffic.mjs', '../tg-pairing/enrollment-payloads.mjs', '../tg-pairing/enrollment-profile.mjs', '../tg-pairing/installation-receipt.mjs', '../tg-pairing/stored-claim.mjs', '../tg-pairing/local-persona.mjs', 'local-owner.mjs', 'owner-certificate.mjs', 'owner-policy.mjs', 'owner-access-view.mjs', 'owner-policy-send.mjs', 'policy-sync.mjs', 'owner-delivery.mjs', 'delivery-history.mjs', 'delivery-recovery.mjs', 'remote-owner.mjs', 'policy-update.mjs', 'policy-update-message.mjs', 'remote-owner-view.mjs', 'settings-view.mjs', 'key-replacement-view.mjs', 'credential-view.mjs', '../tg-pairing/comparison.css', '../tg-pairing/local-persona-session.mjs', '../tg-pairing/epoch-watch.mjs', 'policy.mjs', 'policy-store.mjs', 'local-vault.mjs', 'delivery-ack.mjs', 'delivery-message.mjs']) sources.set('/' + name.split('/').pop(), await readFile(new URL(name, import.meta.url)));
 for (const name of ['hive_wasm.js', 'hive_wasm_bg.wasm']) sources.set('/' + name, await readFile(join(process.env.R2_WASM_DIR, name)));
@@ -20,6 +22,7 @@ let browser;
 try {
   browser = await chromium.launch({headless: true, executablePath: process.env.CHROMIUM_PATH});
   const context = await browser.newContext({viewport: {width: 320, height: 640}});
+  await context.addInitScript(enabled=>{globalThis.checkEnrolledJourneyCheckpoint=enabled;},process.env.ENROLLED_CHECKPOINT==='1');
   const page = await context.newPage(); await page.goto(`http://127.0.0.1:${server.address().port}`);
   await page.exposeFunction('exerciseJourneyConnectionRejected', async (message, cancel) => {
     const panel = page.locator('#journey-negative');
@@ -190,6 +193,10 @@ try {
     check(hex(owner.subject) !== hex(receiver.subject), 'distinct identities');
     await (await import('./permission-check.test.mjs')).checkJourneyPermission({wasm, owner, receiver, group});
     await (await import('./session-check.test.mjs')).checkJourneySession({wasm, owner, receiver, group});
+    if (globalThis.checkEnrolledJourneyCheckpoint) {
+      await (await import('./enrolled-checkpoint.test.mjs')).checkEnrolledCheckpoint({wasm,owner,receiver,group});
+      globalThis.enrolledCheckpointPassed=true;
+    }
     const {binding} = await (await import('./local-owner.mjs')).establishLocalATOwner({wasm, store: owner.store, expectedGroup: group});
     const {showOwnerDeviceAccess} = await import('./owner-access-view.mjs');
     const ownerViewOptions = {wasm, store: owner.store, expectedGroup: group, peer: receiver.subject,
@@ -584,7 +591,20 @@ try {
     } finally { policySync?.close(); clearTimeout(timeout); request?.close(); sending?.close(); receiving?.close(); owner.store.close(); receiver.store.close(); }
   });
   const restoredGroup = await page.evaluate(() => restoreGroup);
+  if(process.env.ENROLLED_CHECKPOINT==='1')assert.equal(await page.evaluate(()=>globalThis.enrolledCheckpointPassed),true);
   const reopened = await context.newPage(); await reopened.goto(page.url());
+  if(process.env.ENROLLED_CHECKPOINT==='1') {
+    assert.equal(await reopened.evaluate(async bytes=>{
+      const group=bytes.map(b=>b.toString(16).padStart(2,'0')).join('');
+      const {openIsolatedPlannerStorage}=await import('./isolated-preferences.mjs');
+      const {readEnvelope}=await import('./app-preferences.mjs');
+      const storage={getItem:key=>localStorage.getItem('enrolled-checkpoint-1:'+key)};
+      const local=readEnvelope(openIsolatedPlannerStorage({group,storage}));
+      return local.sync.version.generation===1&&local.sync.pending.length===0
+        &&local.data.journeys.some(j=>j.to.id==='sync-denied'&&j.saved&&j.count===7);
+    },restoredGroup),true);
+    console.log('PASS: enrolled-device checkpoint consent, permission-removal race, guarded installation/retry and local-difference application; recovered independent save/history reopen in a fresh page. Checkpoint bytes use direct fixture handoff, not network delivery.');
+  }
   await reopened.evaluate(async expectedGroup => {
     const wasm = await import('./hive_wasm.js'); await wasm.default();
     window.store = await (await import('./storage.mjs')).openBrowserStorage('peer-key-receiver');

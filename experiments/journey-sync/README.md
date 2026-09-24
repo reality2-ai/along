@@ -486,3 +486,11 @@ instead of fixture installation records, including stale-review refusal, retaine
 preparation retry, Back, history preservation and reload. Its initial generation
 and local planner data are still fixtures. Enrolled-device delivery/acceptance
 and release qualification remain unfinished.
+
+`checkpoint-permission.mjs` now enforces local journey consent and current peer
+membership around recipient checkpoint installation, including transaction-time
+permission changes and retained retries. It does not authenticate peer possession;
+that remains the transport's responsibility. Run the real enrollment/credential
+fixture with `ENROLLED_CHECKPOINT=1` to exercise enrolled-device migration,
+checkpoint acceptance, local review and fresh-page restoration. The fixture
+hands checkpoint bytes directly to the adapter; wire transport is still unfinished.

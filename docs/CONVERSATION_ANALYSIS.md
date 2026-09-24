@@ -1420,3 +1420,12 @@ could replace an action just opened from cached controls. Showing a checking sta
 until diagnosis finishes removes that ambiguity. Tests explicitly wait for the
 review to appear before injecting a concurrent edit, so they exercise the intended
 boundary rather than an edit that happened before the review was captured.
+
+Enrolled-device verification now separates three questions: whether a checkpoint
+was signed by the group authority, whether the selected device has current group
+membership, and whether the local person allowed journey sharing with that device.
+The acceptance test removes that permission during the actual storage transaction
+and confirms that no partial installation survives. It then checks retained local
+differences and reopening on a genuinely enrolled identity. Checkpoint bytes still
+use a fixture handoff; this evidence must not be reported as network delivery or
+proof that the sender possessed the member's private key on a live connection.

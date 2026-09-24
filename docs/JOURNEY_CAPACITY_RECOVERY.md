@@ -484,6 +484,35 @@ before a pending diagnosis replaced their screen. Opening Settings now presents
 the checking state until that diagnosis finishes. This does not claim automatic
 peer delivery, enrolled-device checkpoint acceptance or a qualified public release.
 
+## Enrolled recipient and checkpoint consent
+
+`checkpoint-permission.mjs` adds a local application-consent boundary around the
+installer. It validates the selected peer's current membership certificate,
+requires saved-journey permission for that peer and carries the observed persona,
+membership and permission revisions into the install transaction. It rechecks
+those revisions for retained-install retries too. Removing permission before or
+during acceptance therefore cannot authorize an ordinary retry merely because a
+valid checkpoint signature exists.
+
+This is not peer authentication: possession of the selected member's private key
+must be established by the enclosing transport. A copied public certificate is
+insufficient. The adapter is not called by network messages or mounted in a
+recipient transfer UI yet.
+
+`ENROLLED_CHECKPOINT=1` on `experiments/at-credentials/peer-delivery.test.mjs` uses
+the actual acknowledged browser enrollment fixture. Both devices perform real
+generation migration and isolation; the issuer prepares a signed checkpoint; the
+enrolled recipient installs through the consent adapter, retries, reviews local
+differences and reopens the recovered copy in a fresh page. Its independent save
+and history remain. Absent consent, self/wrong peer, damaged signature and a
+permission removal during commit refuse without a partial installation. Removing
+consent also refuses an already-installed retry. Existing credential delivery and
+journey-session checks still pass in the same run, using synthetic AT keys.
+
+Checkpoint bytes are handed directly between the fixture's controllers, so this
+does not establish checkpoint framing, authenticated wire delivery, ordered catch-up
+or remote confirmation. Those remain the next transport gates.
+
 ## Required before integration
 
 1. Wire the tested migration and format-2 bridge to explicit reviewed opt-in,
