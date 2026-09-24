@@ -1,0 +1,24 @@
+{
+  "status": "reported-problem-not-yet-reproduced",
+  "recorded_at": "2026-09-24T20:52:37.856053+00:00",
+  "version": 40,
+  "source_commit": "1c4ac0fefb32e373b22dcb80f709ee22972ba7c0",
+  "tested_url": "https://reality2.ai/along/",
+  "scope": "Fresh desktop Chromium profile, no group or AT key; downloaded data then offline Newmarket-to-Devonport journey. Click Prefer these services, then Preferred services again, reload offline. Not the user device or confirmed reported control.",
+  "observations": {
+    "after_removal": {
+      "saved": true,
+      "savedRoutes": null,
+      "count": 1
+    },
+    "after_offline_reload": {
+      "saved": true,
+      "savedRoutes": null,
+      "count": 1
+    },
+    "shortcut_label": "Saved journey",
+    "page_errors": []
+  },
+  "script_sha256": "98a452258c2c4b74180e71e075d995f434551320969218cc9a26c95ca709c097",
+  "interpretation": "Service preference was removed, while saved endpoints remained. The retained shortcut may be confusing; this does not establish the cause of the user report. Awaiting exact action and resulting screen."
+}

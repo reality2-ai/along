@@ -69,6 +69,13 @@ this audit. Later public-hosting work supplements that brief.
 
 ## Next work against the full goal
 
+A new user report says removing a preferred journey appears not to work. The
+[focused v40 check](evidence/preference-removal-investigation.json) removes a service
+preference through its toggle and retains that removal offline, while keeping the
+saved endpoints. The exact reported control and phone behavior remain unresolved;
+do not record this report as fixed. Relay setup is now assigned by the user to the
+AI managing their server; Along made no server changes.
+
 1. Verify a user-selected external relay endpoint when available. The actual R2
    implementation now passes on loopback behind test TLS; that does not establish
    public-network reachability or mobile reconnection.
