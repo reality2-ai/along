@@ -38,7 +38,7 @@ const escape=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&
 const message=(key,values={})=>{const phrase=language.phrase(key,values);return `<span data-i18n="${escape(key)}" data-i18n-values="${escape(JSON.stringify(values))}" lang="${phrase.lang}">${escape(phrase.text)}</span>`;};
 const clock=seconds=>{const s=((seconds%86400)+86400)%86400;return `${String(Math.floor(s/3600)).padStart(2,'0')}:${String(Math.floor(s%3600/60)).padStart(2,'0')}${seconds>=86400?' +1 day':''}`;};
 const minutes=seconds=>Math.ceil(seconds/60);
-const state={from:null,to:null,location:null,locationLabel:'',journeys:[],preferences:readPreferences(),ready:false,stored:false,shellReady:false,streetsReady:false,streetsStored:false,showAllStops:false,nearbySequence:0,searchSequence:0,lastSearch:null,screen:'destination',intent:'plan',selectedJourney:null,legIndex:0,savedPreference:null};
+const state={from:null,to:null,location:null,locationLabel:'',journeys:[],preferences:readPreferences(),ready:false,stored:false,shellReady:false,streetsReady:false,streetsStored:false,showAllStops:false,nearbySequence:0,searchSequence:0,lastSearch:null,screen:'destination',intent:'plan',selectedJourney:null,legIndex:0,savedPreference:null,openedShortcut:null};
 const worker=new Worker(new URL('./worker.js',import.meta.url),{type:'module'});
 let requestId=0;
 const pending=new Map();
@@ -51,8 +51,11 @@ function updatePreferenceSummary(){
   const modes=selected.length===3?language.text('preference.allModes'):selected.length?selected.map(mode=>language.text(`mode.${mode}Word`)).join(', '):language.text('preference.chooseTransport');
   const access=($('avoid-steps').checked?language.text('preference.barriers'):'')+($('confirmed-access').checked?language.text('preference.confirmedOnly'):'')+($('walking-pace').value!=='1.25'?language.text('preference.moreTime'):'');
   const values={time:$('time').value||language.text('preference.now'),modes,access};
-  translated('preference-summary','preference.summary',values);
-  translated('active-preferences','preference.summary',values);
+  const arrive=state.intent==='plan'&&$('time-mode').value==='arrive';
+  $('arrive-help').hidden=!arrive;$('time-mode-field').hidden=state.intent==='nearby';
+  $('sort').querySelector('[value=departure]').hidden=!arrive;
+  translated('preference-summary',arrive?'preference.arriveSummary':'preference.summary',values);
+  translated('active-preferences',arrive?'preference.arriveSummary':'preference.summary',values);
 }
 function walkingDirections(leg){
   if(!leg.directions)return `<p>${message('walk.stationAccess')}</p>`;
@@ -69,6 +72,7 @@ if([0.8,1,1.25].includes(mobility.pace))$('walking-pace').value=mobility.pace;
 $('avoid-steps').checked=!!mobility.avoidSteps;$('confirmed-access').checked=!!mobility.confirmedAccess;
 for(const id of ['max-walk','walking-pace','avoid-steps','confirmed-access'])$(id).addEventListener('change',async()=>{state.preferences.mobility={...accessProfile(),maxWalk:Number($('max-walk').value)};await persist();updatePreferenceSummary();if(state.location)refreshNearby();});
 for(const input of document.querySelectorAll('#date,#time,.modes input'))input.addEventListener('change',updatePreferenceSummary);
+$('time-mode').onchange=()=>{$('sort').value=$('time-mode').value==='arrive'?'departure':'arrival';updatePreferenceSummary();};
 $('leave-now').onclick=setNow;
 $('more-stops').onclick=()=>{state.showAllStops=!state.showAllStops;if(state.departureData)renderDepartures(state.departureData);};
 const context=()=>{const at=aucklandNow();return {hour:Number(at.time.slice(0,2)),day:new Date(at.date+'T12:00:00Z').getUTCDay(),timestamp:Date.now()};};
@@ -77,7 +81,7 @@ async function persist(){
   if(preferencesSaving){translated('storage-message','storage.failed');return false;}
   preferencesSaving=true;
   const focused=document.activeElement;
-  const controls=['save-places','prefer-services','clear-history','learning-enabled','max-walk','walking-pace','avoid-steps','confirmed-access'].map(id=>[$(id),$(id).disabled]);
+  const controls=['remove-selected-shortcut','save-places','prefer-services','clear-history','learning-enabled','max-walk','walking-pace','avoid-steps','confirmed-access'].map(id=>[$(id),$(id).disabled]);
   for(const control of document.querySelectorAll('[data-remove-shortcut]'))controls.push([control,control.disabled]);
   for(const [control] of controls)control.disabled=true;
   let saved=false;
@@ -97,17 +101,12 @@ function renderUsual({background=false}={}){
   usualRefreshPending=false;
   const usual=suggestions(state.preferences,context());
   $('usual-journeys').innerHTML=usual.length?usual.map((j,i)=>`<button type="button" class="usual-card" data-usual="${i}"><span class="usual-icon" aria-hidden="true">${j.saved?'☆':'↗'}</span><span><strong>${escape(j.to.name)}</strong><small>${message('usual.from',{place:j.from.name})}</small><small>${j.saved?(j.savedRoutes?message('usual.saved')+' · '+serviceMarkup(j.savedRoutes):message('usual.savedJourney')):message('usual.searches',{count:j.count})}</small></span></button>`).join(''):`<div class="usual-placeholder"><span class="usual-icon" aria-hidden="true">↗</span><div><strong>${message(state.preferences.learning?'usual.begin':'usual.different')}</strong>${message(state.preferences.learning?'usual.learnHelp':'usual.pausedHelp')}</div></div>`;
-  document.querySelectorAll('[data-usual]').forEach(button=>button.onclick=()=>{state.intent='plan';const trip=usual[Number(button.dataset.usual)];state.savedPreference=trip.saved&&trip.savedRoutes?{from:trip.from.id,to:trip.to.id,routes:trip.savedRoutes}:null;setPlace('origin',trip.from);setPlace('destination',trip.to);setNow();searchJourney();});
+  document.querySelectorAll('[data-usual]').forEach(button=>button.onclick=()=>{state.intent='plan';const trip=usual[Number(button.dataset.usual)];state.openedShortcut={from:trip.from.id,to:trip.to.id};state.savedPreference=trip.saved&&trip.savedRoutes?{from:trip.from.id,to:trip.to.id,routes:trip.savedRoutes}:null;setPlace('origin',trip.from);setPlace('destination',trip.to);setNow();searchJourney();});
   $('shortcut-actions').innerHTML=usual.map((j,i)=>`<div class="shortcut-action"><p id="shortcut-label-${i}"><strong>${escape(j.to.name)}</strong><br>${message('usual.from',{place:j.from.name})}</p><button type="button" class="secondary-button" data-remove-shortcut="${i}" aria-describedby="shortcut-label-${i}">Remove shortcut</button></div>`).join('');
   document.querySelectorAll('[data-remove-shortcut]').forEach(button=>button.onclick=async()=>{
     if(preferencesSaving)return;
     const trip=usual[Number(button.dataset.removeShortcut)];
-    state.preferences.journeys=state.preferences.journeys.filter(j=>j.from.id!==trip.from.id||j.to.id!==trip.to.id);
-    const saved=await persist();
-    if(saved){
-      if(state.savedPreference?.from===trip.from.id&&state.savedPreference?.to===trip.to.id){state.savedPreference=null;for(const option of state.journeys)delete option.preferred;}
-      $('announcement').textContent='Shortcut removed, including saved services and learning history for these places.';
-    }
+    await removeShortcut(trip);
     if(document.querySelector('.usual-section').hidden)$('destination').focus();
     else $('manage-shortcuts').querySelector('summary').focus();
   });
@@ -115,10 +114,32 @@ function renderUsual({background=false}={}){
   $('learning-enabled').checked=state.preferences.learning;
   translated('learning-note',state.preferences.learning?'learning.active':'learning.paused');
 }
+async function removeShortcut(trip){
+  state.preferences.journeys=state.preferences.journeys.filter(j=>j.from.id!==trip.from.id||j.to.id!==trip.to.id);
+  const saved=await persist();
+  if(saved){
+    if(state.savedPreference?.from===trip.from.id&&state.savedPreference?.to===trip.to.id){state.savedPreference=null;for(const option of state.journeys)delete option.preferred;}
+    state.openedShortcut=null;
+    $('announcement').textContent='Shortcut removed, including saved services and learning history for these places.';
+  }
+  return saved;
+}
+function selectedShortcut(){
+  const pair=state.openedShortcut,search=state.lastSearch;
+  if(!pair||!search||pair.from!==search.from.id||pair.to!==search.to.id)return null;
+  return state.preferences.journeys.find(j=>j.from.id===pair.from&&j.to.id===pair.to)||null;
+}
+$('remove-selected-shortcut').onclick=async()=>{
+  const trip=selectedShortcut();if(preferencesSaving||!trip)return;
+  if(await removeShortcut(trip)){
+    renderJourneys();$('shortcut-removal-status').textContent='Shortcut removed. These journey options are still available.';
+    $('journey-title').focus();
+  }
+};
 document.querySelector('.usual-section').addEventListener('focusout',()=>{
   if(usualRefreshPending)queueMicrotask(()=>renderUsual({background:true}));
 });
-function setNow(){const now=aucklandNow();$('date').value=now.date;$('time').value=now.time;updatePreferenceSummary();}
+function setNow(){$('time-mode').value='leave';$('sort').value='arrival';const now=aucklandNow();$('date').value=now.date;$('time').value=now.time;updatePreferenceSummary();}
 function setPlace(field,stop){state[field==='origin'?'from':'to']=stop;$(field).value=stop?.name||'';$(field+'-options').hidden=true;$(field).setAttribute('aria-expanded','false');if(field==='origin'){state.location=null;if(stop){state.location={lat:stop.lat,lon:stop.lon};state.locationLabel=stop.name;}}}
 function renderFlowLanguage(){
   const screen=state.screen;
@@ -158,7 +179,7 @@ function showScreen(screen,{focus=true,historyEntry=true}={}){
   state.screen=screen;
   for(const section of document.querySelectorAll('[data-screen]'))section.hidden=section.dataset.screen!==screen;
   $('journey-form').hidden=!['destination','origin','review'].includes(screen);
-  renderFlowLanguage();
+  renderFlowLanguage();updatePreferenceSummary();
   $('app-purpose').hidden=screen!=='destination';
   $('flow-progress').closest('nav').hidden=screen==='destination';
   $('new-journey').hidden=screen==='destination';$('flow-back').hidden=screen==='destination';
@@ -186,7 +207,7 @@ window.addEventListener('popstate',event=>{
   showScreen(screen,{historyEntry:false});
 });
 $('flow-back').onclick=()=>{if(navDepth)history.back();else showScreen('destination');};
-function startNew(){state.savedPreference=null;state.searchSequence++;state.nearbySequence++;$('find').disabled=false;state.intent='plan';setPlace('origin',null);setPlace('destination',null);state.journeys=[];state.lastSearch=null;state.selectedJourney=null;$('direct-only').checked=false;setNow();showScreen('destination');}
+function startNew(){state.openedShortcut=null;state.savedPreference=null;state.searchSequence++;state.nearbySequence++;$('find').disabled=false;state.intent='plan';setPlace('origin',null);setPlace('destination',null);state.journeys=[];state.lastSearch=null;state.selectedJourney=null;$('direct-only').checked=false;setNow();showScreen('destination');}
 function review(){showScreen('review');}
 function nearby(){showScreen('nearby');refreshNearby();}
 $('nearby-start').onclick=()=>{state.intent='nearby';showScreen('origin');};
@@ -228,18 +249,19 @@ $('journey-form').onsubmit=event=>{
   }
 };
 async function searchJourney(){
-  const from=state.from,to=state.to;$('form-error').textContent='';
+  const from=state.from,to=state.to;$('form-error').textContent='';$('remove-selected-shortcut').hidden=true;$('shortcut-removal-status').textContent='';
   if(state.savedPreference&&(state.savedPreference.from!==from?.id||state.savedPreference.to!==to?.id))state.savedPreference=null;
   if(!from||!to){translated('form-error','error.places');return;}
   const modes=[...document.querySelectorAll('.modes input:checked')].map(i=>i.value);
-  state.lastSearch={from,to,date:$('date').value,time:$('time').value};
+  const timeMode=$('time-mode').value;
+  state.lastSearch={from,to,date:$('date').value,time:$('time').value,timeMode};
   showScreen('options');
   const date=$('date').value,time=$('time').value,sequence=++state.searchSequence;
  $('find').disabled=true;$('journeys').innerHTML=`<div class="loading">${message('journey.loading')}</div>`;
   try{
-    const journeys=await ask('plan',{from,to,date,time,modes,maxWalk:Number($('max-walk').value),profile:accessProfile(),preferredRoutes:state.savedPreference?.routes});if(sequence!==state.searchSequence)return;
-    state.journeys=journeys;state.lastSearch={from,to,date,time};translated('journey-title',journeys.length?(journeys.length===1?'journey.oneWay':'journey.ways'):'journey.noneWindow',{count:journeys.length});
-    if(journeys.length){state.preferences=recordJourney(state.preferences,from,to,{hour:Number(time.slice(0,2)),day:new Date(date+'T12:00:00Z').getUTCDay(),timestamp:Date.now()});await persist();}if(sequence!==state.searchSequence)return;renderJourneys();translated('announcement',journeys.length?'journey.announced':'journey.noneAnnounced',{count:journeys.length,time:journeys.length?clock(journeys[0].arrival):''});$('journey-title').focus();
+    const journeys=await ask('plan',{from,to,date,time,timeMode,modes,maxWalk:Number($('max-walk').value),profile:accessProfile(),preferredRoutes:state.savedPreference?.routes});if(sequence!==state.searchSequence)return;
+    state.journeys=journeys;state.lastSearch={from,to,date,time,timeMode};translated('journey-title',journeys.length?(journeys.length===1?'journey.oneWay':'journey.ways'):timeMode==='arrive'?'journey.noArrival':'journey.noneWindow',{count:journeys.length,time});
+    if(journeys.length){const departure=timeMode==='arrive'?journeys[0].departure:Number(time.slice(0,2))*3600+Number(time.slice(3))*60;const day=new Date(Date.parse(date+'T12:00:00Z')+Math.floor(departure/86400)*86400000).getUTCDay();state.preferences=recordJourney(state.preferences,from,to,{hour:Math.floor(((departure%86400)+86400)%86400/3600),day,timestamp:Date.now()});await persist();}if(sequence!==state.searchSequence)return;renderJourneys();translated('announcement',journeys.length?(timeMode==='arrive'?'journey.arriveAnnounced':'journey.announced'):'journey.noneAnnounced',{count:journeys.length,deadline:time,time:journeys.length?clock(timeMode==='arrive'?Math.max(...journeys.map(j=>j.departure)):Math.min(...journeys.map(j=>j.arrival))):''});$('journey-title').focus();
   }catch(error){if(sequence===state.searchSequence){showScreen('review');showError('form-error',error);$('form-error').focus();}}
   finally{if(sequence===state.searchSequence)$('find').disabled=false;}
 }
@@ -327,7 +349,14 @@ function openInformation(button){
 document.addEventListener('click',event=>openInformation(event.target.closest('[data-detail]')));
 $('detail-back').onclick=()=>history.back();
 $('information').addEventListener('cancel',event=>{event.preventDefault();if($('information').classList.contains('map-expanded')){$('map-fullscreen').click();return;}history.back();});
-function explorationTime(){return ['options','follow','arrived'].includes(state.screen)&&state.lastSearch?{date:state.lastSearch.date,time:state.lastSearch.time,seconds:Number(state.lastSearch.time.slice(0,2))*3600+Number(state.lastSearch.time.slice(3))*60}:aucklandNow();}
+function explorationTime(){
+  if(!['options','follow','arrived'].includes(state.screen)||!state.lastSearch)return aucklandNow();
+  const search=state.lastSearch;
+  let seconds=Number(search.time.slice(0,2))*3600+Number(search.time.slice(3))*60;
+  if(search.timeMode==='arrive')seconds=(state.screen==='follow'?state.selectedJourney?.legs[state.legIndex]?.departure:state.displayJourneys?.[0]?.departure)??seconds;
+  const day=Math.floor(seconds/86400),date=new Date(Date.parse(search.date+'T12:00:00Z')+day*86400000).toISOString().slice(0,10);
+  seconds-=day*86400;return {date,seconds,time:clock(seconds)};
+}
 function mapMarkup(){return `<section class="map-shell" aria-label="Street and transport map"><div class="context-map-frame"><div id="context-map" data-i18n-aria="map.controls" class="context-map" role="region" aria-label="Map. Use arrow keys to pan and plus or minus to zoom." tabindex="0"></div><button type="button" class="map-load-button" id="map-streets"><strong>${message('map.show')}</strong><span>${message('map.internet')}</span></button></div><div class="map-actions"><button type="button" class="secondary-button" id="map-fullscreen" aria-pressed="false">Full-screen map</button><button type="button" class="secondary-button" id="map-locate">Centre on my location</button></div><p id="map-location-status" class="field-help" role="status"></p></section><p class="field-help">${message('map.help')}</p>`;}
 let contextMap;
 function setMapExpanded(expanded){
@@ -431,7 +460,8 @@ function legMarkup(l){
   return `<div class="leg"><strong>${clock(l.departure)}</strong><div>${l.mode==='walk'?message('journey.walkTo',{place:l.to.name}):` ${routeLink(`${message('mode.'+l.mode+'Word')} ${escape(l.route)}`,{routeId:l.routeId,tripId:l.trip},`route-badge detail-link ${l.mode}`)} ${escape(l.headsign||l.to.name)}`}<p>${message('place.from')} ${placeDetail(l.from)}${l.from.code?' · '+escape(l.from.code):''}</p><p>${message('place.to')} ${placeDetail(l.to)} · ${clock(l.arrival)} · ${minutes(l.arrival-l.departure)} ${message('journey.minuteUnit')}</p>${l.mode==='walk'?walkingDirections(l):''}</div></div>`;
 }
 function renderJourneys(){
-  const sort=$('sort').value,journeys=[...state.journeys].sort((a,b)=>Number(!!b.preferred)-Number(!!a.preferred)||a[sort]-b[sort]||a.arrival-b.arrival);state.displayJourneys=journeys;
+  $('remove-selected-shortcut').hidden=!selectedShortcut();
+  const sort=$('sort').value,journeys=[...state.journeys].sort((a,b)=>Number(!!b.preferred)-Number(!!a.preferred)||(sort==='departure'?b.departure-a.departure:a[sort]-b[sort])||(state.lastSearch?.timeMode==='arrive'?b.departure-a.departure:a.arrival-b.arrival));state.displayJourneys=journeys;
   $('sort').hidden=journeys.length<2;
   $('saved-route-context').hidden=!state.savedPreference;$('use-any-route').hidden=!state.savedPreference;
   if(state.savedPreference)$('saved-route-context').innerHTML=`${message('usual.preference')} ${serviceMarkup(state.savedPreference.routes)}. ${message(journeys.some(j=>j.preferred)?'usual.match':'usual.noMatch')}`;

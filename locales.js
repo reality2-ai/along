@@ -318,7 +318,7 @@ Object.assign(messages, {
     "mi": "☆ Kōwhiria ēnei ratonga kē hei manakohanga"
   },
   "service.help": {
-    "en": "Optionally remember these service numbers for next time. Tap Preferred services again to remove only the service preference. To remove the saved places too, use Manage shortcuts on the home screen. Departure times are checked again.",
+    "en": "Saves these service numbers and places, not a departure time. Tap again to remove only the service preference.",
     "mi": "Ki te hiahia koe, puritia ēnei tau ratonga mō muri ake. Ka tiakina hoki ngā wāhi; ka tirohia anō ngā wā wehe."
   },
   "service.removed": {
@@ -1499,4 +1499,11 @@ Object.assign(messages, {
     "en": "Give feedback on this screen",
     "mi": "Tukuna he urupare mō tēnei mata"
   }
+});
+
+Object.assign(messages, {
+  'sort.departure': {en:'Latest departure',mi:null},
+  'preference.arriveSummary': {en:'Arrive by {time} · {modes}{access}',mi:null},
+  'journey.arriveAnnounced': {en:'{count} journey options arriving by {deadline}. Latest departure {time}.',mi:null},
+  'journey.noArrival': {en:'No journey arrives by {time}',mi:null}
 });

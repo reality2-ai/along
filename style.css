@@ -242,3 +242,5 @@ button,.secondary-button,.tab,.setting,select,input[type=date],input[type=time]{
 .guided-app #manage-shortcuts{margin-top:12px}
 .guided-app .shortcut-action{margin:16px 0}
 .guided-app .shortcut-action .secondary-button{width:100%}
+
+.guided-app #remove-selected-shortcut{width:100%;margin-top:16px}

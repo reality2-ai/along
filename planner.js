@@ -36,10 +36,12 @@ export class Planner {
       this.rules.set(`${ai}:${bi}`,{type,seconds});
       if(ai!==bi){if(type===3)this.links.get(ai)?.delete(bi);else link(ai,bi,Math.max(120,seconds));}
     }
+    this.reverseLinks=new Map();
+    for(const [a,links] of this.links)for(const [b,seconds] of links){if(!this.reverseLinks.has(b))this.reverseLinks.set(b,new Map());this.reverseLinks.get(b).set(a,seconds);}
     if(!(data.connections instanceof Int32Array)) data.connections=new Int32Array(data.connections);
   }
   setStreets(graph){
-    this.streets=graph;this.stopSnaps=this.stops.map(s=>graph.snap(s));this.stopsByNode=new Map();this.streetTransfers=new Map();
+    this.streets=graph;this.stopSnaps=this.stops.map(s=>graph.snap(s));this.stopsByNode=new Map();this.streetTransfers=new Map();this.reverseStreetTransfers=new Map();
     this.stopSnaps.forEach((snap,i)=>{if(!snap||this.stops[i].kind!==0)return;if(!this.stopsByNode.has(snap.node))this.stopsByNode.set(snap.node,[]);this.stopsByNode.get(snap.node).push(i);});
   }
   setProfile(profile={}){
@@ -76,6 +78,18 @@ export class Planner {
     }
     this.streetTransfers.set(stop,links);return links;
   }
+  transfersTo(stop){
+    if(!this.streets)return this.reverseLinks.get(stop)||new Map();
+    if(this.reverseStreetTransfers.has(stop))return this.reverseStreetTransfers.get(stop);
+    const links=this.profile?.avoidSteps?new Map():new Map(this.reverseLinks.get(stop)||[]),tree=this.streets.reach(this.stops[stop],600,true);
+    for(const [node,cost] of tree.distance)for(const source of this.stopsByNode.get(node)||[]){
+      if(source===stop)continue;const seconds=Math.ceil(cost+this.stopSnaps[source].seconds),rule=this.rules.get(`${source}:${stop}`);
+      if(seconds>600||rule?.type===3)continue;
+      const duration=Math.max(30,seconds,rule?.seconds||0);
+      if(!links.has(source)||duration<links.get(source))links.set(source,duration);
+    }
+    this.reverseStreetTransfers.set(stop,links);return links;
+  }
   mode(route){const type=this.data.routes[route][3];return [0,1,2].includes(type)?'train':type===4?'ferry':'bus';}
   search(query){const q=normalise(query.trim()),words=q.split(/\s+/);if(!q)return [];
     return this.stops.filter(s=>words.every(w=>normalise(s.name+' '+s.code).includes(w)))
@@ -97,10 +111,10 @@ export class Planner {
       for(let i=lo;i<hi;i+=7){const trip=this.data.trips[c[i]];if(active.has(trip[2])&&modes.includes(this.mode(trip[1])))out.push([c[i+3]+shift,c[i+4]+shift,c[i],c[i+1],c[i+2],c[i+5],c[i+6],offset,this.data.connectionSequences?.[i/7]]);}
     }return out.sort((a,b)=>a[0]-b[0]||a[1]-b[1]);
   }
-  plan({from,to,date,time,modes,maxWalk=900,profile={},preferredRoutes=null,routeSequence=null}){
+  plan({from,to,date,time,modes,maxWalk=900,profile={},preferredRoutes=null,routeSequence=null,timeMode='leave'}){
     const preference=normaliseRoutes(preferredRoutes);
     if(preference){
-      const args={from,to,date,time,modes,maxWalk,profile};
+      const args={from,to,date,time,modes,maxWalk,profile,timeMode};
       const alternatives=this.plan(args);
       // Search the chosen service sequence separately: it may be slower and
       // therefore absent from the ordinary earliest-arrival options.
@@ -109,15 +123,17 @@ export class Planner {
       const seen=new Set(preferred.map(signature));
       return [...preferred,...alternatives.filter(j=>!seen.has(signature(j)))].map(j=>({...j,preferred:sameRoutes(journeyRoutes(j),preference)}));
     }
+    if(!['leave','arrive'].includes(timeMode))throw new Error('Choose Leave at or Arrive by.');
     this.setProfile(profile);
     this.checkDate(date);const origin=this.place(from),destination=this.place(to);
     if(origin.id===destination.id)throw new Error('Choose two different stops or addresses.');
-    if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(time))throw new Error('Choose a valid departure time.');
+    if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(time))throw new Error('Choose a valid journey time.');
     if(!modes?.length||modes.some(m=>!['bus','train','ferry'].includes(m)))throw new Error('Select at least one transport mode.');
     if(![300,600,900,1200].includes(maxWalk))throw new Error('Choose a walking preference between 5 and 20 minutes.');
     const starts=this.access(origin,maxWalk),ends=this.access(destination,maxWalk,true);
     if(origin.placeType!=='address'&&destination.placeType!=='address'&&[...starts.keys()].some(s=>ends.has(s)))throw new Error('These stops belong to the same station.');
     const [h,m]=time.split(':').map(Number),seconds=h*3600+m*60,horizon=seconds+14400;
+    if(timeMode==='arrive')return this.arriveBy({origin,destination,date,deadline:seconds,modes,maxWalk,starts,ends,routeSequence});
     const connections=this.connections(date,seconds,horizon,modes),results=[];
     let previous=new Map([...starts].map(([s,walk])=>[s,{arrival:seconds+walk,path:origin.placeType==='address'?[this.walkingLeg(origin,this.stops[s],seconds,walk,{access:true})]:[],walking:walk}]));
     if(!routeSequence&&this.streets&&(origin.placeType==='address'||destination.placeType==='address')){
@@ -155,8 +171,71 @@ export class Planner {
     }
     const options=[];
     for(const result of results)if(!options.some(r=>r.arrival<=result.arrival&&r.transfers<=result.transfers))options.push(result);
+    return this.describeJourneys(options.sort((a,b)=>a.arrival-b.arrival),connections);
+  }
+  arriveBy({origin,destination,date,deadline,modes,maxWalk,starts,ends,routeSequence}){
+    const earliest=deadline-14400,connections=this.connections(date,earliest,deadline,modes),results=[];
+    const reverse=[...connections].sort((a,b)=>b[1]-a[1]||b[0]-a[0]);
+    let previous=new Map([...ends].map(([s,walk])=>[s,{latest:deadline-walk,path:[],walking:walk,egress:walk}]));
+    if(!routeSequence&&this.streets&&(origin.placeType==='address'||destination.placeType==='address')){
+      const walk=this.streets.route(origin,destination,maxWalk);
+      if(walk)results.push({departure:deadline-walk.seconds,arrival:deadline,duration:walk.seconds,wait:0,transfers:0,walking:walk.seconds,walkOnly:true,legs:[this.walkingLeg(origin,destination,deadline-walk.seconds,walk.seconds,{directions:walk})]});
+    }
+    if(routeSequence&&(!starts.size||!ends.size))return [];
+    if((!starts.size||!ends.size)&&!results.length)throw new Error(this.profile.confirmedAccess?'AT’s timetable does not confirm accessibility for the required stops. We cannot verify a wheelchair-accessible journey.':'No connected stops within your walking preference. Try a longer walk or choose a nearby stop.');
+    for(let boardings=1;boardings<=(routeSequence?.length||4);boardings++){
+      const current=new Map(),onboard=new Map();
+      for(const [dep,arr,ti,a,b,pickup,dropoff,offset,stopSequence] of reverse){
+        if(arr>deadline||dep<earliest)continue;
+        if(this.profile.confirmedAccess&&this.data.trips[ti][4]!==1)continue;
+        const [trip,ri,,headsign]=this.data.trips[ti],route=this.data.routes[ri];
+        if(routeSequence){const wanted=routeSequence[routeSequence.length-boardings];if(this.mode(ri)!==wanted.mode||(route[1]||route[2])!==wanted.route)continue;}
+        const key=`${ti}:${offset}`,base=previous.get(b);let rider=onboard.get(key);
+        if(!rider&&dropoff===0&&base&&arr<=base.latest&&(!this.profile.confirmedAccess||this.accessibleStop(b))){
+          const tail=base.egress!==undefined?(destination.placeType==='address'?[this.walkingLeg(this.stops[b],destination,arr,base.egress,{egress:true})]:[]):base.path;
+          rider={path:tail,walking:base.walking,leg:{mode:this.mode(ri),route:route[1]||route[2],routeId:route[0],routeType:route[3],agencyId:this.data.routeAgencies?.[ri],directionId:this.data.tripDirections?.[ti],serviceDate:compactDate(shiftDate(date,offset)),serviceOffset:offset,headsign,trip,origin:a,destination:b,departure:dep,arrival:arr,stops:0}};
+        }
+        if(!rider)continue;
+        const leg={...rider.leg,origin:a,departure:dep,stopSequence,stops:rider.leg.stops+1};onboard.set(key,{...rider,leg});
+        if(pickup===0&&(!this.profile.confirmedAccess||this.accessibleStop(a))&&(!current.has(a)||dep>current.get(a).departure))current.set(a,{departure:dep,path:[leg,...rider.path],walking:rider.walking});
+      }
+      const candidates=[...starts].flatMap(([stop,walk])=>{
+        const label=current.get(stop);if(!label)return [];
+        const departure=label.departure-walk-(origin.placeType==='address'?60:0);
+        const path=origin.placeType==='address'?[this.walkingLeg(origin,this.stops[stop],departure,walk,{access:true}),...label.path]:label.path;
+        return [{departure,path,walking:label.walking+walk}];
+      }).filter(c=>c.departure>=earliest).sort((a,b)=>b.departure-a.departure||a.walking-b.walking);
+      if(candidates.length&&(!routeSequence||boardings===routeSequence.length)){
+        const {departure,path,walking}=candidates[0],arrival=path.at(-1).arrival;
+        results.push({departure,arrival,duration:arrival-departure,wait:0,transfers:boardings-1,walking,legs:path});
+      }
+      // A preceding vehicle must allow the boarding buffer at the onward stop,
+      // plus any directed walk to it. Keep actual first-vehicle departure above
+      // separate from this latest admissible transfer-arrival time.
+      previous=new Map();
+      const keep=(stop,label)=>{if(!previous.has(stop)||label.latest>previous.get(stop).latest)previous.set(stop,label);};
+      for(const [stop,label] of current){
+        const rule=this.rules.get(`${stop}:${stop}`)||{type:0,seconds:120},buffer=Math.max(120,rule.seconds);
+        if(rule.type===3)continue;
+        keep(stop,{latest:label.departure-buffer,path:label.path,walking:label.walking});
+        for(const [source,duration] of this.transfersTo(stop)){
+          const latest=label.departure-buffer-duration;
+          keep(source,{latest,path:[{mode:'walk',origin:source,destination:stop,departure:latest,arrival:latest+duration},...label.path],walking:label.walking+duration});
+        }
+      }
+    }
+    const options=[];
+    for(const result of results)if(!options.some(r=>r.departure>=result.departure&&r.transfers<=result.transfers))options.push(result);
+    const ordered=options.sort((a,b)=>b.departure-a.departure).map(j=>{
+      const legs=[];
+      for(const leg of j.legs){const prior=legs.at(-1);legs.push(leg.mode==='walk'&&prior&&leg.departure>prior.arrival?{...leg,departure:prior.arrival,arrival:prior.arrival+leg.arrival-leg.departure}:leg);}
+      return {...j,legs};
+    });
+    return this.describeJourneys(ordered,connections).map(j=>({...j,timeMode:'arrive',deadline}));
+  }
+  describeJourneys(options,connections){
     const tripMetadata=tripStopMetadata(this.data,this.stops,new Set(options.flatMap(r=>r.legs.filter(l=>l.trip).map(l=>l.trip))));
-    return options.sort((a,b)=>a.arrival-b.arrival).map(r=>({...r,legs:r.legs.map(l=>{
+    return options.map(r=>({...r,legs:r.legs.map(l=>{
       const from=l.from||this.stops[l.origin],to=l.to||this.stops[l.destination];
       const directions=l.directions||(l.mode==='walk'&&this.streets?this.streets.route(from,to,l.arrival-l.departure+5):null);
       let liveIdentity={};
