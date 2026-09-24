@@ -47,12 +47,13 @@ export async function checkEnrolledRelayHandshake({wasm,owner,receiver,group}) {
   };
   const wait=async predicate=>{for(let n=0;n<2000;n++){if(await predicate())return;await new Promise(r=>setTimeout(r,10));}throw Error('Relay journey fixture timed out: '+JSON.stringify(statuses));};
   try{
-    for(let i=0;i<2;i++)connections[i]=await openRelayJourneyConnection({...options[i],url:'wss://unused.example/r2',transportFactory:factory(i),onStatus:s=>statuses[i].push(s)});
+    for(let i=0;i<2;i++)connections[i]=await openRelayJourneyConnection({...options[i],url:globalThis.relayNetwork?location.origin.replace('https:','wss:')+'/r2':'wss://unused.example/r2',...(globalThis.relayNetwork?{}:{transportFactory:factory(i)}),onStatus:s=>statuses[i].push(s)});
     await wait(()=>statuses.every(list=>list.includes('peer-saved-snapshot')));
     check(JSON.stringify((await replicas[0].read()).state)===JSON.stringify((await replicas[1].read()).state),'relay snapshot receipt follows convergence');
-    transports[0].disconnect();
+    if(globalThis.relayNetwork){await window.dropRelayPeer(hex(owner.subject));await wait(()=>statuses[0].includes('relay-waiting'));}
+    else transports[0].disconnect();
     await replicas[0].save(projectJourney({from:{id:'offline-from',name:'Offline origin',lat:-36,lon:174},to:{id:'offline-to',name:'Offline destination',lat:-37,lon:175},savedRoutes:[]}));
-    transports[0].start();
+    if(!globalThis.relayNetwork)transports[0].start();
     await wait(()=>statuses.every(list=>list.filter(s=>s==='peer-saved-snapshot').length>=2));
     check(JSON.stringify((await replicas[0].read()).state)===JSON.stringify((await replicas[1].read()).state),'reconnection shares offline edit after fresh handshake');
     await allow(0,false);

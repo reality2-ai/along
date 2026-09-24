@@ -262,3 +262,28 @@ then the buffered and later messages arrive in order without resetting sequence.
 These source changes remain unmounted and undeployed. Next integration requirements
 include generation-aware receipt checks, actual enrolled WSS flow, chosen-relay
 Settings/persistence and planner reconciliation after incoming changes.
+
+### Combined enrolled-device WSS check
+
+`ENROLLED_RELAY_NETWORK=1 node experiments/at-credentials/peer-delivery.test.mjs`
+(with the pinned runtime and Chromium environment) now runs the enrolled snapshot
+composition through actual loopback TLS WebSockets. A temporary local test server
+independently verifies greeting signatures, forwards opaque frames, and closes the
+owner socket to trigger automatic reconnect. Actual acknowledged enrollment,
+separate IndexedDB device stores, sharing permissions, bounded encrypted transfer,
+commit receipts and offline-edit convergence are exercised together. Removing
+consent refuses the next synchronization. This uses the production transport
+implementation, not the controlled transport callback from the earlier test mode.
+
+The server must observe at least three verified greetings and forwarded frames;
+fixture journey labels must not occur as plaintext in those bytes. That last check
+is an observation, not a cryptographic security proof. Identities, addresses and
+AT keys throughout the broader fixture are synthetic. A test-only TLS certificate
+exception is scoped to this browser context, and temporary certificate files and
+sockets are cleaned up. Requires OpenSSL and the installed Playwright bundle.
+
+These are two enrolled controllers/stores on one browser host, not two physical
+devices or the rendered Along Settings flow. The separate isolated-context WSS
+fixture covers browser separation with synthetic identities. External R2 relay
+interoperability, generation-aware relay snapshots, checkpoint catch-up, persisted
+endpoint selection, public app integration and release acceptance remain open.

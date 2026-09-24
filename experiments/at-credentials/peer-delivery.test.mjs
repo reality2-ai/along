@@ -13,19 +13,25 @@ for (const name of ['../tg-pairing/removal-set.mjs', '../tg-pairing/initial-pers
 for (const name of ['hive_wasm.js', 'hive_wasm_bg.wasm']) sources.set('/' + name, await readFile(join(process.env.R2_WASM_DIR, name)));
 for (const name of ['scoped-session-client.mjs', 'policy-connection-view.mjs', '../tg-pairing/transfer-view.mjs', 'vehicle-live-view.mjs', '../../public/live-vehicles.js', '../../public/vendor/leaflet/leaflet.js', '../../public/vendor/leaflet/leaflet.css', 'journey-live-view.mjs', 'stop-live-view.mjs', '../../public/live-predictions.js', '../../public/live-context.js', '../../public/live-time.js', 'policy-session.mjs', 'saved-client.mjs', 'live-client.mjs', '../../public/at-client.js', '../../public/live-client.js']) sources.set('/' + name.split('/').pop(), await readFile(new URL(name, import.meta.url)));
 for (const name of ['protection.mjs','handshake.mjs','local-handshake.mjs','enrolled-handshake-check.mjs','hello.mjs','local-hello.mjs','transport.mjs','peer-exchange.mjs','peer-lifecycle.mjs','journey-connection.mjs']) sources.set('/'+name,await readFile(new URL('../relay/'+name,import.meta.url)));
-const server = createServer((req, res) => {
+const handleRequest = (req, res) => {
   const path = '/' + req.url.split('/').pop();
   res.setHeader('Content-Type', req.url.endsWith('.wasm') ? 'application/wasm' : req.url.endsWith('.css') ? 'text/css' : sources.has(path) ? 'text/javascript' : 'text/html');
   res.end(sources.get(path) || '<!doctype html><html lang="en"><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>Device consent</title><link rel="stylesheet" href="/comparison.css"></head><body><main><h1 style="font:600 1.5rem system-ui">Connect devices</h1><div id="consent"></div></main></body></html>');
-});
+};
+const relayNetwork=process.env.ENROLLED_RELAY_NETWORK==='1';
+const relayServer=relayNetwork?await (await import('../relay/test-server.mjs')).createLocalTestRelay(handleRequest):null;
+const server=relayServer?.server??createServer(handleRequest);
+const protocol=relayNetwork?'https':'http';
 await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
 let browser;
 try {
   browser = await chromium.launch({headless: true, executablePath: process.env.CHROMIUM_PATH});
-  const context = await browser.newContext({viewport: {width: 320, height: 640}});
+  const context = await browser.newContext({viewport: {width: 320, height: 640},ignoreHTTPSErrors:relayNetwork});
   await context.addInitScript(enabled=>{globalThis.checkEnrolledJourneyCheckpoint=enabled;},process.env.ENROLLED_CHECKPOINT==='1');
-  await context.addInitScript(enabled=>{globalThis.checkEnrolledRelay=enabled;},process.env.ENROLLED_RELAY==='1');
-  const page = await context.newPage(); await page.goto(`http://127.0.0.1:${server.address().port}`);
+  await context.addInitScript(enabled=>{globalThis.checkEnrolledRelay=enabled;},process.env.ENROLLED_RELAY==='1'||relayNetwork);
+  await context.addInitScript(enabled=>{globalThis.relayNetwork=enabled;},relayNetwork);
+  const page = await context.newPage(); await page.goto(`${protocol}://127.0.0.1:${server.address().port}`);
+  if(relayNetwork)await page.exposeFunction('dropRelayPeer',member=>relayServer.drop(member));
   await page.exposeFunction('exerciseJourneyConnectionRejected', async (message, cancel) => {
     const panel = page.locator('#journey-negative');
     await panel.getByLabel('Journey device message', {exact: true}).fill(message);
@@ -597,7 +603,11 @@ try {
     } finally { policySync?.close(); clearTimeout(timeout); request?.close(); sending?.close(); receiving?.close(); owner.store.close(); receiver.store.close(); }
   });
   const restoredGroup = await page.evaluate(() => restoreGroup);
-  if(process.env.ENROLLED_RELAY==='1'){assert.equal(await page.evaluate(()=>globalThis.enrolledRelayPassed),true);console.log('PASS: real enrolled relay handshake and snapshot convergence, offline edit/reconnect, committed receipts, consent removal, regrant invalidation and identity/certificate refusal; controlled relay carriage, not WSS.');}
+  if(process.env.ENROLLED_RELAY==='1'||relayNetwork){
+    assert.equal(await page.evaluate(()=>globalThis.enrolledRelayPassed),true);
+    if(relayNetwork){const stats=relayServer.stats();assert.ok(stats.greetings>=3);assert.ok(stats.frames>10);assert.equal(stats.plaintextObserved,false);}
+    console.log('PASS: real enrolled relay handshake and snapshot convergence, offline edit/reconnect, committed receipts, consent removal, regrant invalidation and identity/certificate refusal; '+(relayNetwork?'real local WSS, verified greetings, no fixture journey labels observed in forwarded bytes.':'controlled relay carriage, not WSS.'));
+  }
   if(process.env.ENROLLED_CHECKPOINT==='1')assert.equal(await page.evaluate(()=>globalThis.enrolledCheckpointPassed),true);
   const reopened = await context.newPage(); await reopened.goto(page.url());
   if(process.env.ENROLLED_CHECKPOINT==='1') {
@@ -639,4 +649,4 @@ try {
   }, historyBinding), 'recipient-confirmed-saved');
   console.log('PASS: distinct real browser identities mutually authenticate over direct WebRTC, owner grant gates signed delivery, receiver encrypts/consumes request, removed peer is refused. Actual software issuer and acknowledged recipient enrollment; harness trust/comparison/signaling, reviewed-descriptor fixture and synthetic AT keys; checked receiver acceptance; one browser host, not physical-device reachability or public release.');
   console.log('PASS: independent journey permission and transaction-race guards; visible connection, consent/removal, wrong-device/cancel refusal, authenticated multi-chunk exchange, committed receipts, offline edits/deletion catch-up and live-session removal. Real enrolled identities; harness copies public signaling between component panels on one host, not app Settings or physical-device acceptance.');
-} finally { await browser?.close(); await new Promise(resolve => server.close(resolve)); }
+} finally { await browser?.close(); if(relayServer)await relayServer.close();else await new Promise(resolve => server.close(resolve)); }
