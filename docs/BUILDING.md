@@ -138,8 +138,10 @@ and [source at 3738a5e](evidence/regular-v38-current-source-rebuild.json)
 each rebuilt all **301 application files byte for byte** against the published ZIP.
 Both used the release data and existing verified runtime on the same host.
 The public runtime has since been rebuilt in an isolated container with publicly
-downloaded tools and dependencies. A full app build inside that isolated environment
-is still a separate check; the v40 app candidate was built on the development host.
+downloaded tools and dependencies. A separate [isolated app rebuild](evidence/regular-v40-public-source-rebuild.json)
+now reproduces all 283 v40 application files from anonymous public source and
+verified release downloads. It uses the published runtime bundle; runtime source
+compilation is evidenced separately.
 
 To repeat that scoped check without changing the working tree or live app:
 
@@ -158,3 +160,25 @@ bytes. Release README, qualification evidence and the release manifest are
 packaging metadata outside that comparison. The output evidence file must be new.
 A mismatch after an intentional app change is expected: qualify a new release
 instead of changing this check to call different bytes identical.
+
+
+## Repeat the isolated public v40 app build
+
+This historical release check uses no local app source, data, browser profile or
+credentials. It fetches the pinned public commit and v40 assets, verifies archive
+hashes, runs the integrated builder and compares every application file with the
+release. Packaging README, qualification and build manifests are outside the
+application comparison. It does not refresh AT data or run physical-device checks.
+Ask the AI to run this with Podman and a new output directory:
+
+```sh
+mkdir releases/public-v40-rebuild-check
+podman run --rm --memory 2g --cpus 2 \
+  -v "$PWD/scripts/check_public_v40_build.py:/input/check.py:ro" \
+  -v "$PWD/releases/public-v40-rebuild-check:/output:rw" \
+  docker.io/library/python:3.13-bookworm python3 /input/check.py
+```
+
+The output is `result.json`; a mismatch fails the command. The recorded image ID
+and script/log hashes are in the evidence. This is a Linux container reproduction,
+not a claim that compiler outputs match on every host platform.

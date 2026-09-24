@@ -72,7 +72,10 @@ automated accessibility checks, exact deployed-file verification, and a fresh
 public-browser check. The v37/v38/v39 upgrade checks cover the specified saved-data
 and identity cases. Earlier v38 source exports reproduced 301 application files
 using an existing verified runtime and the published dataset on the same host.
-That is narrower than reconstructing every dependency on another machine.
+Version 40 also reproduces all 283 application files in an isolated container
+using only public source and verified release downloads. Its public-source runtime
+compilation has a separate two-build container rehearsal. Neither check proves
+physical usability or identical compiler output across platforms.
 
 Do not describe these as physical S23 pairing, Android TalkBack acceptance,
 external-relay reachability, current live-AT availability or a study with disabled

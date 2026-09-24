@@ -45,7 +45,8 @@ transfer; relay reconnection does not imply automatic propagation of all group
 state. No default relay is selected. Browser software custody is not hardware-rooted
 R2 conformance or protection against malicious same-origin scripts.
 
-Feedback's signed-in GitHub submission step remains an acceptance check. A full
-app build in the isolated runtime-build environment is separate from the completed
-runtime rehearsal and host-side app qualification. This remains an experimental
+Feedback's signed-in GitHub submission step remains an acceptance check. A subsequent
+[isolated public-source app rebuild](evidence/regular-v40-public-source-rebuild.json)
+reproduced all 283 application files using the published runtime and data bundles.
+Runtime compilation has separate isolated-build evidence. This remains an experimental
 AI-coding course app, used at your own risk, not an official AT service.
