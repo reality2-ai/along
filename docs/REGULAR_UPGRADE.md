@@ -77,6 +77,22 @@ The initial failure is retained in the evidence. This changes candidate bytes:
 earlier connected-feature results are historical until final qualification runs
 against the frozen candidate.
 
+## Qualification outcome and capacity correction
+
+The [first frozen-candidate run](evidence/regular-candidate-qualification-initial.json)
+completed with 15 of 16 distinct scenarios passing. Capacity reporting failed;
+the candidate and source remained unchanged throughout the run. Two additional
+requirement entries reference existing runs rather than separate tests.
+
+A diagnostic reproduction showed a Settings race: a capacity error rebuilt the
+home view during its pending startup check, invalidating the completion and leaving
+“Checking…” visible. The fix keeps that view until startup completes. The
+[capacity retry](evidence/regular-capacity-retry.json) passes, retaining all 257
+local saves, exact queued changes, replica and identity. Its full journey-sharing
+flow also passes. The fix changes candidate bytes, so the initial failed result
+is retained and does not count as final qualification. Core tests separately
+passed 68 JavaScript and 18 Python cases.
+
 ## Reproduce without publishing
 
 ```sh

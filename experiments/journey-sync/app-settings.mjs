@@ -69,7 +69,10 @@ export function mountAppJourneySettings({wasm, store, expectedGroup, member}) {
     report(error instanceof JourneyCapacityError
     ? 'Sharing has reached its 256-place limit, including deleted places. Your saved places and queued changes remain here. You can continue planning on this device. Reconnecting or deleting places will not free sharing space.'
     : 'Sharing is unavailable. Your saved places and pending changes remain on this device. Try connecting again.');
-    if (capacityReached && dialog.open && screen === 'home') home();
+    // Opening Settings owns a pending startup check tied to the current view.
+    // Rebuilding while it is checking invalidates that completion and can leave
+    // the UI stuck on Checking instead of showing this capacity error.
+    if (capacityReached && dialog.open && screen === 'home' && startup.status !== 'checking') home();
   };
   const reconcile = (send = false) => {
     queue = queue.then(async () => {

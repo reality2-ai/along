@@ -1,0 +1,21 @@
+{
+  "date": "2026-09-24T19:23:55.945311+00:00",
+  "status": "passed",
+  "candidate_manifest_sha256": "75f1653a27711db0926b56a1f73ba8f203b1f3df56d2eb4c8463d3454904463a",
+  "implementation_sha256": "c85aa33ae1104d13b6aa53f0d5f70fa74e1a803b435ed7546e8a97a2f60c3b27",
+  "test_sha256": "17bb159b89fedcd1efc1fe89d1d78cb0bff284b41f7a47e9b1e4d40639fb69bf",
+  "initial_qualification": "regular-candidate-qualification-initial.json",
+  "diagnostic_log_sha256": "ab51215536b0df36b260b8e0ff2df6c2f80a46f746d0d3269b29e266a2519fa6",
+  "cause": "Capacity failure rebuilt the home view while its startup check was pending, invalidating the completion and retaining the Checking screen.",
+  "fix": "Keep the current view while startup status is checking; retain the capacity message for the pending check to render.",
+  "command": "REGULAR_CANDIDATE=1 CAPACITY=1 node experiments/journey-sync/app-integration.test.mjs",
+  "log_sha256": "6abd9784f30d0564f2397053ad17b17d159e8ac1fb353cfd590d3ee4fc666720",
+  "output": [
+    "PASS: capacity refusal remains specific after reload/retry, preserves all 257 local saves and exact queued changes, and leaves replicated state and identity unchanged.",
+    "PASS: actual Settings enrollment/connection, saved places and service preferences, local history, current-step preservation, focused shortcut preservation and deferred refresh, service-control refresh without route replacement, narrow/zoom accessibility, offline edits and convergence; permission review/removal, retained copies, issued-device selection and offline group removal/reload. Two browser profiles on one host; manual transfer, not physical reachability or automatic discovery."
+  ],
+  "limits": [
+    "Candidate changed after initial qualification, so this passing retry is not a full final qualification.",
+    "One-host browser profiles; no physical acceptance."
+  ]
+}
