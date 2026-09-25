@@ -43,7 +43,7 @@ def candidate(runtime):
                     text = text.replace('App version 37', 'App version 44')
                     text = text.replace('<p role="note">Local integration experiment — use dummy AT keys only. Do not publish this build. Device and AT-key setup is in Settings.</p>', '')
                 if name == 'public/update.html':
-                    text = text.replace('recovery=37', 'recovery=43').replace('Recovery page 37', 'Recovery page 43')
+                    text = text.replace('recovery=37', 'recovery=44').replace('Recovery page 37', 'Recovery page 44')
                 body = text.encode()
             target.write_bytes(body)
         prepare_regular_connected_content(stage)
