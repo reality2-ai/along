@@ -1,6 +1,6 @@
 {
-  "runtime": "node v26.4.0",
-  "checked_at": "2026-09-25T05:53:00.226Z",
+  "runtime": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.0.0 Safari/537.36",
+  "checked_at": "2026-09-25T05:53:06.430Z",
   "url": "wss://wairoa.mariko.org.nz/r2",
   "protocol": [
     "r2.extended.v1",

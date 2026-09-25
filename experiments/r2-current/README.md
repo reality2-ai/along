@@ -16,6 +16,7 @@ archived-relay code in `experiments/relay/`.
 | `protection.mjs` | FORMATS 3.3–3.5 wire identities, 4.1–4.3 XChaCha20-Poly1305 envelope (PROVISIONAL SS35), L4 10 HMAC-SHA256 tag and the L5 7.1/7.3.3 fail-closed recipient gate |
 | `duplicates.mjs` | L3 5.3 time-bounded duplicate suppression on (origin, message id) |
 | `heartbeat.mjs` | L2 5 announcement body in a non-relayed HEARTBEAT |
+| `transport.mjs` | Hive binding carriage: subprotocol check, two-second announcements, ≤10 s reconnect, silence loss, send rate bound |
 
 XChaCha20-Poly1305 is not in WebCrypto; the vendored `@noble/ciphers` subset
 provides it and is checked against the draft-irtf-cfrg-xchacha A.3.1 vector,
@@ -29,7 +30,10 @@ which libsodium 1.0.22 reproduces. HMAC, SHA-256 and HKDF use WebCrypto.
   wrong-address, untagged, relay-mutation and relay-limit cases.
 - `node experiments/r2-current/live-check.mjs <url> [evidence.json]`: two
   independent connections in a synthetic group exchange protected EVENTs through
-  the deployed host. Result: [live exchange](../../docs/evidence/r2-current-live-exchange.json).
+  the deployed host. Results: [Node](../../docs/evidence/r2-current-live-exchange.json)
+  and [Chromium](../../docs/evidence/r2-current-live-exchange-browser.json), where
+  the page itself imports these modules and opens the connections
+  (`CHROMIUM_PATH=… node experiments/r2-current/browser-live-check.mjs <url> [evidence.json]`).
   The host forwarded both directions (hop 4→3, route entry appended), suppressed
   an identical resend and forwarded, but Along refused, a frame under another key.
 
@@ -60,9 +64,8 @@ are checked by round trip and against independent cipher vectors only.
 
 ## Next work
 
-1. A browser transport over this binding: reconnect within ten seconds while
-   runnable, heartbeat every two seconds while visible, duplicate suppression,
-   inbound rate discipline and own-frame suppression.
+1. (Done: `transport.mjs`.) Pausing while hidden and own-frame suppression
+   belong to the channel that embeds it.
 2. A chunked, idempotent exchange of saved journeys and preferences within the
    160-byte plaintext limit, with member-signed consequential operations.
 3. Replace the archived-relay path in the app, preserving saved data, explicit
