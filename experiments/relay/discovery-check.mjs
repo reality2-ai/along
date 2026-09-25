@@ -34,19 +34,20 @@ export async function checkRelayDiscovery({wasm,owner,receiver,group}) {
   check(await denied(()=>accept(packet,{store:{...owner.store,read:(scope,key)=>scope==='membership'&&key===groupId?Promise.resolve(revoked):owner.store.read(scope,key)}})),'authentic signed removal rejects old discovery hint');
   check((await owner.store.read('membership',groupId)).revision===membership.revision,'revocation overlay does not alter enrollment fixture');
   if(globalThis.relayNetwork){
-    const {createRelayTransport}=await import('./transport.mjs');const {createLocalRelayHello}=await import('./local-hello.mjs');
+    const {createHiveRelayTransportFactory}=await import('../r2-current/hive-relay-transport.mjs');
+    const hexOf=b=>Array.from(b,v=>v.toString(16).padStart(2,'0')).join('');
     const transports=[],states=[[],[]];let delivered,problem;
     try{
       for(const [i,device] of [owner,receiver].entries()){
-        transports[i]=createRelayTransport({url:location.origin.replace('https:','wss:')+'/r2',
-          createHello:()=>createLocalRelayHello({wasm,store:device.store,expectedGroup:group}),onStatus:s=>states[i].push(s),
+        transports[i]=createHiveRelayTransportFactory({wasm,store:device.store,expectedGroup:group,member:hexOf(device.subject)})({url:location.origin.replace('https:','wss:')+'/r2',
+          onStatus:s=>states[i].push(s),
           onFrame:bytes=>{if(i===0)void accept(bytes).then(value=>{delivered=value;},error=>{problem=error;});}});
         transports[i].start();
       }
-      const wait=async fn=>{for(let n=0;n<1000;n++){if(fn())return;await new Promise(r=>setTimeout(r,10));}throw Error('Discovery network timeout');};
+      const wait=async fn=>{for(let n=0;n<1000;n++){if(fn())return;await new Promise(r=>setTimeout(r,10));}throw Error('Discovery network timeout: '+JSON.stringify(states));};
       await wait(()=>states.every(s=>s.at(-1)==='connected'));transports[1].send(packet);
       await wait(()=>delivered||problem);if(problem)throw problem;
-      check(delivered.peer.every((b,i)=>b===receiver.subject[i]),'WSS discovery delivers verified enrolled identity');
+      check(delivered.peer.every((b,i)=>b===receiver.subject[i]),'current hive binding discovery delivers verified enrolled identity');
     }finally{transports.forEach(t=>t.disconnect());}
   }
   await grant(false);

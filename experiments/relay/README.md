@@ -1,5 +1,10 @@
 # Optional relay transport — development only
 
+**25 September 2026:** the default carriage is now the current R2 hive binding
+(`r2.extended.v1`) through `../r2-current/hive-relay-transport.mjs`; the signed
+greeting transport and the `R2_RELAY_BINARY` checks below are historical. See
+[the current client](../r2-current/README.md).
+
 The user approved an optional user-selected R2 relay on 24 September 2026.
 Relay controls are included in Device Preview 3806; regular Along remains separate.
 No endpoint is selected by default. A saved explicit opt-in restores connection

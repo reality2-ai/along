@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {xchacha20poly1305} from '../../public/vendor/noble-ciphers/chacha.js';
-import {gate, MAX_PLAINTEXT, protectEvent, RELAY_PAYLOAD_LIMIT, wireEntry} from './protection.mjs';
+import {gate, MAX_PLAINTEXT, protectEvent, RELAY_PAYLOAD_LIMIT, wireEntry} from './group-protection.mjs';
 import {parseFrame, encodeExtended, TYPE} from './frame.mjs';
 import {eventHash} from './names.mjs';
 import {duplicateCache} from './duplicates.mjs';

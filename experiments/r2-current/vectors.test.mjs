@@ -4,7 +4,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {eventHash, normaliseName} from './names.mjs';
 import {parseFrame, TYPE} from './frame.mjs';
-import {verifyTag, wireHalf} from './protection.mjs';
+import {verifyTag, wireHalf} from './group-protection.mjs';
 import {cborFloat, decode, encode} from './cbor.mjs';
 import {readAnnouncement} from './heartbeat.mjs';
 

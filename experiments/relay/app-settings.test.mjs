@@ -39,23 +39,23 @@ try{
   const home=async()=>{await page.locator('#settings-open').click();await page.getByRole('button',{name:'Share saved journeys with my devices',exact:true}).click();};
   const open=async()=>{await page.getByRole('button',{name:'Automatic connection with a relay',exact:true}).click();await expect(page.getByRole('heading',{name:'Automatically reconnect my devices',exact:true})).toBeFocused();};
   await home();await open();
-  await expect(page.getByText('No relay is enabled.',{exact:false})).toBeVisible();assert.equal(relay.stats().greetings,0);
+  await expect(page.getByText('No relay is enabled.',{exact:false})).toBeVisible();assert.equal(relay.stats().connections,0);
   const address=page.getByRole('textbox',{name:'Relay server address'});
   await address.fill('https://example.invalid');await page.getByRole('button',{name:'Use this relay',exact:true}).click();
-  await expect(page.getByText('Enter a secure wss:// relay address',{exact:false})).toBeVisible();await expect(address).toBeFocused();assert.equal(relay.stats().greetings,0);
+  await expect(page.getByText('Enter a secure wss:// relay address',{exact:false})).toBeVisible();await expect(address).toBeFocused();assert.equal(relay.stats().connections,0);
   await address.fill(endpoint);await page.getByRole('button',{name:'Use this relay',exact:true}).focus();await page.keyboard.press('Enter');
   await expect(page.getByText('Relay enabled on this device.',{exact:false})).toBeVisible();
-  await expect.poll(()=>relay.stats().greetings).toBe(1);
+  await expect.poll(()=>relay.stats().connections).toBe(1);
   await page.getByRole('button',{name:'Back',exact:true}).click();
   await expect(page.getByText('Relay connected. Waiting for a permitted device with Along open.',{exact:true})).toBeVisible();
   // Stored opt-in restores through the real bootstrap, with no settings visit.
-  await page.reload();await expect.poll(()=>relay.stats().greetings).toBe(2);
+  await page.reload();await expect.poll(()=>relay.stats().connections).toBe(2);
   await home();await open();await expect(address).toHaveValue(endpoint);
   await page.getByRole('button',{name:'Stop automatic relay sharing',exact:true}).click();
   await expect(page.getByText('Automatic relay sharing stopped.',{exact:false})).toBeVisible();
   await page.reload();await home();await open();
   await expect(page.getByText('Automatic relay sharing is stopped.',{exact:true})).toBeVisible();
-  assert.equal(relay.stats().greetings,2);
+  assert.equal(relay.stats().connections,2);
   await page.getByRole('button',{name:'Remove relay address',exact:true}).click();
   await expect(address).toHaveValue('');await expect(page.getByRole('button',{name:'Remove relay address',exact:true})).toBeDisabled();
   // A pending generation migration must prevent startup reconnection, even
@@ -83,7 +83,7 @@ try{
   await page.getByRole('button',{name:'Back to settings',exact:true}).click();await expect(page.locator('#settings')).toBeVisible();
   await page.reload();await home();
   await expect(page.getByText('Automatic sharing is paused until saved-journey recovery is reviewed.',{exact:true})).toBeVisible();
-  assert.equal(relay.stats().greetings,2);
+  assert.equal(relay.stats().connections,2);
   assert.deepEqual(errors,[]);
-  console.log('PASS: generated app relay Settings: default off, URL refusal, narrow-screen keyboard enable, real signed local WSS connection, startup restoration, stop persistence, removal, interrupted-recovery pause, Escape/Back and no page errors. No peer enrolled or external relay tested here.');
+  console.log('PASS: generated app relay Settings: default off, URL refusal, narrow-screen keyboard enable, local WSS connection over the current hive binding, startup restoration, stop persistence, removal, interrupted-recovery pause, Escape/Back and no page errors. No peer enrolled or external relay tested here.');
 }finally{await browser?.close();await relay.close();}

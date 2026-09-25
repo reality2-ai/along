@@ -40,7 +40,7 @@ def build(browser, wasm, notices=None, runtime=None, preview=False):
                 continue
             relative = Path(name)
             if (relative.is_absolute() or '..' in relative.parts or relative.suffix not in ('.mjs', '.js')
-                    or not name.startswith(('experiments/tg-pairing/', 'experiments/at-credentials/', 'experiments/journey-sync/', 'experiments/relay/', 'public/'))):
+                    or not name.startswith(('experiments/tg-pairing/', 'experiments/at-credentials/', 'experiments/journey-sync/', 'experiments/relay/', 'experiments/r2-current/', 'public/'))):
                 raise ValueError('Unexpected module path')
             source = ROOT / relative
             if name == 'experiments/tg-pairing/hive_wasm.js':
@@ -119,6 +119,8 @@ window.addEventListener('along-saved-journeys-applied', () => {
         text = worker.read_text().replace('along-shell-', 'along-experimental-shell-')
         extra = ['../' + str(p.relative_to(stage)) for p in sorted((stage / 'experiments').rglob('*')) if p.is_file()]
         extra.append('./at-client.js')
+        # Current R2 payload cipher imported by the relay modules; needed offline at startup.
+        extra.extend('./vendor/noble-ciphers/' + p.name for p in sorted((stage / 'public/vendor/noble-ciphers').glob('*.js')))
         text = text.replace("self.addEventListener('install'", 'SHELL.push(...' + json.dumps(extra) + ");\nself.addEventListener('install'", 1)
         worker.write_text(text)
         namespaces = None

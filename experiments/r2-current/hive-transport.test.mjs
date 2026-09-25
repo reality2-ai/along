@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createHiveTransport, SUBPROTOCOL} from './transport.mjs';
+import {createHiveTransport, SUBPROTOCOL} from './hive-transport.mjs';
 
 function fixture({protocol = SUBPROTOCOL} = {}) {
   const tasks = new Map(), sockets = [], statuses = [], frames = []; let seq = 0, t = 0, beats = 0;

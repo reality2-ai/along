@@ -1,0 +1,12 @@
+{
+  "checked_at": "2026-09-25T06:20:08.232Z",
+  "url": "wss://wairoa.mariko.org.nz/r2",
+  "frames": 70,
+  "gap_ms": 20,
+  "pause_after_64_ms": 300000,
+  "delivered": 0,
+  "first_missing_index": 0,
+  "first_missing_sent_at_ms": 0,
+  "fresh_origin_control_delivered": false,
+  "scope": "Relay of 200-byte protected payloads from one synthetic origin through the deployed hive, observed by a second connection. Measures observed forwarding only."
+}

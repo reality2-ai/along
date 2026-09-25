@@ -14,6 +14,32 @@ binding contract. See the [review](R2_CURRENT_STANDARD_REVIEW.md#server-update--
 The request below is kept as the record of what was asked. The Along section is
 now the active work.
 
+## Server issue found 25 September — per-origin relay window
+
+Along's integrated sharing works through a local stand-in that enforces the
+host's stated per-origin replication limit (64 relayed frames per 10 s, L3
+5.7.2). Against the deployed host, handshakes succeed but the snapshot exchange
+stalls. Direct measurement with synthetic origins
+([rate-check.mjs](../experiments/r2-current/rate-check.mjs)): the host relayed
+exactly 64 frames from one origin and then refused that origin's frames, still
+refusing after 30 s and after 120 s pauses. A later run relayed nothing, not even
+from a fresh origin ([evidence](evidence/r2-hive-origin-rate.json)).
+
+Read-only source inspection suggests a unit mismatch: the host's clock ticks at
+1,000 per second, while the mesh expresses its rate window and duplicate lifetime
+as microsecond counts. That makes the window about 2.8 hours and duplicate
+records about 8.3 hours. With only 32 per-origin rate buckets, a few dozen
+origins, including this investigation's synthetic ones, can fill the table and
+block every new origin until entries expire or the service restarts. This is a
+server fix, owned by the server owner. Along should not work around it by
+changing its origin identity. Along already paces below the stated limit
+(56 frames per sliding 10 s).
+
+Requested of the server owner: take the mesh window and duplicate lifetime from
+the ruler's `ticks_per_second` (or a matching tick unit), redeploy, and confirm.
+Along will then rerun the two-profile check through the deployed host with
+`R2_HIVE_UPSTREAM=wss://wairoa.mariko.org.nz/r2`.
+
 ## Work for the server owner (delivered)
 
 Provide a browser-accessible binding for current R2, preferably a secure
@@ -44,6 +70,15 @@ public Along build. Existing field traffic and server configuration remain the
 server owner's responsibility.
 
 ## Work for Along after the contract is established
+
+**App integration, 25 September:** the sharing service and relay journey
+connection now use [hive-relay-transport.mjs](../experiments/r2-current/hive-relay-transport.mjs)
+by default. Along's existing signed discovery, per-peer handshake, pairwise
+protection and chunked exchange run unchanged inside group-protected current
+EVENT frames, divided above L4 to fit the 160-byte limit. The enrolled relay and
+generation-two browser checks and the generated-app relay Settings check pass
+through a local `r2.extended.v1` stand-in. Against the deployed host they are
+blocked by the server issue above.
 
 **Progress, 25 September:** Along's [current-frame client](../experiments/r2-current/README.md)
 passes the published L4/FORMATS vectors and exchanged protected EVENTs between two

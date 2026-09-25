@@ -32,7 +32,7 @@ def main():
     directory = ROOT / 'releases' / f'regular-qualification-{manifest["appVersion"]}-{source[:12]}'
     directory.mkdir(exist_ok=False)
     env = dict(os.environ, REGULAR_CANDIDATE='1', PREVIEW='0')
-    for name in ['CHROMIUM_PATH', 'R2_WASM_DIR', 'R2_BROWSER_DIR', 'R2_RELAY_BINARY']:
+    for name in ['CHROMIUM_PATH', 'R2_WASM_DIR', 'R2_BROWSER_DIR']:
         if not env.get(name):
             raise RuntimeError(f'Set {name}')
     cases = [

@@ -85,7 +85,7 @@ The runner requires these environment variables:
 | `CHROMIUM_PATH` | Absolute path to the test browser executable |
 | `R2_WASM_DIR` | Verified runtime bundle's `wasm/` directory |
 | `R2_BROWSER_DIR` | Verified runtime bundle's `browser/` directory |
-| `R2_RELAY_BINARY` | Built actual R2 relay executable; tests start it on loopback |
+| `R2_HIVE_UPSTREAM` | Optional: an actual `r2.extended.v1` hive the local test relay pipes to |
 | `ALONG_V37_ZIP` | Exact original v37 `along-web.zip` for installed-upgrade tests |
 
 The connected-upgrade check also requires the exact published v38 ZIP at

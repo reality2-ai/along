@@ -1,7 +1,7 @@
 import {loadLocalPersona} from '../tg-pairing/local-persona.mjs';
 import {openLocalRelayHandshake} from './local-handshake.mjs';
 import {createLocalRelayHello} from './local-hello.mjs';
-import {createRelayTransport} from './transport.mjs';
+import {createHiveRelayTransportFactory} from '../r2-current/hive-relay-transport.mjs';
 import {createRelayPeerLifecycle} from './peer-lifecycle.mjs';
 import {openPermittedJourneys} from '../journey-sync/permission.mjs';
 import {openPermittedGenerationJourneys} from '../journey-sync/generation-permission.mjs';
@@ -12,7 +12,7 @@ const hex=b=>Array.from(b,v=>v.toString(16).padStart(2,'0')).join('');
 // refreshes authority and snapshot state. Never grants access or imports history.
 export async function openRelayJourneyConnection({wasm,store,expectedGroup,peer,certificate,url,
   generationAware=false,storage,locks,signal,onSaved=()=>{},onStatus=()=>{},
-  transportFactory=createRelayTransport}) {
+  transportFactory}) {
   if(!(expectedGroup instanceof Uint8Array)||expectedGroup.length!==32||!(peer instanceof Uint8Array)||peer.length!==32
       ||!(certificate instanceof Uint8Array)||certificate.length!==136||typeof generationAware!=='boolean')throw Error('Relay journey context unavailable');
   const group=expectedGroup.slice(),remote=peer.slice(),proof=certificate.slice(),lifetime=new AbortController();
@@ -61,6 +61,7 @@ export async function openRelayJourneyConnection({wasm,store,expectedGroup,peer,
           status(s);void synchronize().catch(()=>{if(slot===held){discard();lifecycle.disconnected();status('sharing-unavailable');}});
         }else{if(s==='disconnected'||s==='peer-unavailable')discard();status(s);}
       }});
+    transportFactory??=createHiveRelayTransportFactory({wasm,store,expectedGroup:group,member:identity.member});
     transport=transportFactory({url,createHello:()=>createLocalRelayHello({wasm,store,expectedGroup:group,signal:lifetime.signal}),
       onFrame:frame=>lifecycle.receive(frame),onStatus:s=>{
         if(closed)return;if(s==='connected')lifecycle.connected();else lifecycle.disconnected();status('relay-'+s);

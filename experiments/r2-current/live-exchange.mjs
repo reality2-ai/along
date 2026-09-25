@@ -4,7 +4,7 @@
 // production HEARTBEAT, then exchanges group-protected EVENTs through the host.
 // Browser- and Node-compatible; see live-check.mjs and browser-live-check.mjs.
 import {decode, encode} from './cbor.mjs';
-import {gate, protectEvent, wireEntry} from './protection.mjs';
+import {gate, protectEvent, wireEntry} from './group-protection.mjs';
 import {parseFrame, TYPE} from './frame.mjs';
 import {heartbeatFrame, readAnnouncement} from './heartbeat.mjs';
 import {duplicateCache} from './duplicates.mjs';
