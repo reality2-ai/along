@@ -200,3 +200,22 @@ address-to-address bus/ferry planning and stalled optional-runtime isolation.
 [Local evidence](evidence/guided-device-connection-local-2026-09-26.json) records
 the source hashes, candidate manifest hash and test scope. Older-release tests
 recognise both the historical setup label and the new My devices label.
+
+## Interruption and offline checks (26 September 2026)
+
+The guided view now has passing checks for installation and acknowledgment
+transactions that commit immediately before their promises return and the peer
+closes. It waits for those promises, reports the saved state accurately and
+restores the member after reload. An existing issuer group is refused before
+candidate networking; its persona and encrypted custody revisions remain intact.
+
+The generated-app test also removes a saved address pair offline, reopens offline,
+then reconnects automatically and propagates the removal without a new invitation.
+Both copies retain the result after online reload. HTTP offline emulation and
+explicit WebSocket blocking establish the test's offline boundary. Chromium is
+configured to trust the local fixture certificate so its service worker can
+actually install; merely ignoring page certificate errors did not establish that.
+
+These checks are now required by the version-44 candidate qualification and
+packaging scripts. They do not change the unresolved deployed-host or physical
+acceptance status.

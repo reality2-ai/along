@@ -19,8 +19,8 @@ def main():
     source = git('rev-parse', 'HEAD')
     manifest_path = ROOT / 'releases/along-regular-upgrade-candidate/build-info.json'
     manifest = json.loads(manifest_path.read_text())
-    if manifest['profile'] != 'along-regular-upgrade-candidate-v1' or manifest['appVersion'] != '43':
-        raise RuntimeError('Build regular candidate 43 before qualification')
+    if manifest['profile'] != 'along-regular-upgrade-candidate-v1' or manifest['appVersion'] != '44':
+        raise RuntimeError('Build regular candidate 44 before qualification')
     actual = {p.relative_to(manifest_path.parent).as_posix() for p in manifest_path.parent.rglob('*') if p.is_file()}
     if actual != set(manifest['files']) | {'build-info.json'}:
         raise RuntimeError('Candidate file set differs from manifest')
@@ -36,6 +36,14 @@ def main():
         if not env.get(name):
             raise RuntimeError(f'Set {name}')
     cases = [
+        ('installed_v43_upgrade', {'ALONG_PRIOR_VERSION':'43'}, 'experiments/journey-sync/regular-upgrade.test.mjs'),
+        ('guided_app_offline', {'GUIDED_OFFLINE':'1'}, 'experiments/relay/guided-app.test.mjs'),
+        ('guided_component', {'GUIDED_PAIRING':'1'}, 'experiments/tg-pairing/automatic-enrollment.test.mjs'),
+        ('guided_cancel', {'GUIDED_PAIRING':'1','GUIDED_CANCEL':'1'}, 'experiments/tg-pairing/automatic-enrollment.test.mjs'),
+        ('guided_conflict', {'GUIDED_PAIRING':'1','GUIDED_CONFLICT':'1'}, 'experiments/tg-pairing/automatic-enrollment.test.mjs'),
+        ('guided_interrupted_install', {'GUIDED_PAIRING':'1','GUIDED_INTERRUPT':'install'}, 'experiments/tg-pairing/automatic-enrollment.test.mjs'),
+        ('guided_interrupted_ack', {'GUIDED_PAIRING':'1','GUIDED_INTERRUPT':'ack'}, 'experiments/tg-pairing/automatic-enrollment.test.mjs'),
+        ('invitation_channel_faults', {'AUTOMATIC_RELAY':'1','CHANNEL_CHECKS':'1'}, 'experiments/tg-pairing/automatic-enrollment.test.mjs'),
         ('arrive_by_and_shortcut', {}, 'test/check_arrive_by.mjs'),
         ('installed_v42_upgrade', {'ALONG_PRIOR_VERSION':'42'}, 'experiments/journey-sync/regular-upgrade.test.mjs'),
         ('installed_v41_upgrade', {'ALONG_PRIOR_VERSION':'41'}, 'experiments/journey-sync/regular-upgrade.test.mjs'),

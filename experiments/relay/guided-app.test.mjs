@@ -23,9 +23,11 @@ const relay=await createLocalTestRelay((req,res)=>{
 await new Promise(r=>relay.server.listen(0,'127.0.0.1',r));
 let browser,pages,errors=[];
 try{
-  browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_PATH});
+  browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_PATH,args:['--ignore-certificate-errors']});
   const contexts=await Promise.all([browser.newContext({ignoreHTTPSErrors:true,viewport:{width:360,height:780}}),browser.newContext({ignoreHTTPSErrors:true,viewport:{width:360,height:780}})]);
   const [owner,candidate]=await Promise.all(contexts.map(c=>c.newPage()));pages=[owner,candidate];
+  let candidateOffline=false;
+  await candidate.routeWebSocket('**/r2',socket=>{if(candidateOffline)socket.close({code:1013,reason:'Test offline'});else socket.connectToServer();});
   for(const p of pages)p.on('pageerror',e=>errors.push(e.message));
   const origin=`https://127.0.0.1:${relay.server.address().port}`,endpoint=origin.replace('https:','wss:')+'/r2';
   const url=origin+prefix+(regularCandidate?'':'public/');
@@ -70,6 +72,26 @@ try{
   const saved=page=>page.evaluate(key=>JSON.parse(localStorage.getItem(key)).journeys.filter(j=>j.saved),manifest.namespaces?.preferences||'along-journeys-v1');
   for(const p of pages)await expect.poll(async()=>(await saved(p)).length,{timeout:90000}).toBe(2);
   assert.deepEqual((await saved(owner)).map(j=>j.to.id).sort(),(await saved(candidate)).map(j=>j.to.id).sort());
+  if(process.env.GUIDED_OFFLINE==='1'){
+    // Local test certificate must be trusted by Chromium's service-worker process too.
+    await candidate.evaluate(()=>navigator.serviceWorker.ready);
+    await candidate.waitForFunction(()=>Boolean(navigator.serviceWorker.controller));
+    candidateOffline=true;await contexts[1].setOffline(true);await candidate.reload();
+    await choose(candidate,'destination','1 Queen Street Auckland Central');await candidate.locator('#destination-next').click();
+    await choose(candidate,'origin','277 Broadway Newmarket');await candidate.locator('#origin-next').click();
+    await expect(candidate.locator('#save-places')).toHaveAttribute('aria-pressed','true');
+    await candidate.locator('#save-places').click();await expect(candidate.locator('#save-places')).toHaveAttribute('aria-pressed','false');
+    assert.equal((await saved(candidate)).length,1);assert.equal((await saved(owner)).length,2);
+    await candidate.reload();await expect(candidate.locator('#address-status')).toContainText('ready offline',{timeout:60000});
+    assert.equal((await saved(candidate)).length,1);assert.equal((await saved(owner)).length,2);
+    candidateOffline=false;await contexts[1].setOffline(false);
+    await expect.poll(async()=>(await saved(owner)).length,{timeout:90000}).toBe(1);
+    await Promise.all(pages.map(p=>p.reload()));
+    for(const p of pages)await expect(p.locator('#address-status')).toContainText('ready offline',{timeout:60000});
+    for(const p of pages)assert.equal((await saved(p)).length,1);
+    assert.deepEqual((await saved(owner)).map(j=>j.to.id),(await saved(candidate)).map(j=>j.to.id));
+    console.log('PASS: fresh guided connection preserves an offline saved-place removal across offline reload, then automatically reconnects and propagates it without another invitation; both copies survive online reload. HTTP offline emulation plus explicit WebSocket blocking.');
+  }
   assert.deepEqual(errors,[]);
   console.log('PASS: generated app on subpath, fresh devices set up through UI, single invitation link, fragment removed, comparison, separate sharing consent and automatic relay delivery of both saved-place pairs; no return QR or separate journey ceremony. Local hive stand-in; no deployed-host or physical acceptance claim.');
 }catch(error){console.error('Non-secret app diagnostics:',JSON.stringify({errors,pages:await Promise.all((pages??[]).map(p=>p.evaluate(()=>({hasFragment:Boolean(location.hash),headings:[...document.querySelectorAll('h2')].filter(n=>n.checkVisibility()).map(n=>n.textContent),statuses:[...document.querySelectorAll('[role=status]')].filter(n=>n.checkVisibility()).map(n=>n.textContent),dialogs:[...document.querySelectorAll('dialog[open]')].map(n=>n.getAttribute('aria-label'))})).catch(()=>({closed:true}))))}));throw error;}finally{await browser?.close();await relay.close();}

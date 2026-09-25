@@ -3,6 +3,10 @@ import assert from 'node:assert/strict';
 import AxeBuilder from '@axe-core/playwright';
 const guidedMode=process.env.GUIDED_PAIRING==='1';
 const guidedCancel=process.env.GUIDED_CANCEL==='1';
+const guidedConflict=process.env.GUIDED_CONFLICT==='1';
+if(guidedConflict)assert.ok(guidedMode&&!guidedCancel);
+const guidedInterrupt=process.env.GUIDED_INTERRUPT;
+if(guidedInterrupt)assert.ok(guidedMode&&!guidedCancel&&['install','ack'].includes(guidedInterrupt));
 import {createServer} from 'node:http';
 import {readFile,readdir} from 'node:fs/promises';
 import {createLocalTestRelay} from '../relay/test-server.mjs';
@@ -43,11 +47,11 @@ try {
   const url = `${relayMode?'https':'http'}://127.0.0.1:${server.address().port}`;
   await Promise.all(pages.map(async (page, index) => {
     await page.goto(url);
-    await page.evaluate(async index => {
+    await page.evaluate(async ({index,guidedConflict}) => {
       window.wasm = await import('./hive_wasm.js'); await wasm.default();
       window.store = await (await import('./storage.mjs')).openBrowserStorage('software-enrollment');
       window.restore = await import('./local-persona.mjs');
-      if (index === 0) {
+      if (index === 0 && !guidedConflict) {
         const initial = await (await import('./initial-persona.mjs')).initializeLocalPersona({wasm, store}); initial.close();
       } else {
         window.software = await import('./software-persona.mjs');
@@ -56,9 +60,10 @@ try {
         store.close(); window.store = await (await import('./storage.mjs')).openBrowserStorage('software-enrollment');
         window.issuer = await software.loadSoftwareIssuer({wasm, store, expectedGroup: group});
       }
-    }, index);
+    }, {index,guidedConflict});
   }));
   if(guidedMode){
+    const previous=guidedConflict?await pages[0].evaluate(async()=>({persona:(await store.read('candidate-persona','active')).revision,group:[...group],custody:(await store.read('along-browser-issuer',Array.from(group,b=>b.toString(16).padStart(2,'0')).join(''))).revision})):undefined;
     const relayURL=`wss://127.0.0.1:${server.address().port}/r2`;
     await pages[1].evaluate(async relay=>{
       window.view=(await import('./automatic-pairing-view.mjs')).showAutomaticPairing(document.querySelector('#flow'),
@@ -69,20 +74,40 @@ try {
     await pages[1].getByRole('button',{name:'Create invitation',exact:true}).click();
     const link=await pages[1].getByLabel('Invitation link',{exact:true}).inputValue();
     assert.ok(link.includes('#connect='));
-    await pages[0].evaluate(async link=>{
+    await pages[0].evaluate(async ({link,guidedInterrupt})=>{
       history.replaceState({kept:'yes'},'',link);
       const module=await import('./automatic-pairing-view.mjs');
       const consumed=module.consumeConnectionFragment(location,history);
       if(location.hash||history.state.kept!=='yes'||!consumed.invitation)throw Error('Fragment not removed safely');
-      window.view=module.showAutomaticPairing(document.querySelector('#flow'),{wasm,store,role:'candidate',focus:true,
+      let flowStore=store;
+      if(guidedInterrupt)flowStore={...store,compareAndSwapMany:async(...args)=>{
+        const result=await store.compareAndSwapMany(...args);
+        if(result.applied&&args[0].some(write=>write.scope==='candidate-persona'&&write.value?.invitation&&write.value.peerAcknowledged===(guidedInterrupt==='ack'))){
+          window.heldCommit=true;await new Promise(resolve=>{window.releaseHeld=resolve;});
+        }
+        return result;
+      }};
+      window.view=module.showAutomaticPairing(document.querySelector('#flow'),{wasm,store:flowStore,role:'candidate',focus:true,
         connectionText:consumed.invitation,onBack:()=>{window.back=true;},onConnected:result=>{window.connected=result;},
         onShare:async result=>{window.sharing=(await import('./connected-sharing-view.mjs')).showConnectedSharing(document.querySelector('#flow'),{wasm,store,expectedGroup:result.group,peer:result.peer,relay:result.relay,focus:true,onChanged:()=>{window.sharingSaved=true;}});}});
-    },link);
+    },{link,guidedInterrupt});
     await pages[0].getByRole('heading',{name:'Connect to your other device?',exact:true}).waitFor();
     // Only the inviter may have opened a socket; parsing/review creates none.
     assert.ok(relay.stats().connections<=1);
     await pages[0].getByRole('button',{name:'Connect and compare codes',exact:true}).focus();
     await pages[0].keyboard.press('Enter');
+    if(guidedConflict){
+      await pages[0].getByRole('heading',{name:'Check this device’s connection',exact:true}).waitFor();
+      assert.equal(relay.stats().connections,1,'Existing-group conflict must not contact the relay');
+      assert.deepEqual(await pages[0].evaluate(async()=>{
+        const saved=await store.read('candidate-persona','active'),group=saved.value.record.group;
+        return {persona:saved.revision,group:[...group],custody:(await store.read('along-browser-issuer',Array.from(group,b=>b.toString(16).padStart(2,'0')).join(''))).revision};
+      }),previous);
+      assert.equal(await pages[0].evaluate(()=>Boolean(window.connected)),false);
+      await pages[0].getByRole('button',{name:'Back to my devices',exact:true}).click();
+      await pages[0].waitForFunction(()=>window.back===true);await pages[1].evaluate(()=>view.dispose());
+      console.log('PASS: an existing software group is refused before candidate networking; persona and encrypted issuer custody retain their revisions and group.');
+    }else{
     for(const p of pages)await p.getByRole('heading',{name:'Do both devices show this code?',exact:true}).waitFor();
     const codes=await Promise.all(pages.map(p=>p.locator('.pairing-code').textContent()));
     assert.equal(codes[0],codes[1]);
@@ -100,6 +125,15 @@ try {
       console.log('PASS: cancelling the comparison returns without replacing the saved identity or claiming connection.');
     }else{
     for(const p of pages)await p.getByRole('button',{name:'Both devices are here and the codes match',exact:true}).click();
+    if(guidedInterrupt){
+      await pages[0].waitForFunction(()=>window.heldCommit===true);
+      await pages[1].evaluate(()=>view.dispose());
+      await pages[0].getByRole('heading',{name:'Checking the saved connection',exact:true}).waitFor();
+      await pages[0].evaluate(()=>releaseHeld());
+      await pages[0].getByRole('heading',{name:guidedInterrupt==='ack'?'Device connected':'Connection saved on this device',exact:true}).waitFor();
+      assert.equal(await pages[0].evaluate(async()=>(await store.read('candidate-persona','active')).value.peerAcknowledged),guidedInterrupt==='ack');
+      console.log('PASS: guided '+guidedInterrupt+' commit survives interruption before its promise returns; UI reports saved state after settling, without replacing the group.');
+    }else{
     await pages[0].getByRole('heading',{name:'Device connected',exact:true}).waitFor();
     await pages[1].getByRole('heading',{name:'Connection saved',exact:true}).waitFor();
     assert.equal(await pages[0].evaluate(()=>connected.peer.certificate.length),136);
@@ -122,6 +156,8 @@ try {
     }
 
     assert.equal(await pages[0].evaluate(async()=>(await store.read('candidate-persona','active')).value.peerAcknowledged),true);
+    }
+    }
     }
   }else{
   const descriptor = await pages[1].evaluate(async () => {
@@ -177,20 +213,20 @@ try {
   ]);
   assert.equal(await pages[0].evaluate(async()=>(await store.read('candidate-persona','active')).value.peerAcknowledged),true);
   }
-  if(!guidedCancel){
+  if(!guidedCancel&&!guidedConflict){
   const expectedGroup=await pages[1].evaluate(()=>[...group]);
   await pages[0].reload();
-  assert.equal(await pages[0].evaluate(async expectedGroup=>{
+  assert.equal(await pages[0].evaluate(async ({expectedGroup,acknowledged})=>{
     const wasm=await import('./hive_wasm.js');await wasm.default();
     const store=await(await import('./storage.mjs')).openBrowserStorage('software-enrollment');
     try{
       const restored=await(await import('./local-persona.mjs')).loadLocalPersona({wasm,store,expectedGroup:new Uint8Array(expectedGroup)});
-      return restored.origin==='enrolled'&&restored.peerAcknowledged&&(await restored.sign(new Uint8Array(32))).length===64;
+      return restored.origin==='enrolled'&&restored.peerAcknowledged===acknowledged&&(await restored.sign(new Uint8Array(32))).length===64;
     }finally{store.close();}
-  },expectedGroup),true);
+  },{expectedGroup,acknowledged:guidedInterrupt!=='install'}),true);
   if (relayMode) { assert.equal(relay.stats().connections,2); assert.equal(relay.stats().limited,0); }
-  if(guidedMode)console.log('PASS: guided invitation/review/comparison, keyboard confirmation, no pre-consent candidate network, fragment removed from history, narrow layout and automated accessibility, real enrollment and reload. Explicit sharing and relay choices saved for the verified peer. Automatic journey delivery and physical devices remain untested.');
-  console.log('PASS: automatic challenge/proof/offer/answer with actual software identities, verified proof, WebRTC comparison, explicit confirmation, durable installation/acknowledgment and reload. ' + (relayMode?(process.env.R2_HIVE_UPSTREAM?'Current hive binding through deployed upstream via local TLS test bridge.':'Current hive binding through local relay with protected invitation channel.'):'Harness supplies byte-only channel.') + ' Harness supplies reviewed invitation; not public rendezvous or physical acceptance.');
+  if(guidedMode&&!guidedInterrupt)console.log('PASS: guided invitation/review/comparison, keyboard confirmation, no pre-consent candidate network, fragment removed from history, narrow layout and automated accessibility, real enrollment and reload. Explicit sharing and relay choices saved for the verified peer. Automatic journey delivery and physical devices remain untested.');
+  if(!guidedInterrupt)console.log('PASS: automatic challenge/proof/offer/answer with actual software identities, verified proof, WebRTC comparison, explicit confirmation, durable installation/acknowledgment and reload. ' + (relayMode?(process.env.R2_HIVE_UPSTREAM?'Current hive binding through deployed upstream via local TLS test bridge.':'Current hive binding through local relay with protected invitation channel.'):'Harness supplies byte-only channel.') + ' Harness supplies reviewed invitation; not public rendezvous or physical acceptance.');
   }
 } catch (error) {
   console.error('Non-secret connection diagnostics:',JSON.stringify({sent,relay:relay?.stats(),profiles:await Promise.all((pages??[]).map(p=>
