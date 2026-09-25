@@ -66,3 +66,16 @@ conflict. Test keyboard, spoken announcements, narrow screens, offline failure,
 reload/recovery and real S23/desktop use. The human writes no code.
 
 This is the accepted redesign target, not a claim that it has shipped.
+
+
+## Implementation progress
+
+`experiments/tg-pairing/automatic-signalling.mjs` now sequences the invitation
+challenge/proof and connection offer/answer over a supplied invitation channel.
+Candidate session creation follows successful proof verification. It fails closed
+on unexpected or oversized messages and cancels sessions that finish creating
+after cancellation. Four Node tests pass with synthetic channels and session
+callbacks. This establishes orchestration only, not encrypted rendezvous,
+real enrollment, public-server connectivity or the user-facing single-scan flow.
+Next connect an invitation-scoped channel and the actual proof/session modules,
+then build the guided view and sharing handoff. No new public release yet.
