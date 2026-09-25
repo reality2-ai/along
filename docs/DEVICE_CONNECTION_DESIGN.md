@@ -272,3 +272,30 @@ service or recreate existing user groups.
 Version 44 remains a local candidate, not a published release. GitHub authentication
 was unavailable during this work; the public app remains version 43. Physical
 S23/desktop and spoken-screen-reader checks remain outstanding.
+
+
+## Complete relay carriage implemented locally
+
+The direct-path limitation above has now been removed from automatic enrollment.
+The [Along transport adaptation](../experiments/tg-pairing/RELAY_ENROLLMENT.md)
+carries the comparison, explicit decisions, protected claim/material and durable
+receipts through the invitation channel, in addition to its proof and connection
+contributions. The public runtime bundle remains unchanged; adapted MIT-licensed
+link/session modules accept the relay transport while preserving the original
+checks. Manual fallback retains its original transport.
+
+The full software enrollment and guided scan checks pass with
+`RTCPeerConnection` disabled. The generated app also exchanges saved places,
+reopens offline, preserves an offline removal and reconnects automatically with
+WebRTC disabled. Interruption tests exposed missing prompt remote cancellation;
+a protected best-effort close message now handles deliberate cancellation, while
+abrupt loss still expires. Installation and acknowledgment interruption checks
+pass after that fix. A new complete fixed-source qualification is required;
+the earlier 32-scenario record does not qualify these changed files. The new
+carriage's transcript, invalid-message and cancellation tests are an additional
+release gate.
+
+The live hive was rechecked at 2026-09-25T22:31:29Z: WebSocket binding and host
+announcements succeeded, but neither protected EVENT direction was forwarded.
+GitHub authentication still returns HTTP 401. Neither external blocker has been
+resolved by the local transport work, and no release has been published.

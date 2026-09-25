@@ -89,7 +89,7 @@ export async function createInvitationChannel({invitation, role, signal, onError
       const record = pending.get(value.ack);
       if (record) { pending.delete(value.ack); record.resolve(); }
     } else if (fields === 'body,n,v' && Number.isSafeInteger(value.n) && value.n >= 0
-        && value.n < 8 && typeof value.body === 'string') {
+        && value.n < 32 && typeof value.body === 'string') {
       if (value.n > nextReceive || !listener) return;
       if (value.n === nextReceive) { nextReceive++; listener(value.body); }
       await acknowledge(value.n);
@@ -113,7 +113,7 @@ export async function createInvitationChannel({invitation, role, signal, onError
     },
     send(text) {
       current();
-      if (typeof text !== 'string' || nextSend >= 8 || pending.size >= 2) throw Error('Connection message unavailable');
+      if (typeof text !== 'string' || nextSend >= 32 || pending.size >= 2) throw Error('Connection message unavailable');
       const n = nextSend, packet = encoder.encode(JSON.stringify({v:1,n,body:text}));
       if (packet.length > LIMITS.maxPacket) throw Error('Connection message too large');
       nextSend++;

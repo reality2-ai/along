@@ -250,7 +250,8 @@ Local progress: the generated app now completes one invitation-link enrollment,
 explicit sharing permission and automatic exchange of saved address pairs through
 a local TLS hive stand-in. The new flow is not published. Deployed relay delivery,
 physical checks and publication remain outstanding. All 32 local v44 qualification
-scenarios passed, but initial enrollment still requires a direct WebRTC path;
-complete relay-carried enrollment remains Along work. See the
-[transport limitation](DEVICE_CONNECTION_DESIGN.md#local-qualification-and-remaining-transport-gap) and
+scenarios passed for the previous candidate. Complete relay-carried enrollment
+now passes focused and generated-app checks with WebRTC disabled; fresh full
+qualification remains necessary for that change. See the
+[transport adaptation](DEVICE_CONNECTION_DESIGN.md#complete-relay-carriage-implemented-locally) and
 [local verification](evidence/guided-device-connection-local-2026-09-26.json).

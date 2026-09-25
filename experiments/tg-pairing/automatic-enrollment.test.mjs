@@ -19,7 +19,7 @@ const {chromium} = await import(process.env.PLAYWRIGHT_MODULE || '@playwright/te
 if (!process.env.R2_BROWSER_DIR) throw new Error('Set R2_BROWSER_DIR to the experimental Reality2 browser module directory');
 if (!process.env.R2_WASM_DIR) throw new Error('Set R2_WASM_DIR');
 const sources = new Map(await Promise.all(['peer-session', 'challenge', 'session-statement', 'membership', 'certificate', 'enrollment-session', 'storage', 'invitation-journal', 'enrollment-link', 'enrollment-exchange', 'enrollment-protection', 'peer-link', 'invitation'].map(async name => ['/' + name + '.mjs', await readFile(join(process.env.R2_BROWSER_DIR, name + '.mjs'))])));
-for (const name of ['enrollment-profile.mjs', 'enrollment-payloads.mjs', 'core-candidate-session.mjs', 'software-traffic.mjs', 'initial-persona.mjs', 'software-persona.mjs', 'software-invitation.mjs', 'invitation-proof.mjs', 'transfer-view.mjs', 'receive-invitation-view.mjs', 'stored-claim.mjs', 'installation-receipt.mjs', 'local-persona.mjs', 'local-persona-session.mjs', 'epoch-watch.mjs', 'receipt-recovery.mjs', 'automatic-signalling.mjs', 'automatic-enrollment.mjs', 'connection-invitation.mjs', 'invitation-channel.mjs', 'invitation-channel-checks.mjs', 'automatic-pairing-view.mjs', 'connected-sharing-view.mjs', 'comparison.mjs', 'comparison.css']) sources.set('/' + name, await readFile(new URL('./' + name, import.meta.url)));
+for (const name of ['enrollment-profile.mjs', 'enrollment-payloads.mjs', 'core-candidate-session.mjs', 'software-traffic.mjs', 'initial-persona.mjs', 'software-persona.mjs', 'software-invitation.mjs', 'invitation-proof.mjs', 'transfer-view.mjs', 'receive-invitation-view.mjs', 'stored-claim.mjs', 'installation-receipt.mjs', 'local-persona.mjs', 'local-persona-session.mjs', 'epoch-watch.mjs', 'receipt-recovery.mjs', 'relay-enrollment-peer.mjs', 'relay-enrollment-link.mjs', 'relay-enrollment-session.mjs', 'automatic-signalling.mjs', 'automatic-enrollment.mjs', 'connection-invitation.mjs', 'invitation-channel.mjs', 'invitation-channel-checks.mjs', 'automatic-pairing-view.mjs', 'connected-sharing-view.mjs', 'comparison.mjs', 'comparison.css']) sources.set('/' + name, await readFile(new URL('./' + name, import.meta.url)));
 for (const name of ['hive_wasm.js', 'hive_wasm_bg.wasm']) sources.set('/' + name, await readFile(join(process.env.R2_WASM_DIR, name)));
 for (const name of ['qr-transfer.mjs', 'vendor/qrcode.mjs']) sources.set('/' + name, await readFile(new URL(name, import.meta.url)));
 for (const name of await readdir(new URL('../r2-current/',import.meta.url))) {
@@ -45,6 +45,7 @@ const sent=[];
 try {
   browser = await chromium.launch({headless: true, executablePath: process.env.CHROMIUM_PATH});
   const contexts = await Promise.all([browser.newContext({ignoreHTTPSErrors:relayMode,viewport:{width:360,height:780}}), browser.newContext({ignoreHTTPSErrors:relayMode,viewport:{width:360,height:780}})]);
+  await Promise.all(contexts.map(c=>c.addInitScript(()=>{window.RTCPeerConnection=class{constructor(){throw Error('Direct WebRTC disabled for relay enrollment test');}};})));
   pages = await Promise.all(contexts.map(c => c.newPage()));
   const url = `${relayMode?'https':'http'}://127.0.0.1:${server.address().port}`;
   await Promise.all(pages.map(async (page, index) => {
@@ -188,7 +189,7 @@ try {
     (await import('./connection-invitation.mjs')).createConnectionInvitation({descriptor,relay:relayURL}),{descriptor,relayURL}) : undefined;
   // Harness moves bytes only: it does not construct or sequence proof/SDP replies.
   await Promise.all(pages.map((page,index)=>page.exposeFunction('deliver',async text=>{
-    sent.push(JSON.parse(text).kind);
+    if(JSON.parse(text).kind)sent.push(JSON.parse(text).kind);
     if (!relayMode) await pages[1-index].evaluate(text=>window.inbound?.(text),text);
   })));
   for(const index of [1,0]) await pages[index].evaluate(async ({index,descriptor,connection,relayMode})=>{
@@ -243,7 +244,7 @@ try {
   },{expectedGroup,acknowledged:guidedInterrupt!=='install'}),true);
   if (relayMode) { assert.equal(relay.stats().connections,2); assert.equal(relay.stats().limited,0); }
   if(guidedMode&&!guidedInterrupt)console.log('PASS: guided invitation/review/comparison, keyboard confirmation, no pre-consent candidate network, fragment removed from history, narrow layout and automated accessibility, real enrollment and reload. Explicit sharing and relay choices saved for the verified peer. Automatic journey delivery and physical devices remain untested.');
-  if(!guidedInterrupt)console.log('PASS: automatic challenge/proof/offer/answer with actual software identities, verified proof, WebRTC comparison, explicit confirmation, durable installation/acknowledgment and reload. ' + (relayMode?(process.env.R2_HIVE_UPSTREAM?'Current hive binding through deployed upstream via local TLS test bridge.':'Current hive binding through local relay with protected invitation channel.'):'Harness supplies byte-only channel.') + ' Harness supplies reviewed invitation; not public rendezvous or physical acceptance.');
+  if(!guidedInterrupt)console.log('PASS: automatic challenge/proof/offer/answer with actual software identities, verified proof, relay-carried comparison with WebRTC disabled, explicit confirmation, durable installation/acknowledgment and reload. ' + (relayMode?(process.env.R2_HIVE_UPSTREAM?'Current hive binding through deployed upstream via local TLS test bridge.':'Current hive binding through local relay with protected invitation channel.'):'Harness supplies byte-only channel.') + ' Harness supplies reviewed invitation; not public rendezvous or physical acceptance.');
   }
 } catch (error) {
   console.error('Non-secret connection diagnostics:',JSON.stringify({sent,relay:relay?.stats(),profiles:await Promise.all((pages??[]).map(p=>

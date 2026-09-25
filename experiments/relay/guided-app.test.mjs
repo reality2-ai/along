@@ -25,6 +25,7 @@ let browser,pages,errors=[];
 try{
   browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_PATH,args:['--ignore-certificate-errors']});
   const contexts=await Promise.all([browser.newContext({ignoreHTTPSErrors:true,viewport:{width:360,height:780}}),browser.newContext({ignoreHTTPSErrors:true,viewport:{width:360,height:780}})]);
+  await Promise.all(contexts.map(context=>context.addInitScript(()=>{window.RTCPeerConnection=class{constructor(){throw Error('Direct WebRTC disabled for guided app test');}};})));
   const [owner,candidate]=await Promise.all(contexts.map(c=>c.newPage()));pages=[owner,candidate];
   let candidateOffline=false;
   await candidate.routeWebSocket('**/r2',socket=>{if(candidateOffline)socket.close({code:1013,reason:'Test offline'});else socket.connectToServer();});

@@ -3,16 +3,17 @@
 // comparison UI and durable installation. This module grants no sharing rights.
 import {createAutomaticSignalling} from './automatic-signalling.mjs';
 import {answerInvitationProof, createInvitationProof} from './invitation-proof.mjs';
-import {createEnrollmentSession} from './enrollment-session.mjs';
+import {createEnrollmentSession} from './relay-enrollment-session.mjs';
 import {createCoreCandidateSession} from './core-candidate-session.mjs';
+import {createRelayEnrollmentCarriage} from './relay-enrollment-peer.mjs';
 import {enrollmentPayloads} from './enrollment-payloads.mjs';
 export function createAutomaticEnrollment({role, wasm, store, channel, invitation, reviewed,
   signal, onReady = () => {}, onError = () => {}}) {
   const lifetime = new AbortController();
-  let proof, signalling, payloads, peer, closed = false;
+  let proof, signalling, payloads, peer, carriage, closed = false;
   const close = () => {
     if (closed) return; closed = true; lifetime.abort(); proof?.close();
-    if (signalling) signalling.close(); else channel?.close();
+    if (signalling) signalling.close(); else carriage ? carriage.close() : channel?.close();
     signal?.removeEventListener('abort', close);
     reviewed?.signal.removeEventListener('abort', sourceEnded);
     invitation?.signal.removeEventListener('abort', sourceEnded);
@@ -26,7 +27,9 @@ export function createAutomaticEnrollment({role, wasm, store, channel, invitatio
     signal?.addEventListener('abort', close, {once:true});
     sourceSignal.addEventListener('abort', sourceEnded, {once:true});
     if (role === 'candidate') proof = createInvitationProof({wasm, reviewed, onExpired:()=>fail(Error('Invitation expired'))});
-    signalling = createAutomaticSignalling({role, channel, signal:lifetime.signal,
+    carriage = createRelayEnrollmentCarriage(channel,{onClose:()=>fail(Error('Connection ended'))});
+    const sessionFactory = options => createEnrollmentSession({...options,createPeerLink:carriage.createPeerLink});
+    signalling = createAutomaticSignalling({role, channel:carriage.signalling, signal:lifetime.signal,
       answerProof: request => answerInvitationProof(invitation, request),
       verifyProof: response => {
         const verified = proof.verify(response);
@@ -39,14 +42,14 @@ export function createAutomaticEnrollment({role, wasm, store, channel, invitatio
       discardProof: verified => verified.authorized.free(),
       createSession: async verified => {
         if (role === 'provisioner') {
-          const session = await createEnrollmentSession({wasm, store, invitation:invitation.invitation(), role});
+          const session = await sessionFactory({wasm, store, invitation:invitation.invitation(), role});
           try {
             payloads = enrollmentPayloads({wasm, invitation:invitation.invitation(), epoch:invitation.invitation().epoch, role, session});
             return session;
           } catch (error) { await session.cancel(); throw error; }
         }
         const session = await createCoreCandidateSession({wasm, store, invitation:verified.invitation,
-          authorized:verified.authorized, softwareCustody:true, signal:lifetime.signal,
+          authorized:verified.authorized, sessionFactory, softwareCustody:true, signal:lifetime.signal,
           platform:{candidateDevelopment:false,provisionerDevelopment:false,provisionerHoldsCustody:true,epoch:verified.invitation.epoch}});
         return Object.freeze({...session, cancel:()=>session.dispose()});
       },

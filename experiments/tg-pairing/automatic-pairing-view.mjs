@@ -22,12 +22,19 @@ export function showAutomaticPairing(container,{wasm,store,role,expectedGroup,re
   appURL=container.ownerDocument.defaultView.location.href.split('#')[0],focus=false,onBack=()=>{},onConnected=()=>{},onShare}) {
   if (!['candidate','provisioner'].includes(role)) throw Error('Connection role required');
   mounted.get(container)?.();
-  const doc=container.ownerDocument,lifetime=new AbortController();
+  const doc=container.ownerDocument,lifetime=new AbortController(),transportLifetime=new AbortController();
   let disposed=false,finished=false,failed=false,busy=false,invitation,channel,flow,session,payloads,comparison;
   let installation,acknowledgment,peer,connection;
   let phase='invitation',relayState='disconnected';
   const node=(tag,text='')=>{const n=doc.createElement(tag);n.textContent=text;return n;};
-  const stop=()=>{lifetime.abort();comparison?.dispose();flow?.close();channel?.close();invitation?.close();};
+  const stop=()=>{
+    if(lifetime.signal.aborted)return;
+    // Stop membership work immediately, but allow the carriage's bounded close
+    // notification to reach the other screen before releasing its socket.
+    flow?.close();lifetime.abort();comparison?.dispose();invitation?.close();
+    if(flow)setTimeout(()=>transportLifetime.abort(),2000);
+    else{transportLifetime.abort();channel?.close();}
+  };
   const dispose=()=>{if(disposed)return;disposed=true;stop();if(mounted.get(container)===dispose)mounted.delete(container);};
   mounted.set(container,dispose);
   const leave=()=>{dispose();onBack();};
@@ -104,7 +111,7 @@ export function showAutomaticPairing(container,{wasm,store,role,expectedGroup,re
   };
   const connect=async(text,reviewed)=>{
     current();connection=readConnectionInvitation(text);
-    channel=await createInvitationChannel({invitation:text,role,signal:lifetime.signal,onError:()=>{void fail();},onStatus:s=>{relayState=s;}});current();
+    channel=await createInvitationChannel({invitation:text,role,signal:transportLifetime.signal,onError:()=>{void fail();},onStatus:s=>{relayState=s;}});current();
     flow=createAutomaticEnrollment({role,wasm,store,channel,invitation,reviewed,signal:lifetime.signal,onReady:ready,onError:()=>{void fail();}});
     channel.start();if(role==='candidate'){phase='exchange';await flow.start();}
   };

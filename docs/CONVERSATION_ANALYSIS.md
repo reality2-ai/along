@@ -1664,3 +1664,12 @@ across real networks. This extends the verification theme: reduced interaction
 cost and reliable task completion are separate requirements. Course learners
 should ask what environmental assumption each passing test leaves untested.
 See [the implementation and remaining boundary](DEVICE_CONNECTION_DESIGN.md#local-qualification-and-remaining-transport-gap).
+
+
+The follow-up adaptation carries the complete enrollment through the approved
+relay. Disabling WebRTC in both the component and generated-app tests makes the
+former hidden assumption observable. Interruption testing then exposed a second
+assumption: a closed direct connection used to notify the other view. The relay
+path now sends a protected cancellation message, with deadline expiry as fallback.
+This illustrates why changing transport requires testing lifecycle behavior as
+well as successful message delivery.
