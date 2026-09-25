@@ -232,3 +232,12 @@ the approved optional-relay architecture and full synchronization requirement.
 Later the same day the server owner deployed a current extended-frame WebSocket
 binding at `wss://wairoa.mariko.org.nz/r2`. The external dependency is resolved;
 the Along client adapter and its two-profile verification are the remaining work.
+
+
+## Device connection simplicity (26 September 2026)
+
+The user finds the whole connection process too complicated. Replace the normal
+manual multi-exchange setup with the [guided device connection](DEVICE_CONNECTION_DESIGN.md):
+one invitation scan/link, matching-code confirmation and a sharing choice, with
+automatic return-message exchange and reconnection. Preserve optional relay
+consent, explicit permissions, durable recovery and offline independence.
