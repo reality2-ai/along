@@ -6,7 +6,15 @@ exchange. Neither fact establishes interoperability. This handover describes the
 missing integration work; it is not a new R2 standard or an implemented binding.
 The [review](R2_CURRENT_STANDARD_REVIEW.md) records source and deployment scope.
 
-## Work for the server owner
+## Status — server work delivered 25 September
+
+The server owner has deployed `wss://wairoa.mariko.org.nz/r2` (subprotocol
+`r2.extended.v1`, one extended L4 frame per binary message) and published its
+binding contract. See the [review](R2_CURRENT_STANDARD_REVIEW.md#server-update--extended-websocket-binding-delivered).
+The request below is kept as the record of what was asked. The Along section is
+now the active work.
+
+## Work for the server owner (delivered)
 
 Provide a browser-accessible binding for current R2, preferably a secure
 WebSocket stream if that fits the current hive architecture. Publish its binding

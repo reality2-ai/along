@@ -87,11 +87,11 @@ qualification. Publication does not establish full goal completion.
 
 ## Next work against the full goal
 
-1. Obtain the current server implementation's browser endpoint and transport
-   contract, then adapt and verify Along against it. The server AI owns server
-   configuration. Do not deploy the old relay to fit Along or treat an old
-   signed greeting as the current standard. The server record now confirms compact UDP only; the missing browser binding
-   is described in the [server/client handover](R2_BROWSER_TRANSPORT_HANDOVER.md).
+1. Adapt and verify Along against the delivered current browser binding,
+   `wss://wairoa.mariko.org.nz/r2` with subprotocol `r2.extended.v1`. The server
+   AI owns server configuration. Do not deploy the old relay to fit Along or treat
+   an old signed greeting as the current standard. Client work and verification
+   are listed in the [server/client handover](R2_BROWSER_TRANSPORT_HANDOVER.md).
 2. Resolve the original S23 scan → Use failure using the [v43 device guide](DEVICE_CHECK.md).
    Verify pairing, saved places/preferences, offline reopening, arrival timing,
    shortcut removal, touch and spoken-screen-reader behaviour. A partial report

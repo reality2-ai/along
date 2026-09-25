@@ -87,3 +87,24 @@ browser Along cannot open a raw UDP socket to that receiver. A new server browse
 binding is required; asking again for the old `/r2` address will not solve it.
 See the [server/client handover](R2_BROWSER_TRANSPORT_HANDOVER.md). The server AI
 continues to own server implementation/configuration; Along owns its client.
+
+
+## Server update — extended WebSocket binding delivered
+
+Later on 25 September the server owner's record added a current browser binding:
+code commit `6575dd40a0a72622875ae889d0f6fd64d2c57784` and deployment record
+`0b27785a31a6a90a04c5b66248040a2a5c9a54a4`. The endpoint is
+`wss://wairoa.mariko.org.nz/r2` with required subprotocol `r2.extended.v1`.
+Each binary message carries one complete extended L4 frame; there is no JSON
+hello, login or subscription. It runs as a separate host persona from the
+compact UDP receiver and does not translate between wire tiers. The owner's
+contract declares the L1 profile (TCP ordinal 3, extended tier, 32 peers,
+64 messages per second per peer, 30-second silence removal) and notes that
+relayed mesh payloads remain limited to 200 bytes including crypto overhead.
+
+Along's [independent anonymous probe](evidence/r2-websocket-endpoint-probe.json)
+confirmed the upgrade, the selected subprotocol and received HEARTBEAT frames.
+It sent nothing, so it does not establish forwarding, group membership or Along
+interoperability. The previous `/r2` 404 observation is superseded for this host.
+The server-side request in the [handover](R2_BROWSER_TRANSPORT_HANDOVER.md) is now
+satisfied; the Along client adapter is the remaining work.

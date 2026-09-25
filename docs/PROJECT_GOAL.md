@@ -228,3 +228,7 @@ public WebSocket binding. The next external dependency is implementation of a
 current browser transport by the server owner, not merely learning a URL.
 [Client/server work and verification](R2_BROWSER_TRANSPORT_HANDOVER.md) preserve
 the approved optional-relay architecture and full synchronization requirement.
+
+Later the same day the server owner deployed a current extended-frame WebSocket
+binding at `wss://wairoa.mariko.org.nz/r2`. The external dependency is resolved;
+the Along client adapter and its two-profile verification are the remaining work.

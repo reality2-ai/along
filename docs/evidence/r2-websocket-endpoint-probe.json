@@ -1,0 +1,15 @@
+{
+  "checked_at": "2026-09-25T05:36:49.727Z",
+  "url": "wss://wairoa.mariko.org.nz/r2",
+  "requested_protocol": "r2.extended.v1",
+  "opened": true,
+  "selected_protocol": "r2.extended.v1",
+  "observation_seconds": 6,
+  "binary_messages": 14,
+  "frame_type_counts": {
+    "0": 11,
+    "5": 3
+  },
+  "heartbeat_received": true,
+  "scope": "Anonymous read-only observation from a Node WebSocket client: upgrade, subprotocol selection and received frame types. No frames were sent; no group membership, relay forwarding or Along interoperability is established."
+}
