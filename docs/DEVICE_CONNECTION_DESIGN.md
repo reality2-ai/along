@@ -330,3 +330,16 @@ A deterministic concurrent-replica-commit check passes. The original intermitten
 failure was not reproduced in an instrumented rerun, so this is not proof that
 concurrency was its only possible cause. Relay reconnection diagnosis and a new
 fixed-source qualification remain outstanding.
+
+
+The subsequent relay diagnostic passed but its local hive reported 1,585 frames
+and 34 rate-limited drops across eight connections. Source inspection found that
+`hive-relay-transport.mjs` keeps its pacing history inside each transport instance.
+Replacing a connection for the same origin forgets the origin's recent sends,
+while the hive's per-origin window continues. This is a concrete pacing gap,
+although the passing diagnostic does not prove it was the sole cause of the
+previous timeout. Fix pacing across connection replacement (and consider multiple
+same-origin app tabs) before claiming reconnection reliability. No timeout was
+increased to mask this finding. Local diagnostic log:
+`/tmp/along-relay-service-diagnostic.log`; production code remains unchanged for
+this issue pending the fix.
