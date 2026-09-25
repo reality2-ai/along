@@ -1673,3 +1673,11 @@ assumption: a closed direct connection used to notify the other view. The relay
 path now sends a protected cancellation message, with deadline expiry as fallback.
 This illustrates why changing transport requires testing lifecycle behavior as
 well as successful message delivery.
+
+
+The first-use review found that a technically simpler protocol still left an
+unnecessary user task: creating a device group before inviting another device.
+That work now happens as part of the explicit Create invitation action, with
+local storage explained on that screen. Opening or cancelling the screen has no
+setup side effect. This continues the contextual-design theme: internal protocol
+steps do not each need to become a separate user decision.

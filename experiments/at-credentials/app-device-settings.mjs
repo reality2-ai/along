@@ -94,14 +94,15 @@ export function mountAppDeviceSettings({onChanged,connectionInvitation}) {
         guided({role:'candidate',connectionText:incoming.invitation});return;
       }
       if (!saved) {
-        heading.textContent = 'Set up this device';
+        heading.textContent = 'My devices';
         status.textContent = 'Device connection and live information are optional. Scheduled journey planning works without setup.';
-        action(panel,'Connect to my other device',()=>guided({role:'candidate'}),true);
+        action(panel,'Connect another device',()=>guided({role:'provisioner',createLocalGroup:true}),true);
+        action(panel,'Connect to my other device',()=>guided({role:'candidate'}));
         action(panel, 'Set up my device', () => {
           clear(); child = showLocalSetup(content, {wasm, store, focus: true, onBack: home});
           const setup = child;
           void setup.completed.then(() => { if (!disposed && child === setup) return home(); }).catch(() => {});
-        }, true);
+        });
       } else {
         const group = saved.value.record.group;
         // Receiving a signed removal remains available even if local membership

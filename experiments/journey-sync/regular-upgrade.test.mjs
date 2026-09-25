@@ -83,12 +83,19 @@ try{
   const failed=await page.evaluate(async()=>{
     const registration=await navigator.serviceWorker.ready;
     const finished=new Promise((resolve,reject)=>{
-      const timeout=setTimeout(()=>reject(Error('Failed update did not settle')),30000);
-      registration.addEventListener('updatefound',()=>{
-        const worker=registration.installing;
-        worker.addEventListener('statechange',()=>{if(['redundant','installed'].includes(worker.state)){clearTimeout(timeout);resolve(worker.state);}});
-      },{once:true});
+      let worker;
+      const cleanup=()=>{clearTimeout(timeout);registration.removeEventListener('updatefound',watch);worker?.removeEventListener('statechange',changed);};
+      const changed=()=>{if(worker&&['redundant','installed'].includes(worker.state)){const state=worker.state;cleanup();resolve(state);}};
+      const watch=()=>{
+        const next=registration.installing;
+        if(!next||next===worker)return;
+        worker?.removeEventListener('statechange',changed);worker=next;
+        worker.addEventListener('statechange',changed);changed();
+      };
+      const timeout=setTimeout(()=>{const state={observed:worker?.state,installing:registration.installing?.state,waiting:registration.waiting?.state};cleanup();reject(Error('Failed update did not settle: '+JSON.stringify(state)));},30000);
+      registration.addEventListener('updatefound',watch);watch();
     });
+    void finished.catch(()=>{});
     await registration.update();return finished;
   });
   assert.equal(failed,'redundant','incomplete shell must not install');

@@ -61,6 +61,33 @@ try {
   await page.getByRole('button',{name:'Finish saved-journey setup',exact:true}).click();
   await page.getByRole('button',{name:'Prepare recovery on this device',exact:true}).click();
   await expect(page.getByText('Connect to share saved-place changes with a device at the same checkpoint.',{exact:false})).toBeVisible();
+  assert.equal(await page.evaluate(async group=>{
+    const wasm=await import(window.testExperimentBase+'tg-pairing/hive_wasm.js');await wasm.default();
+    const store=await(await import(window.testExperimentBase+'tg-pairing/storage.mjs')).openBrowserStorage(window.testDeviceStore);
+    let committed=false;
+    try {
+      const changingStore={...store,read:async(scope,key)=>{
+        const value=await store.read(scope,key);
+        if(scope==='along-saved-journeys-v2'&&!committed){committed=true;
+          const result=await store.compareAndSwapMany([{scope,key,expectedRevision:value.revision,value:value.value}]);
+          if(!result.applied)throw Error('Concurrent snapshot fixture did not commit');
+        }
+        return value;
+      }};
+      const result=await(await import(window.testExperimentBase+'journey-sync/startup-state.mjs')).readJourneyStartupState({wasm,store:changingStore,expectedGroup:Uint8Array.from(group.match(/../g),b=>parseInt(b,16))});
+      let churn=0;
+      const unstableStore={...store,read:async(scope,key)=>{
+        const value=await store.read(scope,key);
+        if(scope==='along-saved-journeys-v2'){
+          const saved=await store.compareAndSwapMany([{scope,key,expectedRevision:value.revision,value:value.value}]);
+          if(!saved.applied)throw Error('Changing snapshot fixture did not commit');churn++;
+        }
+        return value;
+      }};
+      const unstable=await(await import(window.testExperimentBase+'journey-sync/startup-state.mjs')).readJourneyStartupState({wasm,store:unstableStore,expectedGroup:Uint8Array.from(group.match(/../g),b=>parseInt(b,16))});
+      return committed&&result.status==='generation-ready'&&unstable.status==='unavailable'&&churn>1&&churn<=6;
+    }finally{store.close();}
+  },input.group),true,'Concurrent replica commit triggers a fresh verified startup snapshot');
   await page.reload(); await open();
   await expect(page.getByText('Connect to share saved-place changes with a device at the same checkpoint.',{exact:false})).toBeVisible();
   await expect(page.getByRole('button',{name:'Start journey connection',exact:true})).toBeVisible();

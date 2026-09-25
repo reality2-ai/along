@@ -8,7 +8,18 @@ import {preferenceKey, readEnvelope} from './preference-envelope.mjs';
 import {openIsolatedPlannerStorage} from './isolated-preferences.mjs';
 const hex = bytes => Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
 const matches = (a, b) => a?.generation === b.generation && a?.checkpoint === b.checkpoint;
-export async function readJourneyStartupState({wasm, store, expectedGroup, storage = globalThis.localStorage, signal}) {
+const changedDuringRead = Symbol('startup-snapshot-changed');
+export async function readJourneyStartupState(options) {
+  // Reconciliation can commit while this read-only diagnosis is in flight.
+  // Revalidate a fresh snapshot, never accept the inconsistent one or retry
+  // malformed data, cancellation, failed storage or missing authority.
+  for (let attempt=0;attempt<3;attempt++) {
+    const result=await inspectJourneyStartupState(options);
+    if(result!==changedDuringRead)return result;
+  }
+  return {status:'unavailable'};
+}
+async function inspectJourneyStartupState({wasm, store, expectedGroup, storage = globalThis.localStorage, signal}) {
   const unavailable = {status: 'unavailable'};
   try {
     if (!(expectedGroup instanceof Uint8Array) || expectedGroup.length !== 32) return unavailable;
@@ -66,9 +77,11 @@ export async function readJourneyStartupState({wasm, store, expectedGroup, stora
       }
     }
     const checked = await loadLocalPersona({wasm, store, expectedGroup: group});
-    if (checked?.member !== identity.member || checked.epoch !== identity.epoch) return unavailable;
-    for (const record of observed) if (((await store.read(record.scope, record.key))?.revision ?? 0) !== record.revision) return unavailable;
-    if (signal?.aborted || storage.getItem(profileKey) !== profileRaw || storage.getItem(preferenceKey) !== legacyRaw) return unavailable;
+    if (!checked) return unavailable;
+    if (checked.member !== identity.member || checked.epoch !== identity.epoch) return changedDuringRead;
+    for (const record of observed) if (((await store.read(record.scope, record.key))?.revision ?? 0) !== record.revision) return changedDuringRead;
+    if (signal?.aborted) return unavailable;
+    if (storage.getItem(profileKey) !== profileRaw || storage.getItem(preferenceKey) !== legacyRaw) return changedDuringRead;
     return {...result, canPrepareCheckpoint: identity.origin === 'initial'};
   } catch { return unavailable; }
 }

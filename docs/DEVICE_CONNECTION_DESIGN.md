@@ -299,3 +299,34 @@ The live hive was rechecked at 2026-09-25T22:31:29Z: WebSocket binding and host
 announcements succeeded, but neither protected EVENT direction was forwarded.
 GitHub authentication still returns HTTP 401. Neither external blocker has been
 resolved by the local transport work, and no release has been published.
+
+
+## First-use refinement and second transport qualification
+
+The relay-only source `e3d0753c716566d9ca7d6727947c33df8bdca752` did not
+pass full qualification. [Preserved results](evidence/guided-v44-relay-qualification-failed.json)
+record three failures: the v42 failed-update observation timed out, recovery
+Settings temporarily became unavailable, and the pre-existing relay membership
+reconnection check timed out. All guided enrollment cases passed. A diagnostic
+v42 rerun and recovery rerun passed; this does not retroactively qualify the build
+or establish the cause of each original failure.
+
+The fresh-device entry now goes directly to **Connect another device**. Choosing
+**Create invitation** explicitly creates encrypted local connection keys when
+needed; opening the screen, cancelling and validating a malformed endpoint do
+not create a new group. Existing identities are never replaced. The standalone
+setup action remains available for optional AT-key setup. The generated-app
+first-use check passes, including cancellation before creation, real enrollment,
+sharing, offline removal and reconnection with WebRTC disabled. A 360 × 780
+screenshot confirms the primary action is visible without scrolling.
+
+The failed-update test now observes an already-installing worker and checks its
+current state when attaching, instead of relying only on a future state-change
+event. Its deadline is unchanged and diagnostics identify observed worker states.
+Recovery diagnosis now retries a fresh snapshot, at most three times, specifically
+when its revision or local-storage recheck detects concurrent changes. Invalid
+records, absent authority, cancellation and storage errors still fail closed.
+A deterministic concurrent-replica-commit check passes. The original intermittent
+failure was not reproduced in an instrumented rerun, so this is not proof that
+concurrency was its only possible cause. Relay reconnection diagnosis and a new
+fixed-source qualification remain outstanding.

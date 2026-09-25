@@ -47,9 +47,12 @@ try{
   await save(owner,'10 Victoria Road Devonport');await save(candidate,'1 Queen Street Auckland Central');
   await owner.locator('#settings-open').click();
   await owner.getByRole('button',{name:/^(My devices|Device and AT-key setup)$/,exact:true}).click();
-  await owner.getByRole('button',{name:'Set up my device',exact:true}).click();
-  await owner.getByRole('button',{name:'Create my device group',exact:true}).click();
   await owner.getByRole('button',{name:'Connect another device',exact:true}).click();
+  assert.equal(await owner.evaluate(async base=>{const store=await(await import(base+'experiments/tg-pairing/storage.mjs')).openBrowserStorage('along-pairing-lab-v1');try{return await store.read('candidate-persona','active');}finally{store.close();}},regularCandidate?'./':'../'),null,'Opening Connect does not create an identity');
+  assert.equal(relay.stats().connections,0,'No relay connection before Create invitation');
+  await owner.getByRole('button',{name:'Cancel',exact:true}).click();
+  await owner.getByRole('button',{name:'Connect another device',exact:true}).click();
+  assert.equal(await owner.evaluate(async base=>{const store=await(await import(base+'experiments/tg-pairing/storage.mjs')).openBrowserStorage('along-pairing-lab-v1');try{return await store.read('candidate-persona','active');}finally{store.close();}},regularCandidate?'./':'../'),null,'Cancelling before Create leaves no identity');
   await owner.getByLabel('Relay server address',{exact:true}).fill(endpoint);
   await owner.getByRole('button',{name:'Create invitation',exact:true}).click();
   const link=await owner.getByLabel('Invitation link',{exact:true}).inputValue();

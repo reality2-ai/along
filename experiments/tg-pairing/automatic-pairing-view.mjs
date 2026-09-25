@@ -3,6 +3,7 @@
 import {initializeLocalPersona} from './initial-persona.mjs';
 import {createSoftwareInvitation} from './software-invitation.mjs';
 import {createConnectionInvitation,readConnectionInvitation,connectionInvitationLink,invitationFromLink} from './connection-invitation.mjs';
+import {initializeSoftwarePersona} from './software-persona.mjs';
 import {createInvitationChannel} from './invitation-channel.mjs';
 import {createAutomaticEnrollment} from './automatic-enrollment.mjs';
 import {renderTransferQr,scanTransferQr} from './qr-transfer.mjs';
@@ -18,7 +19,7 @@ export function consumeConnectionFragment(location, history) {
   try { return {invitation:invitationFromLink(href)}; }
   catch { return {invalid:true}; }
 }
-export function showAutomaticPairing(container,{wasm,store,role,expectedGroup,relay='',connectionText,
+export function showAutomaticPairing(container,{wasm,store,role,expectedGroup,relay='',connectionText,createLocalGroup=false,
   appURL=container.ownerDocument.defaultView.location.href.split('#')[0],focus=false,onBack=()=>{},onConnected=()=>{},onShare}) {
   if (!['candidate','provisioner'].includes(role)) throw Error('Connection role required');
   mounted.get(container)?.();
@@ -138,13 +139,23 @@ export function showAutomaticPairing(container,{wasm,store,role,expectedGroup,re
     button(view.panel,'Cancel',leave);
   };
   if(role==='provisioner'){
-    const view=screen('Connect another device','Choose your relay, then show one invitation on this screen. Keep both devices open.');
+    const view=screen('Connect another device',createLocalGroup
+      ? 'Choose your relay. Creating an invitation also saves this device’s connection keys in this browser. Keep both devices open.'
+      : 'Choose your relay, then show one invitation on this screen. Keep both devices open.');
+    const privacy=node('details');privacy.append(node('summary','Connection and privacy'),
+      node('p','Connection keys are encrypted in this browser using software protection. Code running as part of Along can use them; clearing browser data can lose your connection. The relay sees network addresses and traffic timing, but connection messages are encrypted. No AT key is shared.'));
+    view.panel.append(privacy);
     const label=node('label','Relay server address'),input=node('input');input.type='url';input.value=relay;input.autocomplete='off';input.spellcheck=false;label.append(input);view.panel.append(label);
     const create=button(view.panel,'Create invitation',async()=>{
       if(busy)return;
       try{hiveEndpoint(input.value.trim());}catch{view.status.textContent='Enter a secure wss:// relay address without a password, query or fragment.';input.focus();return;}
       busy=true;create.disabled=true;
       try{
+        if(createLocalGroup){
+          const saved=await initializeSoftwarePersona({wasm,store,signal:lifetime.signal});current();
+          expectedGroup=Uint8Array.from(saved.group.match(/../g),b=>parseInt(b,16));
+          createLocalGroup=false;
+        }
         invitation=await createSoftwareInvitation({wasm,store,expectedGroup,signal:lifetime.signal});current();
         const text=await createConnectionInvitation({descriptor:invitation.descriptor,relay:input.value.trim()});current();
         const link=connectionInvitationLink(appURL,text);
