@@ -65,10 +65,10 @@ try{
   });
   const setupDevice=async()=>{
     await page.locator('#settings-open').click();
-    await page.getByRole('button',{name:'Device and AT-key setup',exact:true}).click();
+    await page.getByRole('button',{name:/^(My devices|Device and AT-key setup)$/,exact:true}).click();
     await page.getByRole('button',{name:'Set up my device',exact:true}).click();
     await page.getByRole('button',{name:'Create my device group',exact:true}).click();
-    await page.getByRole('heading',{name:'Your devices and AT key',exact:true}).waitFor();
+    await page.getByRole('heading',{name:/^(My devices|Your devices and AT key)$/,exact:true}).waitFor();
   };
   let priorIdentity;
   if(priorVersion!=='37'){

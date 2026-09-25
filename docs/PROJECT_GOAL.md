@@ -241,3 +241,9 @@ manual multi-exchange setup with the [guided device connection](DEVICE_CONNECTIO
 one invitation scan/link, matching-code confirmation and a sharing choice, with
 automatic return-message exchange and reconnection. Preserve optional relay
 consent, explicit permissions, durable recovery and offline independence.
+
+Local progress: the generated app now completes one invitation-link enrollment,
+explicit sharing permission and automatic exchange of saved address pairs through
+a local TLS hive stand-in. The new flow is not published. Deployed relay delivery,
+physical checks and full release qualification remain outstanding; see
+[local verification](evidence/guided-device-connection-local-2026-09-26.json).

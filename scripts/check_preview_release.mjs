@@ -35,13 +35,13 @@ try {
   await expect(page.locator('#address-status')).toContainText('ready offline', {timeout: 90000});
   await expect.poll(() => page.evaluate(() => navigator.serviceWorker.controller?.scriptURL)).toBe(new URL('sw.js', app).href);
   await page.locator('#settings-open').click();
-  await page.getByRole('button', {name: 'Device and AT-key setup', exact: true}).click();
+  await page.getByRole('button', {name: /^(My devices|Device and AT-key setup)$/, exact: true}).click();
   await page.getByRole('button', {name: 'Set up my device', exact: true}).click();
   await page.getByRole('button', {name: 'Create my device group', exact: true}).click();
-  await page.getByRole('heading', {name: 'Your devices and AT key', exact: true}).waitFor();
+  await page.getByRole('heading', {name: /^(My devices|Your devices and AT key)$/, exact: true}).waitFor();
   let groupReview = false;
   if (Number(local.appVersion) >= 3802) {
-    await page.getByText('Connect or recover another device', {exact: true}).click();
+    await page.getByText(/^(Advanced device options|Connect or recover another device)$/, {exact: true}).click();
     await page.getByRole('button', {name: 'Review group devices', exact: true}).click();
     await page.getByRole('status').filter({hasText: 'No issued device certificates'}).waitFor();
     await page.getByRole('button', {name: 'Back', exact: true}).click();
@@ -52,8 +52,8 @@ try {
   }
   await page.reload();
   await page.locator('#settings-open').click();
-  await page.getByRole('button', {name: 'Device and AT-key setup', exact: true}).click();
-  await page.getByRole('heading', {name: 'Your devices and AT key', exact: true}).waitFor();
+  await page.getByRole('button', {name: /^(My devices|Device and AT-key setup)$/, exact: true}).click();
+  await page.getByRole('heading', {name: /^(My devices|Your devices and AT key)$/, exact: true}).waitFor();
   await context.setOffline(true); await page.goto(new URL('install.html', app).href);
   await expect(page.getByRole('heading', {level: 1})).toHaveText('Install Along Device Preview');
   await page.goto(app.href);

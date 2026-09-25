@@ -9,7 +9,7 @@ import {enrollmentPayloads} from './enrollment-payloads.mjs';
 export function createAutomaticEnrollment({role, wasm, store, channel, invitation, reviewed,
   signal, onReady = () => {}, onError = () => {}}) {
   const lifetime = new AbortController();
-  let proof, signalling, payloads, closed = false;
+  let proof, signalling, payloads, peer, closed = false;
   const close = () => {
     if (closed) return; closed = true; lifetime.abort(); proof?.close();
     if (signalling) signalling.close(); else channel?.close();
@@ -28,7 +28,14 @@ export function createAutomaticEnrollment({role, wasm, store, channel, invitatio
     if (role === 'candidate') proof = createInvitationProof({wasm, reviewed, onExpired:()=>fail(Error('Invitation expired'))});
     signalling = createAutomaticSignalling({role, channel, signal:lifetime.signal,
       answerProof: request => answerInvitationProof(invitation, request),
-      verifyProof: response => proof.verify(response),
+      verifyProof: response => {
+        const verified = proof.verify(response);
+        try {
+          const certificate = JSON.parse(response).certificate;
+          peer = {member:verified.invitation.issuer.slice(),certificate:Uint8Array.from(certificate.match(/../g),b=>parseInt(b,16))};
+          return verified;
+        } catch (error) { verified.authorized.free(); throw error; }
+      },
       discardProof: verified => verified.authorized.free(),
       createSession: async verified => {
         if (role === 'provisioner') {
@@ -43,7 +50,7 @@ export function createAutomaticEnrollment({role, wasm, store, channel, invitatio
           platform:{candidateDevelopment:false,provisionerDevelopment:false,provisionerHoldsCustody:true,epoch:verified.invitation.epoch}});
         return Object.freeze({...session, cancel:()=>session.dispose()});
       },
-      onSession: session => onReady({session,payloads}), onError:fail,
+      onSession: session => onReady({session,payloads,peer}), onError:fail,
     });
     return Object.freeze({start:()=>role==='candidate' ? signalling.start(proof.request) : Promise.resolve(),close});
   } catch (error) { close(); throw error; }

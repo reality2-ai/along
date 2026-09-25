@@ -148,3 +148,55 @@ owner. A local stand-in pass does not establish deployed interoperability.
 Remaining: guided screens, immediate fragment/history handling, invitation review
 and relay consent, sharing-permission handoff, deployed relay exchange and physical
 S23/desktop acceptance. The public application has not changed.
+
+## Guided app integration (26 September 2026, local candidate)
+
+The local candidate now exposes **My devices → Connect another device**, with
+manual exchange, recovery and key-management operations under **Advanced device
+options**. A fresh receiving browser can open the invitation link without first
+creating its own group. Existing issuer/enrolled groups are kept and reported as
+a conflict; the guided path never silently replaces them. The invitation review
+shows the selected relay and waits for a deliberate connection action.
+
+One code comparison leads to durable enrollment, then **Choose what to share**.
+The sharing screen explicitly saves saved-place/service permission for the
+verified peer and the selected relay preference. It grants no AT-key permission.
+Existing app relay discovery and exchange then run without a second manual
+journey-connection ceremony. **Not now** keeps sharing off for a new peer.
+
+The generated app was tested on a static `/along/` subpath with two fresh browser
+profiles. Both saved an address pair through the real planner UI. The inviter
+created its group through Settings; the receiver opened one invitation link,
+confirmed the matching code and chose sharing. Both original address pairs then
+appeared on both devices through the local TLS hive stand-in. The test provides
+no fixture identity, membership, sharing permission or copied return messages.
+
+An integration failure uncovered same-document navigation: opening a fragment
+link while Along was already open did not rerun startup. The app now consumes
+invitations both at startup and on `hashchange`, immediately removing the secret
+fragment from browser history and showing review without opening the relay.
+The full-app test exercises this already-open case. Separate component checks
+cover keyboard activation, narrow layout, automated accessibility, no candidate
+relay contact before consent, durable reload and comparison cancellation.
+
+The source build remains marked **DO NOT PUBLISH**. This is local implementation
+and test evidence, not acceptance on the deployed relay or a Samsung S23.
+Remaining checks include interrupted-installation behavior of this new view,
+existing-group conflicts, offline/reload sharing and new-flow spoken screen-reader
+use. Public-host forwarding remains unresolved. The complete release qualification
+and versioned publication have not been performed for this change.
+
+Reproduce the generated-app check after building a local candidate:
+
+```sh
+python3 scripts/build_upgrade_candidate.py --runtime /path/to/verified-runtime
+REGULAR_CANDIDATE=1 CHROMIUM_PATH=/path/to/chromium \
+node experiments/relay/guided-app.test.mjs
+```
+
+The final local checks also pass existing relay enable/restore/stop/remove,
+interrupted-recovery pause, direct mocked AT access, quiet offline fallback,
+address-to-address bus/ferry planning and stalled optional-runtime isolation.
+[Local evidence](evidence/guided-device-connection-local-2026-09-26.json) records
+the source hashes, candidate manifest hash and test scope. Older-release tests
+recognise both the historical setup label and the new My devices label.

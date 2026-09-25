@@ -1642,3 +1642,12 @@ verifies automatic protocol exchange and durable enrollment using a harness
 channel. It does not establish relay rendezvous, single-scan usability or phone
 acceptance. The AI implements and tests the change; the human supplies the
 experience report without writing code.
+
+Implementation follow-up: the simplified connection now reaches saved-place
+sharing in a local generated-app test using one invitation link and a deliberate
+sharing choice. An isolated view test had passed, but the whole app initially
+failed when the link changed only the current page fragment. Testing the actual
+navigation lifecycle exposed that gap. This extends the verification theme:
+component correctness cannot establish task completion. Local relay delivery,
+deployed relay delivery and physical phone usability remain separate claims;
+only the first has passed for the new flow so far.

@@ -1,0 +1,74 @@
+{
+  "date_nz": "2026-09-26",
+  "scope": "Local generated candidate, Chromium, static /along/ subpath and TLS hive stand-in; no deployed-host or physical device acceptance.",
+  "passed": true,
+  "checks": {
+    "guided_generated_app": [
+      "PASS: generated app on subpath, fresh devices set up through UI, single invitation link, fragment removed, comparison, separate sharing consent and automatic relay delivery of both saved-place pairs; no return QR or separate journey ceremony. Local hive stand-in; no deployed-host or physical acceptance claim."
+    ],
+    "relay_settings": [
+      "PASS: generated app relay Settings: default off, URL refusal, narrow-screen keyboard enable, local WSS connection over the current hive binding, startup restoration, stop persistence, removal, interrupted-recovery pause, Escape/Back and no page errors. No peer enrolled or external relay tested here."
+    ],
+    "at_offline_regression": [
+      "PASS: unreadable newer lab schema leaves the planner ready and preserves the actual database version and record count.",
+      "PASS: stalled optional WASM cannot block actual bus/ferry planning; late restore cannot enable live access after its startup deadline.",
+      "Offline evidence: {\"uncachedRequestFailed\":true,\"reportedOnline\":true,\"blockedMockProviderAttempts\":2}",
+      "PASS: actual static journey app -> real device/key setup -> address-to-address bus/ferry journey -> explicit direct mocked AT reads using encrypted key; no startup request or displayed key; offline reopen includes experimental runtime and address routing; offline live check falls back quietly without a provider response. Local-only owner-key journey test; Settings setup/reconnect and Back verified; separate two-app test covers shared-device use."
+    ],
+    "comparison_cancellation": [
+      "PASS: cancelling the comparison returns without replacing the saved identity or claiming connection."
+    ],
+    "focused_node_tests": [
+      "\u2714 XChaCha20-Poly1305: draft-irtf-cfrg-xchacha A.3.1, cross-checked with libsodium 1.0.22 (9.357851ms)",
+      "\u2714 protected event round-trips through the gate and fits the relay limit (30.47862ms)",
+      "\u2714 gate fails closed: wrong key, tampering, wrong address, untagged, relay mutation allowed (13.455307ms)",
+      "\u2714 duplicate cache keys on origin and message id and expires by age (1.421212ms)",
+      "\u2714 production heartbeat carries no development element (3.635023ms)",
+      "\u2714 segments reassemble in any order and reject inconsistent pieces (9.77024ms)",
+      "\u2714 discovery reaches the group; addressed packets reach only their peer; own frames are not echoed (1542.646563ms)",
+      "\u2714 a device without the current group keys receives nothing; prior keys cover a rotation briefly (335.042172ms)",
+      "\u2714 bootstrap segmentation extends the bound explicitly without changing sharing defaults (10.573269ms)",
+      "\u2714 requests the binding subprotocol, announces on open and every two seconds (6.351001ms)",
+      "\u2714 a server that does not select the subprotocol is refused without retry (4.381376ms)",
+      "\u2714 text, empty and oversize messages drop the connection; retry stays within ten seconds (1.739636ms)",
+      "\u2714 thirty seconds of silence is a lost connection (0.984086ms)",
+      "\u2714 sending is bounded by rate, size, readiness and buffered output (0.988815ms)",
+      "\u2714 L4 7.1 name normalisation and FNV-1a vectors N1\u2013N15 (4.026824ms)",
+      "\u2714 L4 4.2/4.3 frames parse; EV1, CV1 and CV5 tags verify under K (20.53162ms)",
+      "\u2714 origin-less and malformed frames are dropped (EV2, EV3, CV2, BAD1\u2013BAD5) (0.710756ms)",
+      "\u2714 L4 10.2 span: MF1\u2013MF6 fail, MP1\u2013MP4 still verify (8.477198ms)",
+      "\u2714 FORMATS 3.3 wire halves: FV-001 and the development group (FV-021) (2.267561ms)",
+      "\u2714 FORMATS 4b CBOR: FV-005\u2013FV-010, FV-022, FV-023 (3.81032ms)",
+      "\u2714 deployed host announcement decodes as a development-declared beacon (0.651806ms)",
+      "\u2714 one reviewed invitation carries proof and both connection messages automatically (16.160254ms)",
+      "\u2714 failed invitation proof never creates a candidate session (11.269588ms)",
+      "\u2714 out-of-order and oversized messages close before any enrollment action (21.561361ms)",
+      "\u2714 cancellation during session creation disposes the late session and sends no reply (21.889053ms)",
+      "\u2714 cancellation during verification releases its late capability without creating a session (22.614076ms)",
+      "\u2139 tests 26",
+      "\u2139 suites 0",
+      "\u2139 pass 26",
+      "\u2139 fail 0",
+      "\u2139 cancelled 0",
+      "\u2139 skipped 0",
+      "\u2139 todo 0",
+      "\u2139 duration_ms 2114.701857"
+    ]
+  },
+  "build_manifest_sha256": "e277bc2d7f05edcd0647959d4125171f93ec778060befd54edd28e5650e8e2e8",
+  "source_sha256": {
+    "experiments/at-credentials/app-bootstrap.mjs": "5eab14e6922df5db94aa2aaad2f5da8d5532203ab16ed872a8d9604c468908e6",
+    "experiments/at-credentials/app-device-settings.mjs": "bf4aaf6ae3f42a5dd65269edbd93b2af785ff36ba651650d43fbab9a098a0d1c",
+    "experiments/tg-pairing/automatic-pairing-view.mjs": "4b9ac2b1a876dff32572ca6ed1068ac9110378ca0d0be7c639b5897876d5717e",
+    "experiments/tg-pairing/connected-sharing-view.mjs": "ee619e691fe2f2b831806c2f7d7b21809415a1da12c1994776eac5821ef764a9",
+    "experiments/tg-pairing/automatic-enrollment.mjs": "0acaa6eb5dd0b52c21e6afd5d6257e2d9cc75689c5306a568c47e657eaab4a0c",
+    "experiments/relay/guided-app.test.mjs": "e03b519c3ad2676a6eae2f1dd817f9149947d22de834049946cf216a4ff686d2"
+  },
+  "limits": [
+    "Not published",
+    "Host forwarding unresolved",
+    "Physical S23 and spoken screen reader not tested",
+    "New-view interrupted installation, group-conflict and offline sharing checks still required",
+    "This is not a complete release qualification"
+  ]
+}

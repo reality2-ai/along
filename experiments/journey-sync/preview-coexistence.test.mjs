@@ -81,10 +81,10 @@ try {
   await expect.poll(() => preview.evaluate(() => navigator.serviceWorker.controller?.scriptURL)).toBe(origin + '/along/preview/public/sw.js');
   await preview.locator('#settings-open').click();
   await expect(preview.locator('#settings')).toContainText('App version 3805');
-  await preview.getByRole('button', {name: 'Device and AT-key setup', exact: true}).click();
+  await preview.getByRole('button', {name: /^(My devices|Device and AT-key setup)$/, exact: true}).click();
   await preview.getByRole('button', {name: 'Set up my device', exact: true}).click();
   await preview.getByRole('button', {name: 'Create my device group', exact: true}).click();
-  await preview.getByRole('heading', {name: 'Your devices and AT key', exact: true}).waitFor();
+  await preview.getByRole('heading', {name: /^(My devices|Your devices and AT key)$/, exact: true}).waitFor();
   await preview.getByRole('button', {name: 'Use my own AT key', exact: true}).click();
   await preview.getByRole('button', {name: 'Set up live information', exact: true}).click();
   await preview.getByLabel('Personal AT API key', {exact: true}).fill('synthetic-preview-update-key');
@@ -121,7 +121,7 @@ try {
   await expect(preview.locator('#settings')).toContainText('App version 3806');
   assert.deepEqual(await previewState(), previewBefore, 'upgrade retains saved places, identity and exact encrypted key record');
   await preview.locator('#settings-open').click();
-  await preview.getByRole('button', {name: 'Device and AT-key setup', exact: true}).click();
+  await preview.getByRole('button', {name: /^(My devices|Device and AT-key setup)$/, exact: true}).click();
   await preview.getByRole('button', {name: 'Manage my AT key', exact: true}).waitFor();
   await context.setOffline(true);
   await Promise.all([normal.reload(), preview.reload()]);

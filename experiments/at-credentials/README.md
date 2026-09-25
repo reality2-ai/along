@@ -1210,3 +1210,12 @@ passes with an enrolled AT owner sharing to the group creator, including stale-p
 refusal for access, visible renewal, downgrade/bad-certificate refusal, mocked AT
 reads, removal and offline routing. The ordinary credential-delivery browser
 regression also passes. Public preview 3803 still uses reconnect v2.
+
+### Current local UI draft (26 September 2026)
+
+The current source names the entry **My devices** and moves manual exchange and
+recovery under **Advanced device options**. New guided pairing and its separate
+journey-sharing choice are described in
+[DEVICE_CONNECTION_DESIGN.md](../../docs/DEVICE_CONNECTION_DESIGN.md). They are
+verified through a local hive stand-in, not yet released. Earlier UI labels below
+remain relevant to the published v43 and historical tests.

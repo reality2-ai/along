@@ -58,17 +58,17 @@ try {
     await expect(page.locator('#clear-history')).toHaveText('Forget history and saved places');
     await expect(page.locator('#settings')).not.toContainText('live connection is not yet enabled');
   }
-  await page.getByRole('button', {name: 'Device and AT-key setup', exact: true}).click();
+  await page.getByRole('button', {name: /^(My devices|Device and AT-key setup)$/, exact: true}).click();
   await page.getByRole('button', {name: 'Set up my device', exact: true}).click();
   await page.getByRole('button', {name: 'Create my device group', exact: true}).click();
   if (process.env.GROUP_KEYS === '1') {
-    await page.getByText('Connect or recover another device', {exact: true}).click();
+    await page.getByText(/^(Advanced device options|Connect or recover another device)$/, {exact: true}).click();
     assert.equal(await page.getByRole('button', {name: 'Send a group key update', exact: true}).count(), 0);
     await page.getByRole('button', {name: 'Update group keys on this device', exact: true}).click();
     await page.getByRole('button', {name: 'Update keys on this device', exact: true}).click();
     await page.getByRole('heading', {name: 'Group keys updated on this device', exact: true}).waitFor();
     await page.getByRole('button', {name: 'Back', exact: true}).click();
-    await page.getByText('Connect or recover another device', {exact: true}).click();
+    await page.getByText(/^(Advanced device options|Connect or recover another device)$/, {exact: true}).click();
     await page.getByRole('button', {name: 'Send a group key update', exact: true}).click();
     await page.getByRole('heading', {name: 'Choose a device to update', exact: true}).waitFor();
     await page.getByRole('status').filter({hasText: 'No issued device certificates'}).waitFor();
@@ -82,7 +82,7 @@ try {
       } finally { store.close(); }
     });
     await page.getByRole('button', {name: 'Back to settings', exact: true}).click();
-    await page.getByRole('button', {name: 'Device and AT-key setup', exact: true}).click();
+    await page.getByRole('button', {name: /^(My devices|Device and AT-key setup)$/, exact: true}).click();
     await page.getByRole('status').filter({hasText: 'Your saved AT setup could not be verified'}).waitFor();
     await page.getByRole('button', {name: 'Back to settings', exact: true}).click();
     await page.getByRole('button', {name: 'Share saved journeys with my devices', exact: true}).click();
@@ -104,10 +104,10 @@ try {
     await page.getByRole('button', {name: 'Back to settings', exact: true}).click();
     assert.equal(await page.getByRole('button', {name: 'Connect an existing AT-key device', exact: true}).count(), 0);
     assert.equal(requests.length, 0);
-    await page.getByRole('button', {name: 'Device and AT-key setup', exact: true}).click();
+    await page.getByRole('button', {name: /^(My devices|Device and AT-key setup)$/, exact: true}).click();
     await page.getByRole('status').filter({hasText: 'Your saved AT setup could not be verified'}).waitFor();
     assert.equal(await page.getByRole('button', {name: 'Use my own AT key', exact: true}).count(), 0);
-    await page.getByText('Connect or recover another device', {exact: true}).click();
+    await page.getByText(/^(Advanced device options|Connect or recover another device)$/, {exact: true}).click();
     await page.getByRole('button', {name: 'Update group keys on this device', exact: true}).click();
     await page.getByRole('status').filter({hasText: 'uses key version 1'}).waitFor();
     await page.getByRole('button', {name: 'Back', exact: true}).click();
@@ -133,7 +133,7 @@ try {
       } finally { store.close(); }
     });
     await page.getByRole('button', {name: 'Back to settings', exact: true}).click();
-    await page.getByRole('button', {name: 'Device and AT-key setup', exact: true}).click();
+    await page.getByRole('button', {name: /^(My devices|Device and AT-key setup)$/, exact: true}).click();
     console.log('PASS: unreadable AT binding preserves journey-sharing and group-recovery controls before and after reload without resetting saved authority or offering new AT setup.');
     console.log('PASS: actual app Settings reviews and installs group key version one, then opens the device update picker without claiming peer delivery.');
   }
@@ -146,7 +146,7 @@ try {
   // Two navigation actions in the same task leave while overview storage is
   // still awaiting its first read. The committed key must still become usable.
   await page.evaluate(() => {
-    const dialog = document.querySelector('dialog[aria-label="Device and AT-key setup"]');
+    const dialog = document.querySelector('dialog[aria-label="My devices"],dialog[aria-label="Device and AT-key setup"]');
     [...dialog.querySelectorAll('button')].find(button => button.textContent === 'Back').click();
     [...dialog.querySelectorAll('button')].find(button => button.textContent === 'Back to settings').click();
   });
@@ -214,13 +214,13 @@ try {
   for (let cycle = 0; cycle < 2; cycle++) {
     await page.evaluate(() => window.dispatchEvent(new PageTransitionEvent('pagehide', {persisted: true})));
     assert.equal(await page.evaluate(async () => (await import((window.testExperimentBase ?? '../experiments/') + 'at-credentials/app-live-bridge.mjs')).createLiveClient().configured), false);
-    assert.equal(await page.getByRole('button', {name: 'Device and AT-key setup', exact: true, includeHidden: true}).count(), 0);
+    assert.equal(await page.getByRole('button', {name: /^(My devices|Device and AT-key setup)$/, exact: true, includeHidden: true}).count(), 0);
     await page.evaluate(async () => {
       window.dispatchEvent(new PageTransitionEvent('pageshow', {persisted: true}));
       await (await import((window.testExperimentBase ?? '../experiments/') + 'at-credentials/app-bootstrap.mjs')).restoration;
       window.dispatchEvent(new PageTransitionEvent('pageshow', {persisted: true}));
     });
-    assert.equal(await page.getByRole('button', {name: 'Device and AT-key setup', exact: true, includeHidden: true}).count(), 1);
+    assert.equal(await page.getByRole('button', {name: /^(My devices|Device and AT-key setup)$/, exact: true, includeHidden: true}).count(), 1);
     assert.equal(await page.getByRole('button', {name: 'Connect an existing AT-key device', exact: true, includeHidden: true}).count(), 1);
     await expect(page.locator('#journey-live')).toBeVisible();
     assert.equal(await page.locator('#current-step').textContent(), selectedStep);
@@ -242,7 +242,7 @@ try {
     await expect(page.locator('#journey-live')).toBeVisible();
     assert.equal(await page.locator('#current-step').textContent(), selectedStep);
     await page.locator('#settings-open').click();
-    await page.getByRole('button', {name: 'Device and AT-key setup', exact: true}).click();
+    await page.getByRole('button', {name: /^(My devices|Device and AT-key setup)$/, exact: true}).click();
     await page.getByRole('button', {name: 'Manage my AT key', exact: true}).waitFor();
     await page.getByRole('button', {name: 'Back to settings', exact: true}).click();
     await page.getByRole('button', {name: 'Close settings', exact: true}).click();

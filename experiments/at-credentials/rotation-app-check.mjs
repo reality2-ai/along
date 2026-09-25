@@ -27,14 +27,14 @@ export async function checkAppRotation({owner, recipient, move, atBinding = true
   const before = await Promise.all([owner, recipient].map(state));
   for (const page of [owner, recipient]) {
     await page.locator('#settings-open').click();
-    await page.getByRole('button', {name: 'Device and AT-key setup', exact: true}).click();
-    await page.getByText('Connect or recover another device', {exact: true}).click();
+    await page.getByRole('button', {name: /^(My devices|Device and AT-key setup)$/, exact: true}).click();
+    await page.getByText(/^(Advanced device options|Connect or recover another device)$/, {exact: true}).click();
   }
   await owner.getByRole('button', {name: 'Update group keys on this device', exact: true}).click();
   await owner.getByRole('button', {name: 'Update keys on this device', exact: true}).click();
   await owner.getByRole('heading', {name: 'Group keys updated on this device', exact: true}).waitFor();
   await owner.getByRole('button', {name: 'Back', exact: true}).click();
-  await owner.getByText('Connect or recover another device', {exact: true}).click();
+  await owner.getByText(/^(Advanced device options|Connect or recover another device)$/, {exact: true}).click();
   await owner.getByRole('button', {name: 'Send a group key update', exact: true}).click();
   const member = before[1].member;
   await owner.getByRole('button', {name: `Device ${member.slice(0, 8)}…${member.slice(-8)}`, exact: true}).click();

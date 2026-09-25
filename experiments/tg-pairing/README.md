@@ -829,7 +829,7 @@ issuer/membership storage: trusted keyboard activation, synthetic-click refusal,
 invalid proof, repeated removal, replaced views, cancellation on both sides of
 commit, and 320px/200% layout plus axe. It does not establish physical TalkBack
 acceptance. The local experimental app now reaches this component through
-**Device and AT-key setup → Connect or recover another device → Review group
+**My devices → Advanced device options → Review group
 devices**. This flow is included in device preview 3802.
 
 `member-devices-view.mjs` lists public certificates retained by the software

@@ -60,24 +60,24 @@ try {
   });
   const restoreSetup = async page => {
     if (mainSetup) {
-      const setup = page.getByRole('dialog', {name: 'Device and AT-key setup', exact: true});
+      const setup = page.getByRole('dialog', {name: /^(My devices|Device and AT-key setup)$/, exact: true});
       if (!await setup.isVisible()) {
         await page.locator('#settings-open').click();
-        await page.getByRole('button', {name: 'Device and AT-key setup', exact: true}).click();
+        await page.getByRole('button', {name: /^(My devices|Device and AT-key setup)$/, exact: true}).click();
       }
-      await page.getByRole('heading', {name: 'Your devices and AT key', exact: true}).waitFor();
+      await page.getByRole('heading', {name: /^(My devices|Your devices and AT key)$/, exact: true}).waitFor();
     } else await page.getByRole('button', {name: 'Restore saved test device', exact: true}).click();
   };
   await Promise.all(pages.map(async (page, index) => {
     await page.goto(origin + (mainSetup ? appPath : 'experiments/'));
     if (mainSetup) {
       await page.locator('#settings-open').click();
-      await page.getByRole('button', {name: 'Device and AT-key setup', exact: true}).click();
+      await page.getByRole('button', {name: /^(My devices|Device and AT-key setup)$/, exact: true}).click();
     }
     await page.getByRole('button', {name: mainSetup ? 'Set up my device' : 'Set up this test device', exact: true}).click();
     await page.getByRole('button', {name: 'Create my device group', exact: true}).click();
     await restoreSetup(page);
-    if (mainSetup) await page.getByText('Connect or recover another device', {exact: true}).click();
+    if (mainSetup) await page.getByText(/^(Advanced device options|Connect or recover another device)$/, {exact: true}).click();
     await page.getByRole('button', {name: index ? 'Invite my other device' : 'Join my other device', exact: true}).click();
   }));
   let [candidate, owner] = pages;
@@ -479,8 +479,8 @@ try {
   assert.equal((await candidate.locator('body').textContent()).includes('synthetic-two-app-replacement'), false);
   if (removeGroupMember) {
     await owner.locator('#settings-open').click();
-    await owner.getByRole('button', {name: 'Device and AT-key setup', exact: true}).click();
-    await owner.getByText('Connect or recover another device', {exact: true}).click();
+    await owner.getByRole('button', {name: /^(My devices|Device and AT-key setup)$/, exact: true}).click();
+    await owner.getByText(/^(Advanced device options|Connect or recover another device)$/, {exact: true}).click();
     await owner.getByRole('button', {name: 'Review group devices', exact: true}).click();
     await owner.getByRole('button', {name: /^Device [0-9a-f]{8}…[0-9a-f]{8}$/}).click();
     await owner.getByRole('button', {name: 'Save device removal here', exact: true}).click();
@@ -490,7 +490,7 @@ try {
     await owner.getByRole('button', {name: 'Share this removal', exact: true}).click();
     const message = await owner.getByLabel('Device message to copy', {exact: true}).inputValue();
     await candidate.locator('#settings-open').click();
-    await candidate.getByRole('button', {name: 'Device and AT-key setup', exact: true}).click();
+    await candidate.getByRole('button', {name: /^(My devices|Device and AT-key setup)$/, exact: true}).click();
     await candidate.getByRole('button', {name: 'Receive a group removal', exact: true}).click();
     await candidate.getByLabel('Signed group removal', {exact: true}).fill(message);
     await candidate.getByRole('button', {name: 'Check and save removal', exact: true}).click();
@@ -514,7 +514,7 @@ try {
     });
     const beforeRemoval = await ownerPolicy();
     await owner.locator('#settings-open').click();
-    await owner.getByRole('button', {name: 'Device and AT-key setup', exact: true}).click();
+    await owner.getByRole('button', {name: /^(My devices|Device and AT-key setup)$/, exact: true}).click();
     await owner.getByRole('button', {name: 'Manage AT access on other devices', exact: true}).click();
     const device = owner.getByRole('button', {name: /^Device [0-9a-f]{8}/});
     await device.click();

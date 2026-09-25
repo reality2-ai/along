@@ -63,10 +63,10 @@ try{
   }
   const setupPage=regularCandidate?fresh:old;
   await setupPage.locator('#settings-open').click();
-  await setupPage.getByRole('button',{name:'Device and AT-key setup',exact:true}).click();
+  await setupPage.getByRole('button',{name:/^(My devices|Device and AT-key setup)$/,exact:true}).click();
   await setupPage.getByRole('button',{name:'Set up my device',exact:true}).click();
   await setupPage.getByRole('button',{name:'Create my device group',exact:true}).click();
-  await setupPage.getByRole('heading',{name:'Your devices and AT key',exact:true}).waitFor();
+  await setupPage.getByRole('heading',{name:/^(My devices|Your devices and AT key)$/,exact:true}).waitFor();
   const baseline=await setupPage.evaluate(async database=>{
     const store=await(await import(window.testExperimentBase+'tg-pairing/storage.mjs')).openBrowserStorage(database);
     try{
