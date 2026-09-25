@@ -238,3 +238,37 @@ comparison, installation and sharing-choice flow. This verifies the application
 scan path, not optical QR recognition or physical phone use. The scan check is
 now an additional required v44 qualification gate. A fresh complete qualification
 is required after these corrections.
+
+
+## Local qualification and remaining transport gap
+
+The corrected source `49d8b8ae234234c8b223764da410d9ee99b833b6` passed all
+32 distinct qualification scenarios (plus two recorded aliases), with source and
+candidate hashes unchanged throughout. [Qualification evidence](evidence/guided-v44-local-qualification.json)
+records the commands and log hashes. The 360 × 780 browser screenshots were also
+reviewed: invitation review, code confirmation and sharing have visible full-width
+primary actions. These are local Chromium checks, not S23 or TalkBack acceptance.
+
+A further source review found an important transport limit. The pinned public
+runtime's `enrollment-link.mjs` calls `createPeerLink`, whose
+`RTCPeerConnection({iceServers: []})` has no STUN/TURN configuration. The new
+invitation channel carries challenge/proof and connection descriptions through
+the hive, but comparison and installation still use this direct data channel.
+Successful same-machine browser tests therefore do not establish initial pairing
+across different networks or Wi-Fi with client isolation. Later permitted sharing
+uses the hive; it does not remove this initial-enrollment constraint.
+
+Do not present the redesign as seamless across networks or publish it as a fix
+for all pairing timeouts on the strength of the local qualification. Next Along
+work is to carry the complete enrollment over the explicitly accepted relay,
+retaining proof verification, transcript binding, code comparison, bounded
+messages, explicit decisions, durable installation and receipts. This is an
+Along browser-subset transport adaptation, not a claim of a new standard API.
+Verify it with direct WebRTC unavailable, then repeat cancellation, replay,
+interruption and offline/reconnect checks. The server owner separately needs to
+resolve deployed-host forwarding. Do not add an undisclosed third-party TURN
+service or recreate existing user groups.
+
+Version 44 remains a local candidate, not a published release. GitHub authentication
+was unavailable during this work; the public app remains version 43. Physical
+S23/desktop and spoken-screen-reader checks remain outstanding.

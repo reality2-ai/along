@@ -1651,3 +1651,16 @@ navigation lifecycle exposed that gap. This extends the verification theme:
 component correctness cannot establish task completion. Local relay delivery,
 deployed relay delivery and physical phone usability remain separate claims;
 only the first has passed for the new flow so far.
+
+
+### Connection simplicity: verify the experience beyond the visible steps
+
+The complaint that connecting devices is too complicated led to one invitation,
+code comparison and a sharing choice, replacing the normal manual return-message
+steps. The new local flow passes 32 qualification scenarios. However, inspection
+found that its relay exchanges connection descriptions while initial enrollment
+still relies on direct WebRTC. Local browser success does not demonstrate success
+across real networks. This extends the verification theme: reduced interaction
+cost and reliable task completion are separate requirements. Course learners
+should ask what environmental assumption each passing test leaves untested.
+See [the implementation and remaining boundary](DEVICE_CONNECTION_DESIGN.md#local-qualification-and-remaining-transport-gap).
