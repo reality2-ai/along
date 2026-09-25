@@ -52,6 +52,12 @@ coordinates are not verified entrances or evidence of an accessible approach.
 byte sizes. Keep source snapshots and generated bundles for reproducible releases;
 downloading the latest upstream feed later may produce different results.
 
+## Current R2 payload cipher
+
+`public/vendor/noble-ciphers/` contains unmodified files from `@noble/ciphers`
+2.4.0 under its MIT licence; see `public/vendor/noble-ciphers/LICENSE` and
+`PROVENANCE.md`. Along uses only XChaCha20-Poly1305 for current R2 payloads.
+
 ## Map renderer and optional street tiles
 
 Leaflet 1.9.4 is distributed under its BSD 2-Clause licence; see

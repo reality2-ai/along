@@ -45,6 +45,12 @@ server owner's responsibility.
 
 ## Work for Along after the contract is established
 
+**Progress, 25 September:** Along's [current-frame client](../experiments/r2-current/README.md)
+passes the published L4/FORMATS vectors and exchanged protected EVENTs between two
+synthetic-group connections through the deployed host
+([evidence](evidence/r2-current-live-exchange.json)). It is not yet in the app;
+transport lifecycle, chunked journey exchange and the checks below remain.
+
 Map its browser-only R2 subset onto the current binding and frame/runtime APIs.
 The current Along hello, discovery and protected peer payloads are not current
 L4 merely because they travel as binary WebSocket messages. Preserve saved data,

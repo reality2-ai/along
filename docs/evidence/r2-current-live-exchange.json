@@ -1,0 +1,20 @@
+{
+  "checked_at": "2026-09-25T05:50:29.299Z",
+  "url": "wss://wairoa.mariko.org.nz/r2",
+  "protocol": [
+    "r2.extended.v1",
+    "r2.extended.v1"
+  ],
+  "forward_delivered": true,
+  "reverse_delivered": true,
+  "relayed_hop_and_route": {
+    "hop": 3,
+    "route_entries": 2
+  },
+  "host_suppressed_identical_resend": true,
+  "wrong_group_key_frame_arrived": true,
+  "wrong_group_key_refused": true,
+  "host_announcement_received": true,
+  "peer_heartbeat_forwarded": false,
+  "scope": "Two Node WebSocket clients with a synthetic group created for this run exchanged XChaCha20-Poly1305/HMAC-SHA256 protected extended EVENT frames through the deployed host. This verifies Along's current-frame codec and protection against the real relay. It does not verify the browser app, saved-journey synchronisation, enrolment, revocation, reconnection or physical devices."
+}
