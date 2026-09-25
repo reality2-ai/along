@@ -8,17 +8,17 @@ import {decode, encode} from './cbor.mjs';
 export const MAX_PACKET = 4096;
 export const MAX_PIECES = 32;
 
-export function segment(packet, packetId, maxPlaintext) {
-  if (!(packet instanceof Uint8Array) || !packet.length || packet.length > MAX_PACKET) throw new Error('Packet size unavailable');
+export function segment(packet, packetId, maxPlaintext, {maxPacket = MAX_PACKET, maxPieces = MAX_PIECES} = {}) {
+  if (!(packet instanceof Uint8Array) || !packet.length || packet.length > maxPacket) throw new Error('Packet size unavailable');
   // Header: array(1) + id(≤5) + index(≤2) + count(≤2) + byte-string head(≤3).
   const room = maxPlaintext - 13;
   const count = Math.ceil(packet.length / room);
-  if (count > MAX_PIECES) throw new Error('Packet needs too many pieces');
+  if (count > maxPieces) throw new Error('Packet needs too many pieces');
   return Array.from({length: count}, (_, index) =>
     encode([packetId >>> 0, index, count, packet.subarray(index * room, (index + 1) * room)]));
 }
 
-export function reassembler({maxEntries = 32, lifetimeMs = 10_000, now = () => Date.now()} = {}) {
+export function reassembler({maxEntries = 32, lifetimeMs = 10_000, now = () => Date.now(), maxPacket = MAX_PACKET, maxPieces = MAX_PIECES} = {}) {
   const pending = new Map();
   const prune = t => { for (const [k, v] of pending) if (t - v.started >= lifetimeMs) pending.delete(k); };
   return {
@@ -29,7 +29,7 @@ export function reassembler({maxEntries = 32, lifetimeMs = 10_000, now = () => D
       if (!Array.isArray(piece) || piece.length !== 4) return null;
       const [id, index, count, bytes] = piece;
       if (!Number.isSafeInteger(id) || !Number.isSafeInteger(index) || !Number.isSafeInteger(count)
-          || count < 1 || count > MAX_PIECES || index < 0 || index >= count || !(bytes instanceof Uint8Array) || !bytes.length) return null;
+          || count < 1 || count > maxPieces || index < 0 || index >= count || !(bytes instanceof Uint8Array) || !bytes.length || bytes.length > maxPacket) return null;
       const t = now(); prune(t);
       const key = originKey + ':' + id;
       let entry = pending.get(key);
@@ -42,7 +42,7 @@ export function reassembler({maxEntries = 32, lifetimeMs = 10_000, now = () => D
       }
       if (entry.pieces[index]) return null;
       entry.size += bytes.length;
-      if (entry.size > MAX_PACKET) { pending.delete(key); return null; }
+      if (entry.size > maxPacket) { pending.delete(key); return null; }
       entry.pieces[index] = bytes; entry.received++;
       if (entry.received < count) return null;
       pending.delete(key);
@@ -50,6 +50,7 @@ export function reassembler({maxEntries = 32, lifetimeMs = 10_000, now = () => D
       let at = 0; for (const p of entry.pieces) { out.set(p, at); at += p.length; }
       return out;
     },
+    clear() { for (const entry of pending.values()) for (const p of entry.pieces) p?.fill(0); pending.clear(); },
     get size() { return pending.size; },
   };
 }

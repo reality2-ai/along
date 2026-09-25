@@ -1,27 +1,39 @@
 // Actual browser-software issuer and core enrollment; harness supplies initial trust and signaling.
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
-import {readFile} from 'node:fs/promises';
+import {readFile,readdir} from 'node:fs/promises';
+import {createLocalTestRelay} from '../relay/test-server.mjs';
+const relayMode = process.env.AUTOMATIC_RELAY === '1';
 import {join} from 'node:path';
 
 const {chromium} = await import(process.env.PLAYWRIGHT_MODULE || '@playwright/test');
 if (!process.env.R2_BROWSER_DIR) throw new Error('Set R2_BROWSER_DIR to the experimental Reality2 browser module directory');
 if (!process.env.R2_WASM_DIR) throw new Error('Set R2_WASM_DIR');
 const sources = new Map(await Promise.all(['peer-session', 'challenge', 'session-statement', 'membership', 'certificate', 'enrollment-session', 'storage', 'invitation-journal', 'enrollment-link', 'enrollment-exchange', 'enrollment-protection', 'peer-link', 'invitation'].map(async name => ['/' + name + '.mjs', await readFile(join(process.env.R2_BROWSER_DIR, name + '.mjs'))])));
-for (const name of ['enrollment-profile.mjs', 'enrollment-payloads.mjs', 'core-candidate-session.mjs', 'software-traffic.mjs', 'initial-persona.mjs', 'software-persona.mjs', 'software-invitation.mjs', 'invitation-proof.mjs', 'transfer-view.mjs', 'receive-invitation-view.mjs', 'stored-claim.mjs', 'installation-receipt.mjs', 'local-persona.mjs', 'local-persona-session.mjs', 'epoch-watch.mjs', 'receipt-recovery.mjs', 'automatic-signalling.mjs', 'automatic-enrollment.mjs']) sources.set('/' + name, await readFile(new URL('./' + name, import.meta.url)));
+for (const name of ['enrollment-profile.mjs', 'enrollment-payloads.mjs', 'core-candidate-session.mjs', 'software-traffic.mjs', 'initial-persona.mjs', 'software-persona.mjs', 'software-invitation.mjs', 'invitation-proof.mjs', 'transfer-view.mjs', 'receive-invitation-view.mjs', 'stored-claim.mjs', 'installation-receipt.mjs', 'local-persona.mjs', 'local-persona-session.mjs', 'epoch-watch.mjs', 'receipt-recovery.mjs', 'automatic-signalling.mjs', 'automatic-enrollment.mjs', 'connection-invitation.mjs', 'invitation-channel.mjs', 'invitation-channel-checks.mjs']) sources.set('/' + name, await readFile(new URL('./' + name, import.meta.url)));
 for (const name of ['hive_wasm.js', 'hive_wasm_bg.wasm']) sources.set('/' + name, await readFile(join(process.env.R2_WASM_DIR, name)));
 for (const name of ['qr-transfer.mjs', 'vendor/qrcode.mjs']) sources.set('/' + name, await readFile(new URL(name, import.meta.url)));
-const server = createServer((req, res) => {
+for (const name of await readdir(new URL('../r2-current/',import.meta.url))) {
+  if (name.endsWith('.mjs')) sources.set('/r2-current/'+name,await readFile(new URL('../r2-current/'+name,import.meta.url)));
+}
+for (const name of await readdir(new URL('../../public/vendor/noble-ciphers/',import.meta.url))) {
+  if (name.endsWith('.js')) sources.set('/public/vendor/noble-ciphers/'+name,await readFile(new URL('../../public/vendor/noble-ciphers/'+name,import.meta.url)));
+}
+sources.set('/relay/transport.mjs',await readFile(new URL('../relay/transport.mjs',import.meta.url)));
+const handler = (req, res) => {
   if (sources.has(req.url)) { res.writeHead(200, {'Content-Type': req.url.endsWith('.wasm') ? 'application/wasm' : req.url.endsWith('.css') ? 'text/css' : 'text/javascript'}); res.end(sources.get(req.url)); }
   else { res.writeHead(200, {'Content-Type': 'text/html'}); res.end('<!doctype html><title>Core session test</title>'); }
-});
+};
+const relay = relayMode ? await createLocalTestRelay(handler) : undefined;
+const server = relay?.server ?? createServer(handler);
 await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
-let browser;
+let browser,pages;
+const sent=[];
 try {
   browser = await chromium.launch({headless: true, executablePath: process.env.CHROMIUM_PATH});
-  const contexts = await Promise.all([browser.newContext(), browser.newContext()]);
-  const pages = await Promise.all(contexts.map(c => c.newPage()));
-  const url = `http://127.0.0.1:${server.address().port}`;
+  const contexts = await Promise.all([browser.newContext({ignoreHTTPSErrors:relayMode}), browser.newContext({ignoreHTTPSErrors:relayMode})]);
+  pages = await Promise.all(contexts.map(c => c.newPage()));
+  const url = `${relayMode?'https':'http'}://127.0.0.1:${server.address().port}`;
   await Promise.all(pages.map(async (page, index) => {
     await page.goto(url);
     await page.evaluate(async index => {
@@ -43,24 +55,34 @@ try {
     window.invite = await (await import('./software-invitation.mjs')).createSoftwareInvitation({wasm,store,expectedGroup:group});
     return invite.descriptor;
   });
+  const relayURL = `wss://127.0.0.1:${server.address().port}/r2`;
+  if (process.env.CHANNEL_CHECKS === '1') console.log('PASS:',await pages[1].evaluate(async ({descriptor,relay}) =>
+    (await import('./invitation-channel-checks.mjs')).checkInvitationChannel({descriptor,relay}),{descriptor,relay:relayURL}));
+  const connection = relayMode ? await pages[1].evaluate(async ({descriptor,relayURL}) =>
+    (await import('./connection-invitation.mjs')).createConnectionInvitation({descriptor,relay:relayURL}),{descriptor,relayURL}) : undefined;
   // Harness moves bytes only: it does not construct or sequence proof/SDP replies.
-  const sent=[];
   await Promise.all(pages.map((page,index)=>page.exposeFunction('deliver',async text=>{
     sent.push(JSON.parse(text).kind);
-    await pages[1-index].evaluate(text=>window.inbound?.(text),text);
+    if (!relayMode) await pages[1-index].evaluate(text=>window.inbound?.(text),text);
   })));
-  for(const index of [1,0]) await pages[index].evaluate(async ({index,descriptor})=>{
-    window.errors=[];window.ready=false;
+  for(const index of [1,0]) await pages[index].evaluate(async ({index,descriptor,connection,relayMode})=>{
+    window.errors=[];window.ready=false;window.channelStatus=[];
     window.reviewAbort=new AbortController();
+    const channel = relayMode ? await (await import('./invitation-channel.mjs')).createInvitationChannel({
+      invitation:connection,role:index===0?'candidate':'provisioner',signal:reviewAbort.signal,
+      onError:error=>errors.push(error.message),onStatus:status=>channelStatus.push(status),
+    }) : {send:text=>window.deliver(text),subscribe:fn=>{window.inbound=fn;return ()=>{window.inbound=undefined;};},close(){}};
+    if (relayMode) channel.start();
+    window.channel=channel;
     window.flow=(await import('./automatic-enrollment.mjs')).createAutomaticEnrollment({
       role:index===0?'candidate':'provisioner',wasm,store,
       invitation:index===1?invite:undefined,
       reviewed:index===0?{descriptor,signal:reviewAbort.signal}:undefined,
-      channel:{send:text=>window.deliver(text),subscribe:fn=>{window.inbound=fn;return ()=>{window.inbound=undefined;};},close(){}},
+      channel:relayMode?{...channel,send:text=>{void window.deliver(text);return channel.send(text);}}:channel,
       onReady:result=>{window.session=result.session;window.payloads=result.payloads;window.ready=true;},
-      onError:error=>errors.push(error.message),
+      onError:error=>errors.push(error.message),onStatus:status=>channelStatus.push(status),
     });
-  },{index,descriptor});
+  },{index,descriptor,connection,relayMode});
   await pages[0].evaluate(()=>flow.start());
   await Promise.all(pages.map(p=>p.waitForFunction(()=>ready||errors.length)));
   for(const p of pages)assert.deepEqual(await p.evaluate(()=>errors),[]);
@@ -91,8 +113,13 @@ try {
       return restored.origin==='enrolled'&&restored.peerAcknowledged&&(await restored.sign(new Uint8Array(32))).length===64;
     }finally{store.close();}
   },expectedGroup),true);
-  console.log('PASS: automatic challenge/proof/offer/answer with actual software identities, verified proof, WebRTC comparison, explicit confirmation, durable installation/acknowledgment and reload. Harness supplies reviewed invitation and byte-only channel; not public rendezvous or physical acceptance.');
+  if (relayMode) { assert.equal(relay.stats().connections,2); assert.equal(relay.stats().limited,0); }
+  console.log('PASS: automatic challenge/proof/offer/answer with actual software identities, verified proof, WebRTC comparison, explicit confirmation, durable installation/acknowledgment and reload. ' + (relayMode?(process.env.R2_HIVE_UPSTREAM?'Current hive binding through deployed upstream via local TLS test bridge.':'Current hive binding through local relay with protected invitation channel.'):'Harness supplies byte-only channel.') + ' Harness supplies reviewed invitation; not public rendezvous or physical acceptance.');
+} catch (error) {
+  console.error('Non-secret connection diagnostics:',JSON.stringify({sent,relay:relay?.stats(),profiles:await Promise.all((pages??[]).map(p=>
+    p.evaluate(()=>({ready:window.ready,errors:window.errors,status:window.channelStatus})).catch(()=>({closed:true}))))}));
+  throw error;
 } finally {
   await browser?.close();
-  await new Promise(resolve=>server.close(resolve));
+  if (relay) await relay.close(); else await new Promise(resolve=>server.close(resolve));
 }

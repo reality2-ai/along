@@ -113,3 +113,19 @@ test('a device without the current group keys receives nothing; prior keys cover
   assert.equal(got.s.length, 0);
   for (const d of [a, b, s]) d.t.disconnect();
 });
+
+test('bootstrap segmentation extends the bound explicitly without changing sharing defaults', () => {
+  const packet = range(7, 16384), limits = {maxPacket:16384,maxPieces:128};
+  assert.throws(() => segment(packet,9,MAX_PLAINTEXT));
+  const pieces = segment(packet,9,MAX_PLAINTEXT,limits);
+  assert.ok(pieces.every(p => p.length <= MAX_PLAINTEXT));
+  const normal = reassembler(), bootstrap = reassembler(limits);
+  let restored;
+  for (const piece of pieces) {
+    assert.equal(normal.accept('test',piece),null);
+    restored = bootstrap.accept('test',piece) ?? restored;
+  }
+  assert.deepEqual(restored,packet);
+  bootstrap.accept('test',pieces[0]);assert.equal(bootstrap.size,1);
+  bootstrap.clear();assert.equal(bootstrap.size,0);
+});

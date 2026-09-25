@@ -1,0 +1,75 @@
+{
+  "date_nz": "2026-09-26",
+  "endpoint": "wss://wairoa.mariko.org.nz/r2",
+  "passed": false,
+  "actual_browser_scope": "Two separate Chromium storage profiles; each WebSocket reached the deployed hive through a local TLS test bridge. Real software identities, proof and core enrollment were used; the invitation was supplied by the test harness.",
+  "actual_browser_outcome": "Invitation expired before the first challenge received an acknowledgment. No comparison or installation was reached.",
+  "diagnostics": {
+    "sent": [
+      "challenge"
+    ],
+    "relay": {
+      "connections": 2,
+      "frames": 260,
+      "limited": 0,
+      "plaintextObserved": false
+    },
+    "profiles": [
+      {
+        "ready": false,
+        "errors": [
+          "Connection invitation expired",
+          "Connection ended"
+        ],
+        "status": [
+          "connecting",
+          "connected"
+        ]
+      },
+      {
+        "ready": false,
+        "errors": [
+          "Invitation ended"
+        ],
+        "status": [
+          "connecting",
+          "connected"
+        ]
+      }
+    ]
+  },
+  "note": "limited=0 is the local bridge counter, not a measurement of upstream rate admission. The bridge forwards frames unchanged in upstream mode.",
+  "minimal_probe": {
+    "runtime": "node v26.8.1",
+    "checked_at": "2026-09-25T21:38:33.319Z",
+    "url": "wss://wairoa.mariko.org.nz/r2",
+    "protocol": [
+      "r2.extended.v1",
+      "r2.extended.v1"
+    ],
+    "forward_delivered": false,
+    "reverse_delivered": false,
+    "relayed_hop_and_route": null,
+    "host_suppressed_identical_resend": false,
+    "wrong_group_key_frame_arrived": false,
+    "wrong_group_key_refused": true,
+    "host_announcement_received": true,
+    "peer_heartbeat_forwarded": false,
+    "passed": false,
+    "scope": "Attempted protected EVENT exchange between two synthetic-group WebSocket connections; inspect the booleans for delivery. No application or physical-device acceptance claim."
+  },
+  "local_checks": "Same client completes enrollment through local TLS stand-in; fault checks cover dropped fragments/acks, duplicates, altered secret/endpoint and cancellation. 26 focused Node tests passed.",
+  "source_sha256": {
+    "experiments/tg-pairing/connection-invitation.mjs": "f65be63a384ab2613d59e64607a623dc807fbd5382f48c5e0ab17b538f4c85bf",
+    "experiments/tg-pairing/invitation-channel.mjs": "ea756b38ec505f51a91ac0ba27dffd4d5d3ad145819cdafd057da2d2efadd82c",
+    "experiments/tg-pairing/automatic-enrollment.mjs": "4e439e8f308b62abf1b66699dc3de40a3762488de0f72d5d2c27fe7fb0e93668",
+    "experiments/tg-pairing/automatic-enrollment.test.mjs": "77ed4173d6c7fd191e397f836b1be679bf9fcbb0c7f780791094707d95181ca2",
+    "experiments/r2-current/segments.mjs": "9adcbee0bf5c27f6494d598b0926719e62c7e58a07d060df462a398c7aa1cf5d"
+  },
+  "limitations": [
+    "No public relay success",
+    "No physical S23 acceptance",
+    "No guided UI shipped",
+    "Cause of upstream missing forwarding not independently established"
+  ]
+}

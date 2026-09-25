@@ -40,6 +40,17 @@ the ruler's `ticks_per_second` (or a matching tick unit), redeploy, and confirm.
 Along will then rerun the two-profile check through the deployed host with
 `R2_HIVE_UPSTREAM=wss://wairoa.mariko.org.nz/r2`.
 
+## Follow-up observation — 26 September
+
+The new automatic-enrollment client connects through the deployed binding but
+receives no reply to its first challenge before invitation expiry. Both browser
+connections reported connected. A separate minimal two-connection protected EVENT
+probe also selected `r2.extended.v1` and received host announcements, but no event
+arrived in either direction. The local TLS stand-in passes the complete enrollment
+with the same client. [Non-secret evidence](evidence/automatic-enrollment-hive-2026-09-26.json)
+records the narrower observations; these checks do not independently prove the
+cause of the host's missing forwarding. No server configuration was changed.
+
 ## Work for the server owner (delivered)
 
 Provide a browser-accessible binding for current R2, preferably a secure

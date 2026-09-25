@@ -101,3 +101,50 @@ Next connect an invitation-scoped channel through the current hive binding,
 then build the guided view and sharing handoff. Existing group-protected sharing
 requires already-enrolled members; it cannot itself bootstrap a new device.
 No new public release yet.
+
+## Bootstrap channel progress (26 September 2026)
+
+`connection-invitation.mjs` and `invitation-channel.mjs` implement an
+Along-specific, short-lived bootstrap channel over the current hive binding.
+A fragment-only link contains the invitation descriptor, the chosen relay,
+expiry, temporary routing public keys and a random 256-bit channel secret.
+It contains no AT key or lasting group key. The secret is a bearer capability
+for this channel; possession does not authorize enrollment. The existing signed
+invitation proof, comparison and core installation checks remain mandatory.
+
+HKDF binds the temporary encryption/integrity keys to the descriptor, relay,
+expiry and routing names. This is an Along application envelope, not a new R2
+standard enrollment API or proof of full R2 conformance. The relay sees connection
+metadata and temporary routing identifiers, but receives protected signalling
+frames. Browser history/clipboard copies of a link can disclose its temporary
+secret; the eventual receiving view must remove the fragment immediately and
+show the proposed relay for explicit consent before connecting. Nothing is
+persisted or enabled merely by parsing a link. Do not share invitation links.
+
+Messages are segmented above L4 to fit the hive's 200-byte protected-payload
+limit, paced below its documented replication limit, acknowledged and retried.
+Receivers deliver each sequence number once. Packet size, pending messages,
+reassembly entries, receive queue and lifetime are bounded. Expiry and Cancel
+close the socket and reject pending sends. Temporary key bytes and incomplete
+reassembly buffers are cleared on close; this is best-effort browser memory
+cleanup, not a claim that JavaScript strings can be securely erased.
+
+The real two-profile enrollment test now also passes through the local TLS hive
+stand-in with `AUTOMATIC_RELAY=1`. `CHANNEL_CHECKS=1` additionally covers malformed
+and expired invitations, fragment-only links, dropped fragments and acknowledgments,
+duplicate delivery, wrong secrets, altered endpoint context and cancellation.
+The normal sharing reassembly bound remains 4 KiB; bootstrap explicitly permits
+16 KiB. Twenty-six focused Node tests pass, including the unchanged frame,
+protection, transport and sharing tests.
+
+The deployed-host attempt did **not** pass. Both browser connections selected the
+binding, but only the first challenge was sent before expiry. A separate minimal
+protected-frame probe also received host announcements but neither peer's event.
+See [the non-secret evidence](evidence/automatic-enrollment-hive-2026-09-26.json).
+This is consistent with the previously reported server forwarding issue, but does
+not by itself establish its cause. Server configuration remains with the server
+owner. A local stand-in pass does not establish deployed interoperability.
+
+Remaining: guided screens, immediate fragment/history handling, invitation review
+and relay consent, sharing-permission handoff, deployed relay exchange and physical
+S23/desktop acceptance. The public application has not changed.

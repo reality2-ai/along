@@ -75,6 +75,6 @@ export async function runLiveExchange(url = 'wss://wairoa.mariko.org.nz/r2') {
     host_announcement_received: hostAnnounced,
     peer_heartbeat_forwarded: peerBeaconSeen,
     passed: forward && reverse && strangerArrived && !strangerDelivered,
-    scope: 'Two independent WebSocket connections in one runtime, with a synthetic group created for this run exchanged XChaCha20-Poly1305/HMAC-SHA256 protected extended EVENT frames through the deployed host. This verifies Along\'s current-frame codec and protection against the real relay. It does not verify the browser app, saved-journey synchronisation, enrolment, revocation, reconnection or physical devices.',
+    scope: 'Two independent WebSocket connections in one runtime, with a synthetic group created for this run attempted to exchange XChaCha20-Poly1305/HMAC-SHA256 protected extended EVENT frames through the deployed host. The result fields determine whether the deployed relay forwarded them; this scope description is not a success claim. It does not verify the browser app, saved-journey synchronisation, enrolment, revocation, reconnection or physical devices.',
   };
 }
