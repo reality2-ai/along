@@ -45,6 +45,7 @@ try {
     await page.getByRole('button', {name: 'Review group devices', exact: true}).click();
     await page.getByRole('status').filter({hasText: 'No issued device certificates'}).waitFor();
     await page.getByRole('button', {name: 'Back', exact: true}).click();
+    if(!await page.getByRole('button',{name:'Receive a group removal',exact:true}).isVisible())await page.getByText('Advanced device options',{exact:true}).click();
     await page.getByRole('button', {name: 'Receive a group removal', exact: true}).click();
     await page.getByLabel('Signed group removal', {exact: true}).waitFor();
     await page.getByRole('button', {name: 'Back', exact: true}).click();

@@ -10,7 +10,7 @@ import {extname} from 'node:path';
 import {chromium,expect} from '@playwright/test';
 const digest=bytes=>createHash('sha256').update(bytes).digest('hex');
 const regularCandidate=process.env.REGULAR_CANDIDATE==='1';
-const zip=regularCandidate?(process.env.ALONG_V37_ZIP||'/tmp/along-v37-upgrade-source/along-web.zip'):fileURLToPath(new URL('../../releases/along-device-preview-3805.zip',import.meta.url));
+const zip=regularCandidate?(process.env.ALONG_V37_ZIP||new URL('../../releases/along-web-v37.zip',import.meta.url).pathname):fileURLToPath(new URL('../../releases/along-device-preview-3805.zip',import.meta.url));
 assert.equal(digest(await readFile(zip)),regularCandidate?'8dda7d208934d6f61494e67860ffe79dfbe7a3b51957e34fa9cbb99e28abf4e9':'ccfd7943aedd1c2de81ddf2cd13358165c882496024a02346dea973e6ec82119');
 const oldFile=name=>execFileSync('unzip',['-p',zip,name],{maxBuffer:64*1024*1024});
 const oldBytes=oldFile('build-info.json');

@@ -2,6 +2,8 @@
 import assert from 'node:assert/strict';
 import AxeBuilder from '@axe-core/playwright';
 const guidedMode=process.env.GUIDED_PAIRING==='1';
+const guidedScan=process.env.GUIDED_SCAN==='1';
+if(guidedScan)assert.ok(guidedMode);
 const guidedCancel=process.env.GUIDED_CANCEL==='1';
 const guidedConflict=process.env.GUIDED_CONFLICT==='1';
 if(guidedConflict)assert.ok(guidedMode&&!guidedCancel);
@@ -74,11 +76,11 @@ try {
     await pages[1].getByRole('button',{name:'Create invitation',exact:true}).click();
     const link=await pages[1].getByLabel('Invitation link',{exact:true}).inputValue();
     assert.ok(link.includes('#connect='));
-    await pages[0].evaluate(async ({link,guidedInterrupt})=>{
-      history.replaceState({kept:'yes'},'',link);
+    await pages[0].evaluate(async ({link,guidedInterrupt,guidedScan})=>{
+      if(!guidedScan)history.replaceState({kept:'yes'},'',link);
       const module=await import('./automatic-pairing-view.mjs');
-      const consumed=module.consumeConnectionFragment(location,history);
-      if(location.hash||history.state.kept!=='yes'||!consumed.invitation)throw Error('Fragment not removed safely');
+      const consumed=guidedScan?{}:module.consumeConnectionFragment(location,history);
+      if(!guidedScan&&(location.hash||history.state.kept!=='yes'||!consumed.invitation))throw Error('Fragment not removed safely');
       let flowStore=store;
       if(guidedInterrupt)flowStore={...store,compareAndSwapMany:async(...args)=>{
         const result=await store.compareAndSwapMany(...args);
@@ -90,7 +92,22 @@ try {
       window.view=module.showAutomaticPairing(document.querySelector('#flow'),{wasm,store:flowStore,role:'candidate',focus:true,
         connectionText:consumed.invitation,onBack:()=>{window.back=true;},onConnected:result=>{window.connected=result;},
         onShare:async result=>{window.sharing=(await import('./connected-sharing-view.mjs')).showConnectedSharing(document.querySelector('#flow'),{wasm,store,expectedGroup:result.group,peer:result.peer,relay:result.relay,focus:true,onChanged:()=>{window.sharingSaved=true;}});}});
-    },{link,guidedInterrupt});
+    },{link,guidedInterrupt,guidedScan});
+    if(guidedScan){
+      await pages[0].evaluate(link=>{
+        window.cameraStopped=0;window.cameraRequested=0;
+        HTMLMediaElement.prototype.play=async()=>{};
+        window.BarcodeDetector=class{static async getSupportedFormats(){return ['qr_code'];}async detect(){return [{format:'qr_code',rawValue:link}];}};
+        Object.defineProperty(navigator.mediaDevices,'getUserMedia',{configurable:true,value:async()=>{
+          cameraRequested++;const stream=new MediaStream();Object.defineProperty(stream,'getTracks',{value:()=>[{stop:()=>cameraStopped++}]});return stream;
+        }});
+      },link);
+      assert.equal(await pages[0].evaluate(()=>cameraRequested),0);
+      await pages[0].getByRole('button',{name:'Scan invitation',exact:true}).click();
+      await pages[0].getByRole('heading',{name:'Connect to your other device?',exact:true}).waitFor();
+      assert.equal(await pages[0].evaluate(()=>cameraStopped),1);
+      console.log('PASS: scan result advances to invitation review and releases the camera, with no return QR. Camera/decoder stub; physical scanning is not verified.');
+    }
     await pages[0].getByRole('heading',{name:'Connect to your other device?',exact:true}).waitFor();
     // Only the inviter may have opened a socket; parsing/review creates none.
     assert.ok(relay.stats().connections<=1);

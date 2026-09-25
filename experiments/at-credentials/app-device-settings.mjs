@@ -104,6 +104,13 @@ export function mountAppDeviceSettings({onChanged,connectionInvitation}) {
         }, true);
       } else {
         const group = saved.value.record.group;
+        // Receiving a signed removal remains available even if local membership
+        // cannot currently be loaded. The transfer verifies its own authority.
+        const details = node('details', ''); details.append(node('summary', 'Advanced device options'));
+        panel.append(details);
+        action(details,'Receive a group removal',()=>{
+          clear();child=showRemovalTransfer(content,{wasm,store,expectedGroup:group,focus:true,onBack:home});
+        });
         const identity = await loadLocalPersona({wasm, store, expectedGroup: group}); if (!active(selected)) return;
         if (!identity) throw Error('Saved identity unavailable');
         let binding, bindingAvailable = true;
@@ -146,9 +153,7 @@ export function mountAppDeviceSettings({onChanged,connectionInvitation}) {
           action(panel, binding?.role === 'owner' ? 'Share my AT key' : 'Receive a shared AT key', () => show(showKeySharingFlow, {role: binding?.role === 'owner' ? 'owner' : 'recipient'}));
           if (binding?.role === 'owner') action(panel, 'Manage AT access on other devices', () => show(showOwnerDevices));
         }
-        const details = node('details', ''); details.append(node('summary', 'Advanced device options'));
         panel.append(details);
-        action(details,'Receive a group removal',()=>show(showRemovalTransfer));
         if (identity.origin === 'initial') {
           action(details, 'Invite my other device', () => show(showPairingFlow, {role: 'provisioner'}));
           action(details, 'Update group keys on this device', () => show(showEpochRotation));
@@ -164,7 +169,7 @@ export function mountAppDeviceSettings({onChanged,connectionInvitation}) {
       // Put the return action after the current task's choices.
       panel.append(returnButton);
     } catch {
-      if (active(selected)) status.textContent = 'Device setup could not be read. Your saved data has been kept. Return to Settings and continue with downloaded journeys.';
+      if (active(selected)) {status.textContent = 'Device setup could not be read. Your saved data has been kept. Recovery options remain under Advanced. You can continue with downloaded journeys.';panel.append(returnButton);}
     }
   };
   open.addEventListener('click', event => {

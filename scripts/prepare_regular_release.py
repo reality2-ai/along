@@ -8,7 +8,7 @@ import tempfile
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
-REQUIRED = {'installed_v43_upgrade','guided_app_offline','guided_component','guided_cancel','guided_conflict',
+REQUIRED = {'guided_scan','installed_v43_upgrade','guided_app_offline','guided_component','guided_cancel','guided_conflict',
             'guided_interrupted_install','guided_interrupted_ack','invitation_channel_faults','installed_v42_upgrade','arrive_by_and_shortcut','installed_v41_upgrade','journeys','capacity_reporting','checkpoint_app','rotated_journeys',
             'owner_key','shared_key_replacement','group_removal','rotated_at_owner',
             'rotated_different_at_owner','lost_confirmation','interrupted_acceptance',

@@ -219,3 +219,22 @@ actually install; merely ignoring page certificate errors did not establish that
 These checks are now required by the version-44 candidate qualification and
 packaging scripts. They do not change the unresolved deployed-host or physical
 acceptance status.
+
+## First v44 qualification findings
+
+The first fixed-build qualification (`fbfa0ce8d958`) completed with failures and
+must not be used to package a release. Four checks reached the relocated removal
+control without opening Advanced; two older-version checks lacked their pinned
+v37 archive. The removal entry is now constructed before membership restoration,
+so signed removal can still be received when ordinary identity loading fails.
+The test navigation now opens Advanced. The public v37 archive was fetched and
+matched the existing SHA-256 pin; tests now use a durable releases/ fixture path.
+
+A separate scan-path review found that the new invitation input had no explicit
+maximum length, while the shared scanner requires one. It now accepts bounded
+invitation links and advances a successful scan straight to review, releasing the
+camera. A camera/decoder-stub browser check passes the subsequent real proof,
+comparison, installation and sharing-choice flow. This verifies the application
+scan path, not optical QR recognition or physical phone use. The scan check is
+now an additional required v44 qualification gate. A fresh complete qualification
+is required after these corrections.

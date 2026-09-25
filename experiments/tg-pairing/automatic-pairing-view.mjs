@@ -153,9 +153,19 @@ export function showAutomaticPairing(container,{wasm,store,role,expectedGroup,re
   }else if(connectionText){review(connectionText);}
   else{
     const view=screen('Scan your other device','On your other device, choose Connect another device. Scan its invitation here or open its invitation link.');
-    const label=node('label','Invitation link'),input=node('textarea');input.rows=3;input.autocomplete='off';input.spellcheck=false;label.append(input);
+    const label=node('label','Invitation link'),input=node('textarea');input.rows=3;input.maxLength=12288;input.autocomplete='off';input.spellcheck=false;label.append(input);
     const area=node('div');
-    button(view.panel,'Scan invitation',async()=>{try{await scanTransferQr(area,input,lifetime.signal);}catch{view.status.textContent='Scanning is unavailable. Paste the invitation link below.';}},true);
+    const scan=button(view.panel,'Scan invitation',async()=>{
+      if(scan.disabled)return;scan.disabled=true;const previous=input.value;
+      try{
+        await scanTransferQr(area,input,lifetime.signal);
+        if(!disposed&&input.value!==previous){
+          try{review(invitationFromLink(input.value.trim()));}
+          catch{view.status.textContent='This code is not a current Along invitation. Create a new invitation on your other device.';input.focus();}
+        }
+      }catch{if(!disposed)view.status.textContent='Scanning is unavailable. Paste the invitation link below.';}
+      finally{scan.disabled=false;}
+    },true);
     view.panel.append(area,label);
     button(view.panel,'Review invitation',()=>{try{review(invitationFromLink(input.value.trim()));}catch{view.status.textContent='This invitation could not be read. Copy a new invitation link from your other device.';input.focus();}});
     button(view.panel,'Cancel',leave);

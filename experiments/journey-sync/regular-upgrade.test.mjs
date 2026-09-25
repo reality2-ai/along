@@ -19,7 +19,7 @@ const priorReleases={
   '42':{path:new URL('../../releases/along-web-v42.zip',import.meta.url).pathname,sha:'c41b2e06cab600d14b0365f527117c75fb90f193c3d2c5db9067b13ab3096f6d'},
   '41':{path:new URL('../../releases/along-web-v41.zip',import.meta.url).pathname,sha:'32cba1e89e2cdba1a17eda405876d2ed03fa5d77fd3f76c0f72645f5c19b877a'},
   '40':{path:new URL('../../releases/along-web-v40.zip',import.meta.url).pathname,sha:'cae169ada5b168908127e9e089ebae8f7072a5c694ddbb12e041c958c304095f'},
-  '37':{path:process.env.ALONG_V37_ZIP||'/tmp/along-v37-upgrade-source/along-web.zip',sha:'8dda7d208934d6f61494e67860ffe79dfbe7a3b51957e34fa9cbb99e28abf4e9'},
+  '37':{path:process.env.ALONG_V37_ZIP||new URL('../../releases/along-web-v37.zip',import.meta.url).pathname,sha:'8dda7d208934d6f61494e67860ffe79dfbe7a3b51957e34fa9cbb99e28abf4e9'},
   '38':{path:new URL('../../releases/along-web-v38.zip',import.meta.url).pathname,sha:'2d203b12ad1f1148e494165686435d66cacf6ec7853f0693b48cd46f15cccb3d'},
   '39':{path:new URL('../../releases/along-web-v39.zip',import.meta.url).pathname,sha:'9c4dee55974beecc58bef97310e5c9ee7dd3cd343d0820a973a54a7371363e18'},
 };

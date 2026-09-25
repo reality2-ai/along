@@ -399,7 +399,8 @@ try {
   await candidate.reload();
   await candidate.locator('#settings-open').click();
   await candidate.getByRole('button', {name: /^(My devices|Device and AT-key setup)$/, exact: true}).click();
-  await candidate.getByRole('button', {name: 'Receive a group removal', exact: true}).click();
+  if(!await candidate.getByRole('button',{name:'Receive a group removal',exact:true}).isVisible())await candidate.getByText('Advanced device options',{exact:true}).click();
+    await candidate.getByRole('button', {name: 'Receive a group removal', exact: true}).click();
   await candidate.getByLabel('Signed group removal', {exact: true}).fill(removalMessage);
   await candidate.getByRole('button', {name: 'Check and save removal', exact: true}).click();
   await candidate.getByRole('heading', {name: 'Group removal saved', exact: true}).waitFor();
