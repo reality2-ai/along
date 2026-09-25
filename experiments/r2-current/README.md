@@ -90,7 +90,18 @@ issuer custody (`ownTraffic`), because they are never stored.
 
 Output is paced to 56 relayed frames per sliding 10 s, below the host's
 per-origin limit of 64 per 10 s. A full 2 KB packet is 17 frames, so large
-snapshots take tens of seconds.
+snapshots take tens of seconds. The budget is stored through atomic IndexedDB
+revisions, keyed by a hash of the endpoint and public wire origin. Replacement
+connections, reloads and tabs using the same device database share the recent
+window. Only timing metadata is retained; no credential or membership permission
+is stored there. Clock rollback or unreadable record format imposes a conservative
+full window. Storage failure grants no unrecorded send. Separate browser profiles
+with cloned identities do not share storage and cannot coordinate this budget.
+
+`origin-pacing.test.mjs` covers contention, replacement, isolation, clock rollback
+and storage failure. `origin-pacing-browser.test.mjs` verifies separate page realms
+and a replacement page against real browser IndexedDB. The enrolled relay check
+now requires zero rate-limited drops from the local stand-in.
 
 Checks: `ENROLLED_RELAY_NETWORK=1` and `RELAY_GENERATION=1`
 `experiments/at-credentials/peer-delivery.test.mjs`, and

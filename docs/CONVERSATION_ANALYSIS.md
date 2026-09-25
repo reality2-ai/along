@@ -1681,3 +1681,12 @@ That work now happens as part of the explicit Create invitation action, with
 local storage explained on that screen. Opening or cancelling the screen has no
 setup side effect. This continues the contextual-design theme: internal protocol
 steps do not each need to become a separate user decision.
+
+
+A reconnect check that passed still reported dropped frames. Inspection showed
+that the relay counts sends per device origin, while the client had counted them
+per connection object. Persisting the recent pacing window atomically makes the
+client's model match the relay's, including reloads and other tabs. The strengthened
+test requires zero rate-limit drops, rather than treating eventual convergence as
+proof of healthy transport. This is a course example of inspecting operational
+measurements behind a green test.

@@ -343,3 +343,21 @@ same-origin app tabs) before claiming reconnection reliability. No timeout was
 increased to mask this finding. Local diagnostic log:
 `/tmp/along-relay-service-diagnostic.log`; production code remains unchanged for
 this issue pending the fix.
+
+
+## Shared per-origin pacing implemented locally
+
+`origin-pacing.mjs` now retains the recent relay window through atomic browser
+storage revisions. Its key is a hash of the selected endpoint and public wire
+origin. Connection replacement, page reload and tabs using the same device
+database share the same 56-frame/10-second budget. Timing metadata grants no
+membership or application permission. Clock rollback or malformed timing records
+conservatively starts a full waiting window; failed storage cannot grant a token.
+
+Node tests pass for contention, replacement, endpoint/origin separation, corrupt
+records, clock rollback, storage failure and asynchronous-read clock sampling.
+A real two-page IndexedDB check proves the shared budget survives a replacement
+page. The enrolled relay handshake, saved-place convergence and reconnect test
+passes after the pacing change. Its release gate now additionally requires zero
+rate-limited drops from the local hive; a fresh fixed-source run must establish
+that stronger condition. No transfer timeout was increased.

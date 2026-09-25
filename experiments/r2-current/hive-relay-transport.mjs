@@ -12,6 +12,7 @@ import {heartbeatFrame} from './heartbeat.mjs';
 import {duplicateCache} from './duplicates.mjs';
 import {eventHash} from './names.mjs';
 import {reassembler, segment} from './segments.mjs';
+import {createOriginPacer} from './origin-pacing.mjs';
 
 export const PACKET_EVENT = eventHash('nz.along.relay.packet.v1');
 // A replaced epoch's keys stay in memory, never in storage, so frames already in
@@ -41,15 +42,17 @@ export function createHiveRelayTransportFactory({wasm, store, expectedGroup, mem
   return function hiveRelayTransport({url, onFrame, onStatus = () => {}}) {
     let self, groupTarget, membershipRevision, current, prior, stopped = true, sendQueue = Promise.resolve();
     const beacon = {beaconId: random(4), classHash: random(4)};
-    const seen = duplicateCache({now}), pieces = reassembler({now}), recent = [];
+    const seen = duplicateCache({now}), pieces = reassembler({now});
+    let pacer;
     const sleep = ms => new Promise(resolve => (timers ?? globalThis).setTimeout(resolve, ms));
-    // Sliding-window pacing of relayed frames from this origin.
+    // The saved window survives replacement, reload and another same-device tab.
     const paced = async () => {
       for (;;) {
-        while (recent.length && now() - recent[0] >= relayWindow.ms) recent.shift();
-        if (recent.length < relayWindow.frames) { recent.push(now()); return; }
         if (stopped) throw Error('Hive relay stopped');
-        await sleep(Math.min(250, recent[0] + relayWindow.ms - now() + 1));
+        const delay=await pacer.reserve();
+        if (stopped) throw Error('Hive relay stopped');
+        if(delay===0)return;
+        await sleep(Math.min(250,delay));
       }
     };
     const halves = new Map();
@@ -94,6 +97,7 @@ export function createHiveRelayTransportFactory({wasm, store, expectedGroup, mem
         stopped = false;
         void (async () => {
           self = await wireEntry(group, unhex(member));
+          pacer=await createOriginPacer({store,endpoint:hive.endpoint,origin:self,now,window:relayWindow});
           groupTarget = new Uint8Array(8); groupTarget.set(self.subarray(0, 4));
           await keyring();
           if (!stopped) hive.start();

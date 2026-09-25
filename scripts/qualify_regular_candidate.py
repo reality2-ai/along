@@ -36,6 +36,7 @@ def main():
         if not env.get(name):
             raise RuntimeError(f'Set {name}')
     cases = [
+        ('relay_origin_pacing', {}, 'experiments/r2-current/origin-pacing-browser.test.mjs'),
         ('relay_enrollment_carriage', {}, 'experiments/tg-pairing/relay-enrollment-peer.test.mjs'),
         ('guided_scan', {'GUIDED_PAIRING':'1','GUIDED_SCAN':'1'}, 'experiments/tg-pairing/automatic-enrollment.test.mjs'),
         ('installed_v43_upgrade', {'ALONG_PRIOR_VERSION':'43'}, 'experiments/journey-sync/regular-upgrade.test.mjs'),

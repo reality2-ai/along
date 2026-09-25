@@ -55,7 +55,9 @@ function network() {
 const group = range(1, 32);
 function device(net, subject, keys, received, statuses) {
   let revision = 1;
-  const store = {read: async () => ({revision})};
+  const records=new Map();
+  const store = {read:async(scope,key)=>scope==='membership'?{revision}:structuredClone(records.get(key)??null),
+    compareAndSwapMany:async([change])=>{const before=records.get(change.key);if((before?.revision??0)!==change.expectedRevision)return {applied:false};records.set(change.key,{revision:change.expectedRevision+1,value:structuredClone(change.value)});return {applied:true};}};
   const factory = createHiveRelayTransportFactory({wasm: null, store, expectedGroup: group, member: hex(subject),
     WebSocket: net.Socket, loadTraffic: async () => ({...keys(), destroy() {}})});
   const t = factory({url: 'wss://hive.example/r2', onFrame: p => received.push(p), onStatus: s => statuses.push(s)});
