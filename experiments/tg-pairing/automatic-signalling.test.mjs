@@ -45,3 +45,15 @@ test('cancellation during session creation disposes the late session and sends n
  resolve({cancel:async()=>{cancelled++;}});await tick();
  assert.equal(cancelled,1);assert.equal(ready,0);assert.equal(c.sent.length,0);assert.equal(p.phase,'closed');
 });
+test('cancellation during verification releases its late capability without creating a session',async()=>{
+ const c=channels(),abort=new AbortController();let resolve,made=0,discarded=0;
+ const capability={verified:true};
+ const a=createAutomaticSignalling({role:'candidate',channel:c.endpoints[1],signal:abort.signal,
+  verifyProof:()=>new Promise(r=>{resolve=r;}),
+  discardProof:value=>{assert.equal(value,capability);discarded++;},
+  createSession:()=>{made++;}});
+ await a.start('challenge');
+ c.inject(1,{profile:'along-enrollment-signalling-v1',kind:'proof',body:'signed-proof'});await tick();
+ abort.abort();resolve(capability);await tick();
+ assert.equal(made,0);assert.equal(discarded,1);assert.equal(a.phase,'closed');
+});

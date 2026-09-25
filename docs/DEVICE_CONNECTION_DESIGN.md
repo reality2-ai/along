@@ -74,8 +74,30 @@ This is the accepted redesign target, not a claim that it has shipped.
 challenge/proof and connection offer/answer over a supplied invitation channel.
 Candidate session creation follows successful proof verification. It fails closed
 on unexpected or oversized messages and cancels sessions that finish creating
-after cancellation. Four Node tests pass with synthetic channels and session
-callbacks. This establishes orchestration only, not encrypted rendezvous,
-real enrollment, public-server connectivity or the user-facing single-scan flow.
-Next connect an invitation-scoped channel and the actual proof/session modules,
-then build the guided view and sharing handoff. No new public release yet.
+after cancellation. Five Node tests pass with synthetic channels and session
+callbacks, including cancellation while proof verification is pending: its unused
+WASM capability is released without creating a session.
+
+`automatic-enrollment.mjs` now connects that sequencer to the existing real
+invitation proof, browser-software issuer and core candidate ceremony. A Chromium
+test between two independent storage profiles verifies automatic challenge,
+proof, offer and answer; identical comparison codes; no installation before
+explicit confirmation; durable installation and acknowledgment; and restoration
+and signing after reload. The harness supplies a reviewed invitation and moves
+bytes between the profiles. It does not supply protocol replies or bypass the
+proof/core. This is not a public rendezvous or physical-device acceptance test.
+
+Run the focused checks with:
+
+```sh
+node --test experiments/tg-pairing/automatic-signalling.test.mjs
+CHROMIUM_PATH=/path/to/chromium \
+R2_BROWSER_DIR=/path/to/verified-runtime/browser \
+R2_WASM_DIR=/path/to/verified-runtime/wasm \
+node experiments/tg-pairing/automatic-enrollment.test.mjs
+```
+
+Next connect an invitation-scoped channel through the current hive binding,
+then build the guided view and sharing handoff. Existing group-protected sharing
+requires already-enrolled members; it cannot itself bootstrap a new device.
+No new public release yet.

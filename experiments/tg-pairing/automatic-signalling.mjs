@@ -3,7 +3,7 @@
 // comparison, durable enrollment and application consent. No credential payloads.
 const LIMIT = 65536;
 export function createAutomaticSignalling({role, channel, answerProof, verifyProof, createSession,
-  onSession = () => {}, onError = () => {}, signal}) {
+  onSession = () => {}, onError = () => {}, discardProof = () => {}, signal}) {
   if (!['candidate', 'provisioner'].includes(role) || !channel || typeof channel.send !== 'function'
       || typeof channel.subscribe !== 'function' || typeof channel.close !== 'function'
       || typeof createSession !== 'function'
@@ -42,16 +42,19 @@ export function createAutomaticSignalling({role, channel, answerProof, verifyPro
       await send('proof', response);
     } else if (role === 'candidate' && phase === 'proof' && value.kind === 'proof' && typeof value.body === 'string') {
       phase = 'verifying';
-      const verified = await verifyProof(value.body); current();
+      const verified = await verifyProof(value.body);
+      // Until createSession is invoked, the verified capability belongs here.
+      // Cancellation may occur while verification is pending.
+      if (closed || signal?.aborted) { await discardProof(verified); current(); }
       await establish(verified); current();
       const offer = await session.offer(); current(); phase = 'answer';
       await send('offer', offer);
     } else if (role === 'provisioner' && phase === 'offer' && value.kind === 'offer') {
       phase = 'accepting';
       const answer = await session.accept(value.body); current(); phase = 'ready';
-      await send('answer', answer); current(); onSession(session);
+      await send('answer', answer); current(); await onSession(session);
     } else if (role === 'candidate' && phase === 'answer' && value.kind === 'answer') {
-      phase = 'accepting'; await session.accept(value.body); current(); phase = 'ready'; onSession(session);
+      phase = 'accepting'; await session.accept(value.body); current(); phase = 'ready'; await onSession(session);
     } else throw Error('Unexpected connection message');
   };
   unsubscribe = channel.subscribe(text => { queue = queue.then(() => receive(text)).catch(fail); });

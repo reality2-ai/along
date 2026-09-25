@@ -1623,3 +1623,22 @@ about the same; full example itineraries stayed byte-equivalent as JSON values.
 The [evidence](evidence/routing-path-allocations.json) supports that bounded claim,
 not a phone speed promise or a diagnosis of a memory leak. The human supplied the
 accessibility and offline goals; the AI conducted the investigation and changes.
+
+### Connecting devices is one task (26 September 2026)
+
+The user said, “the whole process of connecting devices is way too complicated.”
+Code this as procedural burden, exposed implementation detail and an unmet
+expectation of continuity across personal devices. It extends the earlier
+contextual-discoverability theme: reducing clutter within each screen does not
+make a long sequence of technical exchanges understandable. The unit of design
+is the complete task, not an individual dialog.
+
+The resulting [connection design](DEVICE_CONNECTION_DESIGN.md) combines entry,
+invitation, matching-code confirmation and sharing choice into one guided flow.
+Return messages should move automatically; optional relay consent and AT-key
+permission remain explicit. This is an interpretation and redesign target, not
+evidence that the user accepted a replacement. The first real-browser experiment
+verifies automatic protocol exchange and durable enrollment using a harness
+channel. It does not establish relay rendezvous, single-scan usability or phone
+acceptance. The AI implements and tests the change; the human supplies the
+experience report without writing code.
