@@ -143,6 +143,20 @@ export async function loadSoftwareIssuer({wasm, store, expectedGroup, signal}) {
       };
     return Object.freeze({group: groupId, member: persona.member, custody: 'encrypted-browser-software', close,
       issueCertificate,
+      // The initial member's own current group keys: epoch 0 is derived from the
+      // issuer secret (it is never stored); later epochs are installed traffic.
+      ownTraffic: async () => {
+        await check();
+        if (persona.epoch !== 0n) {
+          const {loadSoftwareTraffic} = await import('./software-traffic.mjs');
+          return loadSoftwareTraffic({wasm, store, expectedGroup: group, signal});
+        }
+        const derive = async purpose => new Uint8Array(await crypto.subtle.deriveBits({name: 'HKDF', hash: 'SHA-256',
+          salt: group, info: new TextEncoder().encode(purpose)}, derivationKey, 256));
+        const payloadKey = await derive('r2/v0/group/payload'), integrityKey = await derive('r2/v0/group/integrity');
+        await check();
+        return Object.freeze({epoch: 0n, payloadKey, integrityKey, destroy: () => { payloadKey.fill(0); integrityKey.fill(0); }});
+      },
       recoveryMaterial: async ({subject, certificate, epoch}) => {
         if (!bytes(subject, 32) || !bytes(certificate, 136)) throw fail();
         const member = subject.slice(), proof = certificate.slice();

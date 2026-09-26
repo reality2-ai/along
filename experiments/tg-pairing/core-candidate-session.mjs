@@ -6,7 +6,7 @@ import {enrollmentPayloads} from './enrollment-payloads.mjs';
 import {installationReceipt} from './installation-receipt.mjs';
 import {readStoredClaim} from './stored-claim.mjs';
 
-export async function createCoreCandidateSession({wasm, invitation, authorized, platform, readClaimState, store, signal, softwareCustody = false}) {
+export async function createCoreCandidateSession({wasm, invitation, authorized, platform, readClaimState, store, signal, softwareCustody = false, sessionFactory = createEnrollmentSession}) {
   const expected = structuredClone(invitation);
   let core, session, key, cancellation, installed, acknowledgmentStarted = false, started = false, ended = false;
   const close = () => {
@@ -54,7 +54,7 @@ export async function createCoreCandidateSession({wasm, invitation, authorized, 
       confirm: matched => liveCore().confirm(matched),
       close,
     });
-    session = await createEnrollmentSession({wasm, invitation: expected, role: 'candidate', store, candidateCeremony: driver});
+    session = await sessionFactory({wasm, invitation: expected, role: 'candidate', store, candidateCeremony: driver});
     initiating();
     session.signal.addEventListener('abort', close, {once: true});
     if (session.signal.aborted) { close(); throw new Error('Candidate session ended'); }

@@ -1,3 +1,6 @@
+import {showAutomaticPairing} from '../tg-pairing/automatic-pairing-view.mjs';
+import {showConnectedSharing} from '../tg-pairing/connected-sharing-view.mjs';
+import {readRelayConfiguration} from '../relay/configuration.mjs';
 import {showLocalSetup} from '../tg-pairing/setup-view.mjs';
 import {showPairingFlow} from '../tg-pairing/pairing-flow.mjs';
 import {showRecoveryFlow} from '../tg-pairing/recovery-flow.mjs';
@@ -13,12 +16,12 @@ import {showRemovalTransfer} from '../tg-pairing/removal-transfer-view.mjs';
 
 // Lazy, explicit setup inside the journey app. This owns its storage handle;
 // onChanged may borrow it until disposal. No automatic identity or key creation.
-export function mountAppDeviceSettings({onChanged}) {
+export function mountAppDeviceSettings({onChanged,connectionInvitation}) {
   const settings = document.querySelector('#settings');
   const node = (tag, text) => { const n = document.createElement(tag); n.textContent = text; return n; };
-  const open = node('button', 'Device and AT-key setup'); open.type = 'button'; open.className = 'secondary-button';
+  const open = node('button', 'My devices'); open.type = 'button'; open.className = 'secondary-button';
   settings.insertBefore(open, settings.querySelector('#alerts-open'));
-  const dialog = node('dialog', ''); dialog.setAttribute('aria-label', 'Device and AT-key setup');
+  const dialog = node('dialog', ''); dialog.setAttribute('aria-label', 'My devices');
   const content = node('div', ''); dialog.append(content); document.body.append(dialog);
   let store, wasm, child, disposed = false, generation = 0;
   const clear = () => { generation++; child?.dispose(); child = undefined; content.replaceChildren(); return generation; };
@@ -49,9 +52,29 @@ export function mountAppDeviceSettings({onChanged}) {
     const selected = generation;
     button.addEventListener('click', event => { if (event.isTrusted && active(selected)) void run(); }); panel.append(button);
   };
+  const announce = async () => {
+    const saved = await store.read('candidate-persona','active');
+    const group = saved?.value?.record?.group;
+    if (!group || disposed) return;
+    const identity = await loadLocalPersona({wasm,store,expectedGroup:group});
+    let binding;
+    try { binding = await loadATConnectionBinding({wasm,store,expectedGroup:group}); } catch {}
+    if (!disposed && identity) onChanged({wasm,store,group,binding,member:identity.member});
+  };
+  const guided = options => {
+    clear();let sharing;
+    const pairing = showAutomaticPairing(content,{wasm,store,focus:true,onBack:home,...options,
+      onConnected:announce,
+      onShare:result=>{
+        // Keep enrollment alive while the last acknowledgment reaches the peer.
+        sharing=showConnectedSharing(content,{wasm,store,expectedGroup:result.group,peer:result.peer,
+          relay:result.relay,focus:true,onBack:home,onChanged:announce});
+      }});
+    child={dispose(){sharing?.dispose();pairing.dispose();}};
+  };
   const home = async () => {
     const selected = clear();
-    const {panel, heading, status} = frame('Your devices and AT key', 'Checking this browser’s saved setup…');
+    const {panel, heading, status} = frame('My devices', 'Checking this browser’s saved setup…');
     const returnButton = node('button', 'Back to settings'); returnButton.type = 'button';
     returnButton.addEventListener('click', back); panel.append(returnButton);
     try {
@@ -65,18 +88,29 @@ export function mountAppDeviceSettings({onChanged}) {
         await runtime.default(); if (!active(selected)) return; wasm = runtime;
       }
       const saved = await store.read('candidate-persona', 'active'); if (!active(selected)) return;
+      if (connectionInvitation) {
+        const incoming=connectionInvitation;connectionInvitation=undefined;
+        if(incoming.invalid){status.textContent='The invitation expired or could not be read. Ask your other device for a new invitation.';return;}
+        guided({role:'candidate',connectionText:incoming.invitation});return;
+      }
       if (!saved) {
-        heading.textContent = 'Set up this device';
+        heading.textContent = 'My devices';
         status.textContent = 'Device connection and live information are optional. Scheduled journey planning works without setup.';
+        action(panel,'Connect another device',()=>guided({role:'provisioner',createLocalGroup:true}),true);
+        action(panel,'Connect to my other device',()=>guided({role:'candidate'}));
         action(panel, 'Set up my device', () => {
           clear(); child = showLocalSetup(content, {wasm, store, focus: true, onBack: home});
           const setup = child;
           void setup.completed.then(() => { if (!disposed && child === setup) return home(); }).catch(() => {});
-        }, true);
+        });
       } else {
         const group = saved.value.record.group;
-        action(panel, 'Receive a group removal', () => {
-          clear(); child = showRemovalTransfer(content, {wasm, store, expectedGroup: group, focus: true, onBack: home});
+        // Receiving a signed removal remains available even if local membership
+        // cannot currently be loaded. The transfer verifies its own authority.
+        const details = node('details', ''); details.append(node('summary', 'Advanced device options'));
+        panel.append(details);
+        action(details,'Receive a group removal',()=>{
+          clear();child=showRemovalTransfer(content,{wasm,store,expectedGroup:group,focus:true,onBack:home});
         });
         const identity = await loadLocalPersona({wasm, store, expectedGroup: group}); if (!active(selected)) return;
         if (!identity) throw Error('Saved identity unavailable');
@@ -109,12 +143,17 @@ export function mountAppDeviceSettings({onChanged}) {
             }).catch(() => { /* Group installation remains saved; unreadable AT state is preserved. */ });
           }
         };
+        if(identity.origin==='initial'){
+          let relay='';
+          try{const configured=await readRelayConfiguration({store,expectedGroup:group,member:identity.member});if(configured.enabled)relay=configured.url;}catch{}
+          if(!active(selected))return;
+          action(panel,'Connect another device',()=>guided({role:'provisioner',expectedGroup:group,relay}),true);
+        }
         if (bindingAvailable) {
           action(panel, binding ? 'Manage my AT key' : 'Use my own AT key', () => show(showATSettings), true);
           action(panel, binding?.role === 'owner' ? 'Share my AT key' : 'Receive a shared AT key', () => show(showKeySharingFlow, {role: binding?.role === 'owner' ? 'owner' : 'recipient'}));
           if (binding?.role === 'owner') action(panel, 'Manage AT access on other devices', () => show(showOwnerDevices));
         }
-        const details = node('details', ''); details.append(node('summary', 'Connect or recover another device'));
         panel.append(details);
         if (identity.origin === 'initial') {
           action(details, 'Invite my other device', () => show(showPairingFlow, {role: 'provisioner'}));
@@ -131,16 +170,18 @@ export function mountAppDeviceSettings({onChanged}) {
       // Put the return action after the current task's choices.
       panel.append(returnButton);
     } catch {
-      if (active(selected)) status.textContent = 'Device setup could not be read. Your saved data has been kept. Return to Settings and continue with downloaded journeys.';
+      if (active(selected)) {status.textContent = 'Device setup could not be read. Your saved data has been kept. Recovery options remain under Advanced. You can continue with downloaded journeys.';panel.append(returnButton);}
     }
   };
   open.addEventListener('click', event => {
     if (!event.isTrusted || disposed) return;
     settings.close(); dialog.showModal(); void home();
   });
+  const openInvitation=value=>{if(disposed)return;connectionInvitation=value;if(settings.open)settings.close();if(!dialog.open)dialog.showModal();void home();};
+  if(connectionInvitation)openInvitation(connectionInvitation);
   dialog.addEventListener('cancel', event => { event.preventDefault(); back(); });
   dialog.addEventListener('close', () => { if (!dialog.open) clear(); });
-  return Object.freeze({dispose() {
+  return Object.freeze({openInvitation,dispose() {
     if (disposed) return; disposed = true; clear(); store?.close(); open.remove(); dialog.remove();
   }});
 }

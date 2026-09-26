@@ -1,5 +1,5 @@
 import {readRelayConfiguration} from './configuration.mjs';
-import {createRelayTransport} from './transport.mjs';
+import {createHiveRelayTransportFactory} from '../r2-current/hive-relay-transport.mjs';
 import {createLocalRelayHello} from './local-hello.mjs';
 import {createRelayAnnouncement,acceptRelayAnnouncement} from './discovery.mjs';
 import {openRelayJourneyConnection} from './journey-connection.mjs';
@@ -10,9 +10,11 @@ const starts=(bytes,prefix)=>bytes.length>=prefix.length&&prefix.every((v,i)=>by
 // Explicit saved opt-in only. One shared socket dispatches at most sixteen
 // already permitted peers. Discovery never enrolls or grants permission.
 export async function openRelaySharingService({wasm,store,expectedGroup,member,generationAware=false,storage,locks,
-  signal,onSaved=()=>{},onStatus=()=>{},transportFactory=createRelayTransport}) {
+  signal,onSaved=()=>{},onStatus=()=>{},transportFactory}) {
   if(!(expectedGroup instanceof Uint8Array)||expectedGroup.length!==32||!/^[0-9a-f]{64}$/.test(member))throw Error('Relay sharing context unavailable');
   const group=expectedGroup.slice(),options={wasm,store,expectedGroup:group,member};
+  // Current R2 hive binding; the archived greeting relay is no longer the default.
+  transportFactory??=createHiveRelayTransportFactory(options);
   const saved=await readRelayConfiguration(options);
   if(!saved.enabled||!saved.url)return null;
   let closed=false,connected=false,transport,watchTimer,announceTimer,announcement,permissionRevision,membershipRevision,networkGeneration=0;

@@ -1,10 +1,17 @@
+import {consumeConnectionFragment} from '../tg-pairing/automatic-pairing-view.mjs';
+let connectionInvitation=consumeConnectionFragment(window.location,window.history);
 import {configureAppLiveConnection} from './app-live-bridge.mjs';
 import {mountAppDeviceSettings} from './app-device-settings.mjs';
 import {mountAppConnectionSettings} from './app-connection-settings.mjs';
 import {mountAppJourneySettings} from '../journey-sync/app-settings.mjs';
 // Restore optional lab settings only. A stalled runtime/storage operation cannot
 // delay the scheduled planner or enable live access after timeout.
-let stopActive;
+let stopActive,activeDeviceSettings;
+window.addEventListener('hashchange',()=>{
+  const incoming=consumeConnectionFragment(window.location,window.history);
+  if(!incoming)return;
+  if(activeDeviceSettings)activeDeviceSettings.openInvitation(incoming);else connectionInvitation=incoming;
+});
 export let restoration;
 async function start() {
   let store, timer, settings, journeySettings, configuredContext, releaseDeadline, manual = false, closed = false;
@@ -13,7 +20,7 @@ async function start() {
   const lifetime = new AbortController();
   const current = () => { if (lifetime.signal.aborted) throw new Error('Optional restore ended'); };
   const stop = () => { lifetime.abort(); if (!manual) { settings?.dispose(); journeySettings?.dispose(); configureAppLiveConnection(undefined); store?.close(); } };
-  const deviceSettings = mountAppDeviceSettings({onChanged: context => {
+  const deviceSettings = mountAppDeviceSettings({connectionInvitation,onChanged: context => {
     if (closed) return;
     const key = contextKey(context);
     if (key === configuredContext) return;
@@ -28,7 +35,10 @@ async function start() {
     if (context.binding) settings = mountAppConnectionSettings({wasm: context.wasm, store,
       expectedGroup: context.group, role: context.binding.role});
   }});
+  activeDeviceSettings=deviceSettings;
+  connectionInvitation=undefined;
   stopActive = () => {
+    if(activeDeviceSettings===deviceSettings)activeDeviceSettings=undefined;
     closed = true; manual = false; clearTimeout(timer); stop(); deviceSettings.dispose();
     releaseDeadline?.();
   };
