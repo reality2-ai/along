@@ -229,6 +229,29 @@ sizes. Shared journey payloads are encrypted between permitted devices. Journey
 sharing does not send your AT key, learning history or current location. Planning
 and direct AT requests work independently of the relay.
 
+## Update an older connected device
+
+If group communication keys have changed, use **Settings → My devices →
+Advanced device options → Send a group key update** on the device that originally
+invited the other one. Select the existing device, review your relay address and
+choose **Create update invitation**. Open the invitation on that device within
+one minute; an update already started can take a few minutes. Keep both apps open.
+
+On the receiving device, review the relay and choose **Connect and review update**,
+then review and accept the verified key update. Replies and updates move
+automatically; there is no return QR. **Group keys saved on this device** confirms
+local installation. Check the inviting device for **Other device confirmed its
+keys** before closing. If confirmation is interrupted, keep the data and use a
+new invitation to check the saved version. The manual exchange remains under
+Advanced for recovery without a relay.
+
+The selected relay also carries encrypted issuer-signed group-removal notices
+between devices using the current communication keys. This lets a device stop
+trusting a removed member when it learns the notice. Offline or older-key devices
+may still need a reviewed update; sending is not proof of receipt. This does not
+replace an AT API key, grant new journey or AT permissions, or erase copies
+already received by another device.
+
 ## Update and reopen
 
 Use **Settings → Check for an app update** or the app's `update.html` page in the

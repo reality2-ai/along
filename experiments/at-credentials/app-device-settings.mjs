@@ -1,3 +1,4 @@
+import {showAutomaticEpochRecovery} from '../tg-pairing/automatic-epoch-recovery-view.mjs';
 import {showAutomaticPairing} from '../tg-pairing/automatic-pairing-view.mjs';
 import {showConnectedSharing} from '../tg-pairing/connected-sharing-view.mjs';
 import {readRelayConfiguration} from '../relay/configuration.mjs';
@@ -61,6 +62,23 @@ export function mountAppDeviceSettings({onChanged,connectionInvitation}) {
     try { binding = await loadATConnectionBinding({wasm,store,expectedGroup:group}); } catch {}
     if (!disposed && identity) onChanged({wasm,store,group,binding,member:identity.member});
   };
+  const watchRecovery = (recovery, group) => {
+    // Renew evidence for an existing AT owner only. Group-key recovery
+    // does not create an AT binding or change its policy/credential.
+    void recovery.completed.then(async installed => {
+      if (disposed) return;
+      const {renewATOwnerCertificate} = await import('./owner-certificate.mjs');
+      if (disposed) return;
+      await renewATOwnerCertificate({wasm, store, expectedGroup: group, certificate: installed.ownerCertificate});
+      const restored = await loadATBinding({wasm, store, expectedGroup: group});
+      const local = await loadLocalPersona({wasm, store, expectedGroup: group});
+      if (!disposed && local) onChanged({wasm, store, group, binding: restored, member: local.member});
+    }).catch(() => { /* Group installation remains saved; unreadable AT state is preserved. */ });
+  };
+  const guidedRecovery = options => {
+    clear();child=showAutomaticEpochRecovery(content,{wasm,store,focus:true,onBack:home,...options});
+    if(options.role==='recipient')watchRecovery(child,options.expectedGroup);
+  };
   const guided = options => {
     clear();let sharing;
     const pairing = showAutomaticPairing(content,{wasm,store,focus:true,onBack:home,...options,
@@ -91,7 +109,11 @@ export function mountAppDeviceSettings({onChanged,connectionInvitation}) {
       if (connectionInvitation) {
         const incoming=connectionInvitation;connectionInvitation=undefined;
         if(incoming.invalid){status.textContent='The invitation expired or could not be read. Ask your other device for a new invitation.';return;}
-        guided({role:'candidate',connectionText:incoming.invitation});return;
+        if(incoming.recovery){
+          if(!saved?.value?.record?.group){status.textContent='This browser does not have the existing device identity needed for that update. Open the invitation in the browser where you connected this device.';return;}
+          guidedRecovery({role:'recipient',expectedGroup:saved.value.record.group,connectionText:incoming.invitation});
+        }else guided({role:'candidate',connectionText:incoming.invitation});
+        return;
       }
       if (!saved) {
         heading.textContent = 'My devices';
@@ -129,22 +151,12 @@ export function mountAppDeviceSettings({onChanged,connectionInvitation}) {
           : 'Your device identity is saved. Choose only the optional setup you need.';
         const show = (view, options = {}) => {
           clear(); child = view(content, {wasm, store, expectedGroup: group, focus: true, onBack: home, ...options});
-          if (view === showEpochRecoveryFlow && options.role === 'recipient') {
-            // Renew evidence for an existing AT owner only. Group-key recovery
-            // does not create an AT binding or change its policy/credential.
-            void child.completed.then(async installed => {
-              if (disposed) return;
-              const {renewATOwnerCertificate} = await import('./owner-certificate.mjs');
-              if (disposed) return;
-              await renewATOwnerCertificate({wasm, store, expectedGroup: group, certificate: installed.ownerCertificate});
-              const restored = await loadATBinding({wasm, store, expectedGroup: group});
-              const local = await loadLocalPersona({wasm, store, expectedGroup: group});
-              if (!disposed && local) onChanged({wasm, store, group, binding: restored, member: local.member});
-            }).catch(() => { /* Group installation remains saved; unreadable AT state is preserved. */ });
+          if ((view === showEpochRecoveryFlow || view === showAutomaticEpochRecovery) && options.role === 'recipient') {
+            watchRecovery(child, group);
           }
         };
+        let relay='';
         if(identity.origin==='initial'){
-          let relay='';
           try{const configured=await readRelayConfiguration({store,expectedGroup:group,member:identity.member});if(configured.enabled)relay=configured.url;}catch{}
           if(!active(selected))return;
           action(panel,'Connect another device',()=>guided({role:'provisioner',expectedGroup:group,relay}),true);
@@ -158,12 +170,14 @@ export function mountAppDeviceSettings({onChanged,connectionInvitation}) {
         if (identity.origin === 'initial') {
           action(details, 'Invite my other device', () => show(showPairingFlow, {role: 'provisioner'}));
           action(details, 'Update group keys on this device', () => show(showEpochRotation));
-          if (identity.epoch > 0n) action(details, 'Send a group key update', () => show(showMemberDevices, {databaseName: 'along-pairing-lab-v1', purpose: 'update'}));
+          if (identity.epoch > 0n) action(details, 'Send a group key update', () => show(showMemberDevices, {databaseName: 'along-pairing-lab-v1', purpose: 'update', recoveryView: showAutomaticEpochRecovery, relay}));
+          if (identity.epoch > 0n) action(details, 'Manual key-update exchange', () => show(showMemberDevices, {databaseName: 'along-pairing-lab-v1', purpose: 'update'}));
           action(details, 'Review group devices', () => show(showMemberDevices, {databaseName: 'along-pairing-lab-v1'}));
           action(details, 'Join my other device', () => show(showPairingFlow, {role: 'candidate'}));
           action(details, 'Confirm an interrupted connection', () => show(showRecoveryFlow, {role: 'provisioner'}));
         } else {
-          action(details, 'Receive a group key update', () => show(showEpochRecoveryFlow, {role: 'recipient'}));
+          action(details, 'Receive a group key update', () => show(showAutomaticEpochRecovery, {role: 'recipient'}));
+          action(details, 'Manual key-update exchange', () => show(showEpochRecoveryFlow, {role: 'recipient'}));
           if (!identity.peerAcknowledged) action(details, 'Recover installation confirmation', () => show(showRecoveryFlow, {role: 'candidate'}));
         }
       }
