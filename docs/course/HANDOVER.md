@@ -1,4 +1,4 @@
-# Along course handover — published v44
+# Along course handover — published v45
 
 Along is a working, experimental Auckland commuter app and a case study of one
 human–AI collaboration. It is used at your own risk, is not an official AT app,
@@ -29,7 +29,7 @@ complexity, hidden network assumptions, reconnect pacing and release evidence.
 
 ## Prepare a teaching copy
 
-Ask the assistant to obtain the [v44 ZIP and checksum](https://github.com/reality2-ai/along/releases/tag/v0.44.0),
+Ask the assistant to obtain the [v45 ZIP and checksum](https://github.com/reality2-ai/along/releases/tag/v0.45.0),
 verify the archive, and serve its entire contents on a separate teaching origin.
 Keep the manifest, qualification record, runtime provenance and source notices.
 Use the supplied example addresses and synthetic credentials. A personal AT key,
@@ -137,3 +137,12 @@ removes unused path records while retaining full walking directions. Compare the
 [before/after evidence](../evidence/routing-path-allocations.json) and
 [v43 release](../RELEASE_V43.md); explain why fewer temporary allocations and faster
 search in one run do not establish smaller retained data or phone performance.
+
+
+Version 45 provides a documentation-build case: replacing a heading caused a
+platform extractor to include the rest of the guide twice. An upgrade check found
+the duplicate heading; automated accessibility checks alone had not identified
+that content defect. Compare the [retained failures and repaired release](../RELEASE_V45.md).
+Ask learners to separate a stale test expectation from a real regression before
+requesting changes. The assistant performs the repairs and commands; learners
+assess the generated guide and evidence.

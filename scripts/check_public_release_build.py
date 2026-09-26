@@ -15,6 +15,8 @@ import zipfile
 
 
 RELEASES = {
+    45: ('d87ba62d716fdb783f3cc81071236055b59f95b2',
+         'da3e8799c1db0118cc7da7c0b8b41fd3439f93fdda4713ef82d9f9fccec0f61e'),
     44: ('c4d5434b3d6462850b458a1e7dc880b6cb6652b3',
          '45486d20ba05d2ecbe052482e153e1fbaecae623912fe4a8eb860d907e86a9b3'),
     43: ('8da1a5533b1e45290192c0d2917906a6ce4a3af8',
@@ -46,7 +48,7 @@ def archive(version, name, expected):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--version', type=int, choices=RELEASES, default=44)
+    parser.add_argument('--version', type=int, choices=RELEASES, default=45)
     version = parser.parse_args().version
     revision, app_sha = RELEASES[version]
     root = Path('/tmp/along')

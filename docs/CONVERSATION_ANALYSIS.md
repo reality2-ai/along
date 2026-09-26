@@ -1708,3 +1708,22 @@ failed protected-message forwarding, so neither successful publication nor
 scheduled offline routing establishes device pairing. The
 [v44 release record](RELEASE_V44.md) retains those distinctions. This is an
 interpretation of one development episode, not evidence of general reliability.
+
+
+### Documentation is part of the delivered interaction (26 September)
+
+The v44 release review found installation instructions naming an old version and
+manual connection steps. The v45 correction initially produced duplicate guide
+sections because a platform extractor depended on a removed heading. A stale
+heading assertion failed first; correcting it exposed the actual duplicate.
+Accessibility automation passed the structurally valid duplicated page, while
+the exact-heading upgrade check rejected it. The builder was repaired using a
+dedicated platform source, and both failures were retained.
+
+Code this as **instructions must follow the current task** and **tests establish
+different claims**. Clear instructions are part of the commuter experience;
+calling an edit “documentation only” does not prove the generated app is correct.
+The alternative explanation of a test-only failure was supported for the old
+heading but contradicted by the duplicate content. A serial static rerun also
+passed an earlier reload timeout without increasing its limit; this does not
+establish why the earlier run was slow. See [v45 evidence](RELEASE_V45.md).

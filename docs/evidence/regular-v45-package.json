@@ -1,0 +1,9 @@
+{
+  "archive": "along-web-v45.zip",
+  "sha256": "da3e8799c1db0118cc7da7c0b8b41fd3439f93fdda4713ef82d9f9fccec0f61e",
+  "bytes": 41790418,
+  "payload_files": 311,
+  "release_manifest_sha256": "13f819c005dba24371c2a69130a357aba973ccbd6772e1683282257ff082a336",
+  "published": true,
+  "release_url": "https://github.com/reality2-ai/along/releases/tag/v0.45.0"
+}

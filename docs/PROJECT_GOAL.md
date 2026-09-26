@@ -269,3 +269,10 @@ files match the immutable package, and an isolated anonymous public-source build
 reproduces its 309 application payloads. The selected current-R2 hive still fails
 protected-message forwarding. Physical pairing/TalkBack and signed-in feedback
 acceptance remain open; publication does not close the full goal.
+
+
+Version 45 corrects the installation/connection guidance and is published with
+35 distinct passing qualification scenarios. Its source, ZIP and HTTPS bytes are
+verified; the public-source build reproduces all 309 application payloads.
+This documentation repair does not resolve external hive forwarding or physical
+acceptance. See [the v45 record](RELEASE_V45.md).

@@ -5,7 +5,7 @@ provided for use at the user’s own risk; it is not an official AT service or a
 claim of production readiness. The verification work is part of the lesson.
 
 For a short entry point tied to the current release, use the
-[course handover: published v44](course/HANDOVER.md). Historical labs retain their
+[course handover: published v45](course/HANDOVER.md). Historical labs retain their
 original versions and evidence.
 
 The new [connection-simplicity lab](course/CONNECTION_SIMPLICITY_LAB.md) follows
