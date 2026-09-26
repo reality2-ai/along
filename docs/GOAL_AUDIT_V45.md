@@ -68,3 +68,10 @@ now passes with only the sender directly receiving the new removal. This closes
 that specific test gap, not the full security-update requirement. Adversarial,
 offline/self-removal and stale-epoch recovery cases remain; the prototype is not
 in public v45. See [implementation limits](../experiments/relay/REMOVAL_DELIVERY.md).
+
+
+[Removal edge-case evidence](evidence/removal-notice-edge-browser.json) now covers
+real-verifier refusal and transaction cancellation/write failure, plus actual local
+relay catch-up and self-removal. The removed receiver stops sharing and preserves
+saved places. Key-recovery carriage and release/public-device acceptance remain
+outstanding; no change has been deployed over public v45.

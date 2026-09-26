@@ -1,0 +1,25 @@
+{
+  "status": "passed",
+  "command": "ENROLLED_RELAY_NETWORK=1 REMOVAL_EDGES=1 node experiments/at-credentials/peer-delivery.test.mjs",
+  "scope": "Real browser membership verifier and durable store with injected tampering, write failure and cancellation; local TLS current-hive stand-in for offline catch-up and self-removal. Independent device stores on one browser host, not physical devices or the public hive.",
+  "checks": [
+    "Tampered signed subject refused",
+    "Wrong-group packet refused by codec",
+    "Failed durable write preserves membership",
+    "Cancellation at pending transaction preserves membership",
+    "Offline receiver learns sender-only removal through relay",
+    "Repeated valid notice does not change membership revision",
+    "Receiver learns its own removal through relay and stops sharing",
+    "Removed identity cannot reopen sharing",
+    "Self-removal preserves saved-place state"
+  ],
+  "files_sha256": {
+    "experiments/relay/removal-delivery-check.mjs": "6f2b0dae02847afbcd8fe1234fd046de762b46d1ea3ed9aca88abd675b64305e",
+    "experiments/at-credentials/peer-delivery.test.mjs": "18ada5a56f15af8291e25e7c8728a913d6c0b1d906a1423969482813d9eb7eb2",
+    "experiments/relay/sharing-service.mjs": "bb4a11088afc2dec58872ff0d7a24268b9935f10743f82ffb2e8b84d1e504136",
+    "experiments/relay/removal-notices.mjs": "b1331d5bb47336473c9de5011639e782ddb02750de8e0d761c433e7383dbb362",
+    "experiments/tg-pairing/removal-set.mjs": "0cd4f87711497cb6c1cae27ce73240c8d23c637b891bbfa8c2480f5f0cf368dd"
+  },
+  "log_sha256": "77470093b5bff279075eef07fe8b9052f14eb2cea62c21a8134def435cfd489c",
+  "limits": "The pacing metric in this log describes the baseline before the added edge cases, not their total frames. Stale-epoch key recovery and release qualification remain pending."
+}

@@ -39,6 +39,14 @@ sender. The receiver must learn it through the TLS hive stand-in before membersh
 renewal and resumed journey exchange. The first run passed, with 1,539 frames, eight connections and zero rate-limited
 drops. It uses independent device stores on one browser host, not physical
 devices or a deployed hive.
-Further checks must cover tampered signatures, wrong-group packets, repeated
-notices, offline catch-up, self-removal, cancellation and storage failures before
-release. Actual public-hive and physical-device acceptance remain outstanding.
+The additional `REMOVAL_EDGES=1` run passes tampered-signature refusal,
+wrong-group codec refusal, durable-write failure and cancellation at the
+transaction boundary using the real browser verifier/store. Those fault cases
+call the same receive adapter directly; they are not network-fault injection.
+Actual local TLS relay checks prove offline catch-up and self-removal: the receiver
+learns the signed notice, stops sharing, cannot reopen authorized sharing, and
+retains its saved places. Repeated valid delivery leaves its membership revision
+unchanged. See [the recorded scope](../../docs/evidence/removal-notice-edge-browser.json).
+
+Stale-epoch key-recovery carriage, generated-app release qualification, deployed
+hive interoperability and physical-device acceptance remain outstanding.

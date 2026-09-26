@@ -14,7 +14,7 @@ for (const name of ['hive_wasm.js', 'hive_wasm_bg.wasm']) sources.set('/' + name
 for (const name of ['scoped-session-client.mjs', 'policy-connection-view.mjs', '../tg-pairing/transfer-view.mjs', 'vehicle-live-view.mjs', '../../public/live-vehicles.js', '../../public/vendor/leaflet/leaflet.js', '../../public/vendor/leaflet/leaflet.css', 'journey-live-view.mjs', 'stop-live-view.mjs', '../../public/live-predictions.js', '../../public/live-context.js', '../../public/live-time.js', 'policy-session.mjs', 'saved-client.mjs', 'live-client.mjs', '../../public/at-client.js', '../../public/live-client.js']) sources.set('/' + name.split('/').pop(), await readFile(new URL(name, import.meta.url)));
 for (const name of ['origin-pacing.mjs','hive-relay-transport.mjs','hive-transport.mjs','group-protection.mjs','frame.mjs','heartbeat.mjs','duplicates.mjs','names.mjs','segments.mjs','cbor.mjs']) sources.set('/'+name,await readFile(new URL('../r2-current/'+name,import.meta.url)));
 for (const name of ['chacha.js','_arx.js','_poly1305.js','utils.js']) sources.set('/'+name,await readFile(new URL('../../public/vendor/noble-ciphers/'+name,import.meta.url)));
-for (const name of ['protection.mjs','handshake.mjs','local-handshake.mjs','enrolled-handshake-check.mjs','hello.mjs','local-hello.mjs','transport.mjs','peer-exchange.mjs','peer-lifecycle.mjs','journey-connection.mjs','generation-check.mjs','discovery.mjs','discovery-check.mjs','configuration.mjs','sharing-service.mjs','removal-notices.mjs','service-check.mjs']) sources.set('/'+name,await readFile(new URL('../relay/'+name,import.meta.url)));
+for (const name of ['protection.mjs','handshake.mjs','local-handshake.mjs','enrolled-handshake-check.mjs','hello.mjs','local-hello.mjs','transport.mjs','peer-exchange.mjs','peer-lifecycle.mjs','journey-connection.mjs','generation-check.mjs','discovery.mjs','discovery-check.mjs','configuration.mjs','sharing-service.mjs','removal-notices.mjs','removal-delivery-check.mjs','service-check.mjs']) sources.set('/'+name,await readFile(new URL('../relay/'+name,import.meta.url)));
 if(process.env.REGULAR_CANDIDATE==='1'){
   // This relay regression uses component URLs; bind its changed production
   // service to the actual candidate bytes used by the qualification run.
@@ -660,6 +660,20 @@ try {
     try { return (await (await import('./delivery-history.mjs')).openDeliveryHistory({store: ownerStore, ...binding}).read()).status; }
     finally { ownerStore.close(); }
   }, historyBinding), 'recipient-confirmed-saved');
+  if(process.env.REMOVAL_EDGES==='1'){
+    assert.equal(relayNetwork,true,'Removal edge checks require the local TLS hive');
+    await page.evaluate(async bytes=>{
+      const wasm=await import('./hive_wasm.js');await wasm.default();
+      const {openBrowserStorage}=await import('./storage.mjs');
+      const stores=await Promise.all(['peer-key-owner','peer-key-receiver'].map(openBrowserStorage));
+      try{
+        const devices=await Promise.all(stores.map(async store=>{const {record}=(await store.read('candidate-persona','active')).value;return {store,subject:record.subject,certificate:record.certificate};}));
+        await (await import('./removal-delivery-check.mjs')).checkRemovalDeliveryEdges({wasm,owner:devices[0],receiver:devices[1],group:new Uint8Array(bytes)});
+      }finally{stores.forEach(s=>s.close());}
+    },restoredGroup);
+    assert.equal(await page.evaluate(()=>removalEdgesPassed),true);
+    console.log('PASS: real signature and atomic-storage refusal for tampered/cancelled notices; actual TLS relay offline removal catch-up and self-removal stop sharing while preserving saved places. No public-hive or physical acceptance.');
+  }
   console.log('PASS: distinct real browser identities mutually authenticate over direct WebRTC, owner grant gates signed delivery, receiver encrypts/consumes request, removed peer is refused. Actual software issuer and acknowledged recipient enrollment; harness trust/comparison/signaling, reviewed-descriptor fixture and synthetic AT keys; checked receiver acceptance; one browser host, not physical-device reachability or public release.');
   console.log('PASS: independent journey permission and transaction-race guards; visible connection, consent/removal, wrong-device/cancel refusal, authenticated multi-chunk exchange, committed receipts, offline edits/deletion catch-up and live-session removal. Real enrolled identities; harness copies public signaling between component panels on one host, not app Settings or physical-device acceptance.');
 } finally { await browser?.close(); if(relayServer)await relayServer.close();else await new Promise(resolve => server.close(resolve)); }
