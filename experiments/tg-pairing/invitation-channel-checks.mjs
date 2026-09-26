@@ -1,7 +1,7 @@
 // Browser-only fault checks used by automatic-enrollment.test.mjs. No network,
 // persisted identities or real credentials: transport factories relay test frames.
-import {createConnectionInvitation, readConnectionInvitation, connectionInvitationLink, invitationFromLink} from './connection-invitation.mjs';
-import {createInvitationChannel} from './invitation-channel.mjs';
+import {createConnectionInvitation, readConnectionInvitation, connectionInvitationLink, invitationFromLink, createRecoveryInvitation, readRecoveryInvitation, recoveryInvitationLink, recoveryInvitationFromLink} from './connection-invitation.mjs';
+import {createInvitationChannel, createRecoveryChannel} from './invitation-channel.mjs';
 const assert = (value,message) => { if (!value) throw Error(message); };
 const sleep = ms => new Promise(resolve => setTimeout(resolve,ms));
 const refused = fn => { try { fn(); return false; } catch { return true; } };
@@ -59,5 +59,31 @@ export async function checkInvitationChannel({descriptor,relay}) {
   const cancelled = pending.send('no peer yet').then(()=>false,()=>true);abort.abort();
   assert(await cancelled,'Abort left send unresolved');
   assert(refused(()=>pending.send('after cancel')),'Closed channel accepted send');
-  return 'fragment-only invitation; invalid envelopes refused; loss and duplicate recovery; encrypted carriage; secret/endpoint binding; cancellation';
+  const recoveryText = await createRecoveryInvitation({group:'11'.repeat(32),owner:'22'.repeat(32),member:'33'.repeat(32),relay});
+  const recovery = readRecoveryInvitation(recoveryText);
+  assert(recoveryInvitationFromLink(recoveryInvitationLink('https://example.test/along/',recoveryText)) === recoveryText,'Recovery link round trip');
+  assert(refused(()=>readConnectionInvitation(recoveryText)) && refused(()=>readRecoveryInvitation(invitation)),'Cross-purpose envelope accepted');
+  for (const changed of [{profile:'along-connect-v1'},{member:recovery.owner},{owner:'invalid'},
+    {group:'short'},{expires:Date.now()-1},{expires:Date.now()+120000},{extra:true},
+    {relay:'wss://example.test/r2?secret=bad'}]) assert(refused(()=>readRecoveryInvitation(JSON.stringify({...recovery,...changed}))),'Unsafe recovery invitation accepted');
+  const protectedBus = wire(), recovered=[];
+  const owner = await createRecoveryChannel({invitation:recoveryText,role:'provisioner',transportFactory:protectedBus.factory});
+  const recipient = await createRecoveryChannel({invitation:recoveryText,role:'candidate',transportFactory:protectedBus.factory});
+  owner.subscribe(()=>{});recipient.subscribe(text=>recovered.push(text));owner.start();recipient.start();
+  try {
+    await owner.send('synthetic-recovery-secret');
+    assert(recovered.length===1 && recovered[0]==='synthetic-recovery-secret','Recovery protected channel did not deliver');
+    assert(protectedBus.copies.every(frame=>!new TextDecoder().decode(frame).includes('synthetic-recovery-secret')),'Recovery cleartext exposed');
+  } finally {owner.close();recipient.close();}
+  for (const changed of [{owner:'44'.repeat(32)},{member:'44'.repeat(32)},{group:'44'.repeat(32)},
+    {relay:'wss://other.example.test/r2'},{secret:'55'.repeat(32)}]) {
+    const isolated=wire(), deliveries=[];
+    const a=await createRecoveryChannel({invitation:recoveryText,role:'provisioner',transportFactory:isolated.factory});
+    const b=await createRecoveryChannel({invitation:JSON.stringify({...recovery,...changed}),role:'candidate',transportFactory:isolated.factory});
+    a.subscribe(()=>{});b.subscribe(text=>deliveries.push(text));a.start();b.start();
+    const pending=a.send('must-not-cross-context').then(()=>false,()=>true);
+    await sleep(80);a.close();b.close();
+    assert(await pending && deliveries.length===0,'Altered recovery identity/group/endpoint/secret admitted');
+  }
+  return 'fragment-only invitation; invalid envelopes refused; loss and duplicate recovery; encrypted carriage; secret/endpoint binding; cancellation; distinct recovery profile, protected delivery and identity/group/endpoint/secret binding';
 }

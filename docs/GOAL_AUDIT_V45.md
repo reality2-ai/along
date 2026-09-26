@@ -75,3 +75,11 @@ real-verifier refusal and transaction cancellation/write failure, plus actual lo
 relay catch-up and self-removal. The removed receiver stops sharing and preserves
 saved places. Key-recovery carriage and release/public-device acceptance remain
 outstanding; no change has been deployed over public v45.
+
+Automatic key-recovery transport now has a [development implementation and
+verification record](../experiments/tg-pairing/AUTOMATIC_RECOVERY.md): one initial
+invitation, automated removal/certificate/connection exchanges, the existing
+mutual identity and acceptance checks, and independent ephemeral protection for
+replacement keys. Guided-screen integration and further refusal/interruption
+checks remain; it is not in public v45 and does not resolve public-hive or device
+acceptance. The goal remains active.

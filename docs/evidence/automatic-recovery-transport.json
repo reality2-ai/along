@@ -1,0 +1,59 @@
+{
+  "recordedAt": "2026-09-26T01:16:29.621874+00:00",
+  "published": false,
+  "publicAppVersion": 45,
+  "baseSource": "3c16ec6e48c0d5d4386ad614da9edecbc641717b",
+  "sourceSha256": {
+    "experiments/tg-pairing/automatic-epoch-recovery.mjs": "2b26eb4d4bd536a6f178e62f97c463362cd3f1f8b428bcc01046e02b500a329a",
+    "experiments/tg-pairing/automatic-epoch-recovery-check.mjs": "d03a42e2e10a0f70bd8d0e0eb83d1ddbd1d205d700b703732459c2b45d474314",
+    "experiments/tg-pairing/automatic-enrollment.test.mjs": "4372d8b3d90977895197b1c7538e90462d35409ef42a45faedd88edebfcd4e65",
+    "experiments/tg-pairing/connection-invitation.mjs": "fcfbd8bf907f013087411d6caed191a7b4c7d3220831b23a7ed28f0fee2eb046",
+    "experiments/tg-pairing/invitation-channel.mjs": "f0646f3734dee054f29afcb89e5ed41d237d94c609d5957069dff06039985c06",
+    "experiments/tg-pairing/invitation-channel-checks.mjs": "f58c54a2f27e355a56e14c16583d287b9d07332702fe2c6cc69c323bc2cfcf4c",
+    "experiments/tg-pairing/relay-enrollment-peer.mjs": "3a7e3f927d4e1a2266952b166d281ecf782c8ddbaf38e9b3f3c66ff195104d9a",
+    "experiments/tg-pairing/relay-enrollment-peer.test.mjs": "66d8629350bae34203a3b073e22fc74dc489a09f570e973a102335039c49bd90",
+    "experiments/tg-pairing/recovery-link-protection.mjs": "7244fb92f3b78b4f8d7184d3a8b9944cf5938b737c34ce5337f492a3b18b6ba5",
+    "experiments/tg-pairing/recovery-link-protection.test.mjs": "2807f99ce9415b155fb0b1e501c7e6f16ad18356eb6ab6596e8ef922f1e34c04",
+    "experiments/tg-pairing/epoch-recovery-session.mjs": "fdbe994763d500b1e394f097246a5b46117fc65ffc912a82215c3970ab8043b1"
+  },
+  "checks": [
+    {
+      "command": "node --test experiments/tg-pairing/relay-enrollment-peer.test.mjs experiments/tg-pairing/recovery-link-protection.test.mjs",
+      "exitCode": 0,
+      "passed": 9
+    },
+    {
+      "command": "AUTOMATIC_RECOVERY=1 CHANNEL_CHECKS=1 node experiments/tg-pairing/automatic-enrollment.test.mjs",
+      "exitCode": 0,
+      "relay": {
+        "connections": 8,
+        "frames": 276,
+        "limited": 0
+      },
+      "scope": "Two isolated Chromium contexts; real WASM/storage; local TLS hive stand-in; WebRTC disabled. Harness transfers initial invitation only. Cancellation, two stale epochs, explicit acceptance, injected final confirmation send failure, unchanged recipient identity and receipt-only retry."
+    },
+    {
+      "command": "EPOCH_INSTALL=1 node experiments/tg-pairing/software-enrollment.test.mjs",
+      "exitCode": 0,
+      "scope": "Existing direct WebRTC recovery and manual UI regression with actual verifier/store; not the new relay guided UI."
+    }
+  ],
+  "logs": {
+    "releases/automatic-recovery-protected.log": {
+      "sha256": "a03503f22eb46a4c0eb8b9f1516c17b72e9170ece71da19ebae640f43a3469b3",
+      "output": "PASS: fragment-only invitation; invalid envelopes refused; loss and duplicate recovery; encrypted carriage; secret/endpoint binding; cancellation; distinct recovery profile, protected delivery and identity/group/endpoint/secret binding\nPASS: automatic recovery through local TLS relay with WebRTC disabled; two stale epochs, mutual identity, explicit acceptance, cancellation, lost confirmation and receipt-only retry; harness transfers only the initial invitation. UI/physical acceptance not tested.\nRecovery relay counts: {\"connections\":8,\"frames\":276,\"limited\":0,\"plaintextObserved\":false}\nPASS: automatic challenge/proof/offer/answer with actual software identities, verified proof, relay-carried comparison with WebRTC disabled, explicit confirmation, durable installation/acknowledgment and reload. Current hive binding through local relay with protected invitation channel. Harness supplies reviewed invitation; not public rendezvous or physical acceptance.\n"
+    },
+    "releases/recovery-direct-regression.log": {
+      "sha256": "3317ea28d532a4ec06d08950ebc5386f86a1cfe8c1bd8d6fd1d9fb668863a998",
+      "output": "PASS: invitation descriptor validation, snapshot isolation, cancellation, single challenge and use-time expiry.\nPASS: actual restored software issuer derives enrollment material, signs the candidate certificate, and completes core browser installation over WebRTC; fresh-document member restore/sign succeeds. Harness supplies trust review, comparison decision and signaling; encrypted traffic-key restore verified; no hardware custody or physical-device claim.\nPASS: authenticated recovery certificate renews the pinned AT owner without changing binding or signed policy; wrong/stale proofs, cancellation and raced membership/policy/enrollment writes refuse; duplicate renewal is read-only.\nPASS: real WebRTC recovery mutually authenticates epoch-one/three devices, requires recipient acceptance, delivers epochs two and three in order, and retains signed installation acknowledgments. Forged proofs/receipts, concurrent recovery and interrupted installation refuse; a fresh document restores delivered keys. A dropped final acknowledgment recovers after both documents reload, without resending keys or rewriting installation. Corrupted saved installation refuses confirmation. The device list verifies saved receipts, distinguishes certificate-only entries, refuses corrupted/raced evidence, and shows removal instead of confirmation. Recipient review passes trusted keyboard acceptance, Back cancellation, synthetic-click refusal, local-success versus lost owner receipt, equal-version confirmation, narrow/200% layout and axe checks. The visible three-message recovery flow confirms saved version three, updates to four, rejects a mismatched reply, and catches up signed removals. The test selects the recipient from the device picker and copies displayed messages; complete post-rotation application permission checks remain unfinished.\nPASS: direct atomic-installation fixture restores/signs in a fresh document, rejects substitutions and stale writes, rolls back interrupted transactions, and recovers duplicate delivery. Old-epoch sessions close in the installing tab and a sibling tab; unchanged-state hints do not close them. Network recovery and recipient review are checked separately above; complete app integration remains unfinished.\n"
+    }
+  },
+  "limits": [
+    "No new guided recovery screen integrated or published.",
+    "No physical device or public-hive recovery acceptance.",
+    "No formal cryptographic proof or hardware storage conformance.",
+    "The final receipt failure is injected before inner encryption, not a simulated network packet loss.",
+    "Large removal sets, wrong/removed peer and intermediate-commit fault cases still need automatic-path coverage.",
+    "Earlier local runs without inner ECDH protection were development steps, not current security evidence."
+  ]
+}

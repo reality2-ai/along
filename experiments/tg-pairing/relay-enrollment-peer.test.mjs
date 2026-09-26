@@ -1,14 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createRelayEnrollmentCarriage} from './relay-enrollment-peer.mjs';
-function setup() {
+import {setTimeout as delay} from 'node:timers/promises';
+import {createRelayEnrollmentCarriage, createRelayRecoveryCarriage} from './relay-enrollment-peer.mjs';
+function setup(factory = createRelayEnrollmentCarriage) {
   const listeners=[], closed=[false,false], carried=[];
   const channels=[0,1].map(i=>({
     subscribe(fn){listeners[i]=fn;return ()=>{listeners[i]=undefined;};},
     async send(text){if(closed[i])throw Error('closed');carried.push(text);listeners[1-i]?.(text);},
     close(){closed[i]=true;},
   }));
-  const carriage=channels.map(createRelayEnrollmentCarriage);
+  const carriage=channels.map(channel => factory(channel));
   return {carriage,closed,carried,inject:(i,text)=>listeners[i]?.(text)};
 }
 test('relay exchange binds both fresh contributions and separates signalling from peer data',async()=>{
@@ -57,4 +58,30 @@ test('malformed contributions and cancellation reject pending opening',async()=>
   const {carriage}=setup();
   const link=carriage[0].createPeerLink({role:'offer',onMessage(){},onClose(){}});
   carriage.forEach(c=>c.close());await assert.rejects(link.opened());assert.throws(()=>link.send('late'));
+});
+
+test('recovery contributions cannot enter enrollment and wrong-purpose peer data closes',async()=>{
+  const recovery=setup(createRelayRecoveryCarriage), enrollment=setup();
+  try {
+    const offer=await recovery.carriage[0].createPeerLink({role:'offer',onMessage(){},onClose(){}}).offer();
+    assert.equal(offer.profile,'along-relay-epoch-recovery-peer-v1');
+    const enrolled=enrollment.carriage[1].createPeerLink({role:'answer',onMessage(){},onClose(){}});
+    await assert.rejects(enrolled.accept(offer));await assert.rejects(enrolled.opened());
+    recovery.carriage[1].signalling.subscribe(()=>{throw Error('Wrong-purpose message reached signalling');});
+    recovery.inject(1,JSON.stringify({profile:'along-relay-enrollment-peer-v1',body:'wrong purpose'}));
+    assert.equal(recovery.closed[1],true);
+  } finally {recovery.carriage.forEach(c=>c.close());enrollment.carriage.forEach(c=>c.close());}
+});
+test('recovery carries bidirectional messages with equal transcript and propagates cancellation',async()=>{
+  const {carriage,carried}=setup(createRelayRecoveryCarriage), received=[[],[]];
+  try {
+    const links=carriage.map((c,i)=>c.createPeerLink({role:i?'answer':'offer',onMessage:text=>received[i].push(text),onClose(){}}));
+    const offer=await links[0].offer(),answer=await links[1].accept(offer);await links[0].accept(answer);
+    assert.deepEqual(await links[0].transcript(),await links[1].transcript());
+    links[0].send('synthetic proof');links[1].send('synthetic update');
+    for(let i=0;i<100 && received.flat().length<2;i++)await delay(10);
+    assert.deepEqual(received,[['synthetic update'],['synthetic proof']]);
+    assert.ok(carried.every(text=>!text.includes('synthetic update')&&!text.includes('synthetic proof')),'Invitation-channel observer sees only inner ciphertext');
+    carriage[0].close();assert.throws(()=>links[1].send('late'));
+  } finally {carriage.forEach(c=>c.close());}
 });

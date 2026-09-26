@@ -2,7 +2,7 @@
 // temporary keys are NOT the target group's keys. Admission here only proves
 // possession of the invitation; signed proof, comparison and core enrollment
 // still decide membership. No storage access or application permissions here.
-import {readConnectionInvitation, connectionContext, connectionBytes} from './connection-invitation.mjs';
+import {readConnectionInvitation, connectionContext, connectionBytes, readRecoveryInvitation, recoveryContext} from './connection-invitation.mjs';
 import {createHiveTransport} from '../r2-current/hive-transport.mjs';
 import {gate, protectEvent, wireEntry, MAX_PLAINTEXT} from '../r2-current/group-protection.mjs';
 import {heartbeatFrame} from '../r2-current/heartbeat.mjs';
@@ -10,21 +10,32 @@ import {parseFrame, TYPE} from '../r2-current/frame.mjs';
 import {eventHash} from '../r2-current/names.mjs';
 import {duplicateCache} from '../r2-current/duplicates.mjs';
 import {segment, reassembler} from '../r2-current/segments.mjs';
-const EVENT = eventHash('nz.along.invitation.channel.v1');
+const ENROLLMENT_EVENT = eventHash('nz.along.invitation.channel.v1');
+const RECOVERY_EVENT = eventHash('nz.along.recovery.channel.v1');
 const LIMITS = Object.freeze({maxPacket:16384,maxPieces:128});
 const encoder = new TextEncoder(), decoder = new TextDecoder('utf-8',{fatal:true});
 const randomId = () => crypto.getRandomValues(new Uint32Array(1))[0];
 const same = (a,b) => a.length === b.length && a.every((v,i) => v === b[i]);
-export async function createInvitationChannel({invitation, role, signal, onError = () => {}, onStatus = () => {},
-  transportFactory = createHiveTransport}) {
+export const createInvitationChannel = options => createChannel(options, {
+  read: readConnectionInvitation, context: connectionContext,
+  event: ENROLLMENT_EVENT, domain: 'along/invitation-channel/v1',
+});
+export const createRecoveryChannel = options => createChannel(options, {
+  read: readRecoveryInvitation, context: recoveryContext,
+  event: RECOVERY_EVENT, domain: 'along/recovery-channel/v1',
+});
+// Purpose is selected only by the fixed wrappers above, never by an invitation.
+async function createChannel({invitation, role, signal, onError = () => {}, onStatus = () => {},
+  transportFactory = createHiveTransport}, purpose) {
   if (!['candidate','provisioner'].includes(role) || signal?.aborted) throw Error('Connection ended');
-  const selected = readConnectionInvitation(invitation), context = encoder.encode(connectionContext(selected));
+  const selected = purpose.read(invitation), context = encoder.encode(purpose.context(selected));
+  const EVENT = purpose.event;
   const secret = connectionBytes(selected.secret);
   let derived;
   try {
     const key = await crypto.subtle.importKey('raw',secret,'HKDF',false,['deriveBits']);
     derived = new Uint8Array(await crypto.subtle.deriveBits({name:'HKDF',hash:'SHA-256',
-      salt:await crypto.subtle.digest('SHA-256',context),info:encoder.encode('along/invitation-channel/v1')},key,512));
+      salt:await crypto.subtle.digest('SHA-256',context),info:encoder.encode(purpose.domain)},key,512));
   } finally { secret.fill(0); }
   const keys = {payloadKey:derived.subarray(0,32),integrityKey:derived.subarray(32),epoch:0n};
   const other = role === 'candidate' ? 'provisioner' : 'candidate';

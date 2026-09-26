@@ -1727,3 +1727,26 @@ The alternative explanation of a test-only failure was supported for the old
 heading but contradicted by the duplicate content. A serial static rerun also
 passed an earlier reload timeout without increasing its limit; this does not
 establish why the earlier run was slow. See [v45 evidence](RELEASE_V45.md).
+
+### Simplifying interaction without replacing the trust decision (26 September)
+
+The user's statement that connecting devices is “way too complicated” also
+applies to recovering an older device. A goal audit found that existing tests
+changed both device stores before testing reconnection; this did not establish
+remote removal delivery. After addressing that gap, development moved from
+manual recovery-message transfers to automatic carriage through the selected
+relay, retaining saved-identity checks and explicit update acceptance.
+
+Code this as **reduce user coordination**, **preserve meaningful consent** and
+**test the actual path**. The new local test transfers only the initial invitation;
+subsequent messages use a TLS relay with WebRTC disabled. A deliberately dropped
+final confirmation demonstrates why “saved here” and “confirmed by the other
+device” must remain different outcomes. Review also identified that invitation
+secrecy alone should not protect replacement keys, so the prototype adds an
+independent ephemeral exchange bound to the existing identity proofs.
+
+These are implementation observations and an analytical interpretation, not new
+user acceptance evidence. The prototype has not reached the guided screens or
+public app, and a local relay is not the selected deployed hive. See the
+[development record](../experiments/tg-pairing/AUTOMATIC_RECOVERY.md) for scope,
+limits and remaining checks. No human coding was required.

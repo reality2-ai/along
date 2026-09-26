@@ -1,6 +1,6 @@
-// Recovery-only mutual identity over the real direct WebRTC transcript.
+// Recovery-only mutual identity over a confidential, transcript-bound link.
 // Only ordered epoch recovery and signed installation receipts are carried.
-import {createPeerLink} from './peer-link.mjs';
+import {createPeerLink as createDirectPeerLink} from './peer-link.mjs';
 import {loadLocalPersona} from './local-persona.mjs';
 import {openMembership} from './membership.mjs';
 import {watchLocalEpoch} from './epoch-watch.mjs';
@@ -19,7 +19,7 @@ const decode = (v, n) => {
 const fields = (v, keys) => v && !Array.isArray(v) && Object.keys(v).sort().join(',') === keys.sort().join(',');
 const ownerStatement = message => { const value = message.slice(); value.set(new TextEncoder().encode('ALNGERO1')); return value; };
 
-export async function openEpochRecoverySession({wasm, store, expectedGroup, role, peer, certificate, signal}) {
+export async function openEpochRecoverySession({wasm, store, expectedGroup, role, peer, certificate, signal, createPeerLink = createDirectPeerLink}) {
   if (!['owner', 'recipient'].includes(role) || !fixed(expectedGroup, 32) || !fixed(peer, 32)
       || (role === 'owner' && !fixed(certificate, 136))) throw Error('Recovery context unavailable');
   const group = expectedGroup.slice(), remote = peer.slice(), peerCertificate = certificate?.slice();

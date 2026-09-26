@@ -51,3 +51,47 @@ export function connectionContext(value) {
   // Endpoint, proof descriptor, expiry and both routing names are key-bound.
   return JSON.stringify(FIELDS.filter(k => k !== 'secret').map(k => value[k]));
 }
+
+// Recovery is an invitation to contact an existing identity, never permission to
+// enroll. Keep its parser and key context distinct from the enrollment envelope.
+const RECOVERY_PROFILE = 'along-recover-v1';
+const RECOVERY_FIELDS = ['profile','relay','group','owner','member','expires','secret','routingGroup','provisioner','candidate'];
+export function readRecoveryInvitation(text, {now = Date.now()} = {}) {
+  if (typeof text !== 'string' || text.length > 2048) throw refuse();
+  let value; try { value = JSON.parse(text); } catch { throw refuse(); }
+  if (!value || Array.isArray(value) || Object.keys(value).length !== RECOVERY_FIELDS.length
+      || !RECOVERY_FIELDS.every(k => Object.hasOwn(value,k)) || value.profile !== RECOVERY_PROFILE
+      || !Number.isSafeInteger(value.expires) || value.expires <= now || value.expires > now + MAX_LIFETIME
+      || !['group','owner','member','secret','routingGroup','provisioner','candidate'].every(k =>
+        typeof value[k] === 'string' && /^[0-9a-f]{64}$/.test(value[k]))
+      || value.owner === value.member
+      || new Set([value.routingGroup,value.provisioner,value.candidate]).size !== 3
+      || hiveEndpoint(value.relay) !== value.relay) throw refuse();
+  return Object.freeze(value);
+}
+export async function createRecoveryInvitation({group, owner, member, relay, lifetimeMs = MAX_LIFETIME}) {
+  if (!Number.isSafeInteger(lifetimeMs) || lifetimeMs < 1 || lifetimeMs > MAX_LIFETIME) throw refuse();
+  const expires = Date.now() + lifetimeMs;
+  const publicKey = async () => {
+    const pair = await crypto.subtle.generateKey('Ed25519',true,['sign','verify']);
+    return hex(new Uint8Array(await crypto.subtle.exportKey('raw',pair.publicKey)));
+  };
+  const [routingGroup,provisioner,candidate] = await Promise.all([publicKey(),publicKey(),publicKey()]);
+  const text = JSON.stringify({profile:RECOVERY_PROFILE,relay:hiveEndpoint(relay),group,owner,member,expires,
+    secret:hex(crypto.getRandomValues(new Uint8Array(32))),routingGroup,provisioner,candidate});
+  readRecoveryInvitation(text); return text;
+}
+export function recoveryContext(value) {
+  return JSON.stringify(RECOVERY_FIELDS.filter(k => k !== 'secret').map(k => value[k]));
+}
+export function recoveryInvitationLink(base, invitation) {
+  readRecoveryInvitation(invitation);
+  const url = new URL(base);
+  if (url.protocol !== 'https:' || url.username || url.password || url.search) throw refuse();
+  url.hash = 'recover=' + encodeURIComponent(invitation); return url.href;
+}
+export function recoveryInvitationFromLink(link) {
+  const url = new URL(link);
+  if (url.protocol !== 'https:' || url.username || url.password || url.search || !url.hash.startsWith('#recover=')) throw refuse();
+  const text = decodeURIComponent(url.hash.slice(9)); readRecoveryInvitation(text); return text;
+}
