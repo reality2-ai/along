@@ -41,6 +41,8 @@ and a sharing choice. External relay delivery and physical pairing remain unveri
 [short S23/desktop guide](docs/DEVICE_CHECK_V46.md). Physical pairing, TalkBack and
 external-relay acceptance remain unverified. [Download version 46 to host yourself](https://github.com/reality2-ai/along/releases/tag/v0.46.0)
 or read the [release evidence](docs/RELEASE_V46.md).
+The [full-goal audit](docs/GOAL_AUDIT_V46.md) distinguishes completed release work
+from the remaining device, screen-reader and public-hive checks.
 
 The separate [Device Preview 3806](https://reality2.ai/along/preview/public/) remains
 available with its [preview guide](docs/PREVIEW_DEVICE_CHECK.md). Its saved places

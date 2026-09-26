@@ -1,6 +1,6 @@
 # Contextual feedback to the Along repository
 
-Goal 11 is in progress. Version 43 includes the contextual feedback dialog first
+Goal 11 is in progress. Version 46 includes the contextual feedback dialog first
 released in version 31. Device preview 3801 uses the same interface with separate
 draft storage and a newly recorded live-repository check below.
 `public/feedback.js` implements local draft storage, reviewable issue bodies,
@@ -92,7 +92,7 @@ It closes the synthetic issue and records that outcome; it is not commuter feedb
 
 This strengthens the earlier preloaded-draft check, but still does not exercise
 the signed-in GitHub composer or its **Submit new issue** button. The manual
-[regular device guide](DEVICE_CHECK.md#optional-feedback-submission-check)
+[regular device guide](DEVICE_CHECK_V46.md#optional-feedback-submission-check)
 covers that remaining boundary. Do not present this CLI-assisted result as an
 end-to-end browser submission test.
 

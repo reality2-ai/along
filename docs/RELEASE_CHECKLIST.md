@@ -1,10 +1,13 @@
 # Release evidence and remaining gates
 
-Current regular app: **version 45**. Its 35-scenario qualification and static checks pass;
-all 312 deployed files match the verified package. Physical acceptance remains open.
+Current regular app: **version 46**. Its 41-scenario qualification and static checks pass;
+all 316 deployed files match the verified package. See the [full-goal audit](GOAL_AUDIT_V46.md)
+and [v46 device guide](DEVICE_CHECK_V46.md). Physical acceptance remains open.
 Historical version-37 evidence below describes that earlier release. The separate [device preview 3806](https://reality2.ai/along/preview/public/)
 is published for [S23/desktop checks](PREVIEW_DEVICE_CHECK.md). Both are static
 GitHub Pages deployments; the retired private server is not required.
+
+## Historical preview 3806 evidence
 
 Preview 3806 adds clearer pairing feedback, optional user-selected relay
 reconnection, reviewed journey checkpoints, and review/recovery of older-copy
@@ -29,6 +32,16 @@ invalid-greeting refusal. An external selected endpoint remains unverified. Grou
 explicit flows, not unattended synchronization of all trust-group state.
 Regular Along 38 now includes the live/TG controls and preserves separate preview storage. Historical
 entries below retain their original versions and scopes.
+
+## Version 46 — published
+
+[Version 46](RELEASE_V46.md) adds guided device-key recovery and signed removal
+notices. All 41 distinct qualification cases pass, including installed v37–v45
+upgrades, with unchanged source and candidate. Public-source reproduction matched
+313 application files; public HTTPS verification matched all 316 release files.
+Static and public-browser offline checks pass. The public hive still fails message
+forwarding. Physical installation/pairing, TalkBack and signed-in interactive
+feedback remain open; no completion claim is made for the full goal.
 
 ## Version 45 — published
 

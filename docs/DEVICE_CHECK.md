@@ -1,6 +1,6 @@
 # Historical Along 43: short S23 and desktop check
 
-For the current release, use the [version 45 guide](DEVICE_CHECK_V45.md).
+For the current release, use the [version 46 guide](DEVICE_CHECK_V46.md).
 The instructions below preserve the earlier test request.
 
 Use the regular app at <https://reality2.ai/along/>, not Device Preview.

@@ -1,14 +1,29 @@
 # Reality2 browser integration: status and evidence
 
-Current-standard correction (25 September 2026): the relay tests below target an
-older implementation. See the [current standard review](R2_CURRENT_STANDARD_REVIEW.md)
-before using these historical details for a new hive connection.
+## Current release: Along 46
 
-> **Current release: Along 39.** Optional direct personal-key AT access and device
-> sharing are now included in the regular app. [Installation guide](https://reality2.ai/along/install.html) ·
-> [Download and hosting package](https://github.com/reality2-ai/along/releases/tag/v0.39.0).
-> Serve the whole extracted package, including `experiments/`. Earlier version-specific
-> sections below are historical; physical pairing/TalkBack and external-relay acceptance remain open.
+Regular Along includes optional direct personal-key AT access, one-invitation
+connection, explicit sharing choices, permitted reconnection and guided updates
+for already-connected devices. Signed removals travel through the selected relay;
+replacement group keys use a separately approved authenticated recovery flow.
+Manual message exchange remains under Advanced. No relay is selected by default.
+Planning and direct AT access do not depend on a relay.
+
+The [v46 release](RELEASE_V46.md) records 41 passing local qualification scenarios,
+public-source reproduction and public offline checks. This is a browser-only R2
+subset with encrypted software custody, not hardware-backed or full-standard
+conformance. The [current-standard review](R2_CURRENT_STANDARD_REVIEW.md) explains
+the protocol boundary. The [latest public-hive probe](evidence/regular-v46-hive-probe.json)
+still receives an announcement without protected-message forwarding; physical
+pairing and TalkBack acceptance remain open. See the
+[v46 device guide](DEVICE_CHECK_V46.md), [installation guide](INSTALL.md) and
+[full-goal audit](GOAL_AUDIT_V46.md).
+
+## Historical development record
+
+The sections below retain their original preview/release versions and protocol
+assumptions. They do not describe the current regular app unless explicitly noted.
+Older relay evidence is not current-hive interoperability evidence.
 
 Along should contact AT directly and keep each person's AT key within their own
 trust group, without requiring an Along-operated central server. Offline planning
@@ -19,7 +34,7 @@ experimental Settings flows and saved-journey sharing, with separate ordinary
 storage names and explicit software-security limits. See the
 [device-check guide](PREVIEW_DEVICE_CHECK.md) and [HTTPS evidence](evidence/device-preview-3806-public.json).
 
-## Current status
+## Historical preview 3806 status
 
 Preview 3806 adds optional relay discovery/reconnection for already permitted
 journey-sharing devices, reviewed checkpoints and older-copy edit recovery. Its

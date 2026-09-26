@@ -1,4 +1,4 @@
-# Along course handover — published v45
+# Along course handover — published v46
 
 Along is a working, experimental Auckland commuter app and a case study of one
 human–AI collaboration. It is used at your own risk, is not an official AT app,
@@ -19,9 +19,23 @@ the learner's judgment, not how much code the assistant generates.
 | Inspect the requirements | Read the [design drivers](../../README.md#what-drives-the-design), [goal](../PROJECT_GOAL.md) and [thematic analysis](../CONVERSATION_ANALYSIS.md). |
 | Rebuild or host it | Give the AI [Building Along](../BUILDING.md). `npm run build` prepares the connected candidate once its runtime and data are ready; the legacy planner has an explicit `build:legacy` command. |
 
-## New v44 case study
+## Current v46 evidence exercise
 
-Use the [connection-simplicity lab](CONNECTION_SIMPLICITY_LAB.md) for the latest
+Compare the [v46 release record](../RELEASE_V46.md), its retained failed and
+interrupted qualification runs, and the eventual passed release. Ask learners to
+separate the browser observation races from an app-data defect, then distinguish
+local relay success from the still-failing public-hive probe. The AI performs any
+commands; learners assess whether the evidence supports the claim.
+
+A strong handover reports 41 distinct qualification cases rather than counting
+two aliases as extra tests, distinguishes 313 reproduced application files from
+316 served release files, and keeps physical-device and TalkBack acceptance open.
+Use the [full-goal audit](../GOAL_AUDIT_V46.md) to identify the next required evidence.
+The goal remains incomplete even though v46 is published.
+
+## Historical v44 case study
+
+Use the [connection-simplicity lab](CONNECTION_SIMPLICITY_LAB.md) for the v44
 interaction and verification lessons. Version 44 is published, with 34
 qualification scenarios passing; external hive forwarding and physical pairing
 remain unverified. The lab distinguishes UI
@@ -29,7 +43,7 @@ complexity, hidden network assumptions, reconnect pacing and release evidence.
 
 ## Prepare a teaching copy
 
-Ask the assistant to obtain the [v45 ZIP and checksum](https://github.com/reality2-ai/along/releases/tag/v0.45.0),
+Ask the assistant to obtain the [v46 ZIP and checksum](https://github.com/reality2-ai/along/releases/tag/v0.46.0),
 verify the archive, and serve its entire contents on a separate teaching origin.
 Keep the manifest, qualification record, runtime provenance and source notices.
 Use the supplied example addresses and synthetic credentials. A personal AT key,

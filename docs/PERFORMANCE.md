@@ -1,5 +1,15 @@
 # Performance evidence
 
+## Version 46
+
+The [serial static-browser run](evidence/regular-v46-static-metrics.json) observed
+6.30 seconds to offline-ready, 3.44 seconds for its mixed-mode search, and 3.41
+seconds for offline reopening. Compressed datasets total 41,308,937 bytes;
+browser-reported storage usage was 71,966,284 bytes. These are local Chromium
+desktop observations, not phone benchmarks or a controlled speed comparison.
+The 1,459,531 main-page transfer bytes exclude worker dataset downloads.
+
+
 Version 39 retains the v38 datasets. Its [static check](evidence/regular-v39-static.json)
 records measurements with concurrent qualification jobs; these are not a controlled
 comparison or phone benchmark. The earlier results below retain their versions.
