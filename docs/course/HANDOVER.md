@@ -1,4 +1,4 @@
-# Along course handover — version 43
+# Along course handover — published v43, local v44
 
 Along is a working, experimental Auckland commuter app and a case study of one
 human–AI collaboration. It is used at your own risk, is not an official AT app,
@@ -18,6 +18,14 @@ the learner's judgment, not how much code the assistant generates.
 | Run one discussion session | Use the 45–60 minute [release-evidence lab](RELEASE_EVIDENCE_LAB.md), retaining its historical preview version, or the v40 exercise below. |
 | Inspect the requirements | Read the [design drivers](../../README.md#what-drives-the-design), [goal](../PROJECT_GOAL.md) and [thematic analysis](../CONVERSATION_ANALYSIS.md). |
 | Rebuild or host it | Give the AI [Building Along](../BUILDING.md). `npm run build` prepares the connected candidate once its runtime and data are ready; the legacy planner has an explicit `build:legacy` command. |
+
+## New v44 case study
+
+Use the [connection-simplicity lab](CONNECTION_SIMPLICITY_LAB.md) for the latest
+interaction and verification lessons. Version 44 is packaged locally, with 34
+qualification scenarios passing; it is not yet on the public site. Do not send
+students to v43 expecting the one-invitation flow. The lab distinguishes UI
+complexity, hidden network assumptions, reconnect pacing and release evidence.
 
 ## Prepare a teaching copy
 
@@ -111,10 +119,10 @@ algorithm correctness, original timetable matching and browser usability in the
 [v42 record](../RELEASE_V42.md); none establishes physical acceptance by itself.
 
 
-For the current release, the [v42 public-source rebuild](../evidence/regular-v42-public-source-rebuild.json)
+For that historical release, the [v42 public-source rebuild](../evidence/regular-v42-public-source-rebuild.json)
 reproduces all 283 application files; [v42 measurements](../PERFORMANCE.md#version-42-measurements)
 separate download, origin storage and desktop process memory. Use these for a
-current-release handover while retaining the earlier exercises as historical cases.
+v42 handover while retaining the version boundaries between exercises.
 
 The user's correction about the old relay is another evidence exercise: compare
 [the current-standard review](../R2_CURRENT_STANDARD_REVIEW.md) with a passing test

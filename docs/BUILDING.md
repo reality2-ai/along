@@ -1,6 +1,7 @@
 # Building the current Along app
 
-Regular Along is version **43**. Device Preview **3806** is a separate installation.
+Published Along is version **43**. This checkout builds **44**, locally qualified
+and packaged but not yet deployed; see the [v44 record](RELEASE_V44.md). Device Preview **3806** is a separate installation.
 For use or hosting, take the [v43 release ZIP and checksum](https://github.com/reality2-ai/along/releases/tag/v0.43.0).
 Serve the whole extracted package over HTTPS, including `experiments/` and `data/`.
 The package needs no Along server. See [installation](INSTALL.md) and
@@ -17,7 +18,7 @@ the integrated app with prepared inputs. The default runtime path now selects th
 | --- | --- |
 | `npm start` / `python3 server.py` | Base planner development server |
 | `npm run build:legacy` / `scripts/build_static.py` | Legacy static planner in `dist/`, without integrated device sharing |
-| `npm run build` / `scripts/build_upgrade_candidate.py --runtime …` | Current regular v43 candidate, including device groups, sharing and direct AT access |
+| `npm run build` / `scripts/build_upgrade_candidate.py --runtime …` | Local regular v44 candidate (not yet published), including device groups, sharing and direct AT access |
 | Published `along-web-v43.zip` | Qualified, immutable v43 distribution |
 
 The integrated build currently combines `public/` with reachable modules under
@@ -29,7 +30,7 @@ Do not deploy `public/` or `dist/` alone expecting the current connected app.
 Use Python **3.12+** for the integrated build/runtime tools, Node **22+** for tests,
 and run `npm ci`. Browser checks need a compatible Chromium executable.
 The published app source was commit
-`0c3b5446f0bcfd3abfd6969a57be76f91505cc73`; later commits include packaging and
+`8da1a5533b1e45290192c0d2917906a6ce4a3af8`; later commits include packaging and
 documentation. Preserve the chosen source revision with each new build.
 
 The builder requires `data/network.json.gz`, `streets.json.gz`, `addresses.json.gz`
@@ -66,7 +67,7 @@ The default build uses `releases/along-r2-runtime-public-82377f1`. To use a veri
 runtime at another path, invoke
 `python3 scripts/build_upgrade_candidate.py --runtime /path/to/runtime` directly.
 
-Open `http://localhost:3082` and check version 43. Localhost permits service
+Open `http://localhost:3082` and check version 44. Localhost permits service
 workers; phones need an HTTPS host. Keep this development origin separate from
 your regular installed app. Generated outputs stay in ignored `releases/`.
 The candidate retains `DO-NOT-PUBLISH.txt`: building is not qualification.
@@ -88,6 +89,11 @@ The runner requires these environment variables:
 | `R2_HIVE_UPSTREAM` | Optional: an actual `r2.extended.v1` hive the local test relay pipes to |
 | `ALONG_V37_ZIP` | Exact original v37 `along-web.zip` for installed-upgrade tests |
 
+The v42 and v43 upgrade checks require `releases/along-web-v42.zip` and
+`releases/along-web-v43.zip` from their corresponding GitHub releases. The v37
+fixture defaults to `releases/along-web-v37.zip` (the release asset is named
+`along-web.zip`); `ALONG_V37_ZIP` can override that path.
+
 The connected-upgrade check also requires the exact published v38 ZIP at
 `releases/along-web-v38.zip`; obtain it from the
 [v38 release](https://github.com/reality2-ai/along/releases/tag/v0.38.0).
@@ -99,15 +105,16 @@ The previous-release upgrade check additionally needs `releases/along-web-v39.zi
 from the [v39 release](https://github.com/reality2-ai/along/releases/tag/v0.39.0).
 The v37 asset is in the [v37 release](https://github.com/reality2-ai/along/releases/tag/v0.37.0).
 Its SHA-256 must be `8dda7d208934d6f61494e67860ffe79dfbe7a3b51957e34fa9cbb99e28abf4e9`.
-The relay used for qualification is recorded in
-[actual relay evidence](evidence/actual-r2-relay.json). The runner writes individual
+The v44 qualification uses the current `r2.extended.v1` local hive stand-in;
+its [34-scenario result](evidence/regular-v44-qualification.json) is not deployed
+hive acceptance. The runner writes individual
 logs and `qualification.json` to a new directory under `releases/`; it refuses
 an existing run directory. Do not reuse old qualification evidence for changed files.
 
 `scripts/prepare_regular_release.py /path/to/qualification.json` packages a passed,
 matching candidate. It refuses existing versioned release outputs. These scripts
-currently target version 43; a new app release needs a deliberate version change
-and fresh qualification, rather than overwriting the published v43 archive.
+currently target version 44. The [local v44 package](RELEASE_V44.md) has passed
+qualification; publication is pending. Never overwrite a versioned archive.
 Run the committed static browser check against the same candidate:
 
 ```sh
@@ -125,10 +132,10 @@ Deployed-file verification and physical acceptance are additional checks in the
 
 ## What has and has not been reproduced
 
-The [v43 release record](RELEASE_V43.md) binds the current candidate, qualification,
+The [v43 release record](RELEASE_V43.md) binds the published v43 candidate, qualification,
 package and public checks. The following v38 source-rebuild evidence is historical;
 its pinned check intentionally compares with v38, so running it with current
-`--revision HEAD` now reports the intentional v40 differences.
+`--revision HEAD` now reports differences from that historical version.
 
 
 The [v38 qualification](evidence/regular-v38-qualification.json),
