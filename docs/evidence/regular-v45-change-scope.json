@@ -1,0 +1,10 @@
+{
+  "changed_payloads": [
+    "INSTALL.md",
+    "index.html",
+    "install.html",
+    "sw.js",
+    "update.html"
+  ],
+  "scope": "Only installation documentation and version/cache markers differ from v44; unchanged code retains its previous bytes."
+}

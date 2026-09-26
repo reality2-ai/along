@@ -8,7 +8,7 @@ import {chromium,expect} from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 const root=resolve('releases/along-regular-upgrade-candidate');
 const manifest=JSON.parse(await readFile(resolve(root,'build-info.json'),'utf8'));
-expect(manifest.appVersion).toBe('44');
+expect(manifest.appVersion).toBe('45');
 for(const [name,hash] of Object.entries(manifest.files))expect(createHash('sha256').update(await readFile(resolve(root,name))).digest('hex')).toBe(hash);
 const server=createServer(async(req,res)=>{
  try{
@@ -56,5 +56,5 @@ try{
  expect(await page.locator('.journey-times').allTextContents()).toEqual(before);
  await page.reload();await expect(page.locator('#address-status')).toContainText('ready offline',{timeout:60000});await expect(page.locator('.usual-card')).toHaveCount(0);
  expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('along-journeys-v1')).journeys)).toEqual([]);expect(errors).toEqual([]);
- console.log('PASS: real static v44 offline Arrive by address/train/ferry/walk deadline; timing summary, ordering, learning departure hour and Leave now reset; open shortcut → options → removal, failed writes, retained results, keyboard/axe/narrow screen and offline reopening. No physical device or external relay.');
+ console.log('PASS: real static v45 offline Arrive by address/train/ferry/walk deadline; timing summary, ordering, learning departure hour and Leave now reset; open shortcut → options → removal, failed writes, retained results, keyboard/axe/narrow screen and offline reopening. No physical device or external relay.');
 }finally{await browser.close();server.closeAllConnections();await new Promise(r=>server.close(r));}

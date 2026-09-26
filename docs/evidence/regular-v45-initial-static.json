@@ -1,0 +1,9 @@
+{
+  "status": "failed",
+  "phase": "offline reload after shortcut removal",
+  "assertion_timeout_ms": 5000,
+  "observed": "Preparing offline addresses and walking paths. This first download is about 24 MB.",
+  "source": "95cafac",
+  "log_sha256": "81f19bd04b79a85eb99afb779fb6b27831ef7c47991639c583449feee560965f",
+  "scope": "Static subpath browser check running alongside qualification; this does not establish the cause of the timeout."
+}

@@ -1,0 +1,126 @@
+{
+  "profile": "along-regular-candidate-qualification-v1",
+  "app_version": "45",
+  "source_commit": "95cafac5697bc75f351fd2ddb5416da083a27bc9",
+  "candidate_manifest_sha256": "7911e5c8f04c4664d17fc05dbefb1ff4371ace41410b2cbf1b639cfa9e4916e2",
+  "checks": {
+    "relay_enrollment_carriage": {
+      "status": "passed",
+      "exit_code": 0,
+      "command": "REGULAR_CANDIDATE=1 node experiments/tg-pairing/relay-enrollment-peer.test.mjs",
+      "log_sha256": "a3a62e3a4759ccedc6caf33f6339ce56c8d64a6ac3ed561ae945f1d8c00f7345"
+    },
+    "relay_origin_pacing": {
+      "status": "passed",
+      "exit_code": 0,
+      "command": "REGULAR_CANDIDATE=1 node experiments/r2-current/origin-pacing-browser.test.mjs",
+      "log_sha256": "a16217ea6336718cb7116dc8ef1413539074792ea064a98d26bfebdcc295c582"
+    },
+    "guided_scan": {
+      "status": "passed",
+      "exit_code": 0,
+      "command": "REGULAR_CANDIDATE=1 GUIDED_PAIRING=1 GUIDED_SCAN=1 node experiments/tg-pairing/automatic-enrollment.test.mjs",
+      "log_sha256": "e1e8ae2a1f1ae33bc38c16215536a2332a0715a9b299fe59660a9afa58105d29"
+    },
+    "installed_v44_upgrade": {
+      "status": "failed",
+      "exit_code": 1,
+      "command": "REGULAR_CANDIDATE=1 ALONG_PRIOR_VERSION=44 node experiments/journey-sync/regular-upgrade.test.mjs",
+      "log_sha256": "2318dcc5e70ce5584e5b407ce2ac0c53a4c3091a0017383d221380283885a327"
+    },
+    "installed_v43_upgrade": {
+      "status": "failed",
+      "exit_code": 1,
+      "command": "REGULAR_CANDIDATE=1 ALONG_PRIOR_VERSION=43 node experiments/journey-sync/regular-upgrade.test.mjs",
+      "log_sha256": "ed045a99d26e3925bed4c93c9e55cec0e082f9f14f1e800fe7dda8206c7f90ac"
+    },
+    "guided_app_offline": {
+      "status": "passed",
+      "exit_code": 0,
+      "command": "REGULAR_CANDIDATE=1 GUIDED_OFFLINE=1 node experiments/relay/guided-app.test.mjs",
+      "log_sha256": "960f78d09431e5554ec09bd6ee793b07c3aab1e61a7ffb7d249f825e64061fd2"
+    },
+    "guided_component": {
+      "status": "passed",
+      "exit_code": 0,
+      "command": "REGULAR_CANDIDATE=1 GUIDED_PAIRING=1 node experiments/tg-pairing/automatic-enrollment.test.mjs",
+      "log_sha256": "aad0ee58d8ecc4b88eb6cd475ab350c01b666f35cd50fc62ee7dbd03249d195d"
+    },
+    "guided_cancel": {
+      "status": "passed",
+      "exit_code": 0,
+      "command": "REGULAR_CANDIDATE=1 GUIDED_PAIRING=1 GUIDED_CANCEL=1 node experiments/tg-pairing/automatic-enrollment.test.mjs",
+      "log_sha256": "0ec07c8cb9c1aec88f3a9c6f1ac4354a213d9b5ae4afb18a87f94425ffd4a4b5"
+    },
+    "guided_conflict": {
+      "status": "passed",
+      "exit_code": 0,
+      "command": "REGULAR_CANDIDATE=1 GUIDED_PAIRING=1 GUIDED_CONFLICT=1 node experiments/tg-pairing/automatic-enrollment.test.mjs",
+      "log_sha256": "2beaf7357879c41e06e9f9fde5d6d8e470689fb1a13ca83858a73e79c47ae272"
+    },
+    "guided_interrupted_install": {
+      "status": "passed",
+      "exit_code": 0,
+      "command": "REGULAR_CANDIDATE=1 GUIDED_PAIRING=1 GUIDED_INTERRUPT=install node experiments/tg-pairing/automatic-enrollment.test.mjs",
+      "log_sha256": "76ef156c13b562ef38f6fbab1799d600d92d2593d7ca083c2f6c38971bbe2502"
+    },
+    "guided_interrupted_ack": {
+      "status": "passed",
+      "exit_code": 0,
+      "command": "REGULAR_CANDIDATE=1 GUIDED_PAIRING=1 GUIDED_INTERRUPT=ack node experiments/tg-pairing/automatic-enrollment.test.mjs",
+      "log_sha256": "395badb822073dcbda3888737895ba4eb82a5815618243a63a210fa0c6e6d5bb"
+    },
+    "invitation_channel_faults": {
+      "status": "passed",
+      "exit_code": 0,
+      "command": "REGULAR_CANDIDATE=1 AUTOMATIC_RELAY=1 CHANNEL_CHECKS=1 node experiments/tg-pairing/automatic-enrollment.test.mjs",
+      "log_sha256": "83ea65923f3da329a4e87a4209cca923a2904fa7c096867819a2b5ed397f2f79"
+    },
+    "arrive_by_and_shortcut": {
+      "status": "failed",
+      "exit_code": 1,
+      "command": "REGULAR_CANDIDATE=1 node test/check_arrive_by.mjs",
+      "log_sha256": "d85d956830a55c3be248bfde1878f207b00e4c4e9ee8b3da0001e1fc7552e4b3"
+    },
+    "installed_v41_upgrade": {
+      "status": "failed",
+      "exit_code": 1,
+      "command": "REGULAR_CANDIDATE=1 ALONG_PRIOR_VERSION=41 node experiments/journey-sync/regular-upgrade.test.mjs",
+      "log_sha256": "ed045a99d26e3925bed4c93c9e55cec0e082f9f14f1e800fe7dda8206c7f90ac"
+    },
+    "installed_v42_upgrade": {
+      "status": "failed",
+      "exit_code": 1,
+      "command": "REGULAR_CANDIDATE=1 ALONG_PRIOR_VERSION=42 node experiments/journey-sync/regular-upgrade.test.mjs",
+      "log_sha256": "ed045a99d26e3925bed4c93c9e55cec0e082f9f14f1e800fe7dda8206c7f90ac"
+    },
+    "journeys": {
+      "status": "passed",
+      "exit_code": 0,
+      "command": "REGULAR_CANDIDATE=1 node experiments/journey-sync/app-integration.test.mjs",
+      "log_sha256": "cc12aa3ddc7f86a1df9cd92a142035efbdb1b7a20504f46c37690f838ec81275"
+    },
+    "checkpoint_app": {
+      "status": "passed",
+      "exit_code": 0,
+      "command": "REGULAR_CANDIDATE=1 CHECKPOINT_APP=1 node experiments/journey-sync/app-integration.test.mjs",
+      "log_sha256": "786afc8bebc5e2385c9c360228957c0478b5c4f859a12a3d98dc112a10ce140c"
+    },
+    "capacity_reporting": {
+      "status": "passed",
+      "exit_code": 0,
+      "command": "REGULAR_CANDIDATE=1 CAPACITY=1 node experiments/journey-sync/app-integration.test.mjs",
+      "log_sha256": "6abd9784f30d0564f2397053ad17b17d159e8ac1fb353cfd590d3ee4fc666720"
+    },
+    "rotated_journeys": {
+      "status": "passed",
+      "exit_code": 0,
+      "command": "REGULAR_CANDIDATE=1 ROTATE_GROUP_KEYS=1 node experiments/journey-sync/app-integration.test.mjs",
+      "log_sha256": "cb582bf06dd51959470d760f568b6a2ca1cdff8e1209235c9597031206092dd0"
+    }
+  },
+  "limits": "Local Chromium candidate qualification, not release packaging. Storage checks use candidate modules behind fixture URLs. Actual relay on loopback. No physical-device or external-endpoint acceptance.",
+  "status": "aborted",
+  "reason": "Confirmed obsolete guide-heading and version assertions. Stop this failed run before repairing tests; preserve every completed result. Not a passing qualification.",
+  "recorded_at": "2026-09-26T00:21:25.883626+00:00"
+}

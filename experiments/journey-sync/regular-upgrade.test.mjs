@@ -153,7 +153,7 @@ try{
   assert.deepEqual(await persistence(),before);assert.deepEqual(await identity(),enrolled);
   await page.goto(url+'install.html');
   await expect(page.getByRole('heading',{name:'Scheduled journeys, optional current information',exact:true})).toBeVisible();
-  await expect(page.getByRole('heading',{name:'Optional automatic connection',exact:true})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Connect another device when you want to share',exact:true})).toBeVisible();
   await expect(page.locator('main')).toContainText('No relay is selected by default.');
   await expect(page.locator('main')).toContainText('Chrome');
   await expect(page.locator('main')).toContainText('Safari');
