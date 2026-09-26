@@ -1,4 +1,4 @@
-# Along course handover — published v43, local v44
+# Along course handover — published v44
 
 Along is a working, experimental Auckland commuter app and a case study of one
 human–AI collaboration. It is used at your own risk, is not an official AT app,
@@ -22,14 +22,14 @@ the learner's judgment, not how much code the assistant generates.
 ## New v44 case study
 
 Use the [connection-simplicity lab](CONNECTION_SIMPLICITY_LAB.md) for the latest
-interaction and verification lessons. Version 44 is packaged locally, with 34
-qualification scenarios passing; it is not yet on the public site. Do not send
-students to v43 expecting the one-invitation flow. The lab distinguishes UI
+interaction and verification lessons. Version 44 is published, with 34
+qualification scenarios passing; external hive forwarding and physical pairing
+remain unverified. The lab distinguishes UI
 complexity, hidden network assumptions, reconnect pacing and release evidence.
 
 ## Prepare a teaching copy
 
-Ask the assistant to obtain the [v43 ZIP and checksum](https://github.com/reality2-ai/along/releases/tag/v0.43.0),
+Ask the assistant to obtain the [v44 ZIP and checksum](https://github.com/reality2-ai/along/releases/tag/v0.44.0),
 verify the archive, and serve its entire contents on a separate teaching origin.
 Keep the manifest, qualification record, runtime provenance and source notices.
 Use the supplied example addresses and synthetic credentials. A personal AT key,

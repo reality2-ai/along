@@ -1,10 +1,10 @@
-# Version 44 device check — wait for publication
+# Version 44 device check
 
-This guide is prepared for a future verified deployment. The public app is still
-version 43. Do not retry the older flow as a test of these changes. No coding is
-needed, and no QR contents, connection links or API keys should be included in reports.
+Version 44 is published. The selected public hive still fails message forwarding;
+wait for its verified repair before trying the connection steps below. Installation,
+offline planning and accessibility checks can be tried now. No coding is needed, and no QR contents, connection links or API keys should be included in reports.
 
-After publication is confirmed, update the installed app in its original browser
+Update the installed app in its original browser
 and check **App version 44** in Settings on the S23 and desktop. Record both browser
 names. Keep existing saved places and device data; do not clear storage to retry.
 

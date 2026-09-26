@@ -1,0 +1,21 @@
+{
+  "status": "passed",
+  "source_commit": "c4d5434b3d6462850b458a1e7dc880b6cb6652b3",
+  "app_version": 44,
+  "application_files_matched": 309,
+  "app_archive_sha256": "45486d20ba05d2ecbe052482e153e1fbaecae623912fe4a8eb860d907e86a9b3",
+  "runtime_archive_sha256": "c241805a394fdcb8197b499914c17e283d4c5922081eeb2528f55c089379401f",
+  "source": "Anonymous public Git fetch",
+  "inputs": "Public v0.44.0 app data and v0.40.0 runtime archive; pinned SHA-256 verified",
+  "excluded_release_metadata": [
+    "README.md",
+    "qualification.json",
+    "build-info.json"
+  ],
+  "scope": "Actual integrated Python app build in isolated Linux container; byte-for-byte application comparison. Prebuilt public runtime used; compiler reproduction is separate. No credentials, host source, node_modules or data mounted.",
+  "container_image": "docker.io/library/python:3.13-bookworm",
+  "container_image_id": "8ace98ca0196a5715aa69f35ae15528176ba6c9a034c6df9fcb1b98e0f4e8571",
+  "exit_code": 0,
+  "script_sha256": "8ebb5caf310c0486ae4d73217fd466bcfee45112a7ba7a51c40583ffbc07263f",
+  "log_sha256": "3ef3cc51817cd5ced51e6d49fb246be0c9d2d4f67f456c1e41ae5c4f0b192e7d"
+}

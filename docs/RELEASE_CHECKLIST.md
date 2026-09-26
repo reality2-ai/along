@@ -1,7 +1,7 @@
 # Release evidence and remaining gates
 
-Current regular app: **version 43**. Its 23-scenario qualification and static checks pass;
-all 286 deployed files match the verified package. Physical acceptance remains open.
+Current regular app: **version 44**. Its 34-scenario qualification and static checks pass;
+all 312 deployed files match the verified package. Physical acceptance remains open.
 Historical version-37 evidence below describes that earlier release. The separate [device preview 3806](https://reality2.ai/along/preview/public/)
 is published for [S23/desktop checks](PREVIEW_DEVICE_CHECK.md). Both are static
 GitHub Pages deployments; the retired private server is not required.
@@ -30,19 +30,20 @@ explicit flows, not unattended synchronization of all trust-group state.
 Regular Along 38 now includes the live/TG controls and preserves separate preview storage. Historical
 entries below retain their original versions and scopes.
 
-## Version 44 — locally qualified, not published
+## Version 44 — published, external relay acceptance outstanding
 
 [Version 44](RELEASE_V44.md) passes 34 distinct qualification scenarios and two
 labelled aliases. Complete enrollment uses the chosen relay with direct WebRTC
 disabled in the guided tests. Pacing survives connection replacement and tabs;
 the local relay reconnect check observed zero rate-limited drops. Source rebuild
-matches all 310 candidate files. The public app is still version 43.
+matches all 310 candidate files. The anonymous container rebuild reproduces all
+309 application payloads; HTTPS verification matches all 312 release files.
 
-Publication currently lacks GitHub authentication. The deployed current-R2 hive
+GitHub authentication recovered and version 44 is published. The deployed current-R2 hive
 accepts the binding but has not forwarded protected probe messages. Physical S23
 and desktop installation/pairing, TalkBack and signed-in interactive feedback
 submission remain open. The [v44 device check](DEVICE_CHECK_V44.md) is prepared
-for after deployment and endpoint verification, not a request to retry v43.
+for installation now and connection checks after endpoint verification.
 
 ## Version 42
 

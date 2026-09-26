@@ -262,3 +262,10 @@ including relay-only guided enrollment, first-use simplification, cross-tab paci
 recovery, offline changes and installed upgrades. Candidate and packaged static
 checks pass. [Release evidence and outstanding publication/device gates](RELEASE_V44.md)
 preserve the difference between local qualification and public acceptance.
+
+
+Version 44 is now published after GitHub authentication recovered. All 312 served
+files match the immutable package, and an isolated anonymous public-source build
+reproduces its 309 application payloads. The selected current-R2 hive still fails
+protected-message forwarding. Physical pairing/TalkBack and signed-in feedback
+acceptance remain open; publication does not close the full goal.

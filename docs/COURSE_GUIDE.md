@@ -5,12 +5,12 @@ provided for use at the user’s own risk; it is not an official AT service or a
 claim of production readiness. The verification work is part of the lesson.
 
 For a short entry point tied to the current release, use the
-[course handover: published v43 and local v44](course/HANDOVER.md). Historical labs retain their
+[course handover: published v44](course/HANDOVER.md). Historical labs retain their
 original versions and evidence.
 
 The new [connection-simplicity lab](course/CONNECTION_SIMPLICITY_LAB.md) follows
 the v44 redesign from a confusing workflow through transport and reconnection
-failures. It can be taught from recorded evidence before public deployment.
+failures. It can be taught from recorded evidence without a working external relay.
 
 ## Aim and audience
 

@@ -1,0 +1,15 @@
+{
+  "version": 44,
+  "initial_smoke_check": {
+    "status": "failed",
+    "reason": "Preparing timetable\u2026 persisted until the 120-second assertion timeout",
+    "log_sha256": "94d369265bb5b0313ebbe9f54ab4b85ec0e3f69038ae1c12fa188df1f39d2303"
+  },
+  "diagnostic": {
+    "status": "offline-ready-observed",
+    "requests": "All four data bundles returned HTTP 200; no pageerror or requestfailed event recorded",
+    "service_worker": "activated and controlling",
+    "log_sha256": "57ea1ec59691b0a0831218a90862f48b2904cc21e611f1fba28539bb6ede4b21"
+  },
+  "scope": "Separate fresh Chromium runs against public HTTPS site. Diagnostic observation is not complete smoke-test, phone or pairing acceptance; cause of first timeout not established."
+}

@@ -1,4 +1,4 @@
-# Along version 44 — prepared locally, not published
+# Along version 44 — published
 
 Connecting devices now uses one invitation scan/link, matching-code confirmation
 and a separate sharing choice. A fresh device goes directly to **Connect another
@@ -28,7 +28,9 @@ not hardware-backed storage or full standard conformance.
   update and storage failure behavior. Desktop timings are not phone benchmarks.
 - [Local committed-source rebuild](evidence/regular-v44-local-source-rebuild.json):
   all 310 candidate files match byte-for-byte. Fixed data and the verified public
-  runtime were reused; anonymous public-source rebuild remains pending publication.
+  runtime were reused. The subsequent [anonymous public-source rebuild](evidence/regular-v44-public-source-rebuild.json)
+  reproduced all 309 application payloads in an isolated Linux container using
+  public release data and the verified runtime archive.
 - [Package](evidence/regular-v44-package.json): 311 payload files,
   41,789,281-byte ZIP, SHA-256
   `45486d20ba05d2ecbe052482e153e1fbaecae623912fe4a8eb860d907e86a9b3`.
@@ -43,15 +45,44 @@ recognition on a Samsung S23. Guided browser tests explicitly disable WebRTC.
 
 ## Publication and remaining acceptance
 
-**Public Along remains version 43.** GitHub authentication currently returns
-HTTP 401. The selected deployed hive accepts the current WebSocket binding and
+**Version 44 is published** at <https://reality2.ai/along/> with a
+[downloadable release](https://github.com/reality2-ai/along/releases/tag/v0.44.0).
+GitHub authentication recovered after the earlier HTTP 401 failure. Pages run
+`36203714144` deployed commit `93aea2a3713740d7fb16800700fb3dc4979fda96`.
+[HTTPS verification](evidence/regular-v44-public-files.json) matched all 312 files,
+including the release manifest, to the qualified package.
+
+The selected deployed hive accepts the current WebSocket binding and
 sends announcements, but the latest protected-message probe delivered neither
 direction. Server configuration remains with its owner; see the
 [transport handover](R2_BROWSER_TRANSPORT_HANDOVER.md).
 
-After those external gates, verify the actual HTTPS deployment and anonymous
-source rebuild, then perform the [v44 physical-device check](DEVICE_CHECK_V44.md).
+After the hive forwards protected messages successfully, perform the connection
+steps in the [v44 physical-device check](DEVICE_CHECK_V44.md). Installation and
+offline checks can be tried now.
 Physical installation, S23 pairing, spoken TalkBack use and signed-in interactive
 GitHub feedback submission are not established by local automation.
 
+Known documentation defect: the packaged installation guide still names version
+42 and an older device-settings label. Use Settings to check the actual version
+and the linked v44 device guide for connection steps. Correct this in a subsequent
+versioned package; do not silently alter the published archive.
+
 Experimental AI-coding course app: use at your own risk; not an official AT service.
+
+
+The first post-deployment browser smoke check timed out after 120 seconds while
+showing “Preparing timetable…”. Its log is retained locally as
+`releases/v44-public-browser.log`. A separate fresh diagnostic reached offline
+ready, with all four data downloads returning HTTP 200 and an active controlling
+service worker; see the [investigation record](evidence/regular-v44-public-preparation-investigation.json).
+The cause of the first timeout is not established.
+This does not invalidate the independent file-hash or isolated rebuild results,
+but neither result establishes successful runtime preparation.
+
+The subsequent [complete public browser recheck](evidence/regular-v44-public-browser.json)
+passed without changing app bytes or increasing the preparation timeout: HTTPS
+installation readiness, version 44, offline reload, a new address journey,
+offline installation guide, English-only interface and retained feedback draft.
+No page errors were observed. This is desktop Chromium evidence, not a physical
+phone check. Both the initial failure and later results remain recorded.

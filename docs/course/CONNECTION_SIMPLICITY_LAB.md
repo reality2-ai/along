@@ -5,8 +5,8 @@ AI coding or commuter usability. **The human writes no code.** Learners describe
 outcomes, question claims and assess evidence; the assistant performs any setup,
 implementation and test execution.
 
-Version 44 is packaged locally but not yet published. The public site remains
-version 43. This exercise can use recorded evidence without installing either
+Version 44 is now published. The case below includes the earlier period when
+publication was blocked and the site remained v43. This exercise can use recorded evidence without installing either
 version, configuring a relay or supplying an AT key.
 
 ## Start with the experience
@@ -68,7 +68,8 @@ Ask the assistant to explain these boundaries before suggesting another test:
 4. **A package versus an available service.** Distinguish the local relay tests
    from the selected public hive. Its probe accepted WebSocket connections and
    received an announcement, but delivered neither protected test direction.
-   GitHub authentication also prevented publishing v44. These are separate gates.
+   GitHub authentication also initially prevented publishing v44; it later
+   recovered and publication was verified. These are separate gates.
 
 Use the [earlier failed qualification](../evidence/guided-v44-relay-qualification-failed.json)
 and [final qualification](../evidence/regular-v44-qualification.json). The final
@@ -97,8 +98,10 @@ Produce one page containing:
 Include the [package evidence](../evidence/regular-v44-package.json),
 [packaged static checks](../evidence/regular-v44-package-static.json) and
 [local source rebuild](../evidence/regular-v44-local-source-rebuild.json).
-The rebuild used a verified runtime and fixed data; it is not a fresh anonymous
-public-source build or a compiler reproducibility claim. Automated accessibility
+That local rebuild used a verified runtime and fixed data; it is not a fresh anonymous
+public-source build or a compiler reproducibility claim. Compare it with the later
+[anonymous public-source rebuild](../evidence/regular-v44-public-source-rebuild.json),
+which still reuses a verified prebuilt runtime. Automated accessibility
 checks do not establish TalkBack acceptance or usability with disabled commuters.
 The [v44 device guide](../DEVICE_CHECK_V44.md) identifies later observations once
 the release is available.

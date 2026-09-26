@@ -1690,3 +1690,21 @@ client's model match the relay's, including reloads and other tabs. The strength
 test requires zero rate-limit drops, rather than treating eventual convergence as
 proof of healthy transport. This is a course example of inspecting operational
 measurements behind a green test.
+
+
+### Publication and runtime readiness are different observations (26 September)
+
+When GitHub authentication recovered, v44 could be published without a product
+change. All 312 served files matched its immutable package and an isolated public
+source build reproduced 309 application payloads. A fresh public browser check
+nevertheless timed out preparing its timetable. A diagnostic reached offline
+ready; a subsequent complete check passed without changing the app or increasing
+the timeout. The reason for the first timeout remains unknown.
+
+Code this as **separate evidence boundaries**, alongside **preserve negative
+cases**: matching bytes establishes delivery, not successful runtime preparation.
+Conversely, one timeout does not identify a code defect. The selected hive still
+failed protected-message forwarding, so neither successful publication nor
+scheduled offline routing establishes device pairing. The
+[v44 release record](RELEASE_V44.md) retains those distinctions. This is an
+interpretation of one development episode, not evidence of general reliability.
