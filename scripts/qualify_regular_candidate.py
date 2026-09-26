@@ -39,6 +39,7 @@ def main():
         ('installed_v44_upgrade', {'ALONG_PRIOR_VERSION':'44'}, 'experiments/journey-sync/regular-upgrade.test.mjs'),
         ('relay_origin_pacing', {}, 'experiments/r2-current/origin-pacing-browser.test.mjs'),
         ('recovery_inner_protection', {}, 'experiments/tg-pairing/recovery-link-protection.test.mjs'),
+        ('automatic_recovery_capacity', {'AUTOMATIC_RECOVERY':'1','RECOVERY_REMOVALS':'1'}, 'experiments/tg-pairing/automatic-enrollment.test.mjs'),
         ('automatic_recovery_transport', {'AUTOMATIC_RECOVERY':'1'}, 'experiments/tg-pairing/automatic-enrollment.test.mjs'),
         ('guided_recovery_component', {'GUIDED_RECOVERY':'1'}, 'experiments/tg-pairing/automatic-enrollment.test.mjs'),
         ('guided_recovery_app', {'GUIDED_RECOVERY_APP':'1','GUIDED_OFFLINE':'1'}, 'experiments/relay/guided-app.test.mjs'),

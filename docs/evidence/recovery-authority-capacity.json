@@ -1,0 +1,83 @@
+{
+  "recordedAt": "2026-09-26T01:35:13.637182+00:00",
+  "baseSource": "9483d7b",
+  "published": false,
+  "publicAppVersion": 45,
+  "sourceSha256": {
+    "experiments/tg-pairing/automatic-enrollment.test.mjs": "7c0d4bc7c63ad7542e6d5bb072dc739db25c1981f0b50daf96f524a03be38f0f",
+    "experiments/tg-pairing/automatic-epoch-recovery-check.mjs": "5d803682ebb61256bb3bdfa6f18ef56af9c589d740e1d511af05d1c385472c71",
+    "experiments/tg-pairing/automatic-epoch-recovery.mjs": "81c65ce14f22888cd0f23a2931cae39d595e78c81c578dd5f3fb74c6d2848316",
+    "experiments/tg-pairing/automatic-epoch-recovery-view.mjs": "b6a15958730ef8548bc66eb75adf246fe2265d0e0b2f4920c0a8647781436805",
+    "experiments/tg-pairing/invitation-channel.mjs": "aaf74624e7b3bfd8280b8354e0c581895afc1d2c26aacf5185f0afcf03e6c8c5",
+    "experiments/tg-pairing/invitation-channel-checks.mjs": "1ef9f4609aad5c2461703ee1185fc6e7dae449e0fad19b3ad5d2cbe4c266efa1",
+    "experiments/tg-pairing/connection-invitation.mjs": "a621f42d9e7338c4be37cb5f66d571643fa111b05110bab5237ac8f477445f25"
+  },
+  "checks": [
+    {
+      "command": "AUTOMATIC_RECOVERY=1 CHANNEL_CHECKS=1 node experiments/tg-pairing/automatic-enrollment.test.mjs",
+      "exitCode": 0,
+      "relay": {
+        "connections": 14,
+        "frames": 368,
+        "limited": 0
+      },
+      "scope": "Real local TLS relay; actual browser verifier/storage; WebRTC disabled. Forged certificate and removed member refused before key transmission. Aborted second installation retains consistent first epoch; retry uses saved version. Final receipt loss and receipt-only retry. Separate admission and active-expiry boundary checks."
+    },
+    {
+      "command": "AUTOMATIC_RECOVERY=1 RECOVERY_REMOVALS=1 node experiments/tg-pairing/automatic-enrollment.test.mjs",
+      "exitCode": 0,
+      "records": 256,
+      "relay": {
+        "connections": 4,
+        "frames": 513,
+        "limited": 0
+      },
+      "scope": "Only owner seeded with issuer-signed revocations. Recipient receives full snapshot through actual local TLS relay, verifies/saves all 256 and completes ordered key recovery."
+    }
+  ],
+  "initialFailure": {
+    "exitCode": 1,
+    "records": 255,
+    "relay": {
+      "connections": 4,
+      "frames": 415,
+      "limited": 0
+    },
+    "reason": "One-minute invitation deadline terminated paced removal transfer before recovery authenticated. Product fix separates one-minute admission and five-minute active recovery; identity-handshake clock starts after metadata transfer."
+  },
+  "intermediateFixedRun": {
+    "exitCode": 0,
+    "records": 255,
+    "relay": {
+      "connections": 4,
+      "frames": 512,
+      "limited": 0
+    }
+  },
+  "logs": {
+    "releases/recovery-removal-capacity-initial.log": {
+      "sha256": "8036aebc870cf58d139a3af24cdf13ee63fa954192d55b16620a8ba3ba15c7e8",
+      "output": "Non-secret connection diagnostics: {\"sent\":[\"challenge\",\"proof\",\"offer\",\"answer\"],\"relay\":{\"connections\":4,\"frames\":415,\"limited\":0,\"plaintextObserved\":false},\"profiles\":[{},{\"ready\":true,\"errors\":[],\"status\":[\"connecting\",\"connected\"]}]}\nnode:internal/modules/run_main:107\n    triggerUncaughtException(\n    ^\n\nAssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:\n+ actual - expected\n\n+ [\n+   'Recovery invitation expired'\n+ ]\n- []\n\n    at connect (file:///home/roycdavies/Development/AT/experiments/tg-pairing/automatic-epoch-recovery-check.mjs:76:14)\n    at async checkAutomaticEpochRecovery (file:///home/roycdavies/Development/AT/experiments/tg-pairing/automatic-epoch-recovery-check.mjs:93:7)\n    at async file:///home/roycdavies/Development/AT/experiments/tg-pairing/automatic-enrollment.test.mjs:251:5 {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: [ 'Recovery invitation expired' ],\n  expected: [],\n  operator: 'deepStrictEqual',\n  diff: 'simple'\n}\n\nNode.js v26.8.1\n"
+    },
+    "releases/recovery-removal-capacity-fixed.log": {
+      "sha256": "44b067e2faafe2ef52ac9f1dd9e4cc65eb096601712b640741b96f84623fc50f",
+      "output": "PASS: automatic recovery carries 255 issuer-signed removals from owner-only fixture state, verifies them on recipient and completes ordered key updates through local TLS relay.\nRecovery relay counts: {\"connections\":4,\"frames\":512,\"limited\":0,\"plaintextObserved\":false}\nPASS: automatic challenge/proof/offer/answer with actual software identities, verified proof, relay-carried comparison with WebRTC disabled, explicit confirmation, durable installation/acknowledgment and reload. Current hive binding through local relay with protected invitation channel. Harness supplies reviewed invitation; not public rendezvous or physical acceptance.\n"
+    },
+    "releases/recovery-removal-capacity-256.log": {
+      "sha256": "49bb24c5fcaaa9843a4db80a43524701051ddfec0d43c749513ba0a7f46e2776",
+      "output": "PASS: automatic recovery carries 256 issuer-signed removals from owner-only fixture state, verifies them on recipient and completes ordered key updates through local TLS relay.\nRecovery relay counts: {\"connections\":4,\"frames\":513,\"limited\":0,\"plaintextObserved\":false}\nPASS: automatic challenge/proof/offer/answer with actual software identities, verified proof, relay-carried comparison with WebRTC disabled, explicit confirmation, durable installation/acknowledgment and reload. Current hive binding through local relay with protected invitation channel. Harness supplies reviewed invitation; not public rendezvous or physical acceptance.\n"
+    },
+    "releases/recovery-authority-deadlines.log": {
+      "sha256": "8452d6aee7cb66c47154d64acc84cee21d1f001b3d77d83f0fd166f8ac360671",
+      "output": "PASS: fragment-only invitation; invalid envelopes refused; loss and duplicate recovery; encrypted carriage; secret/endpoint binding; cancellation; distinct recovery profile, protected delivery and identity/group/endpoint/secret binding; separate recovery admission and active deadlines\nPASS: automatic recovery through local TLS relay with WebRTC disabled; two stale epochs, mutual identity, explicit acceptance, forged-certificate refusal, cancellation, aborted intermediate install with retained predecessor, lost confirmation, receipt-only retry and removed-member refusal; harness transfers only the initial invitation. UI/physical acceptance not tested.\nRecovery relay counts: {\"connections\":14,\"frames\":368,\"limited\":0,\"plaintextObserved\":false}\nPASS: automatic challenge/proof/offer/answer with actual software identities, verified proof, relay-carried comparison with WebRTC disabled, explicit confirmation, durable installation/acknowledgment and reload. Current hive binding through local relay with protected invitation channel. Harness supplies reviewed invitation; not public rendezvous or physical acceptance.\n"
+    }
+  },
+  "limits": [
+    "Not published or full-release-qualified.",
+    "Local TLS relay stand-in, not deployed hive or physical acceptance.",
+    "Removal list is synthetic but signatures/verifier/storage are real.",
+    "Installation fault aborts an actual IndexedDB transaction via test instrumentation.",
+    "Deadline checks advance wall clock to test use-time refusal; not a five-minute background-phone observation.",
+    "Guided AT owner renewal and scanner/expiry controls remain before release."
+  ]
+}

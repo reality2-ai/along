@@ -74,6 +74,16 @@ export async function checkInvitationChannel({descriptor,relay}) {
     await owner.send('synthetic-recovery-secret');
     assert(recovered.length===1 && recovered[0]==='synthetic-recovery-secret','Recovery protected channel did not deliver');
     assert(protectedBus.copies.every(frame=>!new TextDecoder().decode(frame).includes('synthetic-recovery-secret')),'Recovery cleartext exposed');
+    const clock=Date.now;
+    try {
+      const admittedAt=clock();Date.now=()=>admittedAt+61000;
+      assert(refused(()=>readRecoveryInvitation(recoveryText)),'Expired QR still admits a new recovery');
+      await owner.send('already-admitted-recovery');
+      assert(recovered[1]==='already-admitted-recovery','Admitted recovery stopped at QR admission deadline');
+      Date.now=()=>admittedAt+301000;
+      assert(refused(()=>owner.send('beyond active window')),'Recovery exceeded its bounded transfer window');
+    } finally {Date.now=clock;}
+
   } finally {owner.close();recipient.close();}
   for (const changed of [{owner:'44'.repeat(32)},{member:'44'.repeat(32)},{group:'44'.repeat(32)},
     {relay:'wss://other.example.test/r2'},{secret:'55'.repeat(32)}]) {
@@ -85,5 +95,5 @@ export async function checkInvitationChannel({descriptor,relay}) {
     await sleep(80);a.close();b.close();
     assert(await pending && deliveries.length===0,'Altered recovery identity/group/endpoint/secret admitted');
   }
-  return 'fragment-only invitation; invalid envelopes refused; loss and duplicate recovery; encrypted carriage; secret/endpoint binding; cancellation; distinct recovery profile, protected delivery and identity/group/endpoint/secret binding';
+  return 'fragment-only invitation; invalid envelopes refused; loss and duplicate recovery; encrypted carriage; secret/endpoint binding; cancellation; distinct recovery profile, protected delivery and identity/group/endpoint/secret binding; separate recovery admission and active deadlines';
 }

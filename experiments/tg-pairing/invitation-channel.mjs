@@ -2,7 +2,7 @@
 // temporary keys are NOT the target group's keys. Admission here only proves
 // possession of the invitation; signed proof, comparison and core enrollment
 // still decide membership. No storage access or application permissions here.
-import {readConnectionInvitation, connectionContext, connectionBytes, readRecoveryInvitation, recoveryContext} from './connection-invitation.mjs';
+import {readConnectionInvitation, connectionContext, connectionBytes, readRecoveryInvitation, recoveryContext, RECOVERY_EXCHANGE_MS} from './connection-invitation.mjs';
 import {createHiveTransport} from '../r2-current/hive-transport.mjs';
 import {gate, protectEvent, wireEntry, MAX_PLAINTEXT} from '../r2-current/group-protection.mjs';
 import {heartbeatFrame} from '../r2-current/heartbeat.mjs';
@@ -22,7 +22,7 @@ export const createInvitationChannel = options => createChannel(options, {
 });
 export const createRecoveryChannel = options => createChannel(options, {
   read: readRecoveryInvitation, context: recoveryContext,
-  event: RECOVERY_EVENT, domain: 'along/recovery-channel/v1',
+  event: RECOVERY_EVENT, domain: 'along/recovery-channel/v1', activeMs: RECOVERY_EXCHANGE_MS,
 });
 // Purpose is selected only by the fixed wrappers above, never by an invitation.
 async function createChannel({invitation, role, signal, onError = () => {}, onStatus = () => {},
@@ -42,13 +42,16 @@ async function createChannel({invitation, role, signal, onError = () => {}, onSt
   const group = connectionBytes(selected.routingGroup);
   const [self,target] = await Promise.all([wireEntry(group,connectionBytes(selected[role])),wireEntry(group,connectionBytes(selected[other]))]);
   if (signal?.aborted || selected.expires <= Date.now()) { derived.fill(0); throw Error('Connection invitation expired'); }
-  const duration = selected.expires - Date.now(), started = performance.now();
+  // Admission was checked above. Recovery has a separate bounded transfer
+  // window; enrollment retains its original invitation-wide deadline.
+  const endsAt = purpose.activeMs ? Date.now() + purpose.activeMs : selected.expires;
+  const duration = endsAt - Date.now(), started = performance.now();
   let stopped = false, listener, nextSend = 0, nextReceive = 0, outgoing = Promise.resolve(), incoming = Promise.resolve(), queued = 0;
   const pending = new Map(), sleepers = new Set(), recent = [], seen = duplicateCache();
   const pieces = reassembler({...LIMITS,maxEntries:2,lifetimeMs:60000});
   let hive, deadline;
   const current = () => {
-    if (stopped || signal?.aborted || performance.now() - started >= duration || Date.now() >= selected.expires) throw Error('Connection ended or invitation expired');
+    if (stopped || signal?.aborted || performance.now() - started >= duration || Date.now() >= endsAt) throw Error('Connection ended or invitation expired');
   };
   const close = () => {
     if (stopped) return; stopped = true; clearTimeout(deadline); hive?.stop();
@@ -113,7 +116,7 @@ async function createChannel({invitation, role, signal, onError = () => {}, onSt
       if (stopped || queued >= 128) return; queued++;
       incoming = incoming.then(() => receive(bytes)).catch(fail).finally(() => { queued--; });
     }}); } catch (error) { close(); throw error; }
-  deadline = setTimeout(() => fail(Error('Connection invitation expired')),duration);
+  deadline = setTimeout(() => fail(Error('Connection window expired')),duration);
   signal?.addEventListener('abort',close,{once:true});
   if (signal?.aborted) close();
   return Object.freeze({endpoint:selected.relay,

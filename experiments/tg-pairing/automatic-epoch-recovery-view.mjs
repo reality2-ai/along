@@ -95,7 +95,7 @@ export function showAutomaticEpochRecovery(container,{wasm,store,expectedGroup,r
     v.panel.append(details);
     const use=button(v.panel,'Connect and review update',async()=>{
       if(busy)return;busy=true;use.disabled=true;
-      try{await checkRecipient(text);waiting('Connecting to your other device','Keep both screens open. Replies are sent automatically.');await connect(text);}catch{fail();}
+      try{await checkRecipient(text);waiting('Connecting to your other device','Keep both screens open. Replies are sent automatically. A larger device update can take a few minutes.');await connect(text);}catch{fail();}
     },true);button(v.panel,'Cancel',leave);
   };
   const ready=(async()=>{
@@ -113,7 +113,7 @@ export function showAutomaticEpochRecovery(container,{wasm,store,expectedGroup,r
           if(identity?.origin!=='initial'||identity.epoch===0n)throw Error('No key update available');
           const text=await createRecoveryInvitation({group:hex(group),owner:identity.member,member:hex(member),relay:input.value.trim()});current();
           const link=recoveryInvitationLink(appURL,text);
-          const scan=waiting('Scan to update your other device','Open this invitation on the selected device. Keep both screens open. It expires after one minute; no return code is needed.');
+          const scan=waiting('Scan to update your other device','Open this invitation on the selected device. Keep both screens open. Open it within one minute. An update already started can take a few minutes; no return code is needed.');
           const qr=node('div');scan.panel.insertBefore(qr,scan.panel.lastChild);renderTransferQr(qr,link);
           const alternative=node('details');alternative.append(node('summary','Use an update link instead'));
           const copyLabel=node('label','Update invitation link'),copy=node('textarea');copy.readOnly=true;copy.rows=3;copy.value=link;copyLabel.append(copy);alternative.append(copyLabel);

@@ -1,6 +1,6 @@
 // Along recovery signalling over an explicitly approved, protected invitation
 // channel. No enrollment, permission changes, AT key or journey payloads here.
-import {readRecoveryInvitation, connectionBytes} from './connection-invitation.mjs';
+import {readRecoveryInvitation, connectionBytes, RECOVERY_EXCHANGE_MS} from './connection-invitation.mjs';
 import {createRelayRecoveryCarriage} from './relay-enrollment-peer.mjs';
 import {loadLocalPersona} from './local-persona.mjs';
 import {exportRemovalSet, receiveRemovalSet} from './removal-set.mjs';
@@ -13,10 +13,10 @@ export async function createAutomaticEpochRecovery({wasm, store, invitation, rol
   onReady = () => {}, onError = () => {}}) {
   const selected = readRecoveryInvitation(invitation), group = connectionBytes(selected.group);
   if (!['owner','recipient'].includes(role)) throw Error('Recovery role unavailable');
-  const lifetime = new AbortController();
+  const lifetime = new AbortController(), startedAt = performance.now(), endsAt = Date.now() + RECOVERY_EXCHANGE_MS;
   let closed = false, carriage, session, unsubscribe, phase = 'opening', chunks = '', chunksSeen = 0, certificate;
   let queue = Promise.resolve(), started = false, deadline;
-  const current = () => { if (closed || signal?.aborted || Date.now() >= selected.expires) throw Error('Recovery ended'); };
+  const current = () => { if (closed || signal?.aborted || Date.now() >= endsAt || performance.now()-startedAt >= RECOVERY_EXCHANGE_MS) throw Error('Recovery ended'); };
   const close = () => {
     if (closed) return; closed = true; phase = 'closed'; clearTimeout(deadline); lifetime.abort(); unsubscribe?.();
     session?.close(); carriage ? carriage.close() : channel.close();
@@ -24,7 +24,7 @@ export async function createAutomaticEpochRecovery({wasm, store, invitation, rol
   };
   const fail = error => { if (closed) return; close(); try { onError(error); } catch {} };
   signal?.addEventListener('abort',close,{once:true});
-  deadline = setTimeout(()=>fail(Error('Recovery invitation expired')),Math.max(0,selected.expires-Date.now()));
+  deadline = setTimeout(()=>fail(Error('Recovery connection expired')),RECOVERY_EXCHANGE_MS);
   const send = (kind,body) => { current(); return carriage.signalling.send(JSON.stringify({profile:PROFILE,kind,body})); };
   const sendRemovals = async () => {
     const text = await exportRemovalSet({wasm,store,expectedGroup:group}); current();
@@ -66,10 +66,13 @@ export async function createAutomaticEpochRecovery({wasm, store, invitation, rol
           || ++chunksSeen > 5 || chunks.length + value.body.length > 40000) throw Error('Recovery removals too large');
       chunks += value.body;
     } else if (phase === 'removals' && value.kind === 'removals-complete' && value.body === null) {
-      phase = 'establishing'; await applyRemovals(); await establish(); current();
+      phase = 'establishing'; await applyRemovals(); current();
       if (role === 'owner') {
-        await sendRemovals(); phase = 'offer'; await send('removals-complete',null);
+        // Start the identity-handshake clock after the paced public metadata
+        // transfer; no replacement keys can be sent before authentication.
+        await sendRemovals(); await establish(); current(); phase = 'offer'; await send('removals-complete',null);
       } else {
+        await establish(); current();
         const offer = await session.offer(); current(); phase = 'answer'; await send('offer',offer);
       }
     } else if (role === 'owner' && phase === 'offer' && value.kind === 'offer') {

@@ -1772,3 +1772,20 @@ These are local automated observations. They do not establish S23 optical scan
 comfort, spoken screen-reader usability or forwarding by the public hive. The
 [guided integration evidence](evidence/guided-recovery-integration.json) retains
 that boundary, and public v45 remains unchanged until a new release is qualified.
+
+### A calm flow must leave time for the work it hides (26 September)
+
+Testing a large signed-removal list found that the new automatic recovery could
+expire while correctly pacing valid metadata through the relay. The interaction
+had fewer user steps, but its shared one-minute deadline still prevented a valid
+case from finishing. Development separated the invitation's admission deadline
+from the bounded active transfer, retaining identity checks, acceptance and the
+relay's rate limit.
+
+Code this as **hidden work remains real work** and **test at supported boundaries**.
+The initial failure contradicts any claim that a two-device happy path establishes
+all supported recovery sizes. Separate tests also distinguish an aborted successor
+installation from a rollback of its already-committed predecessor: the retry must
+start from the saved version. These observations extend the existing themes of
+truthful state and preserving local data; they do not establish physical usability
+or public-hive interoperability. See [evidence](evidence/recovery-authority-capacity.json).

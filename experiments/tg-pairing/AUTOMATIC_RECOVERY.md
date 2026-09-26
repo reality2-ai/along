@@ -32,12 +32,16 @@ and signed installation receipts remain in charge of sending and saving updates.
 - Secret buffers are cleared after derivation/use and references to ephemeral
   CryptoKeys are discarded on close. Browser software custody cannot guarantee
   hardware erasure or resist a compromised browser or same-origin script.
-- The outer channel retains its one-minute invitation expiry, 32 messages per
-  direction, 16 KiB packet ceiling and existing origin pacing. Signed removal
+- An invitation admits a new connection for one minute. An admitted recovery has
+  a separate five-minute transfer window so paced removal snapshots can finish.
+  Enrollment keeps its original one-minute window. Recovery still permits only
+  32 messages per direction and retains the 16 KiB packet ceiling and origin pacing. Signed removal
   snapshots retain their 256-record limit and are verified atomically after at
   most five 8,000-character chunks. Removal snapshots contain public signed
   security metadata, not application secrets.
-- A large epoch gap or slow relay may exceed the bounded exchange. No epoch is
+- The identity-handshake clock starts after the paced removal snapshot transfer;
+  mutual proofs and each installation still have their existing short deadlines.
+  A large epoch gap or slow relay may exceed the bounded exchange. No epoch is
   skipped. An interrupted exchange may have saved some updates; a new invitation
   must use the device's actual saved certificate/version and continue from there.
   The interface must not describe missing confirmation as rollback or data loss.
@@ -61,8 +65,11 @@ WASM membership checks and a local TLS WebSocket relay stand-in. WebRTC is
 explicitly disabled. The harness transfers the initial invitation only; all
 later connection messages, identity proofs, updates and receipts use the relay.
 It checks two stale epochs, acceptance before sending, cancellation before
-acceptance, deliberately lost final confirmation, preserved recipient identity
-and a subsequent receipt-only retry without resending or rewriting installed keys.
+acceptance, forged-certificate refusal, removed-member refusal, and a real
+IndexedDB transaction abort during the second installation. The first committed
+epoch is retained consistently across persona, traffic keys, membership and
+receipts. A retry resumes from that saved epoch. A deliberately lost final
+confirmation subsequently recovers without resending or rewriting installed keys.
 The lost-confirmation test rejects the inner encryption call for that one frame;
 it is an injected send failure, not evidence about real packet-loss behaviour.
 
@@ -112,12 +119,37 @@ online reload on both copies. No return QR or manual reply transfer is used.
 
 ## Remaining work
 
-Test large removal snapshots, wrong/removed peer authority and interrupted
-intermediate installs through the automatic path, plus guided AT-owner renewal
-and scanning/expiry controls. Existing direct-recovery refusal checks are useful
+Test guided AT-owner renewal and the scanning/expiry controls. Large removal
+snapshots and automatic-path authority/intermediate-installation checks now have
+[dedicated evidence](../../docs/evidence/recovery-authority-capacity.json). Existing direct-recovery refusal checks are useful
 regression evidence, not substitutes for these cases. The new checks are added
 to future regular qualification; no new full qualification has passed yet.
 
 Then qualify a new app version and publish it. The selected public hive still
 needs a forwarding check, and S23 optical scanning/pairing and spoken TalkBack
 acceptance remain separate physical checks. Do not publish this prototype over v45.
+
+## Large removal list correction
+
+The initial 255-record test failed because the one-minute invitation deadline
+also ended an already-started recovery while valid signed metadata was being
+paced through the relay. This was an actual product limitation, not a test-only
+timeout. Separating admission from the bounded active exchange and starting the
+identity-handshake deadline after that metadata transfer fixed the case. The
+whole received snapshot is still verified before being saved, and replacement
+keys still require the existing mutual proofs and recipient acceptance. The
+extended active window applies only to recovery, not new-device enrollment.
+
+The focused capacity check is included in future release qualification:
+
+```sh
+AUTOMATIC_RECOVERY=1 RECOVERY_REMOVALS=1 \
+  node experiments/tg-pairing/automatic-enrollment.test.mjs
+```
+
+Only the owner's store is seeded with authentic issuer-signed removal records.
+The recipient must receive, verify and retain them through the real local TLS
+relay before completing recovery. Clock-boundary checks separately establish
+that an expired invitation cannot start another connection, an admitted recovery
+can pass the invitation deadline, and it still stops at its active deadline.
+The first failure and subsequent local results are retained in the evidence.

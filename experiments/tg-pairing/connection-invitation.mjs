@@ -54,6 +54,9 @@ export function connectionContext(value) {
 
 // Recovery is an invitation to contact an existing identity, never permission to
 // enroll. Keep its parser and key context distinct from the enrollment envelope.
+// Admission stays one minute. An admitted recovery may need several paced
+// batches of signed removals before its identity handshake can begin.
+export const RECOVERY_EXCHANGE_MS = 300000;
 const RECOVERY_PROFILE = 'along-recover-v1';
 const RECOVERY_FIELDS = ['profile','relay','group','owner','member','expires','secret','routingGroup','provisioner','candidate'];
 export function readRecoveryInvitation(text, {now = Date.now()} = {}) {

@@ -92,3 +92,14 @@ recovery. Component checks cover consent, Back, wrong-member refusal, keyboard,
 zoom and lost confirmation. See [guided evidence](evidence/guided-recovery-integration.json).
 Additional authority/interruption cases, guided AT renewal, release qualification
 and external/physical acceptance remain. Public v45 has not changed.
+
+Automatic-path checks now refuse forged certificates and removed members without
+sending replacement keys. A real IndexedDB abort in the second of two updates
+preserves the first committed epoch consistently, and the next recovery resumes
+from that saved state. A large signed-removal snapshot exposed an actual expiry
+bug; recovery now separates the one-minute invitation-admission window from a
+bounded five-minute active transfer and starts its identity-handshake clock after
+metadata transfer. Enrollment timing is unchanged. Capacity and deadline evidence
+is recorded in [the focused report](evidence/recovery-authority-capacity.json).
+Guided AT-owner renewal, scanning/expiry controls, full release qualification and
+external/physical acceptance remain. The public app is still v45.
