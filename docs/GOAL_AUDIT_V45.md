@@ -59,3 +59,12 @@ another user observation; opening its composer does not prove submission.
 No human coding is required. The AI performs the remaining client implementation,
 tests and release work. Do not mark the goal complete or blocked merely because
 v45 shipped or these external checks are outstanding.
+
+
+## Subsequent local progress
+
+The [first removal-delivery browser run](evidence/removal-notice-initial-browser.json)
+now passes with only the sender directly receiving the new removal. This closes
+that specific test gap, not the full security-update requirement. Adversarial,
+offline/self-removal and stale-epoch recovery cases remain; the prototype is not
+in public v45. See [implementation limits](../experiments/relay/REMOVAL_DELIVERY.md).

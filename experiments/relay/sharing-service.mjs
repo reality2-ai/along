@@ -4,6 +4,8 @@ import {createLocalRelayHello} from './local-hello.mjs';
 import {createRelayAnnouncement,acceptRelayAnnouncement} from './discovery.mjs';
 import {openRelayJourneyConnection} from './journey-connection.mjs';
 import {readJourneyPermission} from '../journey-sync/permission.mjs';
+import {exportRemovalSet,receiveRemovalSet} from '../tg-pairing/removal-set.mjs';
+import {isRemovalNotice,removalNoticePackets,readRemovalNotice} from './removal-notices.mjs';
 const hex=b=>Array.from(b,v=>v.toString(16).padStart(2,'0')).join('');
 const discovery=new TextEncoder().encode('ALNRDS01'),application=new TextEncoder().encode('ALNRLY01');
 const starts=(bytes,prefix)=>bytes.length>=prefix.length&&prefix.every((v,i)=>bytes[i]===v);
@@ -19,11 +21,12 @@ export async function openRelaySharingService({wasm,store,expectedGroup,member,g
   if(!saved.enabled||!saved.url)return null;
   let closed=false,connected=false,transport,watchTimer,announceTimer,announcement,permissionRevision,membershipRevision,networkGeneration=0;
   let incoming=Promise.resolve(),outgoing=Promise.resolve(),pendingIn=0,pendingOut=0;
+  let notices=[],noticeCursor=0,lastNoticeBatch=-Infinity;
   const peers=new Map(),lifetime=new AbortController();
   const status=(state,peer)=>{try{onStatus({state,peer});}catch{}};
   const close=()=>{
     if(closed)return;closed=true;networkGeneration++;lifetime.abort();signal?.removeEventListener('abort',close);
-    clearTimeout(watchTimer);clearTimeout(announceTimer);for(const entry of peers.values())entry.connection?.close();peers.clear();transport?.disconnect();status('stopped');
+    clearTimeout(watchTimer);clearTimeout(announceTimer);notices=[];for(const entry of peers.values())entry.connection?.close();peers.clear();transport?.disconnect();status('stopped');
   };
   const current=()=>{if(closed||signal?.aborted)throw Error('Relay sharing stopped');};
   const guard=async()=>{
@@ -38,11 +41,34 @@ export async function openRelaySharingService({wasm,store,expectedGroup,member,g
   };
   const announce=()=>{
     clearTimeout(announceTimer);if(closed||!connected||!announcement)return;
-    try{send(announcement);announceTimer=setTimeout(announce,10000);}catch{close();}
+    try{
+      // Repeated bounded gossip catches up devices returning online. The normal
+      // origin pacer also applies. A send is not a remote-save acknowledgement.
+      const now=Date.now();
+      if(notices.length&&now-lastNoticeBatch>=10000){
+        lastNoticeBatch=now;
+        for(let i=0;i<Math.min(4,notices.length);i++)send(notices[noticeCursor++%notices.length]);
+      }
+      send(announcement);announceTimer=setTimeout(announce,10000);
+    }catch{close();}
+  };
+  const refreshAnnouncement=async n=>{
+    const next=removalNoticePackets({expectedGroup:group,text:await exportRemovalSet(options)});
+    const value=await createRelayAnnouncement({...options,signal:lifetime.signal});
+    await guard();if(n!==networkGeneration||!connected)return;
+    notices=next;noticeCursor=0;announcement=value;announce();
   };
   const dispatch=async(bytes,n)=>{
     await guard();if(n!==networkGeneration||!connected)return;
-    if(bytes.length===304&&starts(bytes,discovery)){
+    if(isRemovalNotice(bytes)){
+      // Group traffic authentication alone is insufficient. Existing membership
+      // code verifies the issuer signature and commits atomically before success.
+      try{
+        const text=readRemovalNotice({expectedGroup:group,packet:bytes});
+        const result=await receiveRemovalSet({...options,text,signal:lifetime.signal});
+        if(result.added)status('removal-saved');
+      }catch{ /* Invalid, stale or unreadable evidence cannot change authority. */ }
+    }else if(bytes.length===304&&starts(bytes,discovery)){
       let hint;try{hint=await acceptRelayAnnouncement({...options,packet:bytes,signal:lifetime.signal});}catch{return;}
       current();if(n!==networkGeneration||!connected)return;
       const id=hex(hint.peer);if(peers.has(id)||peers.size>=16)return;
@@ -84,8 +110,7 @@ export async function openRelaySharingService({wasm,store,expectedGroup,member,g
         const previous=[...peers];peers.clear();
         for(const [id,entry] of previous){entry.connection?.close();status(permission.peers.includes(id)?(membershipChanged?'membership-changed':'permission-changed'):'permission-removed',id);}
         if(connected){
-          const n=networkGeneration,value=await createRelayAnnouncement({...options,signal:lifetime.signal});
-          await guard();if(n===networkGeneration&&connected){announcement=value;announce();}
+          await refreshAnnouncement(networkGeneration);
         }
       }
       watchTimer=setTimeout(()=>{void watch();},1000);
@@ -104,7 +129,7 @@ export async function openRelaySharingService({wasm,store,expectedGroup,member,g
         if(closed)return;connected=s==='connected';const n=++networkGeneration;clearTimeout(announceTimer);announcement=undefined;
         for(const entry of peers.values())if(entry.active)entry.callbacks.onStatus(s);
         status('relay-'+s);
-        if(connected)void (async()=>{await guard();const value=await createRelayAnnouncement({...options,signal:lifetime.signal});await guard();if(n===networkGeneration&&connected){announcement=value;announce();}})().catch(()=>{if(!closed&&n===networkGeneration)close();});
+        if(connected)void (async()=>{await guard();await refreshAnnouncement(n);})().catch(()=>{if(!closed&&n===networkGeneration)close();});
       },onFrame:bytes=>{
         if(closed||!connected||pendingIn>=32)return;
         const copy=bytes.slice(),n=networkGeneration;pendingIn++;

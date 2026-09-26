@@ -1,0 +1,26 @@
+{
+  "status": "passed",
+  "scope": "Issuer-signed third-member removal is applied only to the sending store. The receiving enrolled store learns it via local TLS current-hive stand-in, then renews sessions and shares a new journey snapshot. Independent stores on one browser host; not external hive or physical acceptance.",
+  "command": "ENROLLED_RELAY_NETWORK=1 node experiments/at-credentials/peer-delivery.test.mjs",
+  "files_sha256": {
+    "experiments/relay/removal-notices.mjs": "b1331d5bb47336473c9de5011639e782ddb02750de8e0d761c433e7383dbb362",
+    "experiments/relay/sharing-service.mjs": "bb4a11088afc2dec58872ff0d7a24268b9935f10743f82ffb2e8b84d1e504136",
+    "experiments/relay/service-check.mjs": "cf44856cd2526296e53eae02cd4c063f32173be25ac9054240b8f22340f29563",
+    "experiments/at-credentials/peer-delivery.test.mjs": "207f8e974701406e72212febbb4e43dcd4fd8d00dc0a24335aef2c0f98fdafc8"
+  },
+  "log_sha256": "fcabb1f36442af88ea2b8d8bc746721c00b7abb3f46f72c2daf3f6124d1596f1",
+  "relay": {
+    "connections": 8,
+    "frames": 1539,
+    "limited": 0
+  },
+  "pending": [
+    "Adversarial packet delivery",
+    "Offline removal catch-up",
+    "Self-removal",
+    "Cancellation/storage-failure cases",
+    "Stale-epoch key recovery",
+    "Release qualification",
+    "Public-hive and physical acceptance"
+  ]
+}

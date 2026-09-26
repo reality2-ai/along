@@ -40,14 +40,17 @@ export async function checkRelayService({wasm,owner,receiver,group}) {
     const renewed=await services[0].synchronize();
     check(renewed.length===1&&renewed[0].status==='fulfilled','permission revision restores exactly one peer');
     check(JSON.stringify((await replicas[0].read()).state)===JSON.stringify((await replicas[1].read()).state),'renewed permission shares new snapshot');
-    // An explicitly received, valid removal changes membership even when this
-    // connected pair remains permitted. Resume using freshly audited sessions.
+    // Only the sender learns this removal directly. The other store must receive
+    // and verify it through the actual relay before its sessions are renewed.
     const membershipReceipts=states.map(s=>s.filter(v=>v==='peer-saved-snapshot').length);
     const issuer=await loadSoftwareIssuer({wasm,store:owner.store,expectedGroup:group});
     let removal;
     try{removal=encodeRemoval(group,await issuer.issueRevocation({subject:new Uint8Array(32).fill(77),sequence:1n,reason:0}));}
     finally{issuer.close();}
-    for(const device of devices)await receiveRemoval({wasm,store:device.store,expectedGroup:group,text:removal});
+    check(!(await receiver.store.read('membership',hex(group))).value.revocations.some(r=>hex(r.subject)==='4d'.repeat(32)),'receiver starts without removal');
+    await receiveRemoval({wasm,store:owner.store,expectedGroup:group,text:removal});
+    await wait(()=>states[1].includes('removal-saved'));
+    check((await receiver.store.read('membership',hex(group))).value.revocations.some(r=>hex(r.subject)==='4d'.repeat(32)),'receiver learned signed removal through relay');
     await wait(()=>states.every(s=>s.includes('membership-changed')));
     await wait(()=>states.every((s,i)=>s.filter(v=>v==='peer-saved-snapshot').length>membershipReceipts[i]));
     await replicas[0].save(projectJourney({from:point('relay-service-home'),to:point('relay-service-membership-renewed')}));

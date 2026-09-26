@@ -1,6 +1,9 @@
 # Building the current Along app
 
-Published Along is version **45**; see the [release record](RELEASE_V45.md). Device Preview **3806** is a separate installation.
+Published Along is version **45**; see the [release record](RELEASE_V45.md).
+The current checkout also contains an unqualified [removal-notice delivery prototype](../experiments/relay/REMOVAL_DELIVERY.md).
+Use the pinned release source below or its ZIP to reproduce published v45; do not
+publish a new build from HEAD under the existing version. Device Preview **3806** is a separate installation.
 For use or hosting, take the [v45 release ZIP and checksum](https://github.com/reality2-ai/along/releases/tag/v0.45.0).
 Serve the whole extracted package over HTTPS, including `experiments/` and `data/`.
 The package needs no Along server. See [installation](INSTALL.md) and
