@@ -1,7 +1,8 @@
 // Node-side check: only the initial recovery invitation crosses via the harness.
 // Every removal, offer, answer, identity proof, epoch and receipt uses TLS relay.
 import assert from 'node:assert/strict';
-export async function checkAutomaticEpochRecovery(pages, relayURL) {
+import {checkGuidedEpochRecovery} from './automatic-epoch-recovery-view-check.mjs';
+export async function checkAutomaticEpochRecovery(pages, relayURL, {guided=false,stats}={}) {
   const [recipient,owner] = pages;
   const peer = await recipient.evaluate(async () => {
     window.wasm = await import('./hive_wasm.js'); await wasm.default();
@@ -24,6 +25,7 @@ export async function checkAutomaticEpochRecovery(pages, relayURL) {
     const owner = Array.from(saved.record.subject,b=>b.toString(16).padStart(2,'0')).join('');
     return (await import('./connection-invitation.mjs')).createRecoveryInvitation({...peer,owner,relay:relayURL});
   },{peer,relayURL});
+  if(guided){await checkGuidedEpochRecovery({pages,peer,relayURL,stats});return;}
   const makeInvitation = () => owner.evaluate(async ({peer,relayURL}) => {
     const saved=(await store.read('candidate-persona','active')).value;
     const owner=Array.from(saved.record.subject,b=>b.toString(16).padStart(2,'0')).join('');

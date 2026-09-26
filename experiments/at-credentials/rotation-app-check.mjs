@@ -35,10 +35,12 @@ export async function checkAppRotation({owner, recipient, move, atBinding = true
   await owner.getByRole('heading', {name: 'Group keys updated on this device', exact: true}).waitFor();
   await owner.getByRole('button', {name: 'Back', exact: true}).click();
   await owner.getByText(/^(Advanced device options|Connect or recover another device)$/, {exact: true}).click();
-  await owner.getByRole('button', {name: 'Send a group key update', exact: true}).click();
+  // This regression deliberately exercises Advanced's manual fallback. Guided
+  // relay recovery has its own generated-app check; do not conflate the paths.
+  await owner.getByRole('button', {name: 'Manual key-update exchange', exact: true}).click();
   const member = before[1].member;
   await owner.getByRole('button', {name: `Device ${member.slice(0, 8)}…${member.slice(-8)}`, exact: true}).click();
-  await recipient.getByRole('button', {name: 'Receive a group key update', exact: true}).click();
+  await recipient.getByRole('button', {name: 'Manual key-update exchange', exact: true}).click();
   await owner.getByRole('heading', {name: 'Connect the device to update', exact: true}).waitFor();
   await move(owner, recipient, 'Starting message from your other device', 'Create update request');
   await recipient.getByRole('heading', {name: 'Send your update request', exact: true}).waitFor();

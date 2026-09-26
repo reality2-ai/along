@@ -1,7 +1,8 @@
 # Guided recovery transport prototype
 
-This is development work after public v45. It is not yet connected to the app's
-recovery screens or published. Normal guided enrollment remains a separate flow.
+This is development work after public v45. Guided recovery screens are now
+connected to the app and tested locally, but not published. Normal guided
+enrollment remains a separate flow.
 
 The owner selects an existing member and creates one short-lived recovery
 invitation for an explicitly chosen relay. The recipient must already hold that
@@ -19,8 +20,9 @@ and signed installation receipts remain in charge of sending and saving updates.
   routing identities are bound into the outer channel's key context.
 - A fresh 256-bit invitation secret protects the bootstrap channel independently
   of the group's old or new traffic keys. The link uses `#recover=`, so its secret
-  is not an HTTP query. The future receiving screen must clear the fragment from
-  browser history immediately and obtain relay consent before networking.
+  is not an HTTP query. The app consumes and clears the fragment from browser
+  history before opening the guided review; recipient networking requires a
+  trusted consent action.
 - Recovery peer traffic has an additional ephemeral P-256 ECDH / HKDF-SHA256 /
   AES-256-GCM layer. Both public contributions and nonces enter the transcript
   that the existing identity proofs authenticate. Directional keys and ordered
@@ -72,14 +74,50 @@ ECDH private key. They do not establish formal protocol security.
 
 See [dated evidence](../../docs/evidence/automatic-recovery-transport.json).
 
+## Guided screens and generated-app checks
+
+`automatic-epoch-recovery-view.mjs` provides the selected owner's update invitation,
+recipient scan/link review and relay consent, automatic connection-message
+exchange, and existing recipient key-installation review. After recipient
+acceptance, the owner sends automatically and waits for a signed confirmation.
+The recipient's local-success message survives a deliberately lost final receipt;
+a new invitation can confirm that installation without replacing it.
+
+App Settings opens this flow from the device picker or an incoming `#recover=`
+link. The saved selected relay can prefill the owner's explicit invitation action.
+The manual exchange remains available under Advanced. Successful recipient
+recovery retains the existing callback for renewing evidence of an already-pinned
+AT owner; no AT access is granted by recovery. New automatic-path AT renewal still
+needs its own test, distinct from the existing manual fallback regression.
+
+```sh
+GUIDED_RECOVERY=1 node experiments/tg-pairing/automatic-enrollment.test.mjs
+# Build the local integration app first (never publish that build):
+python3 scripts/build_experimental_app.py --runtime releases/along-r2-runtime-public-82377f1
+GUIDED_RECOVERY_APP=1 GUIDED_OFFLINE=1 node experiments/relay/guided-app.test.mjs
+```
+
+[Guided evidence](../../docs/evidence/guided-recovery-integration.json) records
+wrong-member refusal before network, consent, fragment removal, Back, trusted
+keyboard acceptance, 320px/200% layout, axe and lost-confirmation recovery. The
+first consent assertion raced the owner's socket opening; the corrected test
+waits for that actual connection before measuring recipient consent. It did not
+change the app to make that assertion pass.
+
+The generated-app test creates actual devices through the UI, rotates keys,
+selects the enrolled device, opens the update link through actual app startup,
+accepts the update and confirms that saved places remain. It then removes a saved
+place offline, reloads offline, reconnects and observes automatic propagation and
+online reload on both copies. No return QR or manual reply transfer is used.
+
 ## Remaining work
 
-Connect this transport to the owner and recipient guided screens, hide manual
-exchange under Advanced, remove invitation fragments promptly, and verify actual
-user consent, Back/cancel, expired invitations and truthful partial-installation
-messages there. Test large removal snapshots, wrong/removed peers and interrupted
-intermediate installs through this new automatic path. Existing direct-recovery
-refusal checks are useful regression evidence, not substitutes for these cases.
+Test large removal snapshots, wrong/removed peer authority and interrupted
+intermediate installs through the automatic path, plus guided AT-owner renewal
+and scanning/expiry controls. Existing direct-recovery refusal checks are useful
+regression evidence, not substitutes for these cases. The new checks are added
+to future regular qualification; no new full qualification has passed yet.
+
 Then qualify a new app version and publish it. The selected public hive still
 needs a forwarding check, and S23 optical scanning/pairing and spoken TalkBack
 acceptance remain separate physical checks. Do not publish this prototype over v45.

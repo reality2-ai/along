@@ -76,6 +76,39 @@ try{
   const saved=page=>page.evaluate(key=>JSON.parse(localStorage.getItem(key)).journeys.filter(j=>j.saved),manifest.namespaces?.preferences||'along-journeys-v1');
   for(const p of pages)await expect.poll(async()=>(await saved(p)).length,{timeout:90000}).toBe(2);
   assert.deepEqual((await saved(owner)).map(j=>j.to.id).sort(),(await saved(candidate)).map(j=>j.to.id).sort());
+  if(process.env.GUIDED_RECOVERY_APP==='1'){
+    const before=await saved(candidate);
+    await owner.locator('#settings-open').click();
+    await owner.getByRole('button',{name:/^(My devices|Device and AT-key setup)$/,exact:true}).click();
+    await owner.getByText('Advanced device options',{exact:true}).click();
+    await owner.getByRole('button',{name:'Update group keys on this device',exact:true}).click();
+    await owner.getByRole('button',{name:'Update keys on this device',exact:true}).click();
+    await owner.getByRole('heading',{name:'Group keys updated on this device',exact:true}).waitFor();
+    await owner.getByRole('button',{name:'Back',exact:true}).click();
+    await owner.getByText('Advanced device options',{exact:true}).click();
+    await owner.getByRole('button',{name:'Send a group key update',exact:true}).click();
+    await owner.getByRole('button',{name:/^Device [0-9a-f]/}).click();
+    await owner.getByRole('heading',{name:'Update your other device',exact:true}).waitFor();
+    assert.equal(await owner.getByLabel('Relay server address',{exact:true}).inputValue(),endpoint,'Uses saved selected relay');
+    await owner.getByRole('button',{name:'Create update invitation',exact:true}).click();
+    const updateLink=await owner.getByLabel('Update invitation link',{exact:true}).inputValue();
+    await candidate.goto(updateLink);
+    await candidate.getByRole('heading',{name:'Reconnect for a device update?',exact:true}).waitFor();
+    assert.equal(new URL(candidate.url()).hash,'','Actual app startup consumes recovery fragment');
+    await candidate.getByRole('button',{name:'Connect and review update',exact:true}).click();
+    await candidate.getByRole('button',{name:'Receive group key update',exact:true}).click();
+    await candidate.getByRole('heading',{name:'Group keys saved on this device',exact:true}).waitFor();
+    await owner.getByRole('heading',{name:'Other device confirmed its keys',exact:true}).waitFor();
+    assert.deepEqual(await saved(candidate),before,'Recovery preserves saved places');
+    await owner.getByRole('button',{name:'Done',exact:true}).click();
+    await owner.getByRole('button',{name:'Back',exact:true}).click();
+    await candidate.getByRole('button',{name:'Back',exact:true}).click();
+    for(const p of pages){
+      await p.getByRole('button',{name:'Back to settings',exact:true}).click();
+      await p.getByRole('button',{name:'Close settings',exact:true}).click();
+    }
+    console.log('PASS: actual generated app rotates keys through UI, selects existing device, opens one recovery link via app bootstrap, reviews and confirms update with saved places preserved; manual exchange remains under Advanced.');
+  }
   if(process.env.GUIDED_OFFLINE==='1'){
     // Local test certificate must be trusted by Chromium's service-worker process too.
     await candidate.evaluate(()=>navigator.serviceWorker.ready);

@@ -1,0 +1,69 @@
+{
+  "recordedAt": "2026-09-26T01:25:24.826479+00:00",
+  "baseSource": "8eed37d",
+  "published": false,
+  "publicVersion": 45,
+  "currentSourceSha256": {
+    "experiments/tg-pairing/automatic-epoch-recovery-view.mjs": "776f621d54836c9e1b2a355c849167ab8531e92ebcdd8b0fbdcf119a95f99624",
+    "experiments/tg-pairing/automatic-epoch-recovery-view-check.mjs": "4c6af56fe4608d6c42f15bb4c86fe345ba97295e558fe4a4488da396680c6688",
+    "experiments/tg-pairing/automatic-epoch-recovery-check.mjs": "4c9c3bf09d826aa0daf164f57413a291c70901c885dccb8d072e83b4745fb91d",
+    "experiments/tg-pairing/automatic-enrollment.test.mjs": "0be4cb7d67f3e4cee5edd59d815846a7add90eea76d2399301a170fe25263469",
+    "experiments/at-credentials/app-device-settings.mjs": "a2eb18b664f621ca3be9ef742127793521c2f9a9949e2c5b0b95b935c498f8dc",
+    "experiments/tg-pairing/automatic-pairing-view.mjs": "4781074b4ec8cc9e48f2e40cdc0c85e33b04297aa6e3889c4887c41c13ec7132",
+    "experiments/tg-pairing/member-devices-view.mjs": "2642bd1eb1da2fac4e6520641e4f9fd8cbb92fc9dc68586465c645e84a612032",
+    "experiments/relay/guided-app.test.mjs": "3ed257c3c517538a649e931e4997deb2baccbd6e67f54ffd7c41a6e04c895fef"
+  },
+  "generatedApp": {
+    "manifestSha256": "ab2d62894c5edff747ec5809cedeed5b2fe0484e5695c113547ab807efe7c41c",
+    "profile": "along-experimental-app-v1",
+    "testedPayloads": {
+      "experiments/at-credentials/app-device-settings.mjs": "a2eb18b664f621ca3be9ef742127793521c2f9a9949e2c5b0b95b935c498f8dc",
+      "experiments/tg-pairing/automatic-epoch-recovery-view.mjs": "776f621d54836c9e1b2a355c849167ab8531e92ebcdd8b0fbdcf119a95f99624",
+      "experiments/tg-pairing/automatic-pairing-view.mjs": "4781074b4ec8cc9e48f2e40cdc0c85e33b04297aa6e3889c4887c41c13ec7132",
+      "experiments/tg-pairing/member-devices-view.mjs": "78fd5ba415d49fb3c8393c83e214bd1cd8c034b63c6290d5a7cd8b4726261ed7"
+    },
+    "note": "One explanatory device-picker sentence was updated after the generated-app run; no behavior changed. Future full release qualification remains required."
+  },
+  "checks": [
+    {
+      "command": "GUIDED_RECOVERY=1 node experiments/tg-pairing/automatic-enrollment.test.mjs",
+      "exitCode": 0,
+      "relay": {
+        "connections": 9,
+        "frames": 283,
+        "limited": 0
+      },
+      "scope": "Two isolated Chromium contexts, actual verifier and durable storage, local TLS relay, WebRTC disabled. Wrong member refused before network; fragment removed; trusted relay consent and update acceptance; Back; keyboard; 320px/200% and axe; injected final receipt loss; receipt-only retry."
+    },
+    {
+      "command": "GUIDED_RECOVERY_APP=1 GUIDED_OFFLINE=1 node experiments/relay/guided-app.test.mjs",
+      "exitCode": 0,
+      "scope": "Generated experimental app; fresh devices enrolled through UI, separate sharing choices, rotation and recovery through Settings/device picker/actual invitation startup. Saved places preserved. Offline saved-place removal survives offline reload and later propagates automatically; both copies verified after online reload."
+    }
+  ],
+  "initialFailure": {
+    "exitCode": 1,
+    "reason": "Consent assertion captured connection count before owner WebSocket opened; corrected test waits for that specific owner connection before observing recipient consent. No app relaxation."
+  },
+  "logs": {
+    "releases/guided-recovery-first.log": {
+      "sha256": "3077718f2f629a321783acbdaecf78b8615cff20bc51c95f63915cce88664dc0",
+      "output": "Non-secret connection diagnostics: {\"sent\":[\"challenge\",\"proof\",\"offer\",\"answer\"],\"relay\":{\"connections\":3,\"frames\":71,\"limited\":0,\"plaintextObserved\":false},\"profiles\":[{},{\"ready\":true,\"errors\":[],\"status\":[\"connecting\",\"connected\"]}]}\nnode:internal/modules/run_main:107\n    triggerUncaughtException(\n    ^\n\nAssertionError [ERR_ASSERTION]: Viewing incoming invitation opens no relay connection\n\n3 !== 2\n\n    at connect (file:///home/roycdavies/Development/AT/experiments/tg-pairing/automatic-epoch-recovery-view-check.mjs:42:12)\n    at async checkGuidedEpochRecovery (file:///home/roycdavies/Development/AT/experiments/tg-pairing/automatic-epoch-recovery-view-check.mjs:48:5)\n    at async checkAutomaticEpochRecovery (file:///home/roycdavies/Development/AT/experiments/tg-pairing/automatic-epoch-recovery-check.mjs:28:14)\n    at async file:///home/roycdavies/Development/AT/experiments/tg-pairing/automatic-enrollment.test.mjs:251:5 {\n  generatedMessage: false,\n  code: 'ERR_ASSERTION',\n  actual: 3,\n  expected: 2,\n  operator: 'strictEqual',\n  diff: 'simple'\n}\n\nNode.js v26.8.1\n"
+    },
+    "releases/guided-recovery-refusal.log": {
+      "sha256": "997a8c92a3bda3aa57cdc33929626bac993a6699156954d5b8ad5f518e79adfb",
+      "output": "PASS: guided recovery link clears fragment, wrong-member refusal, no recipient network before trusted consent, Back preserves old keys, keyboard acceptance, 320px/200% and axe, lost confirmation retains local success, new invitation confirms without rewriting installation. Local TLS relay; WebRTC disabled.\nRecovery relay counts: {\"connections\":9,\"frames\":283,\"limited\":0,\"plaintextObserved\":false}\nPASS: automatic challenge/proof/offer/answer with actual software identities, verified proof, relay-carried comparison with WebRTC disabled, explicit confirmation, durable installation/acknowledgment and reload. Current hive binding through local relay with protected invitation channel. Harness supplies reviewed invitation; not public rendezvous or physical acceptance.\n"
+    },
+    "releases/guided-recovery-app.log": {
+      "sha256": "ac6a6849214ce7a86cc79f8ac5a5fdc4d7c457077c1764af1aa3dd0e9947a1f8",
+      "output": "PASS: actual generated app rotates keys through UI, selects existing device, opens one recovery link via app bootstrap, reviews and confirms update with saved places preserved; manual exchange remains under Advanced.\nPASS: fresh guided connection preserves an offline saved-place removal across offline reload, then automatically reconnects and propagates it without another invitation; both copies survive online reload. HTTP offline emulation plus explicit WebSocket blocking.\nPASS: generated app on subpath, fresh devices set up through UI, single invitation link, fragment removed, comparison, separate sharing consent and automatic relay delivery of both saved-place pairs; no return QR or separate journey ceremony. Local hive stand-in; no deployed-host or physical acceptance claim.\n"
+    }
+  },
+  "limits": [
+    "No public deployment or full new-release qualification.",
+    "Local TLS hive stand-in, not proof of public-hive forwarding.",
+    "Link transfer by test harness, not optical QR or physical device acceptance.",
+    "No TalkBack observation.",
+    "Automatic guided AT-owner renewal and further authority/intermediate-commit cases remain."
+  ]
+}

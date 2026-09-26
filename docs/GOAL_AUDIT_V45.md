@@ -83,3 +83,12 @@ mutual identity and acceptance checks, and independent ephemeral protection for
 replacement keys. Guided-screen integration and further refusal/interruption
 checks remain; it is not in public v45 and does not resolve public-hive or device
 acceptance. The goal remains active.
+
+Guided recovery is now integrated in the development app. The local generated-app
+check covers Settings, the existing-device picker, actual recovery-fragment
+startup, acceptance, installation confirmation and preserved saved places. An
+offline saved-place removal subsequently reconnects and propagates after key
+recovery. Component checks cover consent, Back, wrong-member refusal, keyboard,
+zoom and lost confirmation. See [guided evidence](evidence/guided-recovery-integration.json).
+Additional authority/interruption cases, guided AT renewal, release qualification
+and external/physical acceptance remain. Public v45 has not changed.

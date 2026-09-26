@@ -2,7 +2,7 @@
 // journey access implicitly. The app supplies the subsequent sharing review.
 import {initializeLocalPersona} from './initial-persona.mjs';
 import {createSoftwareInvitation} from './software-invitation.mjs';
-import {createConnectionInvitation,readConnectionInvitation,connectionInvitationLink,invitationFromLink} from './connection-invitation.mjs';
+import {createConnectionInvitation,readConnectionInvitation,connectionInvitationLink,invitationFromLink,recoveryInvitationFromLink} from './connection-invitation.mjs';
 import {initializeSoftwarePersona} from './software-persona.mjs';
 import {createInvitationChannel} from './invitation-channel.mjs';
 import {createAutomaticEnrollment} from './automatic-enrollment.mjs';
@@ -13,10 +13,11 @@ const mounted = new WeakMap();
 // Call as early as app startup, before asynchronous work or optional telemetry.
 // Parsing never opens a network connection; the view obtains explicit consent.
 export function consumeConnectionFragment(location, history) {
-  if (!location.hash.startsWith('#connect=')) return undefined;
+  const recovery=location.hash.startsWith('#recover=');
+  if (!recovery && !location.hash.startsWith('#connect=')) return undefined;
   const href = location.href;
   history.replaceState(history.state,'',location.pathname + location.search);
-  try { return {invitation:invitationFromLink(href)}; }
+  try { return recovery?{recovery:true,invitation:recoveryInvitationFromLink(href)}:{invitation:invitationFromLink(href)}; }
   catch { return {invalid:true}; }
 }
 export function showAutomaticPairing(container,{wasm,store,role,expectedGroup,relay='',connectionText,createLocalGroup=false,

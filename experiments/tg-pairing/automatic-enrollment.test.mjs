@@ -1,7 +1,7 @@
 // Actual browser-software issuer and core enrollment; harness supplies initial trust and signaling.
 import assert from 'node:assert/strict';
 import {checkAutomaticEpochRecovery} from './automatic-epoch-recovery-check.mjs';
-const recoveryMode = process.env.AUTOMATIC_RECOVERY === '1';
+const recoveryMode = process.env.AUTOMATIC_RECOVERY === '1' || process.env.GUIDED_RECOVERY === '1';
 import AxeBuilder from '@axe-core/playwright';
 const guidedMode=process.env.GUIDED_PAIRING==='1';
 const guidedScan=process.env.GUIDED_SCAN==='1';
@@ -23,7 +23,7 @@ if (!process.env.R2_BROWSER_DIR) throw new Error('Set R2_BROWSER_DIR to the expe
 if (!process.env.R2_WASM_DIR) throw new Error('Set R2_WASM_DIR');
 const sources = new Map(await Promise.all(['peer-session', 'challenge', 'session-statement', 'membership', 'certificate', 'enrollment-session', 'storage', 'invitation-journal', 'enrollment-link', 'enrollment-exchange', 'enrollment-protection', 'peer-link', 'invitation'].map(async name => ['/' + name + '.mjs', await readFile(join(process.env.R2_BROWSER_DIR, name + '.mjs'))])));
 for (const name of ['enrollment-profile.mjs', 'enrollment-payloads.mjs', 'core-candidate-session.mjs', 'software-traffic.mjs', 'initial-persona.mjs', 'software-persona.mjs', 'software-invitation.mjs', 'invitation-proof.mjs', 'transfer-view.mjs', 'receive-invitation-view.mjs', 'stored-claim.mjs', 'installation-receipt.mjs', 'local-persona.mjs', 'local-persona-session.mjs', 'epoch-watch.mjs', 'receipt-recovery.mjs', 'recovery-link-protection.mjs', 'relay-enrollment-peer.mjs', 'relay-enrollment-link.mjs', 'relay-enrollment-session.mjs', 'automatic-signalling.mjs', 'automatic-enrollment.mjs', 'connection-invitation.mjs', 'invitation-channel.mjs', 'invitation-channel-checks.mjs', 'automatic-pairing-view.mjs', 'connected-sharing-view.mjs', 'comparison.mjs', 'comparison.css']) sources.set('/' + name, await readFile(new URL('./' + name, import.meta.url)));
-if (recoveryMode) for (const name of ['automatic-epoch-recovery.mjs','epoch-transition.mjs','epoch-preparation.mjs','epoch-recovery-material.mjs','epoch-installation.mjs','epoch-recovery-proof.mjs','epoch-recovery-session.mjs','epoch-recovery-receipt.mjs','removal-set.mjs']) sources.set('/'+name,await readFile(new URL('./'+name,import.meta.url)));
+if (recoveryMode) for (const name of ['automatic-epoch-recovery-view.mjs','epoch-recovery-view.mjs','automatic-epoch-recovery.mjs','epoch-transition.mjs','epoch-preparation.mjs','epoch-recovery-material.mjs','epoch-installation.mjs','epoch-recovery-proof.mjs','epoch-recovery-session.mjs','epoch-recovery-receipt.mjs','removal-set.mjs']) sources.set('/'+name,await readFile(new URL('./'+name,import.meta.url)));
 for (const name of ['hive_wasm.js', 'hive_wasm_bg.wasm']) sources.set('/' + name, await readFile(join(process.env.R2_WASM_DIR, name)));
 for (const name of ['qr-transfer.mjs', 'vendor/qrcode.mjs']) sources.set('/' + name, await readFile(new URL(name, import.meta.url)));
 for (const name of await readdir(new URL('../r2-current/',import.meta.url))) {
@@ -248,7 +248,7 @@ try {
   },{expectedGroup,acknowledged:guidedInterrupt!=='install'}),true);
   if (relayMode) { assert.equal(relay.stats().connections,2); assert.equal(relay.stats().limited,0); }
   if(recoveryMode) {
-    await checkAutomaticEpochRecovery(pages,`wss://127.0.0.1:${server.address().port}/r2`);
+    await checkAutomaticEpochRecovery(pages,`wss://127.0.0.1:${server.address().port}/r2`,{guided:process.env.GUIDED_RECOVERY==='1',stats:()=>relay.stats()});
     assert.equal(relay.stats().limited,0);
     console.log('Recovery relay counts:',JSON.stringify(relay.stats()));
   }

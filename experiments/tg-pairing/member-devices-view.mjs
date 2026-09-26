@@ -7,7 +7,7 @@ import {readRecoveryReceipt} from './epoch-recovery-receipt.mjs';
 import {restoreIssuedMembers} from './legacy-members.mjs';
 
 let nextDescription = 0;
-export function showMemberDevices(container, {wasm, store, expectedGroup, databaseName, purpose = 'review', focus = false, onBack = () => {}}) {
+export function showMemberDevices(container, {wasm, store, expectedGroup, databaseName, purpose = 'review', recoveryView = showEpochRecoveryFlow, relay = '', focus = false, onBack = () => {}}) {
   if (!['review', 'update'].includes(purpose)) throw Error('Device list purpose unavailable');
   const updating = purpose === 'update';
   const group = expectedGroup.slice(), document = container.ownerDocument;
@@ -22,7 +22,7 @@ export function showMemberDevices(container, {wasm, store, expectedGroup, databa
     reading = new AbortController();
     const heading = node('h2', updating ? 'Choose a device to update' : 'Devices issued membership here'); heading.tabIndex = -1;
     const status = node('p', 'Checking saved device certificates…'); status.setAttribute('role', 'status');
-    const explanation = node('p', updating ? 'Choose your other device, then open Receive a group key update there. A saved certificate does not mean it is online or finished joining.' : 'Choose a device to review its group removal. A saved certificate does not mean the device finished joining or is online. Completed older enrollments are recovered from saved receipts; interrupted older enrollments may still be missing.');
+    const explanation = node('p', updating ? (recoveryView === showEpochRecoveryFlow ? 'Choose your other device, then open Receive a group key update there. A saved certificate does not mean it is online or finished joining.' : 'Choose your other device to create an update invitation. Open that invitation there. A saved certificate does not mean it is online or finished joining.') : 'Choose a device to review its group removal. A saved certificate does not mean the device finished joining or is online. Completed older enrollments are recovered from saved receipts; interrupted older enrollments may still be missing.');
     const list = node('div', '');
     const back = node('button', 'Back'); back.type = 'button'; back.addEventListener('click', leave);
     panel.append(heading, explanation, status, list, back); container.append(panel);
@@ -45,7 +45,7 @@ export function showMemberDevices(container, {wasm, store, expectedGroup, databa
         button.addEventListener('click', event => {
           if (!event.isTrusted || !current(selected) || button.disabled) return;
           if (updating) {
-            clear(); child = showEpochRecoveryFlow(container, {wasm, store, expectedGroup: group, role: 'owner', peer: entry.subject, focus, onBack: home});
+            clear(); child = recoveryView(container, {relay, wasm, store, expectedGroup: group, role: 'owner', peer: entry.subject, focus, onBack: home});
             return;
           }
           clear(); child = showMemberRemoval(container, {wasm, store, expectedGroup: group,

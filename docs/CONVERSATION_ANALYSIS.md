@@ -1750,3 +1750,25 @@ user acceptance evidence. The prototype has not reached the guided screens or
 public app, and a local relay is not the selected deployed hive. See the
 [development record](../experiments/tg-pairing/AUTOMATIC_RECOVERY.md) for scope,
 limits and remaining checks. No human coding was required.
+
+### Recovery needs the same progressive disclosure as first connection (26 September)
+
+The development app now uses one update invitation for an existing device,
+followed by relay consent and a review of the verified key update. It sends
+connection replies automatically and places the older manual exchange under
+Advanced. This extends **reduce user coordination** to recovery instead of
+limiting the simpler design to first-time setup.
+
+The browser checks distinguish an incorrectly addressed invitation, cancellation
+before acceptance, local installation and the other device's signed confirmation.
+A generated-app check also follows recovery with an offline saved-place removal
+and later synchronisation. Code this as **preserve the commuter's ongoing task**:
+successful key exchange would be insufficient if saved journeys or subsequent
+sharing were broken. The first no-network-before-consent assertion raced the
+owner's socket opening; waiting for that actual socket corrected the measurement,
+without relaxing the recipient's consent rule.
+
+These are local automated observations. They do not establish S23 optical scan
+comfort, spoken screen-reader usability or forwarding by the public hive. The
+[guided integration evidence](evidence/guided-recovery-integration.json) retains
+that boundary, and public v45 remains unchanged until a new release is qualified.
