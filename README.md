@@ -27,6 +27,11 @@ connectivity will not remove offline planning. Choose **Leave at** or **Arrive b
 including the walk to your destination. Open a saved shortcut to remove it directly
 from the journey-options screen.
 
+**In development:** [version 44](docs/RELEASE_V44.md) simplifies connection to one
+invitation, matching-code confirmation and a sharing choice. It is packaged and
+locally qualified; the public app remains version 43 until publication and
+external relay verification are complete.
+
 <p align="center">
   <a href="https://reality2.ai/along/"><img src="docs/images/open-webapp.svg" width="304" height="56" alt="Open and install Along webapp"></a>
 </p>

@@ -1,0 +1,25 @@
+{
+  "buildProfile": "along-regular-upgrade-candidate-v1",
+  "buildManifestSha256": "74bb9cd21463906479da018c03604f1e569945e8167b335edcca964e93c5ac1a",
+  "runtime": "v26.8.1",
+  "browser": "151.0.7922.34",
+  "host": "Local static HTTP, repository subpath, Chromium desktop",
+  "physicalPhone": false,
+  "coldReadyMs": 15087,
+  "installability": {
+    "installabilityErrors": []
+  },
+  "mixedModeRouteMs": 9441,
+  "datasetBytes": 41308937,
+  "storage": {
+    "quota": 10809345454,
+    "usage": 71927214,
+    "usageDetails": {
+      "caches": 2179072,
+      "indexedDB": 69737240,
+      "serviceWorkerRegistrations": 10902
+    }
+  },
+  "mainPageResourceTransferBytes": 1426080,
+  "offlineReadyMs": 3925
+}

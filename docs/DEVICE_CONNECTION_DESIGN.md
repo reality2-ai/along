@@ -361,3 +361,15 @@ page. The enrolled relay handshake, saved-place convergence and reconnect test
 passes after the pacing change. Its release gate now additionally requires zero
 rate-limited drops from the local hive; a fresh fixed-source run must establish
 that stronger condition. No transfer timeout was increased.
+
+
+## Fixed-source version-44 qualification passed
+
+Source `c4d5434b3d6462850b458a1e7dc880b6cb6652b3` passes all 34 distinct
+qualification scenarios plus two labelled aliases. The reconnection check
+observed eight connections and 1,519 frames with zero rate-limited drops. Both
+candidate and packaged static-browser checks pass. A fresh committed-source
+export reproduces all 310 candidate files. The [release record](RELEASE_V44.md)
+links the qualification, rebuild, package and static evidence. No public update
+has been made: GitHub authentication is unavailable and deployed hive forwarding
+has not passed. Physical and spoken-screen-reader acceptance remain pending.

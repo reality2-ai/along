@@ -1,0 +1,7 @@
+{
+  "status": "passed",
+  "source_commit": "c4d5434b3d6462850b458a1e7dc880b6cb6652b3",
+  "candidate_manifest_sha256": "74bb9cd21463906479da018c03604f1e569945e8167b335edcca964e93c5ac1a",
+  "files_matched": 310,
+  "scope": "Fresh local committed-source export, fixed candidate data and verified public runtime. Complete candidate byte comparison; not anonymous public source, compiler rebuild, deployment or physical-device acceptance."
+}

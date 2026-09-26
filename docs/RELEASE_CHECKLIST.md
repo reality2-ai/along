@@ -30,6 +30,20 @@ explicit flows, not unattended synchronization of all trust-group state.
 Regular Along 38 now includes the live/TG controls and preserves separate preview storage. Historical
 entries below retain their original versions and scopes.
 
+## Version 44 — locally qualified, not published
+
+[Version 44](RELEASE_V44.md) passes 34 distinct qualification scenarios and two
+labelled aliases. Complete enrollment uses the chosen relay with direct WebRTC
+disabled in the guided tests. Pacing survives connection replacement and tabs;
+the local relay reconnect check observed zero rate-limited drops. Source rebuild
+matches all 310 candidate files. The public app is still version 43.
+
+Publication currently lacks GitHub authentication. The deployed current-R2 hive
+accepts the binding but has not forwarded protected probe messages. Physical S23
+and desktop installation/pairing, TalkBack and signed-in interactive feedback
+submission remain open. The [v44 device check](DEVICE_CHECK_V44.md) is prepared
+for after deployment and endpoint verification, not a request to retry v43.
+
 ## Version 42
 
 The [v42 record](RELEASE_V42.md) adds backward Arrive-by routing, final walking
