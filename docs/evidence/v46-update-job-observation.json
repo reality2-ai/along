@@ -1,0 +1,33 @@
+{
+  "recordedAt": "2026-09-26T02:05:54.133981+00:00",
+  "sourceCommit": "99a02af2ac9b3ca6ebc587967aecb536007100cb",
+  "candidateManifestSha256": "52153fbae3754d5b6deefc9124a6be3c1d312f8bd7ac3a0091fcdeeafed994a5",
+  "qualificationStatus": "interrupted; 40 distinct results recorded, 39 passed and one failed; no terminal qualification report",
+  "failed": "installed_v41_upgrade: no installation worker observed before existing 30-second deadline",
+  "diagnosis": "A controlled Chromium experiment held an old worker-script response in flight, published a new script, then requested another update. The joined update returned without updatefound; a subsequent fresh check observed installation. The unchanged v41 upgrade also passed with tracing. This demonstrates a possible race, not definitive attribution of the original failure.",
+  "correction": "Arm observation before publishing the injected incomplete shell; retry only no-op update checks within the same 30-second deadline until a worker is observed. Require a real injected 503 and redundant worker outcome. Retain all persistence, offline, identity and retired-cache assertions.",
+  "correctedFocusedResult": "passed with unchanged candidate, before environment restriction",
+  "logs": {
+    "releases/regular-qualification-46-99a02af2ac9b/installed_v41_upgrade.log": {
+      "sha256": "916441090e9be1b418899e20c25700b4aa3252525451b18b21e9907bc45c39ed",
+      "output": "node:internal/modules/run_main:107\n    triggerUncaughtException(\n    ^\n\npage.evaluate: Error: Failed update did not settle: {}\n    at eval (eval at evaluate (:311:30), <anonymous>:13:169)\n    at /home/roycdavies/Development/AT/experiments/journey-sync/regular-upgrade.test.mjs:85:27 {\n  log: []\n}\n\nNode.js v26.8.1\n"
+    },
+    "releases/v46-upgrade41-trace.log": {
+      "sha256": "ddb070899f9698fcaf72c2bbaab01b0ce6a4f2e1e225025df9620bafe2f15e65",
+      "output": "HTTP 1790387916062 /along/sw.js { current: false, failShell: false }\nHTTP 1790387917829 /along/experiments/tg-pairing/hive_wasm_bg.wasm { current: false, failShell: false }\nHTTP 1790387919106 /along/sw.js { current: false, failShell: false }\nHTTP 1790387925750 /along/sw.js { current: false, failShell: false }\nHTTP 1790387930867 /along/sw.js { current: false, failShell: false }\nHTTP 1790387932993 /along/sw.js { current: false, failShell: false }\nHTTP 1790387936581 /along/sw.js { current: false, failShell: false }\nHTTP 1790387936954 /along/sw.js { current: false, failShell: false }\nHTTP 1790387938921 /along/sw.js { current: false, failShell: false }\nSWITCH 1790387941666\nBROWSER WATCH 1790387941668 undefined\nHTTP 1790387941673 /along/sw.js { current: true, failShell: true }\nHTTP 1790387942858 /along/experiments/tg-pairing/hive_wasm_bg.wasm { current: true, failShell: true }\nHTTP 1790387943645 /along/sw.js { current: true, failShell: true }\nHTTP 1790387944914 /along/experiments/tg-pairing/hive_wasm_bg.wasm { current: true, failShell: true }\nHTTP 1790387945643 /along/sw.js { current: true, failShell: true }\nHTTP 1790387946823 /along/experiments/tg-pairing/hive_wasm_bg.wasm { current: true, failShell: true }\nHTTP 1790387948806 /along/sw.js { current: true, failShell: true }\nHTTP 1790387950380 /along/experiments/tg-pairing/hive_wasm_bg.wasm { current: true, failShell: false }\nHTTP 1790387951287 /along/sw.js { current: true, failShell: false }\nHTTP 1790387955606 /along/sw.js { current: true, failShell: false }\nHTTP 1790387957370 /along/sw.js { current: true, failShell: false }\nUpgrade controller/cache check: {\"version\":\"46\",\"retiredCachePresent\":false,\"retiredEntries\":0}\nHTTP 1790387961858 /along/sw.js { current: true, failShell: false }\nHTTP 1790387962733 /along/sw.js { current: true, failShell: false }\nHTTP 1790387964708 /along/sw.js { current: true, failShell: false }\nHTTP 1790387967994 /along/sw.js { current: true, failShell: false }\nHTTP 1790387971757 /along/sw.js { current: true, failShell: false }\nHTTP 1790387973712 /along/sw.js { current: true, failShell: false }\nHTTP 1790387975639 /along/sw.js { current: true, failShell: false }\nHTTP 1790387982189 /along/sw.js { current: true, failShell: false }\nPASS: exact published v41 upgrades in the same /along/ scope to candidate 46; failed shell download leaves prior version available offline; retry preserves saved places, bus70 preference, history, learning choice, feedback and preview sentinel. Device setup retains places; an already-open actual prior-version writer saves a bus75 edit, then identity and latest preferences reopen offline. Offline installation/privacy/relay guidance fits 320px and passes axe; keyboard Back preserves places. Optional live remains off; no page errors or app requests outside subpath. Local candidate only, not a release qualification.\n"
+    },
+    "releases/v46-sw-job-diagnostic.log": {
+      "sha256": "9e3058e7ab4c62d693285fa71be5740b217135773eef243e11e9f6da1ef5745e",
+      "output": "{\"stage\":\"concurrent update after publication\",\"events\":[]}\n{\"stage\":\"subsequent fresh update\",\"events\":[\"installing\"]}\n"
+    },
+    "releases/v46-upgrade41-corrected-observer.log": {
+      "sha256": "702241f0fe48d03616a981f0fb8155c8384bf2fe5ca12c45c118292350d8fead",
+      "output": "Upgrade controller/cache check: {\"version\":\"46\",\"retiredCachePresent\":false,\"retiredEntries\":0}\nPASS: exact published v41 upgrades in the same /along/ scope to candidate 46; failed shell download leaves prior version available offline; retry preserves saved places, bus70 preference, history, learning choice, feedback and preview sentinel. Device setup retains places; an already-open actual prior-version writer saves a bus75 edit, then identity and latest preferences reopen offline. Offline installation/privacy/relay guidance fits 320px and passes axe; keyboard Back preserves places. Optional live remains off; no page errors or app requests outside subpath. Local candidate only, not a release qualification.\n"
+    }
+  },
+  "limits": [
+    "No successful full qualification or v46 release claim.",
+    "Remaining full-run relay_membership_reconnect result absent after process handle was lost.",
+    "Git metadata is now read-only and GitHub API network access failed. Correction remains uncommitted."
+  ]
+}

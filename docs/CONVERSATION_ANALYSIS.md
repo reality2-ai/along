@@ -1804,3 +1804,22 @@ Code this as **an observation needs a completion condition**, alongside
 not prove the cause of every earlier failure. The failed full run is retained,
 and a new full qualification is required. This is a test correction, not a claim
 that a user-data defect was fixed. See [evidence](evidence/v46-upgrade-observation.json).
+
+### Distinguish a requested check from an observed update
+
+The next qualification recorded an upgrade timeout without observing a new
+installation worker. A controlled browser experiment demonstrated that a check
+can join an older in-flight job and return without inspecting the newly published
+script. A subsequent fresh check observed installation. The test now arms its
+observer before publication, retries only no-op checks within its original
+deadline, and requires the injected download failure and actual worker outcome.
+The focused corrected v41 upgrade passed with unchanged app bytes.
+
+Code this as **a request is not evidence of completion**, extending the existing
+theme of truthful state. Preserve uncertainty: this experiment establishes a
+possible race, not the definitive cause of the original timeout. The full run
+was interrupted by an environment change with 40 results recorded; partial
+success is not release approval. Git/network restrictions temporarily left the correction
+local. Restored access permits a new full qualification; it does not turn the
+partial run into release approval. See
+[evidence](evidence/v46-update-job-observation.json).

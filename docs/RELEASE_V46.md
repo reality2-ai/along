@@ -43,3 +43,28 @@ No production app code changed. This supports the timing explanation, but does
 not establish the cause of every original failed read. See
 [diagnostic evidence](evidence/v46-upgrade-observation.json).
 Full qualification must pass again before this candidate can be released.
+
+## Second qualification interrupted
+
+The second run recorded 40 distinct results: 39 passed and the v41 upgrade
+observation failed before seeing an installation worker. The environment changed
+before a final report was saved; the process handle is no longer available.
+The remaining relay-membership result is unverified. Preserve the
+[partial results](evidence/regular-v46-second-qualification-progress.json);
+they are not successful release qualification.
+
+A controlled Chromium experiment demonstrated that an update request can join an
+older in-flight check and return without observing the newly published script.
+The unchanged v41 app upgrade passed with tracing. The corrected test arms its
+observer before publication and retries only no-op checks within the original
+30-second deadline. It requires an actual injected download failure and the
+worker's redundant state, retaining the offline, identity and saved-data checks.
+Its focused v41 run passed. See [evidence](evidence/v46-update-job-observation.json).
+This supports a possible race explanation, not definitive attribution of the
+original failure.
+
+The session temporarily had read-only Git metadata and could not reach the
+GitHub API or bind a local test server. Access has since returned. The correction
+and evidence are being committed for a fresh full qualification; do not publish
+this candidate using the partial results. The last verified public release
+remains v45.

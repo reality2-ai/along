@@ -32,14 +32,14 @@ const targetVersion=manifest.appVersion;
 assert.equal(targetVersion,'46');
 const temporary=await mkdtemp(join(tmpdir(),'along-regular-upgrade-'));
 execFileSync('unzip',['-q',prior,'-d',temporary]);
-let current=false,failShell=false,browser;const requests=[],errors=[];
+let current=false,failShell=false,injectedFailures=0,browser;const requests=[],errors=[];
 const server=createServer(async(req,res)=>{
   const path=new URL(req.url,'http://localhost').pathname;requests.push(path);
   try{
     if(!path.startsWith('/along/'))throw Error('Outside app scope');
     const name=path.slice(7)+(path.endsWith('/')?'index.html':'');
     if(name.includes('..'))throw Error('Invalid path');
-    if(current&&failShell&&name==='experiments/tg-pairing/hive_wasm_bg.wasm'){res.writeHead(503);res.end('Injected incomplete update');return;}
+    if(current&&failShell&&name==='experiments/tg-pairing/hive_wasm_bg.wasm'){injectedFailures++;res.writeHead(503);res.end('Injected incomplete update');return;}
     const body=await readFile(join(current?root:temporary,name));
     res.setHeader('Content-Type',({'.js':'text/javascript','.mjs':'text/javascript','.wasm':'application/wasm','.html':'text/html','.css':'text/css','.gz':'application/gzip','.json':'application/json','.webmanifest':'application/manifest+json','.svg':'image/svg+xml','.png':'image/png'})[extname(name)]||'text/plain');
     res.setHeader('Cache-Control','no-store');res.end(body);
@@ -81,12 +81,14 @@ try{
   let before=await persistence();
   const oldTab=await context.newPage();oldTab.on('pageerror',e=>errors.push(e.message));
   await oldTab.goto(url);await expect(oldTab.locator('#address-status')).toContainText('ready offline',{timeout:60000});
-  current=true;failShell=true;
+  // Arm observation before publishing. A check can join an older in-flight
+  // browser update job and return without inspecting the newly published script.
+  await page.exposeFunction('__publishIncompleteUpdate',()=>{current=true;failShell=true;});
   const failed=await page.evaluate(async()=>{
     const registration=await navigator.serviceWorker.ready;
+    let worker,done=false,checks=0;
     const finished=new Promise((resolve,reject)=>{
-      let worker;
-      const cleanup=()=>{clearTimeout(timeout);registration.removeEventListener('updatefound',watch);worker?.removeEventListener('statechange',changed);};
+      const cleanup=()=>{done=true;clearTimeout(timeout);registration.removeEventListener('updatefound',watch);worker?.removeEventListener('statechange',changed);};
       const changed=()=>{if(worker&&['redundant','installed'].includes(worker.state)){const state=worker.state;cleanup();resolve(state);}};
       const watch=()=>{
         const next=registration.installing;
@@ -94,12 +96,20 @@ try{
         worker?.removeEventListener('statechange',changed);worker=next;
         worker.addEventListener('statechange',changed);changed();
       };
-      const timeout=setTimeout(()=>{const state={observed:worker?.state,installing:registration.installing?.state,waiting:registration.waiting?.state};cleanup();reject(Error('Failed update did not settle: '+JSON.stringify(state)));},30000);
+      const timeout=setTimeout(()=>{const state={checks,observed:worker?.state,installing:registration.installing?.state,waiting:registration.waiting?.state};cleanup();reject(Error('Failed update did not settle: '+JSON.stringify(state)));},30000);
       registration.addEventListener('updatefound',watch);watch();
     });
     void finished.catch(()=>{});
-    await registration.update();return finished;
+    await window.__publishIncompleteUpdate();
+    // Retry only no-op checks, within the original observation deadline. Once
+    // a worker is observed, require its real installation outcome without retry.
+    while(!done&&!worker){
+      checks++;await registration.update();
+      if(!done&&!worker)await new Promise(resolve=>setTimeout(resolve,100));
+    }
+    return finished;
   });
+  assert.ok(injectedFailures>0,'candidate shell actually encountered the injected download failure');
   assert.equal(failed,'redundant','incomplete shell must not install');
   assert.deepEqual(await persistence(),before);
   assert.ok((await page.evaluate(()=>caches.keys())).includes('along-shell-v'+priorVersion));
