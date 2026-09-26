@@ -1789,3 +1789,18 @@ installation from a rollback of its already-committed predecessor: the retry mus
 start from the saved version. These observations extend the existing themes of
 truthful state and preserving local data; they do not establish physical usability
 or public-hive interoperability. See [evidence](evidence/recovery-authority-capacity.json).
+
+### Verify observation before attributing failure (version 46 qualification)
+
+Two installed-version checks read the prior preference value immediately after
+an older tab saved an edit. A separate 300-write browser diagnostic observed three
+lagged cross-tab reads that subsequently caught up; an instrumented v42 upgrade
+passed without changing app bytes. The test was corrected to verify the writing
+tab's complete saved value and then wait for that exact value in the receiving
+tab, retaining all later offline and identity assertions.
+
+Code this as **an observation needs a completion condition**, alongside
+**preserve negative cases**. The evidence supports a timing explanation but does
+not prove the cause of every earlier failure. The failed full run is retained,
+and a new full qualification is required. This is a test correction, not a claim
+that a user-data defect was fixed. See [evidence](evidence/v46-upgrade-observation.json).

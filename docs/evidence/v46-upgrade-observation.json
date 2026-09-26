@@ -1,0 +1,36 @@
+{
+  "recordedAt": "2026-09-26T01:53:04.135756+00:00",
+  "sourceCommit": "e620f6f74bb4f22bc063ced2da161fac630bcc18",
+  "candidateManifestSha256": "52153fbae3754d5b6deefc9124a6be3c1d312f8bd7ac3a0091fcdeeafed994a5",
+  "initialQualification": "failed",
+  "unchangedSourceAndCandidate": true,
+  "checksRecorded": 43,
+  "failed": [
+    "installed_v42_upgrade",
+    "installed_v41_upgrade"
+  ],
+  "interpretation": "Initial v41/v42 checks observed the old value immediately after a cross-tab write. A separate Chromium diagnostic reproduced 3 lagged immediate reads out of 300, each subsequently observed correctly. The unchanged app passed an instrumented v42 upgrade. This supports adding explicit exact-value observation to the cross-tab test; it does not independently prove every original failure had the same cause.",
+  "correction": "Assert the old writer stored count 8 and route 75 locally; use existing expect.poll default deadline to require identical complete serialized preferences in the other tab; retain offline/reload/device identity assertions. No production app change.",
+  "logs": {
+    "releases/regular-qualification-46-e620f6f74bb4/installed_v42_upgrade.log": {
+      "sha256": "202452683c3a87517d85f2874e973797275e5cc2505386e970cf7286d955d957",
+      "output": "Upgrade controller/cache check: {\"version\":\"46\",\"retiredCachePresent\":true,\"retiredEntries\":0}\nnode:internal/modules/run_main:107\n    triggerUncaughtException(\n    ^\n\nAssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n\n7 !== 8\n\n    at file:///home/roycdavies/Development/AT/experiments/journey-sync/regular-upgrade.test.mjs:148:10 {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: 7,\n  expected: 8,\n  operator: 'strictEqual',\n  diff: 'simple'\n}\n\nNode.js v26.8.1\n"
+    },
+    "releases/regular-qualification-46-e620f6f74bb4/installed_v41_upgrade.log": {
+      "sha256": "148e31bec37ae7f61f902bc561f44df3813254027b9ee580e2f6cea9f922616b",
+      "output": "Upgrade controller/cache check: {\"version\":\"46\",\"retiredCachePresent\":false,\"retiredEntries\":0}\nnode:internal/modules/run_main:107\n    triggerUncaughtException(\n    ^\n\nAssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n\n7 !== 8\n\n    at file:///home/roycdavies/Development/AT/experiments/journey-sync/regular-upgrade.test.mjs:148:10 {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: 7,\n  expected: 8,\n  operator: 'strictEqual',\n  diff: 'simple'\n}\n\nNode.js v26.8.1\n"
+    },
+    "releases/v46-upgrade42-observation.log": {
+      "sha256": "827c7dbb1c5bbde6f9bd4acb4224c0ac1d5c71d9de756a2a8d5f1ee52705fac4",
+      "output": "Upgrade controller/cache check: {\"version\":\"46\",\"retiredCachePresent\":true,\"retiredEntries\":0}\nCross-tab observation: {\"written\":8,\"observed\":8}\nPASS: exact published v42 upgrades in the same /along/ scope to candidate 46; failed shell download leaves prior version available offline; retry preserves saved places, bus70 preference, history, learning choice, feedback and preview sentinel. Device setup retains places; an already-open actual prior-version writer saves a bus75 edit, then identity and latest preferences reopen offline. Offline installation/privacy/relay guidance fits 320px and passes axe; keyboard Back preserves places. Optional live remains off; no page errors or app requests outside subpath. Local candidate only, not a release qualification.\n"
+    },
+    "releases/v46-cross-tab-storage-diagnostic.log": {
+      "sha256": "46ed2ea9709f9afa9e1e9c98df30ab99418785ceb638476bc1f55b69be90824f",
+      "output": "{\"iterations\":300,\"laggedImmediateReads\":3,\"examples\":[{\"written\":93,\"observed\":\"92\"},{\"written\":170,\"observed\":\"169\"},{\"written\":186,\"observed\":\"185\"}],\"latest\":\"300\"}\n"
+    }
+  },
+  "limits": [
+    "Initial qualification failed and is not release approval.",
+    "Full qualification must rerun on the committed corrected test."
+  ]
+}

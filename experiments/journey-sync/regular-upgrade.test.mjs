@@ -137,13 +137,20 @@ try{
   else assert.deepEqual(await identity(),priorIdentity,'existing connected-app identity survives upgrade');
   assert.deepEqual(await persistence(),before,'optional device setup preserves previous journeys');
   const enrolled=await identity();
-  // The pre-update page remains v37 even after its controller switches. Its
+  // The old page keeps its original version after its controller switches. Its
   // actual published writer can still save a local edit before sharing starts.
   await expect(oldTab.locator('#settings')).toContainText('App version '+priorVersion);
-  await oldTab.evaluate(()=>{
+  const written=await oldTab.evaluate(()=>{
     const data=oldPrefs.readPreferences();data.journeys[0].savedRoutes=[{mode:'bus',route:'75'}];
     data.journeys[0].count+=1;if(!oldPrefs.writePreferences(data))throw Error('Old-tab save failed');
+    return localStorage.getItem('along-journeys-v1');
   });
+  assert.equal(JSON.parse(written).journeys[0].count,8,'old writer retained its edit locally');
+  assert.equal(JSON.parse(written).journeys[0].savedRoutes[0].route,'75');
+  // Observed browser renderer caches can expose a preceding cross-tab value
+  // immediately after evaluate returns. Require the complete written snapshot,
+  // rather than treating that instant read as an acknowledgment of propagation.
+  await expect.poll(async()=>(await persistence())['along-journeys-v1']).toBe(written);
   before=await persistence();
   assert.equal(JSON.parse(before['along-journeys-v1']).journeys[0].count,8);
   assert.equal(JSON.parse(before['along-journeys-v1']).journeys[0].savedRoutes[0].route,'75');

@@ -26,3 +26,20 @@ unchanged throughout that qualification.
 Public-hive forwarding, physical S23/desktop installation and pairing, spoken
 TalkBack and signed-in GitHub feedback observations remain separate acceptance
 items. Local TLS relay tests do not prove those outcomes. No human coding is needed.
+
+## Initial qualification and correction
+
+The first full run completed all 41 distinct scenarios. Two installed-version
+checks (v41 and v42) failed an immediate cross-tab storage read; all other distinct
+checks passed, with source and candidate unchanged. The
+[failed qualification](evidence/regular-v46-initial-qualification.json) is retained.
+
+A direct Chromium diagnostic observed three delayed cross-tab reads in 300 writes,
+which subsequently caught up. The unchanged app passed an instrumented v42 upgrade.
+The corrected test first asserts the edit was stored by the old writer, then
+requires the other tab to observe the same complete serialized snapshot before
+continuing its offline/identity checks. It uses the existing polling deadline.
+No production app code changed. This supports the timing explanation, but does
+not establish the cause of every original failed read. See
+[diagnostic evidence](evidence/v46-upgrade-observation.json).
+Full qualification must pass again before this candidate can be released.
