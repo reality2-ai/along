@@ -1,0 +1,15 @@
+{
+  "status": "passed",
+  "prior_version": 44,
+  "candidate_version": 45,
+  "candidate_manifest_sha256": "a73ee9f54c874364b742541182863a07a7988be19c749cef98fb60715249480a",
+  "changed_payloads": [
+    "INSTALL.md",
+    "index.html",
+    "install.html",
+    "sw.js",
+    "update.html"
+  ],
+  "log_sha256": "dcec9dfb01bfdb330f50c3f3b18d03e8e4fb549087f0226e97ef3b4eda5a692e",
+  "scope": "Actual prior v44 installed shell, interrupted update then successful update, stored choices preserved, offline guide at 320px and axe. Local Chromium; not physical acceptance or full release qualification."
+}

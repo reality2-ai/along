@@ -26,6 +26,10 @@ The integrated build currently combines `public/` with reachable modules under
 `experiments/`; those modules are part of the release despite the directory name.
 Do not deploy `public/` or `dist/` alone expecting the current connected app.
 
+The regular installation guide combines `docs/CONNECTED_INSTALL.md` with
+`docs/INSTALL_PLATFORMS.md`. Keep the expanded GitHub guide, `docs/INSTALL.md`,
+in sync. Platform extraction does not depend on a heading in that expanded copy.
+
 ## Prepare inputs
 
 Use Python **3.12+** for the integrated build/runtime tools, Node **22+** for tests,

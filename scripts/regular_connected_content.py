@@ -23,9 +23,10 @@ def prepare_regular_connected_content(stage):
             text = text.replace('<p id="storage-message"', '<p class="field-help">Clears local history and saved places. Saved-place removals will be shared with permitted devices when connected.</p><p id="storage-message"', 1)
         path.write_text(text)
     guide = (ROOT / 'docs/CONNECTED_INSTALL.md').read_text()
-    regular = (ROOT / 'docs/INSTALL.md').read_text()
-    platforms = regular.split('## Choose your browser and platform\n', 1)[1].split('## What works without the portal?\n', 1)[0]
-    guide = guide.replace('<!-- platform-guide -->', '## Choose your browser and platform\n' + platforms)
+    platforms = (ROOT / 'docs/INSTALL_PLATFORMS.md').read_text()
+    if guide.count('<!-- platform-guide -->') != 1:
+        raise ValueError('Installation guide needs exactly one platform insertion point')
+    guide = guide.replace('<!-- platform-guide -->', platforms)
     (stage / 'INSTALL.md').write_text(guide)
     html = '<!doctype html><html lang="en-NZ"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Install Along · Offline and optional live information</title><link rel="stylesheet" href="./style.css"><link rel="icon" href="./icon.svg"></head><body class="guided-app install-guide"><main><a id="guide-back" class="text-button" href="./">← Open Along</a>'
     html += render_blocks(guide, 'en')

@@ -1,0 +1,84 @@
+{
+  "profile": "along-regular-candidate-qualification-v1",
+  "app_version": "45",
+  "source_commit": "43dfad030ca14af8db83d769eb0c7351427bec4d",
+  "candidate_manifest_sha256": "7911e5c8f04c4664d17fc05dbefb1ff4371ace41410b2cbf1b639cfa9e4916e2",
+  "checks": {
+    "relay_enrollment_carriage": {
+      "status": "passed",
+      "exit_code": 0,
+      "command": "REGULAR_CANDIDATE=1 node experiments/tg-pairing/relay-enrollment-peer.test.mjs",
+      "log_sha256": "c488c2fa28264e0bfc921c0d71b3270597176a9dbb4450ebd0674523c4bca5f7"
+    },
+    "relay_origin_pacing": {
+      "status": "passed",
+      "exit_code": 0,
+      "command": "REGULAR_CANDIDATE=1 node experiments/r2-current/origin-pacing-browser.test.mjs",
+      "log_sha256": "a16217ea6336718cb7116dc8ef1413539074792ea064a98d26bfebdcc295c582"
+    },
+    "guided_scan": {
+      "status": "passed",
+      "exit_code": 0,
+      "command": "REGULAR_CANDIDATE=1 GUIDED_PAIRING=1 GUIDED_SCAN=1 node experiments/tg-pairing/automatic-enrollment.test.mjs",
+      "log_sha256": "e1e8ae2a1f1ae33bc38c16215536a2332a0715a9b299fe59660a9afa58105d29"
+    },
+    "installed_v44_upgrade": {
+      "status": "failed",
+      "exit_code": 1,
+      "command": "REGULAR_CANDIDATE=1 ALONG_PRIOR_VERSION=44 node experiments/journey-sync/regular-upgrade.test.mjs",
+      "log_sha256": "47fb785f87a931eee0d59fb1f7f877f7e62df82baefa5363e482af65aa843164"
+    },
+    "installed_v43_upgrade": {
+      "status": "failed",
+      "exit_code": 1,
+      "command": "REGULAR_CANDIDATE=1 ALONG_PRIOR_VERSION=43 node experiments/journey-sync/regular-upgrade.test.mjs",
+      "log_sha256": "47fb785f87a931eee0d59fb1f7f877f7e62df82baefa5363e482af65aa843164"
+    },
+    "guided_component": {
+      "status": "passed",
+      "exit_code": 0,
+      "command": "REGULAR_CANDIDATE=1 GUIDED_PAIRING=1 node experiments/tg-pairing/automatic-enrollment.test.mjs",
+      "log_sha256": "aad0ee58d8ecc4b88eb6cd475ab350c01b666f35cd50fc62ee7dbd03249d195d"
+    },
+    "guided_app_offline": {
+      "status": "passed",
+      "exit_code": 0,
+      "command": "REGULAR_CANDIDATE=1 GUIDED_OFFLINE=1 node experiments/relay/guided-app.test.mjs",
+      "log_sha256": "960f78d09431e5554ec09bd6ee793b07c3aab1e61a7ffb7d249f825e64061fd2"
+    },
+    "guided_cancel": {
+      "status": "passed",
+      "exit_code": 0,
+      "command": "REGULAR_CANDIDATE=1 GUIDED_PAIRING=1 GUIDED_CANCEL=1 node experiments/tg-pairing/automatic-enrollment.test.mjs",
+      "log_sha256": "0ec07c8cb9c1aec88f3a9c6f1ac4354a213d9b5ae4afb18a87f94425ffd4a4b5"
+    },
+    "guided_conflict": {
+      "status": "passed",
+      "exit_code": 0,
+      "command": "REGULAR_CANDIDATE=1 GUIDED_PAIRING=1 GUIDED_CONFLICT=1 node experiments/tg-pairing/automatic-enrollment.test.mjs",
+      "log_sha256": "2beaf7357879c41e06e9f9fde5d6d8e470689fb1a13ca83858a73e79c47ae272"
+    },
+    "guided_interrupted_install": {
+      "status": "passed",
+      "exit_code": 0,
+      "command": "REGULAR_CANDIDATE=1 GUIDED_PAIRING=1 GUIDED_INTERRUPT=install node experiments/tg-pairing/automatic-enrollment.test.mjs",
+      "log_sha256": "76ef156c13b562ef38f6fbab1799d600d92d2593d7ca083c2f6c38971bbe2502"
+    },
+    "guided_interrupted_ack": {
+      "status": "passed",
+      "exit_code": 0,
+      "command": "REGULAR_CANDIDATE=1 GUIDED_PAIRING=1 GUIDED_INTERRUPT=ack node experiments/tg-pairing/automatic-enrollment.test.mjs",
+      "log_sha256": "395badb822073dcbda3888737895ba4eb82a5815618243a63a210fa0c6e6d5bb"
+    },
+    "invitation_channel_faults": {
+      "status": "passed",
+      "exit_code": 0,
+      "command": "REGULAR_CANDIDATE=1 AUTOMATIC_RELAY=1 CHANNEL_CHECKS=1 node experiments/tg-pairing/automatic-enrollment.test.mjs",
+      "log_sha256": "83ea65923f3da329a4e87a4209cca923a2904fa7c096867819a2b5ed397f2f79"
+    }
+  },
+  "limits": "Local Chromium candidate qualification, not release packaging. Storage checks use candidate modules behind fixture URLs. Actual relay on loopback. No physical-device or external-endpoint acceptance.",
+  "status": "aborted",
+  "reason": "Upgrade check found duplicate connection headings in generated installation guide. Platform extraction end marker no longer exists. Stop for builder repair; this is not a successful qualification.",
+  "recorded_at": "2026-09-26T00:24:43.403318+00:00"
+}

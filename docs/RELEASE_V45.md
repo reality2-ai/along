@@ -29,3 +29,26 @@ The selected public hive's protected-message forwarding, physical S23 pairing,
 TalkBack and signed-in interactive feedback acceptance remain open. No change in
 this guide establishes those outcomes. Along is an experimental course app; use
 at your own risk.
+
+
+The [next run](evidence/regular-v45-duplicate-guide-aborted.json) found a real
+content-build defect: duplicate connection sections. The platform extractor
+silently included the rest of the expanded guide after its former ending heading
+was removed. It now reads a dedicated platform source and requires exactly one
+insertion marker. The generated guide has unique headings, all nine platform
+sections, and matches the GitHub guide. Previous static evidence describes the
+earlier candidate; fresh browser checks are required for this repair.
+
+
+The [focused v44-to-v45 upgrade check](evidence/regular-v45-fixed-guide-upgrade.json)
+now passes with the repaired guide. Failed shell downloads preserve the previous
+app, retry preserves saved choices and device identity, and the offline guide
+fits 320px, passes automated accessibility checks and supports keyboard Back.
+The only changed release payloads remain the two guide files and three version
+markers. Full qualification is still required before publication.
+
+
+[Static checks of the repaired candidate](evidence/regular-v45-fixed-guide-static.json)
+also pass: subpath installation readiness, offline new-address routing and saved
+choices, failed/successful refresh, keyboard and accessibility automation, contrast,
+200% zoom and 320px reflow. The original five-second reload assertions remain.
