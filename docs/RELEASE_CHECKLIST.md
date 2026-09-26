@@ -88,7 +88,12 @@ v38 identity and saved data survive failed-download recovery and the completed
 upgrade. Automatic delivery of group updates remains outside this fix. Historical
 v38 evidence below remains labelled with its original scope.
 
-## Goal audit — version 43, 25 September 2026
+## Current goal audit
+
+See the [version 45 requirement-by-requirement audit](GOAL_AUDIT_V45.md). It identifies
+remaining client security-update delivery separately from hive and device checks.
+
+## Historical goal audit — version 43, 25 September 2026
 
 The [full goal](PROJECT_GOAL.md), including later user decisions, remains active.
 Version 43 reduces temporary walking-path allocation and has completed release
@@ -112,7 +117,7 @@ qualification. Publication does not establish full goal completion.
 | Cross-device synchronization and optional relay | Saved-journey model/browser checks; [current-standard review](R2_CURRENT_STANDARD_REVIEW.md) | Legacy relay tests prove only the pinned old protocol. Current hive browser contract and interoperability remain open. Security updates/checkpoints use explicit flows; seamless delivery is not finished. |
 | Arrive by | Reverse search, generated-network comparison, original timetable checks, final walking deadline and overnight fixtures in v42 | Implemented and browser-verified. Physical timing-control usability remains open. |
 
-## Next work against the full goal
+## Historical next-work list from the v43 audit
 
 1. Adapt and verify Along against the delivered current browser binding,
    `wss://wairoa.mariko.org.nz/r2` with subprotocol `r2.extended.v1`. The server

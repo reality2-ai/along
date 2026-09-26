@@ -38,3 +38,14 @@ from its settings when finished. Mark any check you did not try as **not tested*
 
 For a failure, report the screen heading, last action and visible message,
 whether devices used the same network, and whether a saved place was retained.
+
+
+## Optional feedback submission check
+
+When signed in to GitHub, open **Give feedback on this screen**, enter a brief
+synthetic test report without private addresses, keys or invitation contents, and
+review it. Continue to GitHub and choose **Submit new issue**. Copy the resulting
+issue URL back into Along to check its receipt. Reopen offline and check that the
+receipt is retained. Report the public issue number so the AI can review and close
+the synthetic report. If you do not perform the final GitHub submission, mark this
+check **not tested**; opening the composer alone does not count. No coding is needed.
