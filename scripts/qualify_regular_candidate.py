@@ -19,8 +19,8 @@ def main():
     source = git('rev-parse', 'HEAD')
     manifest_path = ROOT / 'releases/along-regular-upgrade-candidate/build-info.json'
     manifest = json.loads(manifest_path.read_text())
-    if manifest['profile'] != 'along-regular-upgrade-candidate-v1' or manifest['appVersion'] != '44':
-        raise RuntimeError('Build regular candidate 44 before qualification')
+    if manifest['profile'] != 'along-regular-upgrade-candidate-v1' or manifest['appVersion'] != '45':
+        raise RuntimeError('Build regular candidate 45 before qualification')
     actual = {p.relative_to(manifest_path.parent).as_posix() for p in manifest_path.parent.rglob('*') if p.is_file()}
     if actual != set(manifest['files']) | {'build-info.json'}:
         raise RuntimeError('Candidate file set differs from manifest')
@@ -36,6 +36,7 @@ def main():
         if not env.get(name):
             raise RuntimeError(f'Set {name}')
     cases = [
+        ('installed_v44_upgrade', {'ALONG_PRIOR_VERSION':'44'}, 'experiments/journey-sync/regular-upgrade.test.mjs'),
         ('relay_origin_pacing', {}, 'experiments/r2-current/origin-pacing-browser.test.mjs'),
         ('relay_enrollment_carriage', {}, 'experiments/tg-pairing/relay-enrollment-peer.test.mjs'),
         ('guided_scan', {'GUIDED_PAIRING':'1','GUIDED_SCAN':'1'}, 'experiments/tg-pairing/automatic-enrollment.test.mjs'),

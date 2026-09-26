@@ -65,8 +65,8 @@ GitHub feedback submission are not established by local automation.
 
 Known documentation defect: the packaged installation guide still names version
 42 and an older device-settings label. Use Settings to check the actual version
-and the linked v44 device guide for connection steps. Correct this in a subsequent
-versioned package; do not silently alter the published archive.
+and the linked v44 device guide for connection steps. Corrected guidance is prepared in the version 45 source. It is not yet
+qualified or published; the v44 archive remains unchanged.
 
 Experimental AI-coding course app: use at your own risk; not an official AT service.
 

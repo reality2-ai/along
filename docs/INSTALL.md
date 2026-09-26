@@ -1,53 +1,22 @@
 # Install Along and use it offline
 
-> **Current release: Along 39.** Optional direct personal-key AT access and device
-> sharing are now included in the regular app. [Installation guide](https://reality2.ai/along/install.html) ·
-> [Download and hosting package](https://github.com/reality2-ai/along/releases/tag/v0.39.0).
-> Serve the whole extracted package, including `experiments/`. Earlier version-specific
-> sections below are historical; physical pairing/TalkBack and external-relay acceptance remain open.
+**Use at your own risk.** Along is an experimental AI-coding course app, not an
+official Auckland Transport service. Check important journey and accessibility
+information with AT.
 
-> **Course exercise — use at your own risk.** Along was created as an exercise
-> for an AI-assisted coding course. It is an experimental educational webapp,
-> not an official Auckland Transport service. Routes, times, walking directions
-> and accessibility information may be incomplete, outdated or incorrect.
-> Check your journey and access requirements with AT before travelling.
+Check the installed app version in Settings. These instructions describe the
+current guided device connection; older versions may show different controls.
+Along Device Preview is a separate installation; its saved places and device
+keys are not imported automatically. Do not clear website data to update: that
+can erase saved places and device keys.
 
-**Along runs on your device. The portal delivers the app and updates; it does not
-run your journey searches. Once the app and travel data are downloaded, the core
-app works even when you have no connection or the portal is unavailable.**
+## Prepare and install
 
-**Your journey searches, saved routes, learned routines and preferences stay in
-this browser on this device.** No account, analytics service, uploaded journey
-history or background tracking is required. Along does not currently sync devices.
-
-## Scheduled information, not live tracking
-
-**The public Along app uses downloaded timetables. It does not show live bus,
-train or ferry positions, current delays or cancellations.** Being online does
-not turn its journey plans or stop departure boards into live information.
-Displayed departures are scheduled times; walking and transfer times are estimates.
-A saved journey does not reserve a service or guarantee a connection.
-
-For live departure information and vehicle tracking, use
-[AT Mobile](https://at.govt.nz/atmobile/) or check the
-[AT website before travelling](https://at.govt.nz/bus-train-ferry/service-announcements/check-before-you-travel).
-These links need an internet connection and open AT's services. Check the timetable
-date and current service/access conditions before relying on a journey.
-
-## Prepare once, then check the installed app
-
-1. Open the hosted Along app over HTTPS in a normal browser window, not private
-   browsing or an in-app social-media browser. Open `https://reality2.ai/along/`.
-2. Keep it open while the first download completes (about 40 MB, with more space
-   needed after decompression). Open Settings and wait for **offline ready**.
-3. Follow your platform's installation steps below.
-4. Open **the installed Along icon while still online**. Check Settings again and
-   let any download finish. Some platforms use separate storage for installed apps.
-5. Turn off Wi-Fi/mobile data, close and reopen Along from its icon, and try a new
-   address search and journey. Check a route map too. Reconnect afterwards.
-
-An icon alone does not prove offline readiness. If the offline check fails, reopen
-online in the installed app and finish preparation before relying on it.
+Open Along in the browser you intend to use for installation. Wait until the
+timetable and addresses are ready offline, then follow your platform's steps
+below. Open the installed app and try a new address search in flight mode.
+The web portal provides downloads and updates; it does not calculate journeys.
+Downloaded address search and scheduled planning run on your device.
 
 ## Choose your browser and platform
 
@@ -172,48 +141,100 @@ an offline installation. Browser menus change; follow the official instructions
 for the browser/version you use. The platform list describes installation paths,
 not a claim that every platform has been physically tested.
 
-## What works without the portal?
 
-| Available after preparation | Needs a connection |
-| --- | --- |
-| Address and stop search, scheduled bus/train/ferry/walking journeys | First download and recovery after browser storage is cleared |
-| Saved journeys, routine suggestions and preferences | App and timetable updates |
-| Downloaded AT route paths, stop locations and scheduled stop times | Optional online street-map backgrounds |
-| Route/stop exploration and installation help | Live predictions/alerts, if a backend is configured; external links |
 
-The installed app uses your browser's runtime and local storage. Keep that browser
-installed. Clearing site data, changing browser/profile, removing the app or device
-storage cleanup can remove its data. The timetable has an expiry date in Settings;
-offline does not mean schedules remain accurate forever. Open online periodically
-and use **Update downloaded timetable** and **Check for an app update**.
+## Scheduled journeys, optional current information
 
-## Your data stays here
+By default, departures and journey times come from the downloaded timetable.
+They do not show where a bus or train is now, and may not reflect delays,
+cancellations or changed services. Along labels current information separately
+when it can obtain and match it. An unavailable or unmatched live result leaves
+the schedule in place; it does not mean the service is on time.
 
-Addresses you type and journey searches are processed locally, including when
-online. Saved routes and routine learning are stored locally. **Forget my journey
-history** in Settings clears learned/saved journeys; disabling suggestions stops
-learning. Clearing this app's site data also removes offline downloads. Use your
-device's screen lock to protect locally stored information.
+To choose live information, open **Settings → My devices**. On a device without
+setup, choose **Set up my device**, read the storage explanation and choose
+**Create my device group**. Then choose **Use my own AT key** and
+**Set up live information**. If this device already has a group, use its existing
+setup; do not replace it. You do not need another device or a relay to use your
+own key.
+You need your own Auckland Transport API subscription key. Browser requests go
+directly to AT; AT receives your IP address and the key. There is no Along live-data
+proxy. The key is stored encrypted in this browser's device setup. Clearing site
+data can remove access. The offline planner does not require a key.
 
-Ordinary website/data downloads still send connection information, such as your
-IP address, to the host. Optional online street maps send visible map-area requests
-to OpenStreetMap. A configured live backend receives feed requests. Along does not
-send your typed addresses, saved journeys or routine history with those requests.
-Device/OS backup and browser policies remain outside Along's control.
+Current information is requested for the stop, journey or route you are viewing.
+It is not a background location tracker. Use the official AT app or website when
+you need information that Along cannot verify.
 
-Different browsers, profiles and site origins have separate storage. Installing
-from a new public URL will not migrate data from a private/test site. There is no
-cloud account or automatic cloud backup of your journeys in Along.
+## Keep your data on your devices
 
-## Optional public feedback
+Search history and current location stay on your device. Saved places and service
+preferences are shared only when you connect your devices and permit journey
+sharing. Device pairing and permission to share are separate steps. No Along
+server stores your journeys. Feedback sent to GitHub is public: review the draft
+before choosing to send it.
 
-**Give feedback on this screen** is available in Settings, route/stop details and
-journey and nearby-departure screens. Your draft is kept locally, including offline. Review the
-exact text before opening GitHub. A GitHub account and its **Submit new issue**
-step are required; submitted reports are public. Opening GitHub alone does not
-confirm delivery. Paste the resulting issue link into Along to check receipt.
+Device keys use encrypted browser software storage. This is a limited R2 subset,
+not hardware-backed protection or protection from a compromised browser or scripts
+on the same website. Keep backups you control; browser storage can be removed by
+the browser, operating system or a person clearing site data. A removed device
+may retain previously received data. Revocation takes effect when another device
+learns the signed update. Replace a compromised AT key through AT itself.
 
-No addresses, location or journey history are attached automatically. You may
-choose to include the displayed app version, language and general screen category.
-Avoid typing private details you do not want public. **Clear this draft** removes
-the local feedback draft; it does not delete an issue already submitted to GitHub.
+## Connect another device when you want to share
+
+Device connection is optional. Keep both devices online with Along open. On the
+inviting device, open **Settings → My devices → Connect another device**. Choose
+your compatible secure `wss://` R2 relay and **Create invitation**. Review the
+storage explanation first; on a fresh device this action creates its local group.
+No relay is selected by default.
+
+Scan the invitation on your other device or open its invitation link there.
+Review the displayed relay, then choose **Connect and compare codes**. Compare
+every character on both screens and confirm only when the codes match and both
+devices are yours. The app exchanges the return messages; there is no return QR
+to scan. Wait for **Device connected** on the receiving device and **Connection
+saved** on the inviting device.
+
+Choose **Choose what to share**, then **Share and reconnect** on both devices to
+permit saved-place and service-preference sharing. This does not grant access to
+your AT key. An already-connected receiving device can require recovery instead;
+keep its existing data and use **Advanced device options** rather than creating a
+replacement group. Invitation links and QR codes are private; do not post them
+in public feedback.
+
+## Reconnect and control sharing
+
+After granting sharing permission, permitted devices reconnect through your
+selected relay while both apps are open and online. To review its address or stop
+it, open **Settings → Share saved journeys with my devices → Automatic connection
+with a relay**. **Stop automatic relay sharing** keeps the address for later;
+**Remove relay address** clears that choice. Both preserve saved places.
+
+A relay connection alone is not proof that the other device received your saved
+places; look for its saving confirmation. Offline edits stay local until
+reconnection. Mobile browsers can suspend background apps. Recovery choices and
+devices at different checkpoints may need an explicit review before sharing
+continues. If connection fails, return to your journey; downloaded planning still
+works. Do not clear storage to retry.
+
+Compatibility depends on the selected relay actually forwarding protected
+messages; accepting a connection is not enough. Local relay tests do not establish
+that a public endpoint or a particular mobile network works.
+
+A relay sees your network address, routing identifiers, traffic timing and message
+sizes. Shared journey payloads are encrypted between permitted devices. Journey
+sharing does not send your AT key, learning history or current location. Planning
+and direct AT requests work independently of the relay.
+
+## Update and reopen
+
+Use **Settings → Check for an app update** or the app's `update.html` page in the
+same browser used to install it. Choose **Update and reopen**, then reopen the
+installed app and check its version. Pulling down to refresh also checks for an
+update; offline checks stay quiet. Saved places and downloaded travel data should
+remain. If an update fails, keep the existing app and retry online.
+
+**Forget history and saved places** clears those local choices. When journey
+sharing is enabled, saved-place removals are also shared with permitted devices
+when connected. This is different from removing a relay address.

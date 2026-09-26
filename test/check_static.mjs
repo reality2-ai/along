@@ -15,7 +15,7 @@ const build=JSON.parse(buildBytes);
 const digest=bytes=>createHash('sha256').update(bytes).digest('hex');
 if(regular){
   expect(build.profile).toBe('along-regular-upgrade-candidate-v1');
-  expect(build.appVersion).toBe('44');
+  expect(build.appVersion).toBe('45');
   for(const [name,hash] of Object.entries(build.files)){
     const file=resolve(root,name);
     expect(file.startsWith(root)).toBe(true);

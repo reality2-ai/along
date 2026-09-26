@@ -1,6 +1,8 @@
 # Building the current Along app
 
-Published Along is version **44**; see the [release record](RELEASE_V44.md). Device Preview **3806** is a separate installation.
+Published Along is version **44**; see the [release record](RELEASE_V44.md).
+This checkout prepares **45**, correcting the installation and connection guide;
+it is not yet qualified or published. Device Preview **3806** is a separate installation.
 For use or hosting, take the [v44 release ZIP and checksum](https://github.com/reality2-ai/along/releases/tag/v0.44.0).
 Serve the whole extracted package over HTTPS, including `experiments/` and `data/`.
 The package needs no Along server. See [installation](INSTALL.md) and
@@ -17,7 +19,7 @@ the integrated app with prepared inputs. The default runtime path now selects th
 | --- | --- |
 | `npm start` / `python3 server.py` | Base planner development server |
 | `npm run build:legacy` / `scripts/build_static.py` | Legacy static planner in `dist/`, without integrated device sharing |
-| `npm run build` / `scripts/build_upgrade_candidate.py --runtime …` | Regular v44 candidate, including device groups, sharing and direct AT access |
+| `npm run build` / `scripts/build_upgrade_candidate.py --runtime …` | Regular v45 candidate, including device groups, sharing and direct AT access |
 | Published `along-web-v44.zip` | Qualified, immutable v44 distribution |
 
 The integrated build currently combines `public/` with reachable modules under
@@ -66,7 +68,7 @@ The default build uses `releases/along-r2-runtime-public-82377f1`. To use a veri
 runtime at another path, invoke
 `python3 scripts/build_upgrade_candidate.py --runtime /path/to/runtime` directly.
 
-Open `http://localhost:3082` and check version 44. Localhost permits service
+Open `http://localhost:3082` and check version 45. Localhost permits service
 workers; phones need an HTTPS host. Keep this development origin separate from
 your regular installed app. Generated outputs stay in ignored `releases/`.
 The candidate retains `DO-NOT-PUBLISH.txt`: building is not qualification.
@@ -112,7 +114,7 @@ an existing run directory. Do not reuse old qualification evidence for changed f
 
 `scripts/prepare_regular_release.py /path/to/qualification.json` packages a passed,
 matching candidate. It refuses existing versioned release outputs. These scripts
-currently target version 44. The [v44 package](RELEASE_V44.md) has passed
+currently target version 45. The [v44 package](RELEASE_V44.md) has passed
 qualification and is published. Never overwrite a versioned archive.
 Run the committed static browser check against the same candidate:
 

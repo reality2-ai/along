@@ -4,7 +4,8 @@
 official Auckland Transport service. Check important journey and accessibility
 information with AT.
 
-These instructions describe Along version 42. Check the version in Settings.
+Check the installed app version in Settings. These instructions describe the
+current guided device connection; older versions may show different controls.
 Along Device Preview is a separate installation; its saved places and device
 keys are not imported automatically. Do not clear website data to update: that
 can erase saved places and device keys.
@@ -27,8 +28,12 @@ cancellations or changed services. Along labels current information separately
 when it can obtain and match it. An unavailable or unmatched live result leaves
 the schedule in place; it does not mean the service is on time.
 
-To choose live information, open **Settings → Device and AT-key setup**. Create
-your device group, then choose **Use my own AT key** and **Set up live information**.
+To choose live information, open **Settings → My devices**. On a device without
+setup, choose **Set up my device**, read the storage explanation and choose
+**Create my device group**. Then choose **Use my own AT key** and
+**Set up live information**. If this device already has a group, use its existing
+setup; do not replace it. You do not need another device or a relay to use your
+own key.
 You need your own Auckland Transport API subscription key. Browser requests go
 directly to AT; AT receives your IP address and the key. There is no Along live-data
 proxy. The key is stored encrypted in this browser's device setup. Clearing site
@@ -53,26 +58,51 @@ the browser, operating system or a person clearing site data. A removed device
 may retain previously received data. Revocation takes effect when another device
 learns the signed update. Replace a compromised AT key through AT itself.
 
-## Optional automatic connection
+## Connect another device when you want to share
 
-After pairing and permitting journey sharing, open **Settings → Share saved
-journeys with my devices → Automatic connection with a relay**. Enter your chosen
-compatible secure `wss://` R2 relay on each device. No relay is selected by default.
-The actual R2 implementation has passed local tests; external endpoint and mobile
-network compatibility remain to be checked.
+Device connection is optional. Keep both devices online with Along open. On the
+inviting device, open **Settings → My devices → Connect another device**. Choose
+your compatible secure `wss://` R2 relay and **Create invitation**. Review the
+storage explanation first; on a fresh device this action creates its local group.
+No relay is selected by default.
 
-Keep both apps open. A relay connection alone is not proof that the other device
-received your saved places; look for its saving confirmation. Offline edits stay
-local until reconnection. Mobile browsers can suspend background apps. Recovery
-choices and devices at different checkpoints may need an explicit review before
-sharing continues. Initial pairing still requires exchanging connection messages.
+Scan the invitation on your other device or open its invitation link there.
+Review the displayed relay, then choose **Connect and compare codes**. Compare
+every character on both screens and confirm only when the codes match and both
+devices are yours. The app exchanges the return messages; there is no return QR
+to scan. Wait for **Device connected** on the receiving device and **Connection
+saved** on the inviting device.
 
-**Stop automatic relay sharing** keeps the address for later; **Remove relay
-address** clears that choice. Both preserve saved places. A relay sees your network
-address, device/group identifiers, certificates, traffic timing and message sizes.
-Journey payloads are encrypted between permitted devices. This relay connection
-does not send your AT key, learning history or current location. Planning and
-direct AT requests work independently of the relay.
+Choose **Choose what to share**, then **Share and reconnect** on both devices to
+permit saved-place and service-preference sharing. This does not grant access to
+your AT key. An already-connected receiving device can require recovery instead;
+keep its existing data and use **Advanced device options** rather than creating a
+replacement group. Invitation links and QR codes are private; do not post them
+in public feedback.
+
+## Reconnect and control sharing
+
+After granting sharing permission, permitted devices reconnect through your
+selected relay while both apps are open and online. To review its address or stop
+it, open **Settings → Share saved journeys with my devices → Automatic connection
+with a relay**. **Stop automatic relay sharing** keeps the address for later;
+**Remove relay address** clears that choice. Both preserve saved places.
+
+A relay connection alone is not proof that the other device received your saved
+places; look for its saving confirmation. Offline edits stay local until
+reconnection. Mobile browsers can suspend background apps. Recovery choices and
+devices at different checkpoints may need an explicit review before sharing
+continues. If connection fails, return to your journey; downloaded planning still
+works. Do not clear storage to retry.
+
+Compatibility depends on the selected relay actually forwarding protected
+messages; accepting a connection is not enough. Local relay tests do not establish
+that a public endpoint or a particular mobile network works.
+
+A relay sees your network address, routing identifiers, traffic timing and message
+sizes. Shared journey payloads are encrypted between permitted devices. Journey
+sharing does not send your AT key, learning history or current location. Planning
+and direct AT requests work independently of the relay.
 
 ## Update and reopen
 
