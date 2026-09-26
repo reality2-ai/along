@@ -20,8 +20,8 @@ export async function checkGuidedEpochRecovery({pages,peer,relayURL,stats}) {
     await expect.poll(()=>stats().connections).toBe(before+1);
     return owner.getByLabel('Update invitation link',{exact:true}).inputValue();
   };
-  const mountRecipient=async(link,loseReceipt=false)=>{
-    await recipient.evaluate(async({link,loseReceipt,epoch})=>{
+  const mountRecipient=async(link,loseReceipt=false,scan=false)=>{
+    await recipient.evaluate(async({link,loseReceipt,epoch,scan})=>{
       window.guidedRecovery?.dispose();window.guidedBack=0;
       window.originalGuidedEncrypt??=crypto.subtle.encrypt;
       crypto.subtle.encrypt=async function(algorithm,key,data){
@@ -30,17 +30,33 @@ export async function checkGuidedEpochRecovery({pages,peer,relayURL,stats}) {
         return originalGuidedEncrypt.call(this,algorithm,key,data);
       };
       const local=(await store.read('candidate-persona','active')).value;
-      history.replaceState({},'',link);
-      const incoming=(await import('./automatic-pairing-view.mjs')).consumeConnectionFragment(location,history);
-      if(!incoming?.recovery || location.hash)throw Error('Recovery fragment not consumed');
+      let incoming={};
+      if(!scan){
+        history.replaceState({},'',link);
+        incoming=(await import('./automatic-pairing-view.mjs')).consumeConnectionFragment(location,history);
+        if(!incoming?.recovery || location.hash)throw Error('Recovery fragment not consumed');
+      }else{
+        window.cameraRequested=0;window.cameraStopped=0;
+        HTMLMediaElement.prototype.play=async()=>{};
+        window.BarcodeDetector=class{static async getSupportedFormats(){return ['qr_code'];}async detect(){return [{format:'qr_code',rawValue:link}];}};
+        Object.defineProperty(navigator.mediaDevices,'getUserMedia',{configurable:true,value:async()=>{
+          cameraRequested++;const stream=new MediaStream();Object.defineProperty(stream,'getTracks',{value:()=>[{stop:()=>cameraStopped++}]});return stream;
+        }});
+      }
       window.guidedRecovery=(await import('./automatic-epoch-recovery-view.mjs')).showAutomaticEpochRecovery(document.querySelector('#flow'),{
         wasm,store,expectedGroup:local.record.group,role:'recipient',connectionText:incoming.invitation,focus:true,onBack:()=>guidedBack++,
       });await guidedRecovery.ready;
-    },{link,loseReceipt,epoch});
+    },{link,loseReceipt,epoch,scan});
+    if(scan){
+      assert.equal(await recipient.evaluate(()=>cameraRequested),0);
+      await recipient.getByRole('button',{name:'Scan update invitation',exact:true}).click();
+      await recipient.getByRole('heading',{name:'Reconnect for a device update?',exact:true}).waitFor();
+      assert.equal(await recipient.evaluate(()=>cameraStopped),1,'Scan review releases the camera');
+    }
   };
-  const connect=async loseReceipt=>{
+  const connect=async (loseReceipt,scan=false)=>{
     const link=await mountOwner(),before=stats().connections;
-    await mountRecipient(link,loseReceipt);
+    await mountRecipient(link,loseReceipt,scan);
     await recipient.getByRole('heading',{name:'Reconnect for a device update?',exact:true}).waitFor();
     assert.equal(stats().connections,before,'Viewing incoming invitation opens no relay connection');
     await recipient.evaluate(()=>document.querySelector('.pairing-primary').click());
@@ -57,7 +73,16 @@ export async function checkGuidedEpochRecovery({pages,peer,relayURL,stats}) {
     assert.equal(stats().connections,beforeRefusal,'Different member invitation is refused before network');
     assert.equal(await recipient.evaluate(async()=>(await store.read('candidate-persona','active')).revision),heldRevision);
     await recipient.getByRole('button',{name:'Back',exact:true}).click();
-    await connect(false);
+    const expiring=await mountOwner(),beforeExpiry=stats().connections;
+    await mountRecipient(expiring);
+    await recipient.evaluate(()=>{window.recoveryRealClock=Date.now;const now=Date.now();Date.now=()=>now+61000;});
+    try{
+      await recipient.getByRole('button',{name:'Connect and review update',exact:true}).click();
+      await recipient.getByRole('heading',{name:'Device update is not confirmed',exact:true}).waitFor();
+      assert.equal(stats().connections,beforeExpiry,'Expired review opens no recipient connection');
+      assert.equal(await recipient.evaluate(async()=>(await store.read('candidate-persona','active')).revision),heldRevision);
+    }finally{await recipient.evaluate(()=>Date.now=window.recoveryRealClock);}
+    await connect(false,true);
     await recipient.getByRole('heading',{name:'Receive your group key update?',exact:true}).waitFor();
     await recipient.getByRole('button',{name:'Back',exact:true}).click();
     assert.equal(await recipient.evaluate(()=>guidedBack),1);
@@ -87,7 +112,7 @@ export async function checkGuidedEpochRecovery({pages,peer,relayURL,stats}) {
     await recipient.getByRole('heading',{name:'Group keys saved on this device',exact:true}).waitFor();
     assert.equal(await recipient.evaluate(async()=>(await store.read('candidate-persona','active')).revision),revision);
     await owner.getByRole('button',{name:'Done',exact:true}).click();assert.equal(await owner.evaluate(()=>guidedBack),1);
-    console.log('PASS: guided recovery link clears fragment, wrong-member refusal, no recipient network before trusted consent, Back preserves old keys, keyboard acceptance, 320px/200% and axe, lost confirmation retains local success, new invitation confirms without rewriting installation. Local TLS relay; WebRTC disabled.');
+    console.log('PASS: guided recovery link clears fragment, wrong-member and expired-review refusal, scanner result and camera release (camera/decoder stub), no recipient network before trusted consent, Back preserves old keys, keyboard acceptance, 320px/200% and axe, lost confirmation retains local success, new invitation confirms without rewriting installation. Local TLS relay; WebRTC disabled.');
   }finally{
     await Promise.all(pages.map(p=>p.evaluate(()=>guidedRecovery?.dispose())));
   }

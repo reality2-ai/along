@@ -103,3 +103,11 @@ metadata transfer. Enrollment timing is unchanged. Capacity and deadline evidenc
 is recorded in [the focused report](evidence/recovery-authority-capacity.json).
 Guided AT-owner renewal, scanning/expiry controls, full release qualification and
 external/physical acceptance remain. The public app is still v45.
+
+Guided recovery now passes the actual Settings AT-owner renewal callback with a
+synthetic shared key, preserving binding, signed policy and encrypted credential
+through reload. Scanner review/camera release (camera/decoder stub) and expired
+review refusal also pass. See [focused evidence](evidence/guided-recovery-at-scan.json).
+[Version 46](RELEASE_V46.md) is now being prepared for full qualification, including
+an upgrade from installed v45. It is not published; external and physical checks
+remain pending.

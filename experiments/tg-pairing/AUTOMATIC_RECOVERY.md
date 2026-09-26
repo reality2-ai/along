@@ -94,8 +94,10 @@ App Settings opens this flow from the device picker or an incoming `#recover=`
 link. The saved selected relay can prefill the owner's explicit invitation action.
 The manual exchange remains available under Advanced. Successful recipient
 recovery retains the existing callback for renewing evidence of an already-pinned
-AT owner; no AT access is granted by recovery. New automatic-path AT renewal still
-needs its own test, distinct from the existing manual fallback regression.
+AT owner; no AT access is granted by recovery. The generated-app AT renewal test now uses the actual guided path and Settings
+callback with a synthetic key. It preserves the pinned AT binding, policy and
+encrypted credential through recovery and reload. The manual fallback remains
+separately exercised by other regressions.
 
 ```sh
 GUIDED_RECOVERY=1 node experiments/tg-pairing/automatic-enrollment.test.mjs
@@ -119,13 +121,15 @@ online reload on both copies. No return QR or manual reply transfer is used.
 
 ## Remaining work
 
-Test guided AT-owner renewal and the scanning/expiry controls. Large removal
-snapshots and automatic-path authority/intermediate-installation checks now have
+Guided AT-owner renewal and scanner/expiry controls now have
+[focused evidence](../../docs/evidence/guided-recovery-at-scan.json). The scanner
+uses a camera/decoder stub, not an optical phone test. Large removal snapshots
+and automatic-path authority/intermediate-installation checks have
 [dedicated evidence](../../docs/evidence/recovery-authority-capacity.json). Existing direct-recovery refusal checks are useful
 regression evidence, not substitutes for these cases. The new checks are added
 to future regular qualification; no new full qualification has passed yet.
 
-Then qualify a new app version and publish it. The selected public hive still
+Version 46 is being prepared for full qualification and publication. The selected public hive still
 needs a forwarding check, and S23 optical scanning/pairing and spoken TalkBack
 acceptance remain separate physical checks. Do not publish this prototype over v45.
 

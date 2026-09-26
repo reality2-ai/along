@@ -5,6 +5,8 @@ import {checkAppRotation} from './rotation-app-check.mjs';
 import AxeBuilder from '@axe-core/playwright';
 import {createHash} from 'node:crypto';
 import {createServer} from 'node:http';
+import {createLocalTestRelay} from '../relay/test-server.mjs';
+const guidedRotation=process.env.GUIDED_AT_RECOVERY==='1';
 import {readFile} from 'node:fs/promises';
 import {join, extname} from 'node:path';
 const {chromium, expect} = await import(process.env.PLAYWRIGHT_MODULE || '@playwright/test');
@@ -16,6 +18,7 @@ const differentATOwner = process.env.DIFFERENT_AT_OWNER === '1';
 const rotateGroupKeys = process.env.ROTATE_GROUP_KEYS === '1';
 assert.ok(!differentATOwner || (rotateGroupKeys && mainSetup), 'Different owner scenario requires app rotation');
 assert.ok(!rotateGroupKeys || mainSetup, 'Group rotation uses actual app Settings');
+assert.ok(!guidedRotation || rotateGroupKeys,'Guided recovery needs the rotation scenario');
 const removeGroupMember = process.env.REMOVE_GROUP_MEMBER === '1';
 assert.ok(!removeGroupMember || mainSetup, 'Group removal uses actual app Settings');
 const replaceSharedKey = process.env.REPLACE_SHARED_KEY === '1';
@@ -35,22 +38,24 @@ const sources = new Map(await Promise.all(Object.entries(manifest.files).map(asy
   assert.equal(createHash('sha256').update(bytes).digest('hex'), hash); return [name, bytes];
 })));
 const prefix = regularCandidate ? '/along/' : '/along-exp/';
-const server = createServer((req, res) => {
+const handler = (req, res) => {
   const path = new URL(req.url, 'http://localhost').pathname;
   const name = path.startsWith(prefix) ? path.slice(prefix.length) + (path.endsWith('/') ? 'index.html' : '') : '';
   const body = sources.get(name);
   if (!body) { res.writeHead(404); res.end(); return; }
   res.setHeader('Content-Type', ({'.js': 'text/javascript', '.mjs': 'text/javascript', '.wasm': 'application/wasm', '.html': 'text/html', '.css': 'text/css', '.gz': 'application/gzip', '.json': 'application/json', '.webmanifest': 'application/manifest+json', '.png': 'image/png', '.svg': 'image/svg+xml'})[extname(name)] || 'text/plain');
   res.end(body);
-});
+};
+const relay=guidedRotation?await createLocalTestRelay(handler):undefined;
+const server=relay?.server??createServer(handler);
 await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
 let browser;
 try {
-  browser = await chromium.launch({headless: true, executablePath: process.env.CHROMIUM_PATH});
-  const contexts = await Promise.all([browser.newContext(), browser.newContext()]);
+  browser = await chromium.launch({headless: true, executablePath: process.env.CHROMIUM_PATH,args:guidedRotation?['--ignore-certificate-errors']:[]});
+  const contexts = await Promise.all([browser.newContext({ignoreHTTPSErrors:guidedRotation}), browser.newContext({ignoreHTTPSErrors:guidedRotation})]);
   const pages = await Promise.all(contexts.map(context => context.newPage()));
   for (const page of pages) await page.addInitScript(({name,base}) => { window.testDeviceDatabase = name; window.testExperimentBase=base; }, {name:deviceDatabase,base:prefix+'experiments/'});
-  const origin = `http://127.0.0.1:${server.address().port}${prefix}`;
+  const origin = `${guidedRotation?'https':'http'}://127.0.0.1:${server.address().port}${prefix}`;
   const providerRequests = [], errors = [];
   for (const page of pages) page.on('pageerror', error => errors.push(error.message));
   for (const context of contexts) await context.route('https://api.at.govt.nz/**', async route => {
@@ -398,7 +403,7 @@ try {
     }
   } else await Promise.all(pages.map(page => page.goto(origin + appPath)));
   await Promise.all(pages.map(page => expect(page.locator('#data-status')).toContainText('offline ready', {timeout: 90000})));
-  if (rotateGroupKeys) await checkAppRotation({owner: groupIssuer, recipient: differentATOwner ? owner : candidate, move, expectRenewal: !differentATOwner});
+  if (rotateGroupKeys) await checkAppRotation({owner: groupIssuer, recipient: differentATOwner ? owner : candidate, move, expectRenewal: !differentATOwner,relay:guidedRotation?`wss://127.0.0.1:${server.address().port}/r2`:undefined});
   const updates = await groupIssuer.evaluate(async () => {
     const wasm = await import((window.testExperimentBase ?? '../experiments/') + 'tg-pairing/hive_wasm.js'); await wasm.default();
     const store = await (await import((window.testExperimentBase ?? '../experiments/') + 'tg-pairing/storage.mjs')).openBrowserStorage(window.testDeviceDatabase);
@@ -570,4 +575,4 @@ try {
   console.log(removeGroupMember
     ? 'PASS: actual enrollment, encrypted shared AT key and contextual mocked AT reads; group removal through Settings closes the live connection without another provider request, signed removal is received by the candidate, and offline reopening/routing works. One-host browser evidence, not real-provider revocation or deletion of previously copied keys.'
     : 'PASS: two isolated browser app instances restore actual enrollment and encrypted WebRTC-delivered key, reconnect through Settings, close Settings, request contextual mocked AT feeds for a real bus/ferry journey, learn withheld removal before further provider I/O, disconnect without changing the selected step, and reopen/route offline. Setup, grant, consent and removal use visible controls; one host, not physical devices or real provider verification.');
-} finally { await browser?.close(); await new Promise(resolve => server.close(resolve)); }
+} finally { await browser?.close(); if(relay)await relay.close();else await new Promise(resolve => server.close(resolve)); }

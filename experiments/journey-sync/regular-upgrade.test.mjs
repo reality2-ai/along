@@ -15,6 +15,7 @@ assert.equal(manifest.profile,'along-regular-upgrade-candidate-v1');assert.equal
 for(const [name,hash] of Object.entries(manifest.files))assert.equal(sha(await readFile(join(root,name))),hash,name);
 const priorVersion=process.env.ALONG_PRIOR_VERSION||'37';
 const priorReleases={
+  '45':{path:new URL('../../releases/along-web-v45.zip',import.meta.url).pathname,sha:'da3e8799c1db0118cc7da7c0b8b41fd3439f93fdda4713ef82d9f9fccec0f61e'},
   '44':{path:new URL('../../releases/along-web-v44.zip',import.meta.url).pathname,sha:'45486d20ba05d2ecbe052482e153e1fbaecae623912fe4a8eb860d907e86a9b3'},
   '43':{path:new URL('../../releases/along-web-v43.zip',import.meta.url).pathname,sha:'38ce5497bfa2bc324ffc109e48925b10b9b6f8749f5c04f338bc16985188bfd8'},
   '42':{path:new URL('../../releases/along-web-v42.zip',import.meta.url).pathname,sha:'c41b2e06cab600d14b0365f527117c75fb90f193c3d2c5db9067b13ab3096f6d'},
@@ -28,7 +29,7 @@ assert.ok(Object.hasOwn(priorReleases,priorVersion));
 const prior=priorReleases[priorVersion].path;
 assert.equal(sha(await readFile(prior)),priorReleases[priorVersion].sha);
 const targetVersion=manifest.appVersion;
-assert.equal(targetVersion,'45');
+assert.equal(targetVersion,'46');
 const temporary=await mkdtemp(join(tmpdir(),'along-regular-upgrade-'));
 execFileSync('unzip',['-q',prior,'-d',temporary]);
 let current=false,failShell=false,browser;const requests=[],errors=[];

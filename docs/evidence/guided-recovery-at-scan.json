@@ -1,0 +1,39 @@
+{
+  "recordedAt": "2026-09-26T01:40:24.050818+00:00",
+  "baseSource": "76d7af5",
+  "published": false,
+  "checks": [
+    {
+      "command": "MAIN_APP_SETUP=1 ROTATE_GROUP_KEYS=1 GUIDED_AT_RECOVERY=1 node experiments/at-credentials/two-app-integration.test.mjs",
+      "exitCode": 0,
+      "scope": "Generated experimental app with two isolated contexts, actual enrollment and synthetic shared AT credential. Guided recovery over local TLS relay, WebRTC disabled only during recovery. Actual Settings callback renews existing owner evidence. Binding, signed policy and encrypted key unchanged through reload. Later contextual mocked AT reads and offline routing pass."
+    },
+    {
+      "command": "GUIDED_RECOVERY=1 node experiments/tg-pairing/automatic-enrollment.test.mjs",
+      "exitCode": 0,
+      "relay": {
+        "connections": 10,
+        "frames": 284,
+        "limited": 0
+      },
+      "scope": "Recovery scan result advances to consent review and releases camera. Expiry while reviewing prevents network and preserves identity. Existing refusal, fragment, consent, cancellation, keyboard, zoom, axe and lost-receipt checks retained."
+    }
+  ],
+  "logs": {
+    "releases/guided-at-recovery.log": {
+      "sha256": "b2a8241fabd765638c2ba80fbdeef6d695042abadee49d179c2e986e6f09ff70",
+      "output": "PASS: guided recovery uses a local TLS relay with WebRTC disabled, and the actual Settings callback renews the existing AT owner without changing binding, policy or encrypted credentials.\nPASS: both app Settings rotate and deliver group keys; actual renewal callback preserves AT binding, policy and encrypted credentials across reload.\nPASS: two isolated browser app instances restore actual enrollment and encrypted WebRTC-delivered key, reconnect through Settings, close Settings, request contextual mocked AT feeds for a real bus/ferry journey, learn withheld removal before further provider I/O, disconnect without changing the selected step, and reopen/route offline. Setup, grant, consent and removal use visible controls; one host, not physical devices or real provider verification.\n"
+    },
+    "releases/guided-recovery-scan-expiry.log": {
+      "sha256": "e87c1310d6ae376d84e73749210282a9c0591e0785b60f2cb43df51512aad90e",
+      "output": "PASS: guided recovery link clears fragment, wrong-member and expired-review refusal, scanner result and camera release (camera/decoder stub), no recipient network before trusted consent, Back preserves old keys, keyboard acceptance, 320px/200% and axe, lost confirmation retains local success, new invitation confirms without rewriting installation. Local TLS relay; WebRTC disabled.\nRecovery relay counts: {\"connections\":10,\"frames\":284,\"limited\":0,\"plaintextObserved\":false}\nPASS: automatic challenge/proof/offer/answer with actual software identities, verified proof, relay-carried comparison with WebRTC disabled, explicit confirmation, durable installation/acknowledgment and reload. Current hive binding through local relay with protected invitation channel. Harness supplies reviewed invitation; not public rendezvous or physical acceptance.\n"
+    }
+  },
+  "limits": [
+    "No physical camera or optical decoding; camera and BarcodeDetector are stubbed.",
+    "No real AT key or provider request; provider replies are mocked.",
+    "Public-hive forwarding and spoken TalkBack remain unverified.",
+    "Full v46 qualification and publication still pending.",
+    "Subsequent changes prepare v46 and add privacy/installation wording; these require the complete candidate checks."
+  ]
+}

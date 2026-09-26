@@ -10,7 +10,7 @@ export function showConnectedSharing(container,{wasm,store,expectedGroup,peer,re
   const heading=node('h2','Share with this device?');heading.tabIndex=-1;
   const explanation=node('p','Share saved starting and destination places, preferred bus/train/ferry services, and later changes or removals. Your other device must also agree.');
   const connection=node('p','Automatically reconnect through '+relay+' while Along is open and online.');
-  const details=node('details');details.append(node('summary','What stays private?'),node('p','Your current location, searches and learning history stay on this device. AT-key sharing is a separate choice and is not enabled here. The relay sees connection metadata; saved journeys are encrypted between permitted devices.'));
+  const details=node('details');details.append(node('summary','What stays private?'),node('p','Your current location, searches and learning history stay on this device. AT-key sharing is a separate choice and is not enabled here. The relay sees connection metadata; saved journeys are encrypted between permitted devices. The connection also carries encrypted, signed group-removal notices so devices can stop trusting a removed member. Replacement group keys need a separate approved update.'));
   const status=node('p','Checking your saved choice…');status.setAttribute('role','status');status.setAttribute('aria-atomic','true');
   const share=node('button','Share and reconnect');share.type='button';share.className='pairing-primary';share.disabled=true;
   const back=node('button','Not now');back.type='button';

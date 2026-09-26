@@ -19,8 +19,8 @@ def main():
     source = git('rev-parse', 'HEAD')
     manifest_path = ROOT / 'releases/along-regular-upgrade-candidate/build-info.json'
     manifest = json.loads(manifest_path.read_text())
-    if manifest['profile'] != 'along-regular-upgrade-candidate-v1' or manifest['appVersion'] != '45':
-        raise RuntimeError('Build regular candidate 45 before qualification')
+    if manifest['profile'] != 'along-regular-upgrade-candidate-v1' or manifest['appVersion'] != '46':
+        raise RuntimeError('Build regular candidate 46 before qualification')
     actual = {p.relative_to(manifest_path.parent).as_posix() for p in manifest_path.parent.rglob('*') if p.is_file()}
     if actual != set(manifest['files']) | {'build-info.json'}:
         raise RuntimeError('Candidate file set differs from manifest')
@@ -36,6 +36,7 @@ def main():
         if not env.get(name):
             raise RuntimeError(f'Set {name}')
     cases = [
+        ('installed_v45_upgrade', {'ALONG_PRIOR_VERSION':'45'}, 'experiments/journey-sync/regular-upgrade.test.mjs'),
         ('installed_v44_upgrade', {'ALONG_PRIOR_VERSION':'44'}, 'experiments/journey-sync/regular-upgrade.test.mjs'),
         ('relay_origin_pacing', {}, 'experiments/r2-current/origin-pacing-browser.test.mjs'),
         ('recovery_inner_protection', {}, 'experiments/tg-pairing/recovery-link-protection.test.mjs'),
@@ -63,8 +64,8 @@ def main():
         ('owner_key', {'CHECK_BFCACHE':'1','GROUP_KEYS':'1'}, 'experiments/at-credentials/app-integration.test.mjs'),
         ('shared_key_replacement', {'MAIN_APP_SETUP':'1','REPLACE_SHARED_KEY':'1'}, 'experiments/at-credentials/two-app-integration.test.mjs'),
         ('group_removal', {'MAIN_APP_SETUP':'1','REMOVE_GROUP_MEMBER':'1'}, 'experiments/at-credentials/two-app-integration.test.mjs'),
-        ('rotated_at_owner', {'MAIN_APP_SETUP':'1','ROTATE_GROUP_KEYS':'1'}, 'experiments/at-credentials/two-app-integration.test.mjs'),
-        ('rotated_different_at_owner', {'MAIN_APP_SETUP':'1','ROTATE_GROUP_KEYS':'1','DIFFERENT_AT_OWNER':'1'}, 'experiments/at-credentials/two-app-integration.test.mjs'),
+        ('rotated_at_owner', {'MAIN_APP_SETUP':'1','ROTATE_GROUP_KEYS':'1','GUIDED_AT_RECOVERY':'1'}, 'experiments/at-credentials/two-app-integration.test.mjs'),
+        ('rotated_different_at_owner', {'MAIN_APP_SETUP':'1','ROTATE_GROUP_KEYS':'1','DIFFERENT_AT_OWNER':'1','GUIDED_AT_RECOVERY':'1'}, 'experiments/at-credentials/two-app-integration.test.mjs'),
         ('lost_confirmation', {'MAIN_APP_SETUP':'1','LOSE_KEY_CONFIRMATION':'1'}, 'experiments/at-credentials/two-app-integration.test.mjs'),
         ('interrupted_acceptance', {'MAIN_APP_SETUP':'1','INTERRUPT_ACCEPTANCE':'1'}, 'experiments/at-credentials/two-app-integration.test.mjs'),
         ('installed_upgrade', {}, 'experiments/journey-sync/regular-upgrade.test.mjs'),

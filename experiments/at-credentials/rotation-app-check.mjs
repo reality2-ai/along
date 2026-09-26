@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-export async function checkAppRotation({owner, recipient, move, atBinding = true, expectRenewal = true, databaseName}) {
+export async function checkAppRotation({owner, recipient, move, atBinding = true, expectRenewal = true, databaseName, relay}) {
   if (databaseName) for (const page of [owner, recipient]) {
     await page.addInitScript(name => { window.testDeviceDatabase = name; }, databaseName);
     await page.evaluate(name => { window.testDeviceDatabase = name; }, databaseName);
@@ -35,11 +35,26 @@ export async function checkAppRotation({owner, recipient, move, atBinding = true
   await owner.getByRole('heading', {name: 'Group keys updated on this device', exact: true}).waitFor();
   await owner.getByRole('button', {name: 'Back', exact: true}).click();
   await owner.getByText(/^(Advanced device options|Connect or recover another device)$/, {exact: true}).click();
-  // This regression deliberately exercises Advanced's manual fallback. Guided
-  // relay recovery has its own generated-app check; do not conflate the paths.
-  await owner.getByRole('button', {name: 'Manual key-update exchange', exact: true}).click();
+  await owner.getByRole('button', {name: relay?'Send a group key update':'Manual key-update exchange', exact: true}).click();
   const member = before[1].member;
   await owner.getByRole('button', {name: `Device ${member.slice(0, 8)}…${member.slice(-8)}`, exact: true}).click();
+  if(relay){
+    // Enrollment and AT-key sharing were already performed by the real UI.
+    // Disable direct links specifically for recovery, then restore for later AT
+    // connection tests. No fallback can satisfy the new recovery assertion.
+    for(const p of [owner,recipient])await p.evaluate(()=>{
+      window.preRecoveryRTC=window.RTCPeerConnection;
+      window.RTCPeerConnection=class{constructor(){throw Error('WebRTC disabled during guided AT recovery');}};
+    });
+    await owner.getByLabel('Relay server address',{exact:true}).fill(relay);
+    await owner.getByRole('button',{name:'Create update invitation',exact:true}).click();
+    const link=await owner.getByLabel('Update invitation link',{exact:true}).inputValue();
+    await recipient.getByRole('button',{name:'Receive a group key update',exact:true}).click();
+    await recipient.getByLabel('Update invitation link',{exact:true}).fill(link);
+    await recipient.getByRole('button',{name:'Review update invitation',exact:true}).click();
+    await recipient.getByRole('button',{name:'Connect and review update',exact:true}).click();
+    await recipient.getByRole('button',{name:'Receive group key update',exact:true}).click();
+  }else{
   await recipient.getByRole('button', {name: 'Manual key-update exchange', exact: true}).click();
   await owner.getByRole('heading', {name: 'Connect the device to update', exact: true}).waitFor();
   await move(owner, recipient, 'Starting message from your other device', 'Create update request');
@@ -49,6 +64,7 @@ export async function checkAppRotation({owner, recipient, move, atBinding = true
   await move(owner, recipient, 'Key-update reply from your other device', 'Review group key update');
   await recipient.getByRole('button', {name: 'Receive group key update', exact: true}).click();
   await owner.getByRole('button', {name: 'Send update or check confirmation', exact: true}).click();
+  }
   await owner.getByRole('heading', {name: 'Other device confirmed its keys', exact: true}).waitFor();
   await recipient.getByRole('heading', {name: 'Group keys saved on this device', exact: true}).waitFor();
   // Wait for the actual Settings renewal callback, without invoking it in the test.
@@ -77,7 +93,8 @@ export async function checkAppRotation({owner, recipient, move, atBinding = true
     assert.equal(BigInt(after[i].epoch), BigInt(before[i].epoch) + 1n);
     assert.deepEqual({...after[i], epoch: before[i].epoch}, before[i], 'rotation preserves AT binding, policy, device identity and encrypted key');
   }
-  await owner.getByRole('button', {name: 'Back', exact: true}).click();
+  if(relay)for(const p of [owner,recipient])await p.evaluate(()=>{window.RTCPeerConnection=window.preRecoveryRTC;});
+  await owner.getByRole('button', {name: relay?'Done':'Back', exact: true}).click();
   await owner.getByText('Confirmed installation of key version 1. This is a saved receipt, not online status.', {exact: true}).waitFor();
   await owner.getByRole('button', {name: 'Back', exact: true}).click();
   await recipient.getByRole('button', {name: 'Back', exact: true}).click();
@@ -87,5 +104,6 @@ export async function checkAppRotation({owner, recipient, move, atBinding = true
     await page.reload();
   }
   assert.deepEqual(await Promise.all([owner, recipient].map(state)), after, 'both app instances restore renewed authority without rewriting AT data');
+  if(relay)console.log('PASS: guided recovery uses a local TLS relay with WebRTC disabled; the actual Settings callback preserves AT binding, policy and encrypted credentials. '+(expectRenewal?'Existing owner evidence renewed.':'Different owner evidence remains stale and cannot enable AT access.'));
   console.log(atBinding && expectRenewal ? 'PASS: both app Settings rotate and deliver group keys; actual renewal callback preserves AT binding, policy and encrypted credentials across reload.' : atBinding ? 'PASS: different AT owner retains its binding and encrypted keys through rotation; stale owner evidence is usable only for reconnect review.' : 'PASS: both app Settings rotate and deliver group keys while preserving saved journey permissions across reload.');
 }
