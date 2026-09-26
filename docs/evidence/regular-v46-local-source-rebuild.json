@@ -1,0 +1,7 @@
+{
+  "status": "passed",
+  "source_commit": "41879985547457af3a0118041ea297533df78a06",
+  "candidate_manifest_sha256": "52153fbae3754d5b6deefc9124a6be3c1d312f8bd7ac3a0091fcdeeafed994a5",
+  "candidate_files_matched": 314,
+  "scope": "Fresh committed-source export in temporary directory, fixed candidate data and verified runtime reused. Not anonymous public-source or compiler rebuild."
+}

@@ -1,0 +1,11 @@
+{
+  "status": "passed",
+  "checked_at": "2026-09-26T03:00:38.257114+00:00",
+  "url": "https://reality2.ai/along/",
+  "app_version": 46,
+  "files_matched": 316,
+  "release_manifest_sha256": "94be158e51330e7133df86c9ab3d8f9474687093c6068ea8204ef5109d4b7389",
+  "pages_commit": "d5cee38ec1fae80a7893d2dc56d7cb0d0f6352a6",
+  "pages_run": 36213403609,
+  "scope": "Every release file fetched over public HTTPS and matched to the packaged SHA-256."
+}

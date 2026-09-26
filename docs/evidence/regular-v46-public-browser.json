@@ -1,0 +1,9 @@
+{
+  "status": "passed",
+  "url": "https://reality2.ai/along/",
+  "app_version": 46,
+  "command": "EXPECT_APP_VERSION=46 TEST_BASE_URL=https://reality2.ai/along/ CHROMIUM_PATH=<installed Chromium> node test/check_public_site.mjs",
+  "log_sha256": "0d7ccfe1e93bd7f10096edc5bdb872006bd4f660178a64ed0f27f5062916b81f",
+  "output": "{\n  \"url\": \"https://reality2.ai/along/\",\n  \"appVersion\": \"46\",\n  \"workerScope\": \"https://reality2.ai/along/\",\n  \"installability\": true,\n  \"settingsAboutLink\": true,\n  \"offlineNewAddressJourney\": true,\n  \"offlineInstallGuide\": true,\n  \"englishOnly\": true,\n  \"offlineFeedbackDraft\": true,\n  \"pageErrors\": []\n}\n",
+  "scope": "Fresh desktop Chromium profile at phone viewport; public installation eligibility, version, offline routing, English-only UI and offline feedback draft retention. Not physical Android installation or TalkBack acceptance."
+}

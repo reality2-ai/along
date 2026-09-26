@@ -18,28 +18,29 @@ Along uses Auckland Transport's public data and its own bounded routing engine.
 It is **not an official AT app** and does not reproduce AT Mobile's journey planner.
 **Offline planning is the foundation; live information is an optional addition.**
 When connected, current AT predictions and alerts can help refine the scheduled
-picture. Version **45** includes optional direct AT access using your own API key,
+picture. Version **46** includes optional direct AT access using your own API key,
 plus device pairing and saved-journey sharing. Optional reconnection has been
 tested with the current R2 framing locally; the selected public hive still fails
-protected-message delivery. See the [release evidence](docs/RELEASE_V45.md). No relay is enabled
+protected-message delivery. See the [release evidence](docs/RELEASE_V46.md). No relay is enabled
 by default. Losing
 connectivity will not remove offline planning. Choose **Leave at** or **Arrive by**,
 including the walk to your destination. Open a saved shortcut to remove it directly
 from the journey-options screen.
 
-[**Version 45**](docs/RELEASE_V45.md) updates the installation guide to match the
-one-invitation connection, matching-code confirmation and sharing choice. It is published and
-locally qualified. External relay delivery and physical pairing remain unverified.
+[**Version 46**](docs/RELEASE_V46.md) adds one-invitation guided recovery for
+already-connected devices and signed device-removal delivery through an optional
+selected relay. Normal connection uses an invitation, matching-code confirmation
+and a sharing choice. External relay delivery and physical pairing remain unverified.
 
 <p align="center">
   <a href="https://reality2.ai/along/"><img src="docs/images/open-webapp.svg" width="304" height="56" alt="Open and install Along webapp"></a>
 </p>
 <p align="center">Open in your browser and install on your device. Prepare it online, then plan scheduled journeys offline.</p>
 
-**Device testing:** use the regular **version 45** app above and follow the
-[short S23/desktop guide](docs/DEVICE_CHECK_V45.md). Physical pairing, TalkBack and
-external-relay acceptance remain unverified. [Download version 45 to host yourself](https://github.com/reality2-ai/along/releases/tag/v0.45.0)
-or read the [release evidence](docs/RELEASE_V45.md).
+**Device testing:** use the regular **version 46** app above and follow the
+[short S23/desktop guide](docs/DEVICE_CHECK_V46.md). Physical pairing, TalkBack and
+external-relay acceptance remain unverified. [Download version 46 to host yourself](https://github.com/reality2-ai/along/releases/tag/v0.46.0)
+or read the [release evidence](docs/RELEASE_V46.md).
 
 The separate [Device Preview 3806](https://reality2.ai/along/preview/public/) remains
 available with its [preview guide](docs/PREVIEW_DEVICE_CHECK.md). Its saved places
@@ -227,10 +228,10 @@ also let you run your own copy.
 
 ## Run from source
 
-**For the current version 45 app, follow [Building Along](docs/BUILDING.md).**
+**For the current version 46 app, follow [Building Along](docs/BUILDING.md).**
 It includes the browser device-group runtime, optional direct AT access and
 saved-journey sharing. The commands below run the **legacy planner development
-server**; `npm start` does not reproduce version 45.
+server**; `npm start` does not reproduce version 46.
 They remain useful for isolated routing and interface work.
 
 Requirements: Python 3.10+, a current browser supporting service workers,
@@ -256,8 +257,8 @@ coverage, provenance and reproducibility.
 
 ## Static hosting and downloadable build
 
-The [version 45 release](https://github.com/reality2-ai/along/releases/tag/v0.45.0)
-contains `along-web-v45.zip` and its SHA-256 checksum. To host the current app,
+The [version 46 release](https://github.com/reality2-ai/along/releases/tag/v0.46.0)
+contains `along-web-v46.zip` and its SHA-256 checksum. To host the current app,
 extract the ZIP and serve its **entire contents**, including `experiments/`,
 `data/`, runtime notices and `.nojekyll`, over HTTPS. Opening `index.html` as a
 local file does not install the app. No Along backend is required.
@@ -269,11 +270,11 @@ a Content-Encoding header**; the browser decompresses them itself. Serve `.js`
 and `.mjs` as JavaScript and `.wasm` as `application/wasm`, without an HTML fallback.
 
 See [current source builds and qualification](docs/BUILDING.md),
-[hosting](docs/HOSTING.md), and the [version 45 device check](docs/DEVICE_CHECK_V45.md).
+[hosting](docs/HOSTING.md), and the [version 46 device check](docs/DEVICE_CHECK_V46.md).
 `npm run build` now prepares the current candidate using the pinned runtime.
 `npm run serve:built` serves that candidate locally. The explicit legacy
 `python3 scripts/build_static.py` / `npm run build:legacy` path produces the
-legacy planner in `dist/`; it does not include version 45's connected features.
+legacy planner in `dist/`; it does not include version 46's connected features.
 
 ## Updates
 
@@ -362,10 +363,12 @@ and used locally. There is no analytics service or background journey tracking.
 The host still receives ordinary asset/API requests; external AT links contact AT.
 Choosing the online street background sends visible map-tile requests to
 OpenStreetMap, revealing the viewed area and ordinary connection metadata.
-Regular Along does not synchronise between devices. The separate Device Preview
-supports opt-in saved-place/service-preference sharing and AT-key sharing through
-a documented browser-only R2 subset. Connection messages are transferred manually;
-automatic discovery and reconnection remain unfinished. See the
+Regular Along supports opt-in saved-place/service-preference sharing and separate
+AT-key sharing through a documented browser-only R2 subset. A user-selected relay
+can carry the guided connection and recovery exchanges and permitted reconnection
+while the apps are open and online. No relay is selected by default. The selected
+public hive has not passed message-forwarding checks; local relay success does
+not establish physical-device pairing. Manual exchange remains under Advanced. See the
 [current integration status](docs/REALITY2_INTEGRATION.md).
 Clearing browser site data removes the stored routes and offline datasets.
 

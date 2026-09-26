@@ -1,6 +1,9 @@
 # Resume v46 release verification
 
-The last verified public release is v45. Version 46 is not qualified or published.
+**Historical interruption checklist:** v46 has since been qualified, published
+and verified. See [the completed release record](RELEASE_V46.md). The sequence
+below documents the recovery from the temporary environment restriction; it is
+not a request to rerun or republish the immutable release.
 The app candidate remains unchanged: manifest SHA-256
 `52153fbae3754d5b6deefc9124a6be3c1d312f8bd7ac3a0091fcdeeafed994a5`.
 

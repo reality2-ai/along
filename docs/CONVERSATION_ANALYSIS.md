@@ -1823,3 +1823,20 @@ success is not release approval. Git/network restrictions temporarily left the c
 local. Restored access permits a new full qualification; it does not turn the
 partial run into release approval. See
 [evidence](evidence/v46-update-job-observation.json).
+
+
+### Separate release evidence from lived acceptance (version 46)
+
+After access returned, the corrected committed source passed all 41 distinct
+qualification scenarios with unchanged app files. Static-browser checks passed;
+a fresh public-source container rebuilt all 313 application files, and all 316
+served release files matched the package. Public offline browser checks passed.
+The earlier failed and interrupted runs remain visible in the release record.
+
+Code this as **evidence has a boundary**. These results establish the tested
+software release, not optical scanning on an S23, spoken TalkBack usability, or
+interoperability with the selected hive. A new live probe still received a host
+announcement without protected-message forwarding. The course exercise should
+ask learners to identify which claims each artifact supports and which require
+a user's observation or a server-side change. No human coding was required.
+See [v46 release evidence](RELEASE_V46.md).

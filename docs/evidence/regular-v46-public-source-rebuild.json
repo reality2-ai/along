@@ -1,0 +1,16 @@
+{
+  "status": "passed",
+  "source_commit": "41879985547457af3a0118041ea297533df78a06",
+  "app_version": 46,
+  "application_files_matched": 313,
+  "app_archive_sha256": "6932a00e90881cac00b0c473ba39ed2de07e368a30e9f9be31f045664e164903",
+  "runtime_archive_sha256": "c241805a394fdcb8197b499914c17e283d4c5922081eeb2528f55c089379401f",
+  "source": "Anonymous public Git fetch",
+  "inputs": "Public v0.46.0 app data and v0.40.0 runtime archive; pinned SHA-256 verified",
+  "excluded_release_metadata": [
+    "README.md",
+    "qualification.json",
+    "build-info.json"
+  ],
+  "scope": "Actual integrated Python app build in isolated Linux container; byte-for-byte application comparison. Prebuilt public runtime used; compiler reproduction is separate. No credentials, host source, node_modules or data mounted."
+}

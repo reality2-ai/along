@@ -2,7 +2,7 @@
 import {chromium,expect} from '@playwright/test';
 import {mkdtemp,rm} from 'node:fs/promises';
 const base=process.env.TEST_BASE_URL;if(!base)throw new Error('Set TEST_BASE_URL to the deployed app URL, including trailing slash.');
-const version=process.env.EXPECT_APP_VERSION||'45';
+const version=process.env.EXPECT_APP_VERSION||'46';
 const profile=await mkdtemp('.along-static-profile-public-');
 const context=await chromium.launchPersistentContext(profile,{executablePath:process.env.CHROMIUM_PATH||undefined,viewport:{width:390,height:844}});
 try{

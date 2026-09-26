@@ -1,0 +1,9 @@
+{
+  "status": "passed",
+  "command": "CHROMIUM_PATH=<installed Chromium> node test/check_static.mjs --regular",
+  "source_commit": "41879985547457af3a0118041ea297533df78a06",
+  "candidate_manifest_sha256": "52153fbae3754d5b6deefc9124a6be3c1d312f8bd7ac3a0091fcdeeafed994a5",
+  "log_sha256": "12eaa9c9edaf43f1144cb98e5401d63c05fbeb507cb95101fa4c1ac4b3ade523",
+  "output": "{\n  \"buildProfile\": \"along-regular-upgrade-candidate-v1\",\n  \"buildManifestSha256\": \"52153fbae3754d5b6deefc9124a6be3c1d312f8bd7ac3a0091fcdeeafed994a5\",\n  \"runtime\": \"v26.8.1\",\n  \"browser\": \"151.0.7922.34\",\n  \"host\": \"Local static HTTP, repository subpath, Chromium desktop\",\n  \"physicalPhone\": false,\n  \"coldReadyMs\": 6298,\n  \"installability\": {\n    \"installabilityErrors\": []\n  },\n  \"mixedModeRouteMs\": 3439,\n  \"datasetBytes\": 41308937,\n  \"storage\": {\n    \"quota\": 10809384524,\n    \"usage\": 71966284,\n    \"usageDetails\": {\n      \"caches\": 2217984,\n      \"indexedDB\": 69737179,\n      \"serviceWorkerRegistrations\": 11121\n    }\n  },\n  \"mainPageResourceTransferBytes\": 1459531,\n  \"offlineReadyMs\": 3408\n}\nPASS: static subpath installability, keyboard and AX semantics, contrast, 200% zoom, 320px reflow, failed and successful data refresh, offline address routing and saved journey.\n",
+  "scope": "Local Chromium static subpath check; not physical installation or TalkBack acceptance."
+}

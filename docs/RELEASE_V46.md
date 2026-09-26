@@ -1,7 +1,35 @@
-# Version 46 — candidate preparation
+# Version 46 — guided device recovery
 
-**Not published.** The public app is still verified v45. This record will be
-completed only after v46 passes full qualification, packaging and public checks.
+**Published and verified on 26 September 2026.** Open
+[Along](https://reality2.ai/along/) or download the
+[v46 package](https://github.com/reality2-ai/along/releases/tag/v0.46.0).
+Physical-device and public-hive acceptance remain open.
+
+## Release evidence
+
+- Qualified source: `41879985547457af3a0118041ea297533df78a06`.
+- [Qualification](evidence/regular-v46-qualification.json): all 41 distinct cases
+  passed, plus two explicitly labelled aliases; source and candidate unchanged.
+- [Static browser](evidence/regular-v46-static-check.json): installation eligibility,
+  keyboard/AX semantics, contrast, zoom/reflow, data refresh and offline routing passed.
+- [Local source rebuild](evidence/regular-v46-local-source-rebuild.json): 314 candidate
+  files matched. [Anonymous public-source rebuild](evidence/regular-v46-public-source-rebuild.json):
+  313 application files matched using the public prebuilt runtime.
+- [Package](evidence/regular-v46-package.json): ZIP 41,803,104 bytes, SHA-256
+  `6932a00e90881cac00b0c473ba39ed2de07e368a30e9f9be31f045664e164903`.
+- Pages commit `d5cee38ec1fae80a7893d2dc56d7cb0d0f6352a6`;
+  [deployment 36213403609](https://github.com/reality2-ai/along/actions/runs/36213403609) succeeded.
+  [All 316 served files](evidence/regular-v46-public-files.json) matched the release.
+- [Public-browser check](evidence/regular-v46-public-browser.json) passed, including
+  offline routing and feedback-draft retention.
+- [Selected-hive probe](evidence/regular-v46-hive-probe.json) still received the host
+  announcement but no protected messages in either direction. Local relay checks
+  do not establish public interoperability.
+
+See the [S23/desktop checklist](DEVICE_CHECK_V46.md). The earlier failed and
+interrupted runs below are retained as historical evidence, not release approval.
+
+## Change and preparation history
 
 The candidate adds a guided group-key update for an already-connected device:
 one invitation, relay review, verified update acceptance and automatic reply and
@@ -66,5 +94,5 @@ original failure.
 The session temporarily had read-only Git metadata and could not reach the
 GitHub API or bind a local test server. Access has since returned. The correction
 and evidence are being committed for a fresh full qualification; do not publish
-this candidate using the partial results. The last verified public release
-remains v45.
+this candidate using the partial results. At that stage the last verified public release
+remained v45; the completed release evidence above supersedes that status.

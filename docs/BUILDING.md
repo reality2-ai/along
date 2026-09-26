@@ -1,10 +1,11 @@
 # Building the current Along app
 
-Published Along is version **45**; see the [release record](RELEASE_V45.md).
-The current checkout also contains an unqualified [removal-notice delivery prototype](../experiments/relay/REMOVAL_DELIVERY.md).
-Use the pinned release source below or its ZIP to reproduce published v45; do not
+Published Along is version **46**; see the [release record](RELEASE_V46.md).
+The release includes [signed removal delivery](../experiments/relay/REMOVAL_DELIVERY.md)
+and [guided device recovery](../experiments/tg-pairing/AUTOMATIC_RECOVERY.md).
+Use the pinned release source below or its ZIP to reproduce published v46; do not
 publish a new build from HEAD under the existing version. Device Preview **3806** is a separate installation.
-For use or hosting, take the [v45 release ZIP and checksum](https://github.com/reality2-ai/along/releases/tag/v0.45.0).
+For use or hosting, take the [v46 release ZIP and checksum](https://github.com/reality2-ai/along/releases/tag/v0.46.0).
 Serve the whole extracted package over HTTPS, including `experiments/` and `data/`.
 The package needs no Along server. See [installation](INSTALL.md) and
 [hosting](HOSTING.md). Course learners ask their AI assistant to perform all
@@ -20,8 +21,8 @@ the integrated app with prepared inputs. The default runtime path now selects th
 | --- | --- |
 | `npm start` / `python3 server.py` | Base planner development server |
 | `npm run build:legacy` / `scripts/build_static.py` | Legacy static planner in `dist/`, without integrated device sharing |
-| `npm run build` / `scripts/build_upgrade_candidate.py --runtime …` | Regular v45 candidate, including device groups, sharing and direct AT access |
-| Published `along-web-v45.zip` | Qualified, immutable v45 distribution |
+| `npm run build` / `scripts/build_upgrade_candidate.py --runtime …` | Regular v46 candidate, including device groups, sharing and direct AT access |
+| Published `along-web-v46.zip` | Qualified, immutable v46 distribution |
 
 The integrated build currently combines `public/` with reachable modules under
 `experiments/`; those modules are part of the release despite the directory name.
@@ -36,12 +37,12 @@ in sync. Platform extraction does not depend on a heading in that expanded copy.
 Use Python **3.12+** for the integrated build/runtime tools, Node **22+** for tests,
 and run `npm ci`. Browser checks need a compatible Chromium executable.
 The published app source was commit
-`d87ba62d716fdb783f3cc81071236055b59f95b2`; later commits include packaging and
+`41879985547457af3a0118041ea297533df78a06`; later commits include packaging and
 documentation. Preserve the chosen source revision with each new build.
 
 The builder requires `data/network.json.gz`, `streets.json.gz`, `addresses.json.gz`
 and `routes.json.gz`. For the same release snapshot, copy those four files from
-the verified v45 ZIP into `data/`. For a refreshed snapshot, follow the
+the verified v46 ZIP into `data/`. For a refreshed snapshot, follow the
 [README import commands](../README.md#run-from-source) and [data guide](DATA.md).
 Current upstream downloads will not reproduce historical dataset bytes. Importer
 tests also need their documented database/source inputs; copying browser bundles
@@ -73,7 +74,7 @@ The default build uses `releases/along-r2-runtime-public-82377f1`. To use a veri
 runtime at another path, invoke
 `python3 scripts/build_upgrade_candidate.py --runtime /path/to/runtime` directly.
 
-Open `http://localhost:3082` and check version 45. Localhost permits service
+Open `http://localhost:3082` and check version 46. Localhost permits service
 workers; phones need an HTTPS host. Keep this development origin separate from
 your regular installed app. Generated outputs stay in ignored `releases/`.
 The candidate retains `DO-NOT-PUBLISH.txt`: building is not qualification.
@@ -95,6 +96,7 @@ The runner requires these environment variables:
 | `R2_HIVE_UPSTREAM` | Optional: an actual `r2.extended.v1` hive the local test relay pipes to |
 | `ALONG_V37_ZIP` | Exact original v37 `along-web.zip` for installed-upgrade tests |
 
+The v45 upgrade check requires `releases/along-web-v45.zip`.
 The v44 upgrade check also requires `releases/along-web-v44.zip`.
 The v42 and v43 upgrade checks require `releases/along-web-v42.zip` and
 `releases/along-web-v43.zip` from their corresponding GitHub releases. The v37
@@ -112,15 +114,15 @@ The previous-release upgrade check additionally needs `releases/along-web-v39.zi
 from the [v39 release](https://github.com/reality2-ai/along/releases/tag/v0.39.0).
 The v37 asset is in the [v37 release](https://github.com/reality2-ai/along/releases/tag/v0.37.0).
 Its SHA-256 must be `8dda7d208934d6f61494e67860ffe79dfbe7a3b51957e34fa9cbb99e28abf4e9`.
-The v45 qualification uses the current `r2.extended.v1` local hive stand-in;
-its [35-scenario result](evidence/regular-v45-qualification.json) is not deployed
+The v46 qualification uses the current `r2.extended.v1` local hive stand-in;
+its [41-scenario result](evidence/regular-v46-qualification.json) is not deployed
 hive acceptance. The runner writes individual
 logs and `qualification.json` to a new directory under `releases/`; it refuses
 an existing run directory. Do not reuse old qualification evidence for changed files.
 
 `scripts/prepare_regular_release.py /path/to/qualification.json` packages a passed,
 matching candidate. It refuses existing versioned release outputs. These scripts
-currently target version 45. The [v45 package](RELEASE_V45.md) has passed
+currently target version 46. The [v46 package](RELEASE_V46.md) has passed
 qualification and is published. Never overwrite a versioned archive.
 Run the committed static browser check against the same candidate:
 
@@ -139,7 +141,7 @@ Deployed-file verification and physical acceptance are additional checks in the
 
 ## What has and has not been reproduced
 
-The [v45 release record](RELEASE_V45.md) binds the published v45 candidate, qualification,
+The [v46 release record](RELEASE_V46.md) binds the published v46 candidate, qualification,
 package and public checks. The following v38 source-rebuild evidence is historical;
 its pinned check intentionally compares with v38, so running it with current
 `--revision HEAD` now reports differences from that historical version.
@@ -156,8 +158,8 @@ and [source at 3738a5e](evidence/regular-v38-current-source-rebuild.json)
 each rebuilt all **301 application files byte for byte** against the published ZIP.
 Both used the release data and existing verified runtime on the same host.
 The public runtime has since been rebuilt in an isolated container with publicly
-downloaded tools and dependencies. A separate [isolated app rebuild](evidence/regular-v45-public-source-rebuild.json)
-now reproduces all 309 v45 application files from anonymous public source and
+downloaded tools and dependencies. A separate [isolated app rebuild](evidence/regular-v46-public-source-rebuild.json)
+now reproduces all 313 v46 application files from anonymous public source and
 verified release downloads. It uses the published runtime bundle; runtime source
 compilation is evidenced separately.
 
@@ -180,21 +182,21 @@ A mismatch after an intentional app change is expected: qualify a new release
 instead of changing this check to call different bytes identical.
 
 
-## Repeat the isolated public v45 app build
+## Repeat the isolated public v46 app build
 
 This release check uses no local app source, data, browser profile or
-credentials. It fetches the pinned public v45 commit, v45 data and public v40 runtime assets, verifies archive
+credentials. It fetches the pinned public v46 commit, v46 data and public v40 runtime assets, verifies archive
 hashes, runs the integrated builder and compares every application file with the
 release. Packaging README, qualification and build manifests are outside the
 application comparison. It does not refresh AT data or run physical-device checks.
 Ask the AI to run this with Podman and a new output directory:
 
 ```sh
-mkdir releases/public-v45-rebuild-check
+mkdir releases/public-v46-rebuild-check
 podman run --rm --memory 2g --cpus 2 \
   -v "$PWD/scripts/check_public_release_build.py:/input/check.py:ro" \
-  -v "$PWD/releases/public-v45-rebuild-check:/output:rw" \
-  docker.io/library/python:3.13-bookworm python3 /input/check.py --version 45
+  -v "$PWD/releases/public-v46-rebuild-check:/output:rw" \
+  docker.io/library/python:3.13-bookworm python3 /input/check.py --version 46
 ```
 
 The output is `result.json`; a mismatch fails the command. The recorded image ID

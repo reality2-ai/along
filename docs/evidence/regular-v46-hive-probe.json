@@ -1,0 +1,19 @@
+{
+  "runtime": "node v26.8.1",
+  "checked_at": "2026-09-26T02:47:02.164Z",
+  "url": "wss://wairoa.mariko.org.nz/r2",
+  "protocol": [
+    "r2.extended.v1",
+    "r2.extended.v1"
+  ],
+  "forward_delivered": false,
+  "reverse_delivered": false,
+  "relayed_hop_and_route": null,
+  "host_suppressed_identical_resend": false,
+  "wrong_group_key_frame_arrived": false,
+  "wrong_group_key_refused": true,
+  "host_announcement_received": true,
+  "peer_heartbeat_forwarded": false,
+  "passed": false,
+  "scope": "Two independent WebSocket connections in one runtime, with a synthetic group created for this run attempted to exchange XChaCha20-Poly1305/HMAC-SHA256 protected extended EVENT frames through the deployed host. The result fields determine whether the deployed relay forwarded them; this scope description is not a success claim. It does not verify the browser app, saved-journey synchronisation, enrolment, revocation, reconnection or physical devices."
+}
